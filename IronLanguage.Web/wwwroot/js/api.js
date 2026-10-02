@@ -11,5 +11,6 @@ window.AdamApi = async (path, options = {}) => {
     try { detail = (await response.json()).error || detail; } catch { /* empty response */ }
     throw new Error(detail);
   }
-  return response.status === 204 ? null : response.json();
+  const body = await response.text();
+  return body.trim() ? JSON.parse(body) : null;
 };
