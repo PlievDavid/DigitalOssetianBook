@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IronLanguage.Web.Controllers;
 
+[Authorize]
 public sealed class PracticeController : Controller
 {
     [HttpGet("translate")]
