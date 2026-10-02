@@ -1,0 +1,64 @@
+@model IronLanguage.Web.Models.Lesson
+@{
+    var step = (int)ViewData["Step"]!;
+    var score = (int)ViewData["Score"]!;
+    var completed = step >= Model.Questions.Length;
+    var answered = ViewData["Answered"] is true;
+    var correct = ViewData["Correct"] is true;
+    ViewData["Title"] = Model.Title;
+}
+<section class="learn-shell">
+    <a class="back-link" asp-controller="Home" asp-action="Index">← Все упражнения</a>
+    @if (!completed)
+    {
+        <div class="lesson-reading">
+            <span class="eyebrow">СНАЧАЛА РАЗБЕРЁМ</span>
+            <h1>@Model.Title</h1>
+            <p>Эти слова встречаются в стихотворении «Азар!». Прочитайте строку, сравните слово с переводом и при желании сохраните его для тренировки. Затем ответьте на вопросы ниже.</p>
+            <div class="lesson-word-list">
+                @foreach (var word in Model.Words)
+                {
+                    <article class="lesson-word" data-ossetian="@word.Ossetian">
+                        <div><strong>@word.Ossetian</strong><span>@word.Russian</span><small>@word.Context</small></div>
+                        <button class="lesson-save-word" type="button" aria-label="Сохранить слово @word.Ossetian">В мой словарь</button>
+                    </article>
+                }
+            </div>
+            <p id="lesson-word-status" class="lesson-word-status" role="status"></p>
+        </div>
+    }
+    @if (completed)
+    {
+        <div class="result-panel">
+            <span class="result-icon" aria-hidden="true">✦</span><span class="eyebrow">УРОК ЗАВЕРШЁН</span>
+            <h1>Отличная работа!</h1><p>Вы закончили занятие «@Model.Title».</p>
+            <div class="score"><strong>@score / @Model.Questions.Length</strong><span>верных ответов</span></div>
+            <div class="result-actions">
+                <form asp-controller="Learn" asp-action="Restart" asp-route-slug="@Model.Slug" method="post"><button class="button primary" type="submit">Пройти ещё раз</button></form>
+                <a class="button secondary" asp-controller="Home" asp-action="Index">К упражнениям</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        var question = Model.Questions[step];
+        <div class="learn-top"><div><span class="eyebrow">ПРОВЕРЬТЕ СЕБЯ</span><h2>Вопрос @(step + 1)</h2></div><span class="step-label">@(step + 1) / @Model.Questions.Length</span></div>
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="@Model.Questions.Length" aria-valuenow="@step" aria-label="Прогресс урока"><span style="width:@(step * 100 / Model.Questions.Length)%"></span></div>
+        @if (answered) { <div class="feedback @(correct ? "positive" : "negative")" role="status">@(correct ? "Верно!" : "Есть над чем потренироваться.") Продолжайте — следующий вопрос уже ждёт.</div> }
+        <div class="question-panel">
+            <span class="eyebrow">ВЫБЕРИТЕ ОДИН ОТВЕТ</span><h2>@question.Prompt</h2><p>Найдите правильный вариант и нажмите «Проверить».</p>
+            <form asp-controller="Learn" asp-action="Answer" asp-route-slug="@Model.Slug" method="post">
+                <input type="hidden" name="step" value="@step" />
+                <div class="answer-options">
+                    @for (var i = 0; i < question.Options.Length; i++)
+                    {
+                        var optionId = $"option-{i}";
+                        <label class="answer-option" for="@optionId"><input id="@optionId" type="radio" name="option" value="@i" required /><span class="option-index">@(i + 1)</span><span>@question.Options[i]</span><span class="option-circle" aria-hidden="true"></span></label>
+                    }
+                </div>
+                <button class="button primary submit-answer" type="submit">Проверить ответ <span aria-hidden="true">→</span></button>
+            </form>
+        </div>
+    }
+</section>
+@section Scripts { <script src="~/js/lesson.js" asp-append-version="true" defer></script> }

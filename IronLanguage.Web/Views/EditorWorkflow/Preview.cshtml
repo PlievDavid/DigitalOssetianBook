@@ -1,0 +1,58 @@
+@model IronLanguage.Web.Models.EditorPreviewModel
+@{
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", _ => "Книга" };
+    ViewData["Title"] = $"Предпросмотр: {title}";
+    var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
+}
+<section class="feature-shell editor-preview-shell">
+    <a class="back-link" href="/editor">← К материалам</a>
+    <div class="editor-preview-heading"><div><span class="editor-item-type">@title · версия @Model.Version · @(Model.Published ? "опубликовано" : "черновик")</span><h1>Предпросмотр</h1></div></div>
+    @if (Model.Error is not null) { <p class="form-error" role="alert">@Model.Error</p> }
+    <div class="editor-learner-preview">
+        @if (Model.Word is not null)
+        {
+            <h2>@Model.Word.Ossetian</h2><p class="editor-preview-translation">@Model.Word.Russian</p>
+            @if (!string.IsNullOrWhiteSpace(Model.Word.Example)) { <p>@Model.Word.Example</p> }
+            @if (Model.Word.AudioPath is not null) { <audio controls src="@Model.Word.AudioPath"></audio> }
+        }
+        else if (Model.Exercise is not null)
+        {
+            <h2>@(Model.Kind == "audio" ? "Прослушайте фразу и соберите её" : Model.Exercise.RussianPrompt)</h2>
+            @if (Model.Kind == "audio" && Model.Exercise.AudioPath is not null) { <audio controls src="@Model.Exercise.AudioPath"></audio> }
+            <div class="editor-preview-tiles">@foreach (var token in Model.Exercise.Tokens) { <span>@token</span> }</div>
+            <div class="editor-preview-answer"><strong>Правильный ответ:</strong> @Model.Exercise.OssetianAnswer</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Exercise.Explanation)) { <p>@Model.Exercise.Explanation</p> }
+            @if (Model.Exercise.WordIds.Length > 0) { <p class="field-help">Связанные слова: @string.Join(", ", Model.Exercise.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p> }
+        }
+        else if (Model.Book is not null)
+        {
+            <h2>@Model.Book.Title</h2><p>@Model.Book.Description</p>
+            <p class="field-help">@Model.Book.Authors · @Model.Book.Difficulty</p>
+            @if (Model.Book.CoverImagePath is not null) { <img src="@Model.Book.CoverImagePath" alt="Обложка @Model.Book.Title" style="width: 140px; height: 186px; object-fit: cover" /> }
+            @if (!string.IsNullOrWhiteSpace(Model.Book.LiteraryTranslation)) { <details><summary>Литературный перевод</summary><p style="white-space: pre-wrap">@Model.Book.LiteraryTranslation</p></details> }
+            @foreach (var chapter in Model.Book.Chapters.OrderBy(x => x.Number))
+            {
+                <h3>@chapter.Title</h3>
+                <div class="editor-book-preview-text">@foreach (var token in chapter.Tokens) { <span class="@(token.WordId is null ? "" : "reader-word")" title="@(token.WordId is Guid id ? Model.Words.GetValueOrDefault(id)?.Russian : null)">@token.Text</span> }</div>
+            }
+        }
+    </div>
+    @if (!Model.Historical)
+    {
+        <div class="editor-preview-actions">
+            @if (!Model.Published)
+            {
+                <a class="button secondary" href="@(Model.RevisionId is Guid draftRevision ? $"/editor/revisions/{draftRevision}/edit" : $"/editor/draft/{Model.Kind}/{Model.ContentId}")">Изменить</a>
+                <form method="post" action="@publishAction" class="editor-publish-form">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirmReviewed" value="true" required /> Я проверил текст, перевод и права на публикацию</label><button class="button primary" type="submit">Опубликовать</button></form>
+            }
+            else
+            {
+                <form method="post" action="/editor/published/@Model.Kind/@Model.ContentId/revise">@Html.AntiForgeryToken()<button class="button primary" type="submit">Создать новую версию</button></form>
+            }
+        </div>
+    }
+    @if (Model.History.Count > 0)
+    {
+        <h2>История версий</h2><div class="editor-history">@foreach (var version in Model.History) { <a href="/editor/history/@Model.Kind/@Model.ContentId/@version.Version">Версия @version.Version · @version.PublishedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</a> }</div>
+    }
+</section>

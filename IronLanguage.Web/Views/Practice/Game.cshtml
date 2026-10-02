@@ -1,0 +1,25 @@
+@{ ViewData["Title"] = "Подбор пар"; }
+<section class="feature-shell game-shell" id="game-app">
+    <a class="back-link" href="/vocabulary">← К моим словам</a>
+    <div class="game-page-heading">
+        <div><h1>Подберите пары</h1><p>Найдите осетинские слова и их переводы.</p></div>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <button id="game-restart" class="button secondary" hidden>Новая игра</button>
+        }
+    </div>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div id="game-status" role="status"></div>
+        <div id="game-board" class="game-board"></div>
+        <a id="game-find-words" class="button secondary" href="/vocabulary" hidden>К моим словам</a>
+    }
+    else
+    {
+        <div class="vocabulary-empty"><strong>Играйте со своими словами</strong><p>Войдите, чтобы открыть слова из личного словаря.</p><a class="button primary" href="/account/login?ReturnUrl=%2Fgame">Войти</a></div>
+    }
+</section>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    @section Scripts { <script src="~/js/game.js" asp-append-version="true" defer></script> }
+}

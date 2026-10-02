@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1376" height="1672" viewBox="0 0 1376 1672">
+<rect width="1376" height="1672" fill="#EDEFEA"/>
+<g font-family="Arial, sans-serif" fill="#203B32">
+<text x="48" y="48" font-size="26" font-weight="700">Ирон · адаптивность для компьютеров</text>
+<text x="48" y="78" font-size="15" fill="#69756D">Настольное окно 1280 px · общие компоненты и состояние с мобильной версией</text>
+<g transform="translate(48 110)">
+<rect width="1280" height="680" rx="16" fill="#FAFBF7" stroke="#D5DDD4"/>
+<path d="M220 0V680" stroke="#DEE4D9"/>
+<text x="28" y="58" font-size="28" font-weight="700">Ирон</text><text x="28" y="87" font-size="13" fill="#69756D">Учим осетинский</text>
+<rect x="16" y="135" width="188" height="48" rx="12" fill="#E6EDDB"/><text x="36" y="165" font-size="16" font-weight="700">Уроки</text>
+<text x="36" y="221" font-size="16" fill="#69756D">Слова</text><text x="36" y="277" font-size="16" fill="#69756D">Профиль</text>
+<text x="28" y="637" font-size="13" fill="#69756D">Уровень А1 · первые шаги</text>
+<text x="260" y="63" font-size="29" font-weight="700">Рады видеть вас снова</text><text x="260" y="94" font-size="15" fill="#69756D">Небольшой шаг каждый день</text>
+<rect x="260" y="129" width="604" height="221" rx="20" fill="#203F34"/>
+<text x="288" y="166" font-size="12" fill="#C8D9B4">ПЕРВЫЕ ШАГИ · УРОК 1</text><text x="288" y="212" font-size="31" font-weight="700" fill="#FFFFFF">Знакомство</text><text x="288" y="244" font-size="16" fill="#D5E2D8">Приветствия и первые слова · 5 минут</text>
+<rect x="288" y="273" width="236" height="52" rx="14" fill="#DCECAF"/><text x="338" y="306" font-size="16" font-weight="700">Продолжить →</text>
+<text x="260" y="398" font-size="22" font-weight="700">Ваш курс</text>
+<rect x="260" y="419" width="604" height="83" rx="15" fill="#FFFFFF" stroke="#DEE4D9"/><text x="285" y="469" font-size="22">01</text><text x="340" y="452" font-size="17" font-weight="700">Знакомство</text><text x="340" y="480" font-size="14" fill="#69756D">В процессе · 3 из 8 заданий</text><text x="826" y="468" font-size="23">›</text>
+<rect x="260" y="518" width="604" height="83" rx="15" fill="#FFFFFF" stroke="#DEE4D9"/><text x="285" y="568" font-size="22">02</text><text x="340" y="551" font-size="17" font-weight="700">Семья</text><text x="340" y="579" font-size="14" fill="#69756D">Следующий урок · 6 минут</text><text x="826" y="567" font-size="23">›</text>
+<rect x="888" y="129" width="352" height="221" rx="20" fill="#EDF1E7"/><text x="912" y="167" font-size="19" font-weight="700">Цель на сегодня</text><text x="912" y="218" font-size="32" font-weight="700">5 / 10 минут</text><rect x="912" y="244" width="304" height="9" rx="4.5" fill="#D6DFCA"/><rect x="912" y="244" width="152" height="9" rx="4.5" fill="#436B43"/><text x="912" y="294" font-size="15" fill="#69756D">Вы занимаетесь 3 дня подряд</text>
+<rect x="888" y="374" width="352" height="158" rx="20" fill="#FFFFFF" stroke="#DEE4D9"/><text x="912" y="413" font-size="19" font-weight="700">Практика слов</text><text x="912" y="444" font-size="14" fill="#69756D">Закрепите слова из прошлых уроков.</text><text x="912" y="494" font-size="16" font-weight="700">К повторению →</text>
+</g>
+<text x="48" y="842" font-size="15" fill="#69756D">Во время занятия — минимум отвлечений и ограниченная ширина текста.</text>
+<g transform="translate(48 870)">
+<rect width="1280" height="730" rx="16" fill="#FAFBF7" stroke="#D5DDD4"/>
+<text x="36" y="52" font-size="16" font-weight="700">← К урокам</text><text x="1106" y="52" font-size="14" fill="#69756D">Знакомство</text>
+<rect x="320" y="45" width="570" height="8" rx="4" fill="#E0E6D8"/><rect x="320" y="45" width="214" height="8" rx="4" fill="#436B43"/><text x="921" y="54" font-size="14">3 / 8</text>
+<text x="320" y="122" font-size="12" fill="#69756D">ВЫБОР ПЕРЕВОДА</text><text x="320" y="162" font-size="29" font-weight="700">Как переводится слово?</text><text x="320" y="195" font-size="15" fill="#69756D">Выберите один вариант ответа.</text>
+<rect x="320" y="221" width="640" height="143" rx="20" fill="#EDF1E7"/><text x="640" y="279" text-anchor="middle" font-size="39" font-weight="700">Салам</text><rect x="561" y="303" width="158" height="38" rx="19" fill="#FFFFFF"/><text x="584" y="327" font-size="15">▷ Послушать</text>
+<rect x="320" y="386" width="640" height="62" rx="15" fill="#EAF1DC" stroke="#436B43" stroke-width="2"/><text x="344" y="425" font-size="17" font-weight="700">Привет</text><circle cx="927" cy="417" r="10" fill="#436B43"/><path d="m922 417 4 4 7-8" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+<rect x="320" y="460" width="640" height="62" rx="15" fill="#FFFFFF" stroke="#DEE4D9"/><text x="344" y="499" font-size="17">Спасибо</text><circle cx="927" cy="491" r="10" fill="none" stroke="#C5CFC0"/>
+<rect x="320" y="534" width="640" height="62" rx="15" fill="#FFFFFF" stroke="#DEE4D9"/><text x="344" y="573" font-size="17">До свидания</text><circle cx="927" cy="565" r="10" fill="none" stroke="#C5CFC0"/>
+<text x="320" y="655" font-size="14" fill="#69756D">Ответ выбран</text><rect x="716" y="624" width="244" height="54" rx="15" fill="#203F34"/><text x="838" y="658" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">Проверить</text>
+</g>
+<text x="48" y="1640" font-size="13" fill="#69756D">Телефон: одна колонка + нижняя навигация · планшет: NavigationRail · компьютер: боковая панель + две колонки</text>
+</g></svg>

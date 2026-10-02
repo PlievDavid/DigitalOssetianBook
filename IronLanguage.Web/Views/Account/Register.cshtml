@@ -1,0 +1,9 @@
+@model IronLanguage.Web.Controllers.AccountInput
+@{ ViewData["Title"] = "Регистрация"; }
+<section class="feature-shell narrow auth-shell"><h1>Создать аккаунт</h1><p>Сохраняйте слова и продолжайте занятия с любого устройства.</p>
+<form method="post" asp-action="Register" class="stack-form">
+    <div asp-validation-summary="ModelOnly" class="form-error"></div>
+    <label>Электронная почта <input asp-for="Email" type="email" autocomplete="email" required /></label><span asp-validation-for="Email" class="form-error"></span>
+    <label>Пароль <input asp-for="Password" type="password" autocomplete="new-password" minlength="8" required /></label><span asp-validation-for="Password" class="form-error"></span>
+    <button class="button primary" type="submit">Зарегистрироваться</button>
+</form><p class="auth-switch">Уже есть аккаунт? <a asp-action="Login">Войти</a></p></section>

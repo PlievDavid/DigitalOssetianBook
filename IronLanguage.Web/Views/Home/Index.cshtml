@@ -1,0 +1,29 @@
+@model IronLanguage.Web.Models.Lesson[]
+@{
+    ViewData["Title"] = "Упражнения по осетинскому";
+}
+<section class="intro home-intro">
+    <div class="container"><h1>Осетинский становится ближе</h1><p>Начните с чтения, сохраните новые слова и проверьте себя.</p></div>
+</section>
+<section class="catalog catalog-home container" aria-label="Занятия">
+    <nav class="home-practice-links" aria-label="Другие виды заданий"><a href="/audio-puzzles">Аудиопазлы</a><a href="/translate">Перевод фраз</a></nav>
+    <h2 class="home-more-heading">Урок</h2>
+    @if (Model.Length == 0)
+    {
+        <div class="empty"><h3>Ничего не найдено</h3><p>Попробуйте другой запрос.</p><a asp-controller="Home" asp-action="Index">Показать все упражнения</a></div>
+    }
+    else
+    {
+        <div class="lesson-grid">
+            @for (var i = 0; i < Model.Length; i++)
+            {
+                var lesson = Model[i];
+                <a class="lesson-card lesson-card--compact" asp-controller="Learn" asp-action="Index" asp-route-slug="@lesson.Slug">
+                    <div class="lesson-card-top"><span class="lesson-number">@((i + 1).ToString("00"))</span><span class="lesson-duration">@lesson.Minutes мин</span></div>
+                    <h2>@lesson.Title</h2><p>@lesson.Description</p>
+                    <div class="lesson-card-bottom"><span>@lesson.Words.Length слова · @lesson.Questions.Length вопросов</span><span aria-hidden="true">↗</span></div>
+                </a>
+            }
+        </div>
+    }
+</section>

@@ -1,0 +1,2 @@
+.brand .brand-mark{display:block;flex:none;width:58px;height:48px;padding:0;margin:0;object-fit:contain}
+@media(max-width:620px){.brand .brand-mark{width:48px;height:40px}}

@@ -1,0 +1,40 @@
+@{ ViewData["Title"] = "Книги"; }
+<section class="book-page" id="books-app">
+    <div id="books-catalog" class="books-catalog">
+        <header class="books-catalog-heading">
+            <span class="books-eyebrow">Библиотека</span>
+            <h1>Книги на осетинском</h1>
+            <p>Выберите текст, чтобы читать его с переводом и словарными подсказками.</p>
+        </header>
+        <div id="books-list" class="books-grid"></div>
+    </div>
+
+    <div id="book-detail" class="book-detail" hidden>
+        <button id="detail-back" class="book-text-button" type="button">← Все книги</button>
+        <div class="book-detail-content">
+            <div id="detail-cover" class="book-detail-cover"></div>
+            <div class="book-detail-copy">
+                <span id="detail-difficulty" class="book-difficulty"></span>
+                <h1 id="detail-title"></h1>
+                <p id="detail-authors" class="book-authors"></p>
+                <p id="detail-description" class="book-description"></p>
+                <button id="detail-read" class="button primary" type="button">Начать чтение →</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="book-reader" class="book-reader" hidden>
+        <header class="reader-toolbar">
+            <button id="books-back" class="book-text-button reader-back" type="button">‹ Описание книги</button>
+            <div class="reader-book-heading"><strong id="book-title"></strong><span id="book-author"></span></div>
+        </header>
+        <nav id="chapter-buttons" class="reader-chapters" aria-label="Главы" hidden></nav>
+        <div id="reader-columns" class="reader-columns">
+            <section class="reader-pane" aria-label="Осетинский текст"><div id="book-text" class="reader-text"></div></section>
+            <section id="book-literary" class="reader-pane reader-translation" aria-label="Литературный перевод" hidden><div id="book-literary-text" class="reader-text"></div></section>
+        </div>
+        <aside id="word-popup" class="reader-popup" aria-label="Словарная статья" hidden></aside>
+    </div>
+    <div id="books-status" role="status" aria-live="polite"></div>
+</section>
+@section Scripts { <script src="~/js/books.js" asp-append-version="true" defer></script> }

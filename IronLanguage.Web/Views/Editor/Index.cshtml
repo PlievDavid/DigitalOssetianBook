@@ -1,0 +1,43 @@
+@model IronLanguage.Web.Models.EditorIndexModel
+@{ ViewData["Title"] = "Редактор материалов"; }
+<section class="feature-shell editor-home">
+    <h1>Что вы хотите добавить?</h1>
+    <p>Выберите материал. Проверить и опубликовать его можно после сохранения черновика.</p>
+    <div class="editor-choices">
+        <a href="/editor/new/word"><span aria-hidden="true">Ӕ</span><strong>Слово</strong><small>Перевод, пример и запись</small></a>
+        <a href="/editor/new/audio"><span aria-hidden="true">♫</span><strong>Аудиопазл</strong><small>Запись и сборка фразы</small></a>
+        <a href="/editor/new/translation"><span aria-hidden="true">↔</span><strong>Перевод фразы</strong><small>Русская подсказка и осетинский ответ</small></a>
+        <a href="/editor/new/book"><span aria-hidden="true">▤</span><strong>Книга</strong><small>Главы и словарные подсказки</small></a>
+    </div>
+
+    <div class="editor-library-header"><h2>Материалы</h2><div class="editor-library-controls"><div class="editor-tabs" role="tablist" aria-label="Состояние материала"><button type="button" class="is-active" data-editor-tab="drafts" role="tab" aria-selected="true">Черновики</button><button type="button" data-editor-tab="published" role="tab" aria-selected="false">Опубликовано</button><button type="button" data-editor-tab="archived" role="tab" aria-selected="false">Архив</button></div><label class="editor-filter"><span>Тип</span><select id="editor-kind-filter" aria-label="Тип материала"><option value="all">Все материалы</option><option value="word">Слова</option><option value="audio">Аудиопазлы</option><option value="translation">Переводы</option><option value="book">Книги</option></select></label></div></div>
+    <div id="editor-drafts" class="editor-items" role="tabpanel">
+        @foreach (var item in Model.Items.Where(x => !x.Published))
+        {
+            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · черновик</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/draft/@item.Kind/@item.Id">Изменить</a><a href="/editor/@item.Kind/@item.Id/preview">Предпросмотр</a><form method="post" action="/editor/draft/@item.Kind/@item.Id/delete" data-confirm="Удалить черновик «@item.Title»?">@Html.AntiForgeryToken()<button class="editor-danger" type="submit">Удалить</button></form></div></article>
+        }
+        @foreach (var item in Model.Items.Where(x => x.PendingRevisionId is not null))
+        {
+            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · новая версия</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/revisions/@item.PendingRevisionId/edit">Изменить</a><a href="/editor/revisions/@item.PendingRevisionId/preview">Предпросмотр</a><form method="post" action="/editor/revisions/@item.PendingRevisionId/delete" data-confirm="Удалить черновик новой версии «@item.Title»?">@Html.AntiForgeryToken()<button class="editor-danger" type="submit">Удалить</button></form></div></article>
+        }
+        <p class="editor-empty" hidden>Черновиков этого типа нет.</p>
+    </div>
+    <div id="editor-published" class="editor-items" role="tabpanel" hidden>
+        @foreach (var item in Model.Items.Where(x => x.Published && !x.Archived))
+        {
+            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · версия @item.Version</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/published/@item.Kind/@item.Id/revise">@Html.AntiForgeryToken()<button type="submit">Новая версия</button></form><form method="post" action="/editor/published/@item.Kind/@item.Id/archive" data-confirm="Убрать «@item.Title» из публикации? Материал останется в архиве.">@Html.AntiForgeryToken()<button class="editor-danger" type="submit">Убрать с сайта</button></form></div></article>
+        }
+        <p class="editor-empty" hidden>Опубликованных материалов этого типа нет.</p>
+    </div>
+    <div id="editor-archived" class="editor-items" role="tabpanel" hidden>
+        @foreach (var item in Model.Items.Where(x => x.Archived))
+        {
+            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · в архиве</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/archived/@item.Kind/@item.Id/restore">@Html.AntiForgeryToken()<button type="submit">Вернуть на сайт</button></form></div></article>
+        }
+        <p class="editor-empty" hidden>В архиве нет материалов этого типа.</p>
+    </div>
+</section>
+@section Scripts { <script src="~/js/editor.js" asp-append-version="true" defer></script> }
+@functions {
+    private static string TypeName(string kind) => kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод", "book" => "Книга", _ => kind };
+}

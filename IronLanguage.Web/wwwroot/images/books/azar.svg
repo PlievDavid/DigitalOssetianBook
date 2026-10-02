@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-labelledby="title desc">
+  <title id="title">Азар! — Коста Хетагуров</title>
+  <desc id="desc">Типографическая обложка стихотворения</desc>
+  <rect width="600" height="800" fill="#f3f0e9"/>
+  <rect width="17" height="800" fill="#b65f4a"/>
+  <rect x="51" y="50" width="501" height="700" fill="none" stroke="#c9c1b5" stroke-width="1.5"/>
+  <text x="78" y="117" fill="#34475b" font-family="Arial, sans-serif" font-size="21" font-weight="600" letter-spacing="3">КОСТА ХЕТАГУРОВ</text>
+  <path d="M78 150h443" stroke="#b65f4a" stroke-width="2"/>
+  <text x="72" y="418" fill="#182d43" font-family="Georgia, 'Times New Roman', serif" font-size="112" font-weight="700">Азар!</text>
+  <path d="M78 470h87" stroke="#b65f4a" stroke-width="5"/>
+  <text x="78" y="518" fill="#5a6b78" font-family="Arial, sans-serif" font-size="19" letter-spacing="2">СТИХОТВОРЕНИЕ</text>
+  <text x="78" y="708" fill="#34475b" font-family="Arial, sans-serif" font-size="17" letter-spacing="2.5">ОСЕТИНСКАЯ ПОЭЗИЯ</text>
+</svg>

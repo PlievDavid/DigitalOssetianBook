@@ -1,0 +1,14 @@
+@{ ViewData["Title"] = "Профиль"; }
+<section class="feature-shell profile-shell">
+    <h1>Профиль</h1>
+    <div class="profile-identity">
+        <span class="profile-avatar profile-avatar-large" aria-hidden="true">@(User.Identity?.Name?.Substring(0, 1).ToUpperInvariant() ?? "Я")</span>
+        <div><span class="profile-caption">@(User.IsInRole("Editor") ? "Редактор материалов" : "Учётная запись")</span><strong>@User.Identity?.Name</strong></div>
+    </div>
+    <div class="profile-links">
+        <a href="/progress"><strong>Мои результаты</strong><span>Очки, серия дней и награды</span></a>
+        <a href="/vocabulary"><strong>Мои слова</strong><span>Сохранённые и доступные слова</span></a>
+        @if (User.IsInRole("Editor")) { <a href="/editor"><strong>Редактор материалов</strong><span>Черновики и публикация</span></a> }
+    </div>
+    <form action="/account/logout" method="post" class="profile-logout">@Html.AntiForgeryToken()<button type="submit">Выйти из аккаунта</button></form>
+</section>

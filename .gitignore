@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/.data-protection-keys/
+.vs/
+/NuGet/
+/.tools/
+**/artifacts/
+/IronLanguage.Web/wwwroot/media/
+/.run-*/

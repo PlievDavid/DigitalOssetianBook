@@ -1,0 +1,55 @@
+@model IronLanguage.Web.Models.EditorFormModel
+@inject IronLanguage.Db.ICatalogRepository Catalog
+@using System.Text.Json
+@{
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", _ => "Книга" };
+    ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
+    var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
+        : Model.ContentId is Guid contentId ? $"/editor/draft/{Model.Kind}/{contentId}" : $"/editor/new/{Model.Kind}";
+    var words = (await Catalog.Words()).Select(x => new { id = x.Id, ossetian = x.Ossetian, russian = x.Russian }).ToArray();
+}
+<section class="feature-shell editor-form-shell" id="editor-form-app" data-kind="@Model.Kind">
+    <a class="back-link" href="/editor">← К материалам</a>
+    <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind == "book" ? "книгу" : title.ToLowerInvariant())</h1>
+    <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
+    <form method="post" action="@action" enctype="multipart/form-data" class="editor-form">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="form-error"></div>
+        @if (Model.Kind == "word")
+        {
+            <label>Осетинское слово <input asp-for="Ossetian" autocomplete="off" required maxlength="200" /><span asp-validation-for="Ossetian" class="form-error"></span></label>
+            <label>Русский перевод <input asp-for="Russian" autocomplete="off" required maxlength="200" /><span asp-validation-for="Russian" class="form-error"></span></label>
+            <label>Пример употребления <textarea asp-for="Example" rows="3"></textarea></label>
+        }
+        else if (Model.Kind is "audio" or "translation")
+        {
+            <label>Русская подсказка <input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
+            <label>Осетинский ответ <input asp-for="OssetianAnswer" required /><span asp-validation-for="OssetianAnswer" class="form-error"></span></label>
+            <label>Слова для сборки <span class="field-help">Каждое слово — с новой строки. Добавьте также отвлекающие слова, если нужно.</span><textarea asp-for="TokensText" rows="6" required></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
+            <label>Другие допустимые ответы <span class="field-help">Необязательно; каждый вариант с новой строки.</span><textarea asp-for="AlternativesText" rows="3"></textarea></label>
+            <label>Пояснение после ответа <textarea asp-for="Explanation" rows="3"></textarea></label>
+            <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
+        }
+        else if (Model.Kind == "book")
+        {
+            <label>Название книги <input asp-for="Russian" required /><span asp-validation-for="Russian" class="form-error"></span></label>
+            <label>Автор или авторы <input asp-for="Authors" required maxlength="240" /><span asp-validation-for="Authors" class="form-error"></span></label>
+            <label>Сложность <select asp-for="Difficulty" required><option value="">Выберите уровень</option><option value="Начальный">Начальный</option><option value="Средний">Средний</option><option value="Продвинутый">Продвинутый</option></select><span asp-validation-for="Difficulty" class="form-error"></span></label>
+            <label>Описание <textarea asp-for="Example" rows="3" required maxlength="1000"></textarea><span asp-validation-for="Example" class="form-error"></span></label>
+            <label>Обложка <span class="field-help">Необязательно. PNG, JPEG или WebP до 5 МБ.</span><input asp-for="CoverImage" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" /><span asp-validation-for="CoverImage" class="form-error"></span></label>
+            @if (Model.ExistingCoverImagePath is not null) { <img src="@Model.ExistingCoverImagePath" alt="Текущая обложка" style="width: 120px; height: 160px; object-fit: cover" /> }
+            <label>Литературный перевод <span class="field-help">Необязательно. Показывается справа от осетинского текста.</span><textarea asp-for="LiteraryTranslation" rows="6"></textarea></label>
+            <div class="editor-book-heading"><h2>Главы</h2><button type="button" id="add-chapter" class="button secondary">Добавить главу</button></div>
+            <p class="field-help">Вставьте текст главы. Словарные подсказки подготовятся автоматически при сохранении. Пробелы и знаки препинания сохранятся.</p>
+            <div id="editor-chapters"></div>
+            <input asp-for="ChaptersJson" type="hidden" /><span asp-validation-for="ChaptersJson" class="form-error"></span>
+        }
+        @if (Model.Kind is "word" or "audio")
+        {
+            <div class="editor-audio-field"><span class="editor-field-label">Осетинская запись @(Model.Kind == "audio" ? "(обязательно)" : "(необязательно)")</span><label class="editor-file-button" for="editor-audio">Выбрать запись</label><input asp-for="Audio" id="editor-audio" type="file" accept=".mp3,.ogg,.wav,audio/mpeg,audio/ogg,audio/wav" class="editor-file-input" /><span id="editor-file-name" class="field-help">@(Model.ExistingAudioPath is null ? "Файл не выбран" : "Текущая запись сохранена")</span>@if (Model.ExistingAudioPath is null) { <audio id="editor-audio-preview" controls hidden></audio> } else { <audio id="editor-audio-preview" controls src="@Model.ExistingAudioPath"></audio> }<span asp-validation-for="Audio" class="form-error"></span></div>
+        }
+        <div class="editor-form-actions"><button class="button primary" type="submit">Сохранить черновик</button><a class="button secondary" href="/editor">Отмена</a></div>
+    </form>
+</section>
+<script id="editor-words-data" type="application/json">@Html.Raw(JsonSerializer.Serialize(words))</script>
+@section Scripts { <script src="~/js/editor.js" asp-append-version="true" defer></script> }

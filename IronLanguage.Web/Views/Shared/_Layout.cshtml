@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Адам</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/brand.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/features.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/editor.css" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="~/images/adam-mark.svg" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @{ var currentPath = Context.Request.Path.Value?.ToLowerInvariant() ?? "/"; }
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="Адам — главная">
+                <img class="brand-mark" src="~/images/adam-mark.svg" width="58" height="48" alt="" />
+                <span class="brand-copy"><strong>Адам</strong><small>Осетинский язык для всех</small></span>
+            </a>
+            <form class="header-search" asp-controller="Home" asp-action="Index" method="get" role="search">
+                <button type="submit" class="search-submit" aria-label="Искать"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></button>
+                <input name="q" type="search" value="@ViewData["Query"]" placeholder="Найти упражнение" aria-label="Найти упражнение" />
+            </form>
+            <div class="header-actions">
+                @if (User.Identity?.IsAuthenticated == true) {
+                    <a id="header-streak" class="header-streak" href="/progress" aria-label="Серия занятий" hidden><img class="header-streak-icon" src="~/images/streak-flame.svg" asp-append-version="true" width="20" height="24" alt="" /><strong id="header-streak-value"></strong><span id="header-streak-label" class="header-streak-label">дней подряд</span></a>
+                    <a class="profile-action" href="/profile" aria-label="@(User.IsInRole("Editor") ? "Профиль редактора" : "Профиль")"><span class="profile-avatar" aria-hidden="true">@(User.Identity?.Name?.Substring(0, 1).ToUpperInvariant() ?? "Я")@if (User.IsInRole("Editor")) { <span class="profile-role-mark">Р</span> }</span><span class="profile-action-label">@(User.IsInRole("Editor") ? "Редактор · профиль" : "Профиль")</span></a>
+                } else { <a class="account-action" href="/account/login">Войти</a> }
+            </div>
+        </div>
+        <nav class="main-nav" aria-label="Разделы"><div class="nav-inner">
+            <div class="nav-menu">
+                <a class="nav-menu-link @(currentPath == "/" || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" href="/">Задания</a>
+                <div class="nav-menu-panel">
+                    <a class="nav-menu-item" href="/">Все задания</a>
+                    <a class="nav-menu-item" href="/audio-puzzles">Аудиопазлы</a>
+                    <a class="nav-menu-item" href="/translate">Перевод фраз</a>
+                </div>
+            </div>
+            <div class="nav-menu nav-menu-words">
+                <a class="nav-menu-link @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" href="/vocabulary">Слова</a>
+                <div class="nav-menu-panel">
+                    <a class="nav-menu-item" href="/vocabulary">Мои слова</a>
+                    <a class="nav-menu-item" href="/word-practice">Тренировка слов</a>
+                    <a class="nav-menu-item" href="/game">Подбор пар</a>
+                </div>
+            </div>
+            <div class="nav-menu nav-menu-games">
+                <button class="nav-menu-link nav-menu-trigger @(currentPath.StartsWith("/games") ? "is-current" : "")" type="button" aria-haspopup="true">Игры</button>
+                <div class="nav-menu-panel" aria-label="Игры">
+                    <span class="nav-menu-item nav-menu-item-placeholder"><span>Кроссворды</span><small>В разработке</small></span>
+                    <span class="nav-menu-item nav-menu-item-placeholder"><span>Вордли</span><small>В разработке</small></span>
+                    <span class="nav-menu-item nav-menu-item-placeholder"><span>Переводилка</span><small>В разработке</small></span>
+                </div>
+            </div>
+            <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" href="/books">Книги</a>
+        </div></nav>
+    </header>
+    <main>@RenderBody()</main>
+    <form hidden id="api-antiforgery">@Html.AntiForgeryToken()</form>
+    <footer class="site-footer"><span>Адам · демонстрационная версия</span><span>Учебные переводы требуют проверки редактором</span></footer>
+    <script src="~/js/api.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/streak.js" asp-append-version="true" defer></script> }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="IronLanguage.Db/IronLanguage.Db.csproj" />
+  <Project Path="IronLanguage.Web/IronLanguage.Web.csproj" />
+</Solution>
