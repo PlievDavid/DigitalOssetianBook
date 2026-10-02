@@ -60,7 +60,21 @@
     </header>
     <main>@RenderBody()</main>
     <form hidden id="api-antiforgery">@Html.AntiForgeryToken()</form>
-    <footer class="site-footer"><span>Адам · демонстрационная версия</span><span>Учебные переводы требуют проверки редактором</span></footer>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-about">
+                <a class="footer-brand" href="/" aria-label="Адам — главная">Адам</a>
+                <p>Осетинский язык для всех.<br />Читайте, учите слова и практикуйтесь.</p>
+            </div>
+            <nav class="footer-links" aria-label="Разделы в подвале">
+                <a href="/">Задания</a>
+                <a href="/books">Книги</a>
+                <a href="/vocabulary">Мои слова</a>
+                <a href="/word-practice">Тренировка слов</a>
+            </nav>
+            <span class="footer-copyright">© @DateTime.UtcNow.Year Адам</span>
+        </div>
+    </footer>
     <script src="~/js/api.js" asp-append-version="true"></script>
     @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/streak.js" asp-append-version="true" defer></script> }
     @await RenderSectionAsync("Scripts", required: false)
