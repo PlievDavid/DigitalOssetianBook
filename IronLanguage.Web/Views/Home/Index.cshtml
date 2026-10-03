@@ -1,29 +1,61 @@
 @model IronLanguage.Web.Models.Lesson[]
 @{
-    ViewData["Title"] = "Упражнения по осетинскому";
+    ViewData["Title"] = "Осетинский становится ближе";
+    ViewData["PageClass"] = "home-page";
 }
-<section class="intro home-intro">
-    <div class="container"><h1>Осетинский становится ближе</h1><p>Начните с чтения, сохраните новые слова и проверьте себя.</p></div>
-</section>
-<section class="catalog catalog-home container" aria-label="Занятия">
-    <nav class="home-practice-links" aria-label="Другие виды заданий"><a href="/audio-puzzles">Аудиопазлы</a><a href="/translate">Перевод фраз</a></nav>
-    <h2 class="home-more-heading">Урок</h2>
-    @if (Model.Length == 0)
-    {
-        <div class="empty"><h3>Ничего не найдено</h3><p>Попробуйте другой запрос.</p><a asp-controller="Home" asp-action="Index">Показать все упражнения</a></div>
-    }
-    else
-    {
-        <div class="lesson-grid">
-            @for (var i = 0; i < Model.Length; i++)
-            {
-                var lesson = Model[i];
-                <a class="lesson-card lesson-card--compact" asp-controller="Learn" asp-action="Index" asp-route-slug="@lesson.Slug">
-                    <div class="lesson-card-top"><span class="lesson-number">@((i + 1).ToString("00"))</span><span class="lesson-duration">@lesson.Minutes мин</span></div>
-                    <h2>@lesson.Title</h2><p>@lesson.Description</p>
-                    <div class="lesson-card-bottom"><span>@lesson.Words.Length слова · @lesson.Questions.Length вопросов</span><span aria-hidden="true">↗</span></div>
-                </a>
-            }
+<div class="home-shell">
+    <section class="home-hero" aria-labelledby="home-title">
+        <div class="hero-copy">
+            <h1 id="home-title">Осетинский<br />становится ближе</h1>
+            <p>Читайте, сохраняйте новые слова и проверяйте себя.</p>
+            <div class="hero-actions">
+                @if (Model.Length > 0)
+                {
+                    <a class="theme-button theme-button-primary" href="#first-lesson">Начать заниматься <span aria-hidden="true">→</span></a>
+                }
+                <a class="theme-button theme-button-secondary" href="/books">Открыть книги</a>
+            </div>
+            <small class="hero-note">В своём темпе · Бесплатно</small>
         </div>
-    }
-</section>
+    </section>
+    <div class="home-content">
+        <section class="home-formats" aria-labelledby="formats-title">
+            <h2 id="formats-title">Как будем учиться</h2>
+            <div class="format-grid">
+                <a class="format-card format-audio" href="/audio-puzzles">
+                    <span class="format-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 20v-5a11 11 0 0 1 22 0v5"/><rect x="4" y="17" width="5" height="11" rx="2" fill="currentColor"/><rect x="23" y="17" width="5" height="11" rx="2" fill="currentColor"/></svg></span>
+                    <h3>Аудиопазлы</h3><p>Соберите услышанную фразу</p><span class="round-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="format-card format-translate" href="/translate">
+                    <span class="format-icon translation-icon" aria-hidden="true">文<sub>A</sub></span>
+                    <h3>Перевод фраз</h3><p>Тренируйте понимание</p><span class="round-arrow" aria-hidden="true">→</span>
+                </a>
+            </div>
+        </section>
+        <section id="first-lesson" class="home-lessons" tabindex="-1" aria-labelledby="lessons-title">
+            <div class="home-section-heading"><h2 id="lessons-title">Попробуйте первое занятие</h2><a href="/#first-lesson">Все задания <span aria-hidden="true">→</span></a></div>
+            <div class="home-learning-grid">
+                <div class="home-lesson-list">
+                    @if (Model.Length == 0)
+                    {
+                        <div class="theme-empty"><h3>Ничего не найдено</h3><p>Попробуйте другой запрос.</p><a class="theme-button theme-button-secondary" href="/">Показать все упражнения</a></div>
+                    }
+                    @for (var i = 0; i < Model.Length; i++)
+                    {
+                        var lesson = Model[i];
+                        <article class="home-lesson-card">
+                            <div class="home-lesson-meta"><span class="home-lesson-number">@((i + 1).ToString("00"))</span><h3>@lesson.Title</h3><span class="home-lesson-duration">@lesson.Minutes мин</span></div>
+                            <a class="theme-button theme-button-primary" asp-controller="Learn" asp-action="Index" asp-route-slug="@lesson.Slug">Начать урок <span aria-hidden="true">→</span></a>
+                        </article>
+                    }
+                </div>
+                <aside class="home-words-card" aria-labelledby="words-title">
+                    <img src="~/images/green/book.png" asp-append-version="true" alt="" width="160" height="160" />
+                    <h3 id="words-title">Ваши слова —<br />всегда рядом</h3>
+                    <p>Сохраняйте слова из книг<br />и возвращайтесь к ним<br />в тренировке.</p>
+                    <a class="theme-button theme-button-secondary" href="@(User.Identity?.IsAuthenticated == true ? "/vocabulary" : "/account/register")"><span class="words-action-label">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Создать аккаунт")</span> <span aria-hidden="true">→</span></a>
+                </aside>
+            </div>
+        </section>
+    </div>
+</div>
