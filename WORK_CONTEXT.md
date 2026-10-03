@@ -34,6 +34,8 @@
 
 ## Где продолжать
 
+Подготовлено UX-предложение в `UX_CONTENT.md`: три учебных раздела («Упражнения», «Мои слова», «Книги»), результаты и редактор в профиле, подбор пар внутри личного словаря, тексты страниц и состояний. Это предложение, а не реализованная навигация. В коде `Models/Lesson.cs` сейчас один пробный урок «Первые слова из «Азар!»» с четырьмя словами и шестью вопросами; старые описания шести уроков в документации не соответствуют текущему каталогу. При дальнейших изменениях сверять фактический контент и не переносить демонстрационные названия из PNG-макетов.
+
 - `IronLanguage.Db/Entities.cs`, `AdamDbContext.cs`, `Repositories.cs`, `EditorRepository.cs` — данные и репозитории; миграции — в `IronLanguage.Db/Migrations`.
 - `IronLanguage.Web/Controllers/EditorController.cs` и `EditorWorkflowController.cs` — совместимые старые POST-маршруты и новый workflow редактора.
 - `IronLanguage.Web/Controllers/LearningApiController.cs` и `Services/LearningService.cs` — ученический API и проверка занятий.
