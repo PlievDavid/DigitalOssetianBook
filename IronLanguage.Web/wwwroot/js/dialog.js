@@ -105,8 +105,11 @@
   }
 
   function renderLines(lines, correct, all) {
-    (lines || []).forEach((line, index) => {
-      feed.append(lineElement(line, all ? null : index === lines.length - 1 ? correct : null));
+    const items = lines || [];
+    const answerIndex = items.findIndex(line => line.side === "student");
+    const markedIndex = answerIndex >= 0 ? answerIndex : items.length - 1;
+    items.forEach((line, index) => {
+      feed.append(lineElement(line, all ? null : index === markedIndex ? correct : null));
     });
     feed.scrollTop = feed.scrollHeight;
   }
