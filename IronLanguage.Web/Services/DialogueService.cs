@@ -12,7 +12,7 @@ public static class DialogueScript
     public const string StudentId = "student";
     public const string DefaultColor = "#203F34";
 
-    private static readonly Regex Latin = new("[A-Za-z\u00C6\u00E6]", RegexOptions.Compiled);
+    private static readonly Regex Latin = new("[A-Za-z]", RegexOptions.Compiled);
     private static readonly string[] Dialects = ["Iron", "Dval"];
     private static readonly char[] EndPunctuation = ['.', ',', '?', '!'];
 
@@ -31,6 +31,7 @@ public static class DialogueScript
                 '\u2018' or '\u2019' or '\u02BC' or '`' => '\'',
                 '\u201C' or '\u201D' or '\u00AB' or '\u00BB' => '"',
                 '\u2010' or '\u2011' or '\u2012' or '\u2013' or '\u2014' or '\u2212' => '-',
+                '\u00C6' or '\u00E6' => '\u04D5',
                 _ => ch
             });
         }
