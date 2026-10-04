@@ -34,6 +34,8 @@ public interface ICatalogRepository
     Task<WordEntry?> Word(Guid id, CancellationToken ct = default);
     Task<List<Book>> Books(CancellationToken ct = default);
     Task<Book?> Book(Guid id, CancellationToken ct = default);
+    Task<List<Dialogue>> Dialogues(CancellationToken ct = default);
+    Task<Dialogue?> Dialogue(Guid id, CancellationToken ct = default);
     Task<List<Exercise>> DraftExercises(CancellationToken ct = default);
     Task<List<Book>> DraftBooks(CancellationToken ct = default);
     Task<List<WordEntry>> DraftWords(CancellationToken ct = default);
@@ -60,6 +62,10 @@ public sealed class EfCatalogRepository(AdamDbContext db) : ICatalogRepository
         db.Books.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
     public Task<Book?> Book(Guid id, CancellationToken ct = default) =>
         db.Books.AsNoTracking().Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
+    public Task<List<Dialogue>> Dialogues(CancellationToken ct = default) =>
+        db.Dialogues.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
+    public Task<Dialogue?> Dialogue(Guid id, CancellationToken ct = default) =>
+        db.Dialogues.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
     public Task<List<Exercise>> DraftExercises(CancellationToken ct = default) => db.Exercises.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
     public Task<List<Book>> DraftBooks(CancellationToken ct = default) => db.Books.AsNoTracking().Include(x => x.Chapters).Where(x => !x.Published).ToListAsync(ct);
     public Task<List<WordEntry>> DraftWords(CancellationToken ct = default) => db.Words.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
@@ -93,6 +99,12 @@ public interface IProgressRepository
     Task SaveReadingPosition(Guid userId, Guid bookId, Guid chapterId, int tokenIndex, CancellationToken ct = default);
     Task<List<DailyActivity>> Activities(Guid userId, CancellationToken ct = default);
     Task<List<Achievement>> Achievements(Guid userId, CancellationToken ct = default);
+    Task<DialogueSession?> ActiveSession(Guid userId, Guid dialogueId, CancellationToken ct = default);
+    Task<DialogueSession?> Session(Guid userId, Guid sessionId, CancellationToken ct = default);
+    Task CreateSession(DialogueSession session, CancellationToken ct = default);
+    Task<bool> SaveSessionState(Guid userId, Guid sessionId, string stateJson, int attempts, int errors, int hints, int turnsCompleted, CancellationToken ct = default);
+    Task<bool> CompleteSession(Guid userId, Guid sessionId, CancellationToken ct = default);
+    Task<List<DialogueSession>> SessionHistory(Guid userId, CancellationToken ct = default);
 }
 
 public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
@@ -117,6 +129,13 @@ public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
         var exerciseId = await db.Attempts.Where(x => x.Id == attemptId).Select(x => x.ExerciseId).SingleAsync(ct);
         var awarded = await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"ExerciseRewards\" (\"UserId\", \"ExerciseId\", \"Day\") VALUES ({userId}, {exerciseId}, {day}) ON CONFLICT (\"UserId\", \"ExerciseId\", \"Day\") DO NOTHING", ct);
         if (awarded == 0) { await tx.CommitAsync(ct); return true; }
+        await AwardDailyAsync(userId, day, now, ct);
+        await tx.CommitAsync(ct);
+        return true;
+    }
+
+    private async Task AwardDailyAsync(Guid userId, DateOnly day, DateTimeOffset now, CancellationToken ct)
+    {
         await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"DailyActivities\" (\"UserId\", \"Day\", \"Points\") VALUES ({userId}, {day}, 10) ON CONFLICT (\"UserId\", \"Day\") DO UPDATE SET \"Points\" = \"DailyActivities\".\"Points\" + 10", ct);
         var activityDays = await db.DailyActivities.AsNoTracking().Where(x => x.UserId == userId && x.Day <= day).Select(x => x.Day).ToListAsync(ct);
         var days = activityDays.ToHashSet();
@@ -124,8 +143,6 @@ public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
         for (var cursor = day; days.Contains(cursor); cursor = cursor.AddDays(-1)) streak++;
         foreach (var code in new[] { "first", streak >= 7 ? "streak-7" : "", streak >= 30 ? "streak-30" : "" }.Where(x => x.Length > 0))
             await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"Achievements\" (\"UserId\", \"Code\", \"AwardedAt\") VALUES ({userId}, {code}, {now}) ON CONFLICT (\"UserId\", \"Code\") DO NOTHING", ct);
-        await tx.CommitAsync(ct);
-        return true;
     }
 
     public Task<List<SavedWord>> SavedWords(Guid userId, CancellationToken ct = default) =>
@@ -153,4 +170,38 @@ public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
     }
     public Task<List<DailyActivity>> Activities(Guid userId, CancellationToken ct = default) => db.DailyActivities.AsNoTracking().Where(x => x.UserId == userId).OrderByDescending(x => x.Day).ToListAsync(ct);
     public Task<List<Achievement>> Achievements(Guid userId, CancellationToken ct = default) => db.Achievements.AsNoTracking().Where(x => x.UserId == userId).ToListAsync(ct);
+
+    public Task<DialogueSession?> ActiveSession(Guid userId, Guid dialogueId, CancellationToken ct = default) =>
+        db.DialogueSessions.AsNoTracking().Where(x => x.UserId == userId && x.DialogueId == dialogueId && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
+    public Task<DialogueSession?> Session(Guid userId, Guid sessionId, CancellationToken ct = default) =>
+        db.DialogueSessions.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Id == sessionId, ct);
+    public async Task CreateSession(DialogueSession session, CancellationToken ct = default)
+    {
+        db.DialogueSessions.Add(session);
+        await db.SaveChangesAsync(ct);
+    }
+    public async Task<bool> SaveSessionState(Guid userId, Guid sessionId, string stateJson, int attempts, int errors, int hints, int turnsCompleted, CancellationToken ct = default) =>
+        await db.DialogueSessions.Where(x => x.Id == sessionId && x.UserId == userId && x.CompletedAt == null)
+            .ExecuteUpdateAsync(x => x.SetProperty(p => p.StateJson, stateJson)
+                .SetProperty(p => p.Attempts, attempts).SetProperty(p => p.Errors, errors)
+                .SetProperty(p => p.Hints, hints).SetProperty(p => p.TurnsCompleted, turnsCompleted), ct) == 1;
+
+    public async Task<bool> CompleteSession(Guid userId, Guid sessionId, CancellationToken ct = default)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var now = DateTimeOffset.UtcNow;
+        var updated = await db.DialogueSessions.Where(x => x.Id == sessionId && x.UserId == userId && x.CompletedAt == null)
+            .ExecuteUpdateAsync(x => x.SetProperty(p => p.CompletedAt, now), ct);
+        if (updated != 1) { await tx.RollbackAsync(ct); return false; }
+        var day = DateOnly.FromDateTime(now.UtcDateTime);
+        var dialogueId = await db.DialogueSessions.Where(x => x.Id == sessionId).Select(x => x.DialogueId).SingleAsync(ct);
+        var awarded = await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"DialogueRewards\" (\"UserId\", \"DialogueId\", \"Day\") VALUES ({userId}, {dialogueId}, {day}) ON CONFLICT (\"UserId\", \"DialogueId\", \"Day\") DO NOTHING", ct);
+        if (awarded == 0) { await tx.CommitAsync(ct); return true; }
+        await AwardDailyAsync(userId, day, now, ct);
+        await tx.CommitAsync(ct);
+        return true;
+    }
+
+    public Task<List<DialogueSession>> SessionHistory(Guid userId, CancellationToken ct = default) =>
+        db.DialogueSessions.AsNoTracking().Where(x => x.UserId == userId && x.CompletedAt != null).OrderByDescending(x => x.CompletedAt).ToListAsync(ct);
 }

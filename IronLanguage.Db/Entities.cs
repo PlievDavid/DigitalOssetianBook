@@ -156,3 +156,39 @@ public sealed class Achievement
     public string Code { get; set; } = "";
     public DateTimeOffset AwardedAt { get; set; } = DateTimeOffset.UtcNow;
 }
+
+public sealed class Dialogue
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = "";
+    public string Dialect { get; set; } = "";
+    public int Level { get; set; } = 1;
+    public string ScriptJson { get; set; } = "{}";
+    public bool Published { get; set; }
+    public bool Archived { get; set; }
+    public int Version { get; set; } = 1;
+}
+
+public sealed class DialogueSession
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UserId { get; set; }
+    public Guid DialogueId { get; set; }
+    public int DialogueVersion { get; set; }
+    public string DialogueTitle { get; set; } = "";
+    public string ScriptJson { get; set; } = "{}";
+    public string StateJson { get; set; } = "{}";
+    public int Attempts { get; set; }
+    public int Errors { get; set; }
+    public int Hints { get; set; }
+    public int TurnsCompleted { get; set; }
+    public DateTimeOffset StartedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? CompletedAt { get; set; }
+}
+
+public sealed class DialogueReward
+{
+    public Guid UserId { get; set; }
+    public Guid DialogueId { get; set; }
+    public DateOnly Day { get; set; }
+}

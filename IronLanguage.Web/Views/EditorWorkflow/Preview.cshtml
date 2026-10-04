@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", _ => "Книга" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
 }
@@ -23,6 +23,33 @@
             <div class="editor-preview-answer"><strong>Правильный ответ:</strong> @Model.Exercise.OssetianAnswer</div>
             @if (!string.IsNullOrWhiteSpace(Model.Exercise.Explanation)) { <p>@Model.Exercise.Explanation</p> }
             @if (Model.Exercise.WordIds.Length > 0) { <p class="field-help">Связанные слова: @string.Join(", ", Model.Exercise.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p> }
+        }
+        else if (Model.Dialogue is not null)
+        {
+            var names = Model.Dialogue.Characters.ToDictionary(x => x.Id, x => x.Name);
+            var turns = Model.Dialogue.Turns.ToDictionary(x => x.LineNumber);
+            <h2>@Model.Dialogue.Title</h2>
+            <p class="field-help">@(Model.Dialogue.Dialect == "Dval" ? "Дигорский" : "Иронский") диалект · уровень @Model.Dialogue.Level</p>
+            @foreach (var line in Model.Dialogue.Lines)
+            {
+                var isStudent = line.CharacterId == IronLanguage.Web.Services.DialogueScript.StudentName;
+                var character = isStudent ? null : Model.Dialogue.Characters.FirstOrDefault(x => x.Id == line.CharacterId);
+                <div class="dialog-preview-line" style="border-left-color: @(character?.Color ?? "#8A6D1F")">
+                    <strong>@(isStudent ? IronLanguage.Web.Services.DialogueScript.StudentName : character?.Name)</strong>
+                    @(isStudent ? (line.Text.Length > 0 ? line.Text : "Ответ ученика") : line.Text)
+                </div>
+                if (turns.TryGetValue(line.Number, out var turn))
+                {
+                    <div class="editor-preview-answer">
+                        <strong>@(turn.Kind == "choice" ? "Ход выбора" : "Свободный ввод")</strong> · порог подсказки: @turn.HintThreshold · пропуск: @(turn.Skippable ? "да" : "нет")<br />
+                        Эталоны: @string.Join(" / ", turn.References)
+                        @if (turn.Options.Length > 0)
+                        {
+                            <br />@string.Join(", ", turn.Options.Select(x => IronLanguage.Web.Services.DialogueScript.Normalize(x) == IronLanguage.Web.Services.DialogueScript.Normalize(turn.References[0]) ? x + " ✓" : x))
+                        }
+                    </div>
+                }
+            }
         }
         else if (Model.Book is not null)
         {

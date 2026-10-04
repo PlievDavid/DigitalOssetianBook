@@ -20,6 +20,7 @@ builder.Services.AddScoped<ICatalogRepository, EfCatalogRepository>();
 builder.Services.AddScoped<IEditorRepository, EfEditorRepository>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 builder.Services.AddScoped<LearningService>();
+builder.Services.AddScoped<DialogueService>();
 builder.Services.AddScoped<DictionaryService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {

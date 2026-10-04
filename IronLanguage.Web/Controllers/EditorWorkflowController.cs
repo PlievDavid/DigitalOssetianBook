@@ -11,7 +11,7 @@ namespace IronLanguage.Web.Controllers;
 public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly string[] Kinds = ["word", "audio", "translation", "book"];
+    private static readonly string[] Kinds = ["word", "audio", "translation", "book", "dialogue"];
 
     [HttpGet("new/{kind}")]
     public IActionResult New(string kind) => Kinds.Contains(kind) ? View("Form", new EditorFormModel { Kind = kind }) : NotFound();
@@ -141,6 +141,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             Word = kind == "word" ? JsonSerializer.Deserialize<WordMaterial>(payload, JsonOptions) : null,
             Exercise = kind is "audio" or "translation" ? JsonSerializer.Deserialize<ExerciseMaterial>(payload, JsonOptions) : null,
             Book = kind == "book" ? JsonSerializer.Deserialize<BookMaterial>(payload, JsonOptions) : null,
+            Dialogue = kind == "dialogue" ? JsonSerializer.Deserialize<DialogueMaterial>(payload, JsonOptions) : null,
             History = await editor.History(kind, id, ct), Words = words
         };
     }
@@ -152,6 +153,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.Authors ??= ""; model.Difficulty ??= "";
         model.RussianPrompt ??= ""; model.OssetianAnswer ??= ""; model.TokensText ??= "";
         model.AlternativesText ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
+        model.DialogueTitle ??= ""; model.Dialect ??= ""; model.CharactersText ??= ""; model.LinesText ??= ""; model.TurnsText ??= "";
         var kind = model.Kind;
         var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
         if (model.Audio is { Length: > 0 } && (model.Audio.Length > 10_000_000 || Path.GetExtension(model.Audio.FileName).ToLowerInvariant() is not (".mp3" or ".ogg" or ".wav")))
@@ -224,6 +226,13 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                     model.Difficulty, coverPath), ct);
                 payload = JsonSerializer.Serialize(prepared, JsonOptions);
             }
+        }
+        else if (kind == "dialogue")
+        {
+            var (material, errors) = DialogueScript.Parse(model.DialogueTitle, model.Dialect, model.Level,
+                model.CharactersText, model.LinesText, model.TurnsText);
+            foreach (var error in errors) ModelState.AddModelError("", error);
+            if (material is not null) payload = JsonSerializer.Serialize(material, JsonOptions);
         }
         else return null;
         return payload;
