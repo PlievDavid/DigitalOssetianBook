@@ -92,10 +92,9 @@
     feed.querySelectorAll(".dialog-current").forEach(node => node.classList.remove("dialog-current"));
   }
 
-  function showWord(word) {
+  function showWord(word, span) {
     if (!wordPopup) return;
     feed.querySelectorAll(".dialog-current").forEach(node => node.classList.remove("dialog-current"));
-    const span = feed.querySelector(`.dialog-word[data-word="${CSS.escape(word.text)}"]`);
     if (span) span.classList.add("dialog-current");
     wordPopup.replaceChildren();
     const header = document.createElement("div"); header.className = "reader-popup-header";
@@ -139,9 +138,9 @@
       span.tabIndex = 0;
       span.setAttribute("role", "button");
       span.setAttribute("aria-label", `Перевод слова ${word.text}`);
-      span.addEventListener("click", () => showWord(word));
+      span.addEventListener("click", () => showWord(word, span));
       span.addEventListener("keydown", event => {
-        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showWord(word); }
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showWord(word, span); }
       });
       bubble.append(span);
       cursor = word.position + word.text.length;
