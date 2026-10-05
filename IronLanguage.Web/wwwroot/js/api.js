@@ -5,11 +5,11 @@ window.AdamApi = async (path, options = {}) => {
     ...options,
     headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(token ? { RequestVerificationToken: token } : {}), ...options.headers }
   });
-  if (response.status === 401) throw new Error("Войдите в аккаунт, чтобы сохранить результат.");
+  if (response.status === 401) throw Object.assign(new Error("Войдите в аккаунт, чтобы сохранить результат."), { status: 401 });
   if (!response.ok) {
     let detail = "Не удалось выполнить действие.";
     try { detail = (await response.json()).error || detail; } catch { /* empty response */ }
-    throw new Error(detail);
+    throw Object.assign(new Error(detail), { status: response.status });
   }
   const body = await response.text();
   return body.trim() ? JSON.parse(body) : null;

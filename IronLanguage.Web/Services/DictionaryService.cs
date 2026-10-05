@@ -60,14 +60,13 @@ public sealed class DictionaryService(AdamDbContext db)
         return last < first ? "" : value[first..(last + 1)];
     }
 
-    public async Task<BookMaterial> Prepare(BookMaterial book, CancellationToken ct)
+    public async Task<Dictionary<string, DictionaryMatch[]>> Matches(IEnumerable<string> texts, CancellationToken ct)
     {
         var forms = await db.DictionaryForms.AsNoTracking().Join(db.DictionarySenses.AsNoTracking().Where(x => x.Active),
             f => f.SenseId, s => s.Id, (f, s) => new { f.SearchKey, f.SenseId }).ToListAsync(ct);
         var byKey = forms.GroupBy(x => x.SearchKey).ToDictionary(x => x.Key, x => x.Select(y => y.SenseId).Distinct().ToArray());
-        var keys = book.Chapters.SelectMany(x => x.Tokens).Select(x => Key(x.Text)).Where(x => x.Length > 0).Distinct().ToArray();
         var matches = new Dictionary<string, DictionaryMatch[]>();
-        foreach (var key in keys)
+        foreach (var key in texts.Select(Key).Where(x => x.Length > 0).Distinct())
         {
             if (byKey.TryGetValue(key, out var exact))
             {
@@ -82,6 +81,12 @@ public sealed class DictionaryService(AdamDbContext db)
                 .SelectMany(candidate => byKey[candidate]).Distinct().Take(5)
                 .Select(id => new DictionaryMatch(id, true)).ToArray();
         }
+        return matches;
+    }
+
+    public async Task<BookMaterial> Prepare(BookMaterial book, CancellationToken ct)
+    {
+        var matches = await Matches(book.Chapters.SelectMany(x => x.Tokens).Select(x => x.Text), ct);
         return book with { Chapters = book.Chapters.Select(chapter => chapter with
         {
             Tokens = chapter.Tokens.Select(token => token with

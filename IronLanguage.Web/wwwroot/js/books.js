@@ -145,7 +145,7 @@
       const save = document.createElement('button'); save.type = 'button'; save.className = 'book-text-button';
       save.textContent = 'В мой словарь';
       save.onclick = async () => {
-        try { await AdamApi(path, { method: 'POST' }); status.textContent = 'Слово сохранено.'; }
+        try { await AdamApi(path, { method: 'POST' }); save.textContent = 'Сохранено'; save.disabled = true; }
         catch (error) { status.textContent = error.message; }
       };
       container.append(save);

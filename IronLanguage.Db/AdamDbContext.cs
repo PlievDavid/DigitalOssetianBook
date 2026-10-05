@@ -18,6 +18,9 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<ExerciseReward> ExerciseRewards => Set<ExerciseReward>();
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<ContentRevision> ContentRevisions => Set<ContentRevision>();
+    public DbSet<Dialogue> Dialogues => Set<Dialogue>();
+    public DbSet<DialogueSession> DialogueSessions => Set<DialogueSession>();
+    public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -39,5 +42,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<ContentRevision>().HasIndex(x => new { x.Kind, x.ContentId }).IsUnique().HasFilter("NOT \"Published\"");
         model.Entity<SavedWord>().HasOne(x => x.Word).WithMany().HasForeignKey(x => x.WordId);
         model.Entity<BookChapter>().HasOne(x => x.Book).WithMany(x => x.Chapters).HasForeignKey(x => x.BookId);
+        model.Entity<DialogueReward>().HasKey(x => new { x.UserId, x.DialogueId, x.Day });
+        model.Entity<DialogueSession>().HasIndex(x => new { x.UserId, x.DialogueId, x.CompletedAt });
     }
 }

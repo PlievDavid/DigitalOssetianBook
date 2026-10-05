@@ -24,6 +24,12 @@ public sealed class EditorFormModel
     public string Explanation { get; set; } = "";
     public string WordIdsCsv { get; set; } = "";
     public string ChaptersJson { get; set; } = "[]";
+    public string DialogueTitle { get; set; } = "";
+    public string Dialect { get; set; } = "Iron";
+    public int Level { get; set; } = 1;
+    public string CharactersText { get; set; } = "";
+    public string LinesText { get; set; } = "";
+    public string TurnsText { get; set; } = "";
     public string? ExistingAudioPath { get; set; }
     public IFormFile? Audio { get; set; }
 
@@ -51,6 +57,17 @@ public sealed class EditorFormModel
             model.Authors = p.Authors; model.Difficulty = p.Difficulty; model.ExistingCoverImagePath = p.CoverImagePath;
             model.ChaptersJson = JsonSerializer.Serialize(p.Chapters, options);
         }
+        else if (kind == "dialogue")
+        {
+            var p = JsonSerializer.Deserialize<DialogueMaterial>(json, options)!;
+            var names = p.Characters.ToDictionary(x => x.Id, x => x.Name);
+            model.DialogueTitle = p.Title; model.Dialect = p.Dialect; model.Level = p.Level;
+            model.CharactersText = string.Join('\n', p.Characters.Select(x => x.Color.Length > 0 ? $"{x.Name} | {x.Color}" : x.Name));
+            model.LinesText = string.Join('\n', p.Lines.Select(x =>
+                $"{(x.CharacterId == Services.DialogueScript.StudentId ? Services.DialogueScript.StudentName : names.GetValueOrDefault(x.CharacterId, "?"))}: {x.Text}"));
+            model.TurnsText = string.Join('\n', p.Turns.Select(x =>
+                $"{x.LineNumber} | {x.Kind} | {string.Join("; ", x.References)} | {string.Join("; ", x.Options)} | {x.HintThreshold} | {(x.Skippable ? "да" : "нет")}"));
+        }
         return model;
     }
 }
@@ -69,6 +86,7 @@ public sealed class EditorPreviewModel
     public WordMaterial? Word { get; init; }
     public ExerciseMaterial? Exercise { get; init; }
     public BookMaterial? Book { get; init; }
+    public DialogueMaterial? Dialogue { get; init; }
     public List<ContentRevision> History { get; init; } = [];
     public Dictionary<Guid, WordEntry> Words { get; init; } = [];
 }

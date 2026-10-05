@@ -1,0 +1,32 @@
+@{ ViewData["Title"] = "Диалоги"; }
+<section class="feature-shell dialog-page" id="dialog-app">
+    <a class="back-link" href="/">← К заданиям</a>
+    <h1>Диалоги</h1>
+    <p>Читайте реплики собеседника и отвечайте на осетинском. После нескольких неудачных попыток появится подсказка.</p>
+    <div id="dialog-status" role="status"></div>
+    <div id="dialog-list" class="exercise-list"></div>
+    <div id="dialog-play" hidden>
+        <div class="dialog-play-head">
+            <a id="dialog-back-link" class="back-link" href="/dialogs">← К списку</a>
+            <span id="dialog-counters" class="dialog-counters" aria-live="polite"></span>
+        </div>
+        <h2 id="dialog-title"></h2>
+        <div id="dialog-feed" class="dialog-feed" aria-label="Лента диалога"></div>
+        <div id="dialog-hint" class="dialog-hint" hidden></div>
+        <div id="dialog-composer" hidden>
+            <div id="dialog-options" class="dialog-options"></div>
+            <input id="dialog-input" type="text" autocomplete="off" maxlength="300" placeholder="Ваш ответ по-осетински" aria-label="Ваш ответ" />
+            <button id="dialog-send" class="button primary" type="button">Отправить</button>
+            <button id="dialog-skip" class="button secondary" type="button" hidden>Пропустить ход</button>
+        </div>
+        <p id="dialog-result" role="status"></p>
+        <div id="dialog-sync-actions" class="dialog-sync-actions" hidden></div>
+        <div id="dialog-summary" class="dialog-summary" hidden></div>
+        <aside id="dialog-word-popup" class="reader-popup" aria-label="Словарная статья" hidden></aside>
+    </div>
+    <div id="dialog-history-block">
+        <h2>История прохождений</h2>
+        <div id="dialog-history" class="dialog-history"></div>
+    </div>
+</section>
+@section Scripts { <script src="~/js/dialog.js" asp-append-version="true" defer></script> }

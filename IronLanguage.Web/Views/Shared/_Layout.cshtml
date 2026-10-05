@@ -32,11 +32,12 @@
         </div>
         <nav class="main-nav" aria-label="Разделы"><div class="nav-inner">
             <div class="nav-menu">
-                <a class="nav-menu-link @(currentPath == "/" || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" href="/">Задания</a>
+                <a class="nav-menu-link @(currentPath == "/" || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") || currentPath.StartsWith("/dialogs") ? "is-current" : "")" href="/">Задания</a>
                 <div class="nav-menu-panel">
                     <a class="nav-menu-item" href="/">Все задания</a>
                     <a class="nav-menu-item" href="/audio-puzzles">Аудиопазлы</a>
                     <a class="nav-menu-item" href="/translate">Перевод фраз</a>
+                    <a class="nav-menu-item" href="/dialogs">Диалоги</a>
                 </div>
             </div>
             <div class="nav-menu nav-menu-words">

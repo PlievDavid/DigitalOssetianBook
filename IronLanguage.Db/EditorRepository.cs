@@ -10,6 +10,10 @@ public sealed record WordMaterial(string Ossetian, string Russian, string Exampl
 public sealed record ExerciseMaterial(string Kind, string RussianPrompt, string OssetianAnswer, string[] Tokens, string[] Alternatives, string Explanation, Guid[] WordIds, string? AudioPath);
 public sealed record BookMaterial(string Title, string Description, MaterialChapter[] Chapters, string LiteraryTranslation = "",
     string Authors = "", string Difficulty = "", string? CoverImagePath = null);
+public sealed record DialogueCharacter(string Id, string Name, string Color);
+public sealed record DialogueLine(int Number, string CharacterId, string Text, string? AudioPath = null);
+public sealed record DialogueTurn(int LineNumber, string Kind, string[] References, string[] Options, int HintThreshold, bool Skippable);
+public sealed record DialogueMaterial(string Title, string Dialect, int Level, DialogueCharacter[] Characters, DialogueLine[] Lines, DialogueTurn[] Turns);
 public sealed record EditorItem(string Kind, Guid Id, string Title, bool Published, int Version, Guid? PendingRevisionId, bool Archived);
 public sealed record EditorMaterial(string Kind, Guid Id, bool Published, int Version, string PayloadJson);
 
@@ -39,11 +43,13 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         var words = await db.Words.AsNoTracking().Where(x => x.DictionarySenseId == null).ToListAsync(ct);
         var exercises = await db.Exercises.AsNoTracking().ToListAsync(ct);
         var books = await db.Books.AsNoTracking().ToListAsync(ct);
+        var dialogues = await db.Dialogues.AsNoTracking().ToListAsync(ct);
         var pending = await db.ContentRevisions.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
         Guid? Pending(string kind, Guid id) => pending.FirstOrDefault(x => x.Kind == kind && x.ContentId == id)?.Id;
         return words.Select(x => new EditorItem("word", x.Id, x.Ossetian, x.Published, x.Version, Pending("word", x.Id), x.Archived))
             .Concat(exercises.Select(x => new EditorItem(x.Kind, x.Id, x.RussianPrompt, x.Published, x.Version, Pending(x.Kind, x.Id), x.Archived)))
             .Concat(books.Select(x => new EditorItem("book", x.Id, x.Title, x.Published, x.Version, Pending("book", x.Id), x.Archived)))
+            .Concat(dialogues.Select(x => new EditorItem("dialogue", x.Id, x.Title, x.Published, x.Version, Pending("dialogue", x.Id), x.Archived)))
             .OrderBy(x => x.Title).ToList();
     }
 
@@ -63,6 +69,11 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var book = await db.Books.AsNoTracking().Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == id, ct);
             return book is null ? null : new(kind, id, book.Published, book.Version, Capture(book));
+        }
+        if (kind == "dialogue")
+        {
+            var dialogue = await db.Dialogues.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+            return dialogue is null ? null : new(kind, id, dialogue.Published, dialogue.Version, Capture(dialogue));
         }
         return null;
     }
@@ -92,6 +103,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
                 Number = x.Number, Title = x.Title, TokensJson = JsonSerializer.Serialize(x.Tokens) }).ToList();
             db.Books.Add(book); await db.SaveChangesAsync(ct); return book.Id;
         }
+        if (kind == "dialogue")
+        {
+            var p = Parse<DialogueMaterial>(payloadJson);
+            var dialogue = new Dialogue { Title = p.Title, Dialect = p.Dialect, Level = p.Level, ScriptJson = payloadJson };
+            db.Dialogues.Add(dialogue); await db.SaveChangesAsync(ct); return dialogue.Id;
+        }
         throw new ArgumentException("Unknown material kind", nameof(kind));
     }
 
@@ -115,6 +132,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (book is null) return false;
             Apply(book, Parse<BookMaterial>(payloadJson));
         }
+        else if (kind == "dialogue")
+        {
+            var dialogue = await db.Dialogues.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (dialogue is null) return false;
+            Apply(dialogue, Parse<DialogueMaterial>(payloadJson));
+        }
         else return false;
         await db.SaveChangesAsync(ct); return true;
     }
@@ -126,6 +149,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         if (material is null || material.Published) return false;
         if (kind == "word") (await db.Words.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "book") (await db.Books.SingleAsync(x => x.Id == id, ct)).Published = true;
+        else if (kind == "dialogue") (await db.Dialogues.SingleAsync(x => x.Id == id, ct)).Published = true;
         else (await db.Exercises.SingleAsync(x => x.Id == id, ct)).Published = true;
         db.ContentRevisions.Add(new ContentRevision { Kind = kind, ContentId = id, Version = 1, BaseVersion = 0,
             PayloadJson = material.PayloadJson, Published = true, EditorId = editorId, PublishedAt = DateTimeOffset.UtcNow });
@@ -197,6 +221,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
                 else position.TokenIndex = Math.Min(position.TokenIndex, Math.Max(0, Parse<MaterialToken[]>(chapter.TokensJson).Length - 1));
             }
         }
+        else if (revision.Kind == "dialogue")
+        {
+            var dialogue = await db.Dialogues.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            if (dialogue is null) return false;
+            Apply(dialogue, Parse<DialogueMaterial>(revision.PayloadJson)); dialogue.Version++;
+        }
         else return false;
         revision.Published = true; revision.PublishedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return true;
@@ -222,6 +252,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var book = await db.Books.Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
             if (book is null) return false;
             db.Books.Remove(book);
+        }
+        else if (kind == "dialogue")
+        {
+            var dialogue = await db.Dialogues.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (dialogue is null) return false;
+            db.Dialogues.Remove(dialogue);
         }
         else return false;
         await db.ContentRevisions.Where(x => x.Kind == kind && x.ContentId == id && !x.Published).ExecuteDeleteAsync(ct);
@@ -250,6 +286,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         if (kind == "book")
             return await db.Books.Where(x => x.Id == id && x.Published && x.Archived != archived)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
+        if (kind == "dialogue")
+            return await db.Dialogues.Where(x => x.Id == id && x.Published && x.Archived != archived)
+                .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
         return false;
     }
 
@@ -265,6 +304,16 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
     {
         x.RussianPrompt = p.RussianPrompt; x.OssetianAnswer = p.OssetianAnswer; x.Explanation = p.Explanation; x.AudioPath = p.AudioPath;
         x.TokensJson = JsonSerializer.Serialize(p.Tokens); x.AlternativesJson = JsonSerializer.Serialize(p.Alternatives); x.WordIdsJson = JsonSerializer.Serialize(p.WordIds);
+    }
+    private static string Capture(Dialogue x)
+    {
+        var p = Parse<DialogueMaterial>(x.ScriptJson);
+        return JsonSerializer.Serialize(p with { Title = x.Title, Dialect = x.Dialect, Level = x.Level }, JsonOptions);
+    }
+    private void Apply(Dialogue x, DialogueMaterial p)
+    {
+        x.Title = p.Title; x.Dialect = p.Dialect; x.Level = p.Level;
+        x.ScriptJson = JsonSerializer.Serialize(p, JsonOptions);
     }
     private void Apply(Book x, BookMaterial p)
     {

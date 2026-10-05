@@ -7,3 +7,6 @@
 **/artifacts/
 /IronLanguage.Web/wwwroot/media/
 /.run-*/
+
+IronLanguage.Tests/
+**/*.user
