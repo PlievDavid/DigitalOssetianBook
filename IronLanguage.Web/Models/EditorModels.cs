@@ -64,7 +64,7 @@ public sealed class EditorFormModel
             model.DialogueTitle = p.Title; model.Dialect = p.Dialect; model.Level = p.Level;
             model.CharactersText = string.Join('\n', p.Characters.Select(x => x.Color.Length > 0 ? $"{x.Name} | {x.Color}" : x.Name));
             model.LinesText = string.Join('\n', p.Lines.Select(x =>
-                $"{(x.CharacterId == Services.DialogueScript.StudentName ? Services.DialogueScript.StudentName : names.GetValueOrDefault(x.CharacterId, "?"))}: {x.Text}"));
+                $"{(x.CharacterId == Services.DialogueScript.StudentId ? Services.DialogueScript.StudentName : names.GetValueOrDefault(x.CharacterId, "?"))}: {x.Text}"));
             model.TurnsText = string.Join('\n', p.Turns.Select(x =>
                 $"{x.LineNumber} | {x.Kind} | {string.Join("; ", x.References)} | {string.Join("; ", x.Options)} | {x.HintThreshold} | {(x.Skippable ? "да" : "нет")}"));
         }

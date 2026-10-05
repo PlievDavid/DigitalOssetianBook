@@ -32,7 +32,7 @@
             <p class="field-help">@(Model.Dialogue.Dialect == "Dval" ? "Дигорский" : "Иронский") диалект · уровень @Model.Dialogue.Level</p>
             @foreach (var line in Model.Dialogue.Lines)
             {
-                var isStudent = line.CharacterId == IronLanguage.Web.Services.DialogueScript.StudentName;
+                var isStudent = line.CharacterId == IronLanguage.Web.Services.DialogueScript.StudentId;
                 var character = isStudent ? null : Model.Dialogue.Characters.FirstOrDefault(x => x.Id == line.CharacterId);
                 <div class="dialog-preview-line" style="border-left-color: @(character?.Color ?? "#8A6D1F")">
                     <strong>@(isStudent ? IronLanguage.Web.Services.DialogueScript.StudentName : character?.Name)</strong>
