@@ -19,10 +19,6 @@
                 <img class="brand-mark" src="~/images/adam-mark.svg" width="58" height="48" alt="" />
                 <span class="brand-copy"><strong>Адам</strong><small>Осетинский язык для всех</small></span>
             </a>
-            <form class="header-search" asp-controller="Home" asp-action="Index" method="get" role="search">
-                <button type="submit" class="search-submit" aria-label="Искать"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></button>
-                <input name="q" type="search" value="@ViewData["Query"]" placeholder="Найти упражнение" aria-label="Найти упражнение" />
-            </form>
             <div class="header-actions">
                 @if (User.Identity?.IsAuthenticated == true) {
                     <a id="header-streak" class="header-streak" href="/progress" aria-label="Серия занятий" hidden><img class="header-streak-icon" src="~/images/streak-flame.svg" asp-append-version="true" width="20" height="24" alt="" /><strong id="header-streak-value"></strong><span id="header-streak-label" class="header-streak-label">дней подряд</span></a>

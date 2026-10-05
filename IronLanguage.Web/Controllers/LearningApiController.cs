@@ -3,7 +3,6 @@ using IronLanguage.Db;
 using IronLanguage.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace IronLanguage.Web.Controllers;
 
@@ -13,7 +12,7 @@ public sealed record ReviewInput(string Translation);
 public sealed record BookToken(string Text, Guid? WordId, DictionaryMatch[]? Matches = null);
 
 [ApiController, AutoValidateAntiforgeryToken, Route("api/v1")]
-public sealed class LearningApiController(ICatalogRepository catalog, IProgressRepository progress, LearningService learning, DictionaryService dictionary, AdamDbContext db) : ControllerBase
+public sealed class LearningApiController(ICatalogRepository catalog, IProgressRepository progress, LearningService learning, DictionaryService dictionary) : ControllerBase
 {
     private static readonly JsonSerializerOptions BookJsonOptions = new(JsonSerializerDefaults.Web);
     [HttpGet("catalog")]
@@ -71,22 +70,6 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
 
     [HttpGet("words")]
     public async Task<IActionResult> Words(CancellationToken ct) => Ok((await catalog.Words(ct)).Select(x => new { x.Id, x.Ossetian, x.Russian, x.Example, x.AudioPath }));
-
-    [HttpGet("lessons/{slug}/words")]
-    public async Task<IActionResult> LessonWords(string slug, CancellationToken ct)
-    {
-        var lesson = IronLanguage.Web.Models.LessonCatalog.Find(slug);
-        if (lesson is null) return NotFound();
-        var keys = lesson.Words.Select(x => DictionaryService.Key(x.Ossetian)).ToArray();
-        var forms = await db.DictionaryForms.AsNoTracking().Include(x => x.Sense)
-            .Where(x => keys.Contains(x.SearchKey) && x.Sense.Active).ToListAsync(ct);
-        return Ok(lesson.Words.Select(word => new
-        {
-            word.Ossetian,
-            SenseId = forms.FirstOrDefault(x => x.SearchKey == DictionaryService.Key(word.Ossetian)
-                && x.Sense.Russian == word.Russian)?.SenseId
-        }));
-    }
 
     [Authorize, HttpGet("vocabulary")]
     public async Task<IActionResult> Vocabulary(CancellationToken ct) => Ok((await progress.SavedWords(User.UserId()!.Value, ct)).Select(x =>

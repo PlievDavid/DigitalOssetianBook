@@ -43,14 +43,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 var keysPath = builder.Configuration["DataProtection:KeysDirectory"] ?? Path.Combine(builder.Environment.ContentRootPath, ".data-protection-keys");
 Directory.CreateDirectory(keysPath);
 builder.Services.AddDataProtection().SetApplicationName("Adam").PersistKeysToFileSystem(new DirectoryInfo(keysPath));
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromHours(2);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-    options.Cookie.SameSite = SameSiteMode.Lax;
-});
 
 var app = builder.Build();
 
@@ -121,7 +113,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
-app.UseSession();
 
 app.UseAuthorization();
 
