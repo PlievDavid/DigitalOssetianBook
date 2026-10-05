@@ -182,6 +182,7 @@ public sealed class DialogueSession
     public int Errors { get; set; }
     public int Hints { get; set; }
     public int TurnsCompleted { get; set; }
+    public int Revision { get; set; } = 1;
     public DateTimeOffset StartedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? CompletedAt { get; set; }
 }

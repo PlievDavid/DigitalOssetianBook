@@ -6,6 +6,9 @@ using IronLanguage.Web.Models;
 
 namespace IronLanguage.Web.Services;
 
+public sealed class DialogueConflictException()
+    : Exception("Сессия изменилась в другой вкладке. Обновите диалог.");
+
 public static class DialogueScript
 {
     public const string StudentName = "Ученик";
@@ -265,14 +268,17 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         if (session is null) return null;
         if (session.CompletedAt is not null)
             return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session), []);
+        var revision = session.Revision;
 
         var material = Material(session);
         var state = Load(session.StateJson);
         var line = material.Lines.SingleOrDefault(x => x.Number == state.Index);
         if (line is null)
         {
-            await progress.SaveSessionState(userId, sessionId, Save(state), session.Attempts, session.Errors, session.Hints, session.TurnsCompleted, ct);
-            await progress.CompleteSession(userId, sessionId, ct);
+            if (!await progress.SaveSessionState(userId, sessionId, revision, Save(state), session.Attempts, session.Errors, session.Hints, session.TurnsCompleted, ct))
+                throw new DialogueConflictException();
+            if (!await progress.CompleteSession(userId, sessionId, revision + 1, ct))
+                throw new DialogueConflictException();
             return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session), []);
         }
         var turn = material.Turns.SingleOrDefault(x => x.LineNumber == line.Number)
@@ -328,12 +334,14 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         }
         var finished = nextIndex > material.Lines.Max(x => x.Number);
         var newState = new DialogueState(nextIndex, log.ToArray(), attempts);
-        await progress.SaveSessionState(userId, sessionId, Save(newState), totalAttempts, errors, hints, turns, ct);
+        if (!await progress.SaveSessionState(userId, sessionId, revision, Save(newState), totalAttempts, errors, hints, turns, ct))
+            throw new DialogueConflictException();
         DialogueSummary? summary = null;
         DialogueTurnView? nextTurn = null;
         if (finished)
         {
-            await progress.CompleteSession(userId, sessionId, ct);
+            if (!await progress.CompleteSession(userId, sessionId, revision + 1, ct))
+                throw new DialogueConflictException();
             summary = new DialogueSummary(turns, errors, hints);
         }
         else

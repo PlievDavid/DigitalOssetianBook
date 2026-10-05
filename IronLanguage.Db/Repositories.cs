@@ -106,8 +106,8 @@ public interface IProgressRepository
     Task<DialogueSession?> ActiveSession(Guid userId, Guid dialogueId, CancellationToken ct = default);
     Task<DialogueSession?> Session(Guid userId, Guid sessionId, CancellationToken ct = default);
     Task CreateSession(DialogueSession session, CancellationToken ct = default);
-    Task<bool> SaveSessionState(Guid userId, Guid sessionId, string stateJson, int attempts, int errors, int hints, int turnsCompleted, CancellationToken ct = default);
-    Task<bool> CompleteSession(Guid userId, Guid sessionId, CancellationToken ct = default);
+    Task<bool> SaveSessionState(Guid userId, Guid sessionId, int expectedRevision, string stateJson, int attempts, int errors, int hints, int turnsCompleted, CancellationToken ct = default);
+    Task<bool> CompleteSession(Guid userId, Guid sessionId, int expectedRevision, CancellationToken ct = default);
     Task<List<DialogueSession>> SessionHistory(Guid userId, CancellationToken ct = default);
 }
 
@@ -184,17 +184,18 @@ public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
         db.DialogueSessions.Add(session);
         await db.SaveChangesAsync(ct);
     }
-    public async Task<bool> SaveSessionState(Guid userId, Guid sessionId, string stateJson, int attempts, int errors, int hints, int turnsCompleted, CancellationToken ct = default) =>
-        await db.DialogueSessions.Where(x => x.Id == sessionId && x.UserId == userId && x.CompletedAt == null)
+    public async Task<bool> SaveSessionState(Guid userId, Guid sessionId, int expectedRevision, string stateJson, int attempts, int errors, int hints, int turnsCompleted, CancellationToken ct = default) =>
+        await db.DialogueSessions.Where(x => x.Id == sessionId && x.UserId == userId && x.CompletedAt == null && x.Revision == expectedRevision)
             .ExecuteUpdateAsync(x => x.SetProperty(p => p.StateJson, stateJson)
                 .SetProperty(p => p.Attempts, attempts).SetProperty(p => p.Errors, errors)
-                .SetProperty(p => p.Hints, hints).SetProperty(p => p.TurnsCompleted, turnsCompleted), ct) == 1;
+                .SetProperty(p => p.Hints, hints).SetProperty(p => p.TurnsCompleted, turnsCompleted)
+                .SetProperty(p => p.Revision, expectedRevision + 1), ct) == 1;
 
-    public async Task<bool> CompleteSession(Guid userId, Guid sessionId, CancellationToken ct = default)
+    public async Task<bool> CompleteSession(Guid userId, Guid sessionId, int expectedRevision, CancellationToken ct = default)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var now = DateTimeOffset.UtcNow;
-        var updated = await db.DialogueSessions.Where(x => x.Id == sessionId && x.UserId == userId && x.CompletedAt == null)
+        var updated = await db.DialogueSessions.Where(x => x.Id == sessionId && x.UserId == userId && x.CompletedAt == null && x.Revision == expectedRevision)
             .ExecuteUpdateAsync(x => x.SetProperty(p => p.CompletedAt, now), ct);
         if (updated != 1) { await tx.RollbackAsync(ct); return false; }
         var day = DateOnly.FromDateTime(now.UtcDateTime);

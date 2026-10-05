@@ -30,6 +30,7 @@ public sealed class DialogsApiController(ICatalogRepository catalog, DialogueSer
             return view is null ? NotFound() : Ok(await WithDictionary(view, ct));
         }
         catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
+        catch (DialogueConflictException error) { return Conflict(new { error = error.Message }); }
     }
 
     [Authorize, HttpGet("dialogs/sessions/{sid:guid}")]
