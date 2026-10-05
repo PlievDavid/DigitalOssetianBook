@@ -14,9 +14,11 @@
   const input = $("dialog-input");
   const sendButton = $("dialog-send");
   const skipButton = $("dialog-skip");
+  const wordPopup = $("dialog-word-popup");
   let session = null;
   let busy = false;
   let lastValue = "";
+  let meanings = new Map();
 
   const dialectLabel = dialect => dialect === "Dval" ? "Дигорский" : "Иронский";
   const button = (label, action, className = "button secondary") => {
@@ -70,11 +72,81 @@
       list.hidden = true; $("dialog-history-block").hidden = true; play.hidden = false;
       $("dialog-title").textContent = session.title;
       feed.replaceChildren(); result.textContent = ""; summaryBox.hidden = true;
+      closeWord();
+      meanings.clear();
+      rememberDictionary(session);
       renderLines(session.lines, null, true);
       renderTurn();
       updateCounters();
       status.textContent = "";
     } catch (error) { status.textContent = error.message; }
+  }
+
+  function rememberDictionary(source) {
+    for (const meaning of (source && source.dictionary) || []) meanings.set(meaning.id, meaning);
+  }
+
+  function closeWord() {
+    if (!wordPopup) return;
+    wordPopup.hidden = true; wordPopup.replaceChildren();
+    feed.querySelectorAll(".dialog-current").forEach(node => node.classList.remove("dialog-current"));
+  }
+
+  function showWord(word) {
+    if (!wordPopup) return;
+    feed.querySelectorAll(".dialog-current").forEach(node => node.classList.remove("dialog-current"));
+    const span = feed.querySelector(`.dialog-word[data-word="${CSS.escape(word.text)}"]`);
+    if (span) span.classList.add("dialog-current");
+    wordPopup.replaceChildren();
+    const header = document.createElement("div"); header.className = "reader-popup-header";
+    const heading = document.createElement("strong"); heading.textContent = word.text;
+    const close = document.createElement("button"); close.type = "button"; close.textContent = "×";
+    close.setAttribute("aria-label", "Закрыть перевод");
+    close.addEventListener("click", closeWord);
+    header.append(heading, close); wordPopup.append(header);
+    const entries = (word.matches || []).map(match => ({ match, meaning: meanings.get(match.senseId) }))
+      .filter(entry => entry.meaning);
+    for (const { match, meaning } of entries) {
+      const entry = document.createElement("div"); entry.className = "reader-meaning";
+      const title = document.createElement("strong");
+      title.textContent = `${match.approximate ? "Возможно: " : ""}${meaning.ossetian} — ${meaning.russianHeadword}`;
+      entry.append(title);
+      if (meaning.note) { const note = document.createElement("p"); note.textContent = meaning.note; entry.append(note); }
+      const save = button("В мой словарь", async () => {
+        try {
+          await AdamApi(`/vocabulary/dictionary/${meaning.id}`, { method: "POST" });
+          status.textContent = "Слово сохранено.";
+        } catch (error) { status.textContent = error.message; }
+      }, "book-text-button");
+      entry.append(save);
+      wordPopup.append(entry);
+    }
+    if (!entries.length) {
+      const missing = document.createElement("p");
+      missing.textContent = "Перевод пока не найден в словаре.";
+      wordPopup.append(missing);
+    }
+    wordPopup.hidden = false; wordPopup.scrollTop = 0;
+  }
+
+  function appendWords(bubble, line) {
+    let cursor = 0;
+    for (const word of line.words || []) {
+      bubble.append(document.createTextNode(line.text.slice(cursor, word.position)));
+      const span = document.createElement("span"); span.className = "dialog-word";
+      span.dataset.word = word.text; span.dataset.position = String(word.position);
+      span.textContent = word.text;
+      span.tabIndex = 0;
+      span.setAttribute("role", "button");
+      span.setAttribute("aria-label", `Перевод слова ${word.text}`);
+      span.addEventListener("click", () => showWord(word));
+      span.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showWord(word); }
+      });
+      bubble.append(span);
+      cursor = word.position + word.text.length;
+    }
+    bubble.append(document.createTextNode(line.text.slice(cursor)));
   }
 
   function lineElement(line, correct) {
@@ -87,18 +159,10 @@
       avatar.textContent = (line.name || "?").trim().charAt(0).toUpperCase();
       const name = document.createElement("strong"); name.className = "dialog-name"; name.textContent = line.name;
       bubble.append(name);
-      let cursor = 0;
-      for (const word of line.words || []) {
-        bubble.append(document.createTextNode(line.text.slice(cursor, word.position)));
-        const span = document.createElement("span"); span.className = "dialog-word";
-        span.dataset.word = word.text; span.dataset.position = String(word.position);
-        span.textContent = word.text; bubble.append(span);
-        cursor = word.position + word.text.length;
-      }
-      bubble.append(document.createTextNode(line.text.slice(cursor)));
+      appendWords(bubble, line);
       row.append(avatar, bubble);
     } else {
-      bubble.textContent = line.text;
+      appendWords(bubble, line);
       row.append(bubble);
     }
     return row;
@@ -229,6 +293,8 @@
       session.finished = response.finished;
       session.summary = response.summary;
       session.counters = response.counters;
+      closeWord();
+      rememberDictionary(response);
       renderLines(response.lines, response.correct, false);
       updateCounters();
       if (response.finished) renderSummary(); else renderTurn();
@@ -244,6 +310,7 @@
   const isChoice = () => session && session.turn && session.turn.kind === "choice";
 
   function back() {
+    closeWord();
     play.hidden = true; list.hidden = false; $("dialog-history-block").hidden = false;
     session = null; load();
   }
@@ -252,5 +319,6 @@
   skipButton.addEventListener("click", () => send(null, true));
   input.addEventListener("keydown", event => { if (event.key === "Enter") send(input.value); });
   $("dialog-back-link").addEventListener("click", event => { event.preventDefault(); back(); });
+  document.addEventListener("keydown", event => { if (event.key === "Escape") closeWord(); });
   load();
 })();

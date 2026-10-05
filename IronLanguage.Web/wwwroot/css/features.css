@@ -291,11 +291,11 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
 .book-page .reader-word:hover { background: #fff1be; }
 .book-page .reader-current { background: #fff0b4; }
 .book-page .reader-word:focus-visible { outline: 2px solid #2474b8; outline-offset: 2px; }
-.book-page .reader-popup { position: fixed; z-index: 40; right: clamp(18px, 5vw, 90px); bottom: 24px; display: grid; gap: 0; justify-items: stretch; width: min(420px, calc(100vw - 36px)); max-height: min(65vh, 610px); overflow: auto; margin: 0; padding: 0 20px 12px; border: 1px solid #dbe5e9; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px #102b4140; }
+.book-page .reader-popup, .dialog-page .reader-popup { position: fixed; z-index: 40; right: clamp(18px, 5vw, 90px); bottom: 24px; display: grid; gap: 0; justify-items: stretch; width: min(420px, calc(100vw - 36px)); max-height: min(65vh, 610px); overflow: auto; margin: 0; padding: 0 20px 12px; border: 1px solid #dbe5e9; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px #102b4140; }
 .reader-popup-header { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 17px 0 13px; border-bottom: 1px solid #e8edf1; background: #fff; }
 .reader-popup-header strong { font-size: 20px; }
 .reader-popup-header button { border: 0; padding: 0 3px; background: none; color: #677b8f; font-size: 26px; line-height: 1; }
-.book-page .reader-meaning { display: grid; gap: 8px; padding: 15px 0; border-top: 0; border-bottom: 1px solid #edf0f2; }
+.book-page .reader-meaning, .dialog-page .reader-meaning { display: grid; gap: 8px; padding: 15px 0; border-top: 0; border-bottom: 1px solid #edf0f2; }
 .reader-meaning strong { font-size: 16px; line-height: 1.45; }
 .reader-meaning p { margin: 0; color: #62758b; font-size: 14px; line-height: 1.45; }
 .reader-meaning .book-text-button { width: fit-content; font-size: 14px; }
@@ -320,7 +320,7 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
     .reader-translation { padding-top: 22px; border-top: 1px solid #e0e8ed; }
     .reader-translation::before { content: 'Литературный перевод'; display: block; margin-bottom: 24px; color: #6e7f91; font-size: 14px; font-weight: 700; }
     .book-page .reader-text { font-size: 20px; line-height: 1.65; }
-    .book-page .reader-popup { right: 12px; bottom: 12px; width: calc(100vw - 24px); max-height: 55vh; }
+    .book-page .reader-popup, .dialog-page .reader-popup { right: 12px; bottom: 12px; width: calc(100vw - 24px); max-height: 55vh; }
 }
 
 /* Shared page rhythm and focused lesson/puzzle surfaces. */
@@ -396,7 +396,10 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
 .dialog-line.is-wrong .dialog-bubble { background: #FBE7E2; border-color: #E2B3A6; }
 .dialog-line.is-right .dialog-bubble { background: #E3F4EA; border-color: #B7DCC5; }
 .dialog-name { display: block; margin-bottom: 2px; color: #69756D; font-size: 13px; }
-.dialog-word { cursor: pointer; }
+.dialog-word { color: inherit; border-radius: 2px; cursor: pointer; }
+.dialog-word:hover { background: #fff1be; }
+.dialog-word.dialog-current { background: #fff0b4; }
+.dialog-word:focus-visible { outline: 2px solid #2474b8; outline-offset: 2px; }
 .dialog-hint { margin-top: 12px; padding: 10px 14px; border: 1px dashed #DEE4D9; border-radius: 10px; background: #EDF1E7; color: #203F34; line-height: 1.5; }
 .dialog-hint-diff { background: #DCECAF; border-radius: 4px; padding: 0 3px; }
 #dialog-composer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }

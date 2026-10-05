@@ -264,7 +264,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         var session = await progress.Session(userId, sessionId, ct);
         if (session is null) return null;
         if (session.CompletedAt is not null)
-            return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session));
+            return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session), []);
 
         var material = Material(session);
         var state = Load(session.StateJson);
@@ -273,7 +273,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         {
             await progress.SaveSessionState(userId, sessionId, Save(state), session.Attempts, session.Errors, session.Hints, session.TurnsCompleted, ct);
             await progress.CompleteSession(userId, sessionId, ct);
-            return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session));
+            return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session), []);
         }
         var turn = material.Turns.SingleOrDefault(x => x.LineNumber == line.Number)
             ?? throw new InvalidOperationException("Ход для текущей реплики не найден.");
@@ -342,7 +342,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
             nextTurn = TurnView(material.Turns.Single(x => x.LineNumber == nextLine.Number), attempts);
         }
         return new DialogueAnswerView(correct, hint, added.ToArray(), nextTurn,
-            new DialogueCounters(totalAttempts, errors, hints, turns), finished, summary);
+            new DialogueCounters(totalAttempts, errors, hints, turns), finished, summary, []);
     }
 
     private static DialogueSessionView View(DialogueSession session)
@@ -355,7 +355,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         var turn = currentLine is null ? null : material.Turns.SingleOrDefault(x => x.LineNumber == currentLine.Number);
         return new DialogueSessionView(session.Id, session.DialogueId, session.DialogueVersion, session.DialogueTitle,
             finished, lines, turn is null ? null : TurnView(turn, state.TurnAttempts), Counters(session),
-            finished ? Summary(session) : null);
+            finished ? Summary(session) : null, []);
     }
 
     private static (int Index, DialogueLogEntry[] Consumed) Advance(DialogueMaterial material, int fromNumber)
@@ -374,11 +374,12 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
 
     private static DialogueLineView LineView(DialogueLine line, DialogueMaterial material, string text)
     {
+        var words = WordPattern.Matches(text).Select(x => new DialogueWord(x.Value, x.Index, [])).ToArray();
         if (line.CharacterId == DialogueScript.StudentId)
-            return new DialogueLineView(line.Number, line.CharacterId, "", "", text, "student", []);
+            return new DialogueLineView(line.Number, line.CharacterId, "", "", text, "student", words);
         var character = material.Characters.FirstOrDefault(x => x.Id == line.CharacterId);
         return new DialogueLineView(line.Number, line.CharacterId, character?.Name ?? "?", character?.Color ?? DialogueScript.DefaultColor,
-            text, "npc", WordPattern.Matches(text).Select(x => new DialogueWord(x.Value, x.Index)).ToArray());
+            text, "npc", words);
     }
 
     private static DialogueTurnView TurnView(DialogueTurn turn, int attempts) =>

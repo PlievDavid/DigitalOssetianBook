@@ -1,5 +1,5 @@
 @{ ViewData["Title"] = "Диалоги"; }
-<section class="feature-shell" id="dialog-app">
+<section class="feature-shell dialog-page" id="dialog-app">
     <a class="back-link" href="/">← К заданиям</a>
     <h1>Диалоги</h1>
     <p>Читайте реплики собеседника и отвечайте на осетинском. После нескольких неудачных попыток появится подсказка.</p>
@@ -21,6 +21,7 @@
         </div>
         <p id="dialog-result" role="status"></p>
         <div id="dialog-summary" class="dialog-summary" hidden></div>
+        <aside id="dialog-word-popup" class="reader-popup" aria-label="Словарная статья" hidden></aside>
     </div>
     <div id="dialog-history-block">
         <h2>История прохождений</h2>
