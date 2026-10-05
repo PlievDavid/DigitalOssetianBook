@@ -29,20 +29,48 @@
     if (controller) { controller.abort(); controller = null; }
   }
 
-  async function resync(captured) {
-    if (!captured || !captured.sessionId) return;
+  const syncActions = $("dialog-sync-actions");
+
+  function hideSyncActions() {
+    if (!syncActions) return;
+    syncActions.hidden = true;
+    syncActions.replaceChildren();
+  }
+
+  function showSyncError(captured, token, message) {
+    if (!syncActions) { status.textContent = message; return; }
+    syncActions.hidden = false;
+    syncActions.replaceChildren(
+      button("Обновить диалог", async () => {
+        syncActions.replaceChildren();
+        const ok = await resync(captured, token);
+        if (!ok && !isStale(token)) showSyncError(captured, token, "Не удалось загрузить состояние диалога.");
+      }, "button primary"),
+      button("К списку", back, "button secondary")
+    );
+    status.textContent = message;
+  }
+
+  async function resync(captured, token) {
+    if (!captured || !captured.sessionId) return false;
     try {
       const fresh = await AdamApi(`/dialogs/sessions/${captured.sessionId}`);
-      if (session && session.sessionId === fresh.sessionId) {
-        session = fresh;
-        closeWord();
-        rememberDictionary(fresh);
-        feed.replaceChildren();
-        renderLines(fresh.lines, null, true);
-        updateCounters();
-        if (fresh.finished) renderSummary(); else renderTurn();
-      }
-    } catch (error) { status.textContent = error.message; }
+      if (isStale(token)) return false;
+      if (!session || session.sessionId !== fresh.sessionId) return false;
+      session = fresh;
+      closeWord();
+      rememberDictionary(fresh);
+      feed.replaceChildren();
+      renderLines(fresh.lines, null, true);
+      updateCounters();
+      if (fresh.finished) renderSummary(); else renderTurn();
+      hideSyncActions();
+      setBusy(false);
+      return true;
+    } catch (error) {
+      if (!isStale(token)) showSyncError(captured, token, error.message);
+      return false;
+    }
   }
 
   const dialectLabel = dialect => dialect === "Dval" ? "Дигорский" : "Иронский";
@@ -95,6 +123,7 @@
     cancelPending();
     try {
       session = await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
+      hideSyncActions();
       list.hidden = true; $("dialog-history-block").hidden = true; play.hidden = false;
       $("dialog-title").textContent = session.title;
       feed.replaceChildren(); result.textContent = ""; summaryBox.hidden = true;
@@ -105,7 +134,10 @@
       renderTurn();
       updateCounters();
       status.textContent = "";
-    } catch (error) { status.textContent = error.message; }
+    } catch (error) {
+      setBusy(false);
+      status.textContent = error.message;
+    }
   }
 
   function rememberDictionary(source) {
@@ -336,7 +368,7 @@
       controller = null;
       if (error.status === 409) {
         result.textContent = error.message;
-        await resync(captured);
+        await resync(captured, token);
         return;
       }
       result.textContent = error.message;
@@ -351,6 +383,8 @@
 
   function back() {
     cancelPending();
+    hideSyncActions();
+    setBusy(false);
     closeWord();
     play.hidden = true; list.hidden = false; $("dialog-history-block").hidden = false;
     session = null; load();
