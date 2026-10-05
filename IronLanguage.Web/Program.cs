@@ -21,6 +21,7 @@ builder.Services.AddScoped<ICatalogRepository, EfCatalogRepository>();
 builder.Services.AddScoped<IEditorRepository, EfEditorRepository>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 builder.Services.AddScoped<LearningService>();
+builder.Services.AddSingleton<GuestLearningStore>();
 builder.Services.AddScoped<DialogueService>();
 builder.Services.AddScoped<DictionaryService>();
 builder.Services.AddScoped<DialogueSeedService>();

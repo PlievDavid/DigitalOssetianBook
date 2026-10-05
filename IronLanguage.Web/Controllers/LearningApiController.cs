@@ -12,7 +12,7 @@ public sealed record ReviewInput(string Translation);
 public sealed record BookToken(string Text, Guid? WordId, DictionaryMatch[]? Matches = null);
 
 [ApiController, AutoValidateAntiforgeryToken, Route("api/v1")]
-public sealed class LearningApiController(ICatalogRepository catalog, IProgressRepository progress, LearningService learning, DictionaryService dictionary) : ControllerBase
+public sealed class LearningApiController(ICatalogRepository catalog, IProgressRepository progress, LearningService learning, DictionaryService dictionary, GuestLearningStore guests) : ControllerBase
 {
     private static readonly JsonSerializerOptions BookJsonOptions = new(JsonSerializerDefaults.Web);
     [HttpGet("catalog")]
@@ -31,9 +31,14 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
         return x is null ? NotFound() : Ok(new { x.Id, x.Kind, x.RussianPrompt, x.AudioPath, tokens = LearningService.ParseTokens(x.TokensJson) });
     }
 
-    [Authorize, HttpPost("exercises/{id:guid}/attempts")]
+    [HttpPost("exercises/{id:guid}/attempts")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)
     {
+        if (User.UserId() is null)
+        {
+            var guest = await learning.StartGuest(guests.Owner(HttpContext), id, ct);
+            return guest is null ? NotFound() : Ok(new { guest.Value.Card, attemptId = guest.Value.Attempt.Id, draftIndices = Array.Empty<int>() });
+        }
         var result = await learning.Start(User.UserId(), id, ct);
         return result is null ? NotFound() : Ok(new { result.Value.Card, attemptId = result.Value.Attempt!.Id,
             draftIndices = JsonSerializer.Deserialize<int[]>(result.Value.Attempt.DraftIndicesJson) ?? [] });
@@ -46,12 +51,14 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
         return attempt is null ? NotFound() : Ok(new { attempt.Id, attempt.ExerciseId, attempt.StartedAt, attempt.CompletedAt, attempt.Correct, attempt.SubmittedAnswer });
     }
 
-    [Authorize, HttpPost("attempts/{id:guid}/answer")]
+    [HttpPost("attempts/{id:guid}/answer")]
     public async Task<IActionResult> Answer(Guid id, AnswerInput input, CancellationToken ct)
     {
         try
         {
-            var answer = await learning.Answer(User.UserId()!.Value, id, input.TokenIndices ?? [], ct);
+            var answer = User.UserId() is Guid userId
+                ? await learning.Answer(userId, id, input.TokenIndices ?? [], ct)
+                : await learning.AnswerGuest(guests.Owner(HttpContext), id, input.TokenIndices ?? [], ct);
             return answer is null ? NotFound() : Ok(answer);
         }
         catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
@@ -97,6 +104,16 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
         var expected = word.DictionarySenseId is null ? word.Russian : word.Russian.Replace("\u0301", "");
         var correct = LearningService.Normalize(answer) == LearningService.Normalize(expected);
         return await progress.ReviewWord(User.UserId()!.Value, id, correct, ct) ? Ok(new { correct, expected = word.Russian }) : NotFound();
+    }
+
+    [HttpPost("words/{id:guid}/review")]
+    public async Task<IActionResult> GuestReview(Guid id, ReviewInput input, CancellationToken ct)
+    {
+        var word = await catalog.Word(id, ct);
+        if (word is null) return NotFound();
+        var answer = word.DictionarySenseId is null ? input.Translation : input.Translation.Replace("\u0301", "");
+        var expected = word.DictionarySenseId is null ? word.Russian : word.Russian.Replace("\u0301", "");
+        return Ok(new { correct = LearningService.Normalize(answer) == LearningService.Normalize(expected), expected = word.Russian });
     }
 
     [HttpGet("books")]

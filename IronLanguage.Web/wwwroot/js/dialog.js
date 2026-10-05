@@ -82,7 +82,7 @@
   async function load() {
     status.textContent = "Загрузка…";
     try {
-      const [dialogs, history] = await Promise.all([AdamApi("/dialogs"), AdamApi("/dialogs/sessions/history")]);
+      const [dialogs, history] = await Promise.all([AdamApi("/dialogs"), (AdamAuthenticated ? AdamApi("/dialogs/sessions/history") : Promise.resolve([]))]);
       list.replaceChildren();
       for (const item of dialogs) {
         const card = document.createElement("article"); card.className = "exercise-entry";
@@ -103,6 +103,7 @@
   function renderHistory(history) {
     const block = $("dialog-history");
     block.replaceChildren();
+    if (!AdamAuthenticated) { document.getElementById("dialog-history-block").hidden = true; return; }
     if (!history.length) {
       const empty = document.createElement("p"); empty.className = "field-help";
       empty.textContent = "Пройденных диалогов пока нет.";
@@ -175,7 +176,7 @@
           save.textContent = "Сохранено"; save.disabled = true;
         } catch (error) { status.textContent = error.message; }
       }, "book-text-button");
-      entry.append(save);
+      if (AdamAuthenticated) entry.append(save);
       wordPopup.append(entry);
     }
     if (!entries.length) {

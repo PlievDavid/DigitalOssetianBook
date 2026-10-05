@@ -1,19 +1,9 @@
 @{ ViewData["Title"] = "Практика слов"; }
 <section class="feature-shell word-practice-shell" id="word-practice-app">
-    <a class="back-link" href="/vocabulary">← К моим словам</a>
+    <a class="back-link" href="/vocabulary">← К словарю</a>
     <h1>Практика слов</h1>
-    <p>Повторяйте сохранённые слова и проверяйте перевод.</p>
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        <div id="practice-status" role="status"></div>
-        <section class="practice-card" id="review-panel" hidden><span class="vocabulary-kicker">Переведите на русский</span><h2 id="review-word"></h2><form id="review-form" class="vocabulary-review-form"><label for="review-answer">Ваш ответ</label><input id="review-answer" autocomplete="off" required /><button class="button primary">Проверить</button></form><p id="review-result" role="status"></p></section>
-    }
-    else
-    {
-        <div class="vocabulary-empty"><strong>Практика начнётся с ваших слов</strong><p>Войдите, чтобы повторять их на любом устройстве.</p><a class="button primary" href="/account/login?ReturnUrl=%2Fword-practice">Войти</a></div>
-    }
+    <p>@(User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова и проверяйте перевод." : "Повторяйте опубликованные слова и проверяйте перевод.")</p>
+    <div id="practice-status" role="status"></div>
+    <section class="practice-card" id="review-panel" hidden><span class="vocabulary-kicker">Переведите на русский</span><h2 id="review-word"></h2><form id="review-form" class="vocabulary-review-form"><label for="review-answer">Ваш ответ</label><input id="review-answer" autocomplete="off" required /><button class="button primary">Проверить</button></form><p id="review-result" role="status"></p></section>
 </section>
-@if (User.Identity?.IsAuthenticated == true)
-{
-    @section Scripts { <script src="~/js/word-practice.js" asp-append-version="true" defer></script> }
-}
+@section Scripts { <script src="~/js/word-practice.js" asp-append-version="true" defer></script> }

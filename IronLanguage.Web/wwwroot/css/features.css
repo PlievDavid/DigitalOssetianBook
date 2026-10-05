@@ -368,3 +368,6 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
   .dialog-bubble { max-width: 86%; }
   .dialog-feed { max-height: 46vh; padding: 12px; }
 }
+
+.guest-notice { margin-top: 24px; color: #52657c; font-size: 14px; line-height: 1.6; }
+.guest-notice a { color: #3056be; text-decoration: underline; }
