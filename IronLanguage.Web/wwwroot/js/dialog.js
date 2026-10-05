@@ -114,7 +114,7 @@
       const save = button("В мой словарь", async () => {
         try {
           await AdamApi(`/vocabulary/dictionary/${meaning.id}`, { method: "POST" });
-          status.textContent = "Слово сохранено.";
+          save.textContent = "Сохранено"; save.disabled = true;
         } catch (error) { status.textContent = error.message; }
       }, "book-text-button");
       entry.append(save);
