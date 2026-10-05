@@ -6,6 +6,7 @@ public interface IAccountRepository
 {
     Task<UserAccount?> FindByEmail(string email, CancellationToken ct = default);
     Task<UserAccount?> FindById(Guid id, CancellationToken ct = default);
+    Task<UserAccount?> FirstEditor(CancellationToken ct = default);
     Task<bool> Create(UserAccount user, CancellationToken ct = default);
 }
 
@@ -16,6 +17,9 @@ public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
 
     public Task<UserAccount?> FindById(Guid id, CancellationToken ct = default) =>
         db.Users.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+
+    public Task<UserAccount?> FirstEditor(CancellationToken ct = default) =>
+        db.Users.AsNoTracking().Where(x => x.IsEditor).OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(ct);
 
     public async Task<bool> Create(UserAccount user, CancellationToken ct = default)
     {

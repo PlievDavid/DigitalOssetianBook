@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 builder.Services.AddScoped<LearningService>();
 builder.Services.AddScoped<DialogueService>();
 builder.Services.AddScoped<DictionaryService>();
+builder.Services.AddScoped<DialogueSeedService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
     options.LoginPath = "/account/login";
@@ -78,6 +80,33 @@ if (args.Contains("dictionary-import", StringComparer.OrdinalIgnoreCase))
     var count = await scope.ServiceProvider.GetRequiredService<DictionaryService>()
         .ImportAndRebuild(source, CancellationToken.None);
     Console.WriteLine($"Imported {count} dictionary meanings and rebuilt book matches.");
+    return;
+}
+
+if (args.Contains("dialogue-check", StringComparer.OrdinalIgnoreCase)
+    || args.Contains("dialogue-import", StringComparer.OrdinalIgnoreCase))
+{
+    var dryRun = args.Contains("dialogue-check", StringComparer.OrdinalIgnoreCase);
+    var editorEmail = args.FirstOrDefault(x => !x.StartsWith("dialogue-", StringComparison.OrdinalIgnoreCase));
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var source = Path.Combine(app.Environment.ContentRootPath, "Data", "dialogues", "dialogues.json");
+        var seeds = DialogueSeedService.Read(source);
+        if (!dryRun) await scope.ServiceProvider.GetRequiredService<AdamDbContext>().Database.MigrateAsync();
+        var results = await scope.ServiceProvider.GetRequiredService<DialogueSeedService>()
+            .ImportAsync(seeds, editorEmail, dryRun, CancellationToken.None);
+        foreach (var result in results)
+            Console.WriteLine($"{result.Title}: {result.Action}{(result.Error is null ? "" : $" — {result.Error}")}");
+        var failed = results.Count(x => x.Error is not null);
+        Console.WriteLine($"Dialogues: {results.Count} in {seeds.Count} seeds; created {results.Count(x => x.Action == "создан")}, updated {results.Count(x => x.Action is "обновлён" or "дополнен")}, unchanged {results.Count(x => x.Action == "без изменений")}, errors {failed}.");
+        if (failed > 0) Environment.ExitCode = 1;
+    }
+    catch (Exception error) when (error is InvalidOperationException or JsonException or IOException)
+    {
+        Console.WriteLine($"Dialogue seed failed: {error.Message}");
+        Environment.ExitCode = 1;
+    }
     return;
 }
 
