@@ -19,6 +19,31 @@
   let busy = false;
   let lastValue = "";
   let meanings = new Map();
+  let generation = 0;
+  let controller = null;
+
+  const isStale = token => token !== generation;
+
+  function cancelPending() {
+    generation++;
+    if (controller) { controller.abort(); controller = null; }
+  }
+
+  async function resync(captured) {
+    if (!captured || !captured.sessionId) return;
+    try {
+      const fresh = await AdamApi(`/dialogs/sessions/${captured.sessionId}`);
+      if (session && session.sessionId === fresh.sessionId) {
+        session = fresh;
+        closeWord();
+        rememberDictionary(fresh);
+        feed.replaceChildren();
+        renderLines(fresh.lines, null, true);
+        updateCounters();
+        if (fresh.finished) renderSummary(); else renderTurn();
+      }
+    } catch (error) { status.textContent = error.message; }
+  }
 
   const dialectLabel = dialect => dialect === "Dval" ? "Дигорский" : "Иронский";
   const button = (label, action, className = "button secondary") => {
@@ -67,6 +92,7 @@
   }
 
   async function start(id) {
+    cancelPending();
     try {
       session = await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
       list.hidden = true; $("dialog-history-block").hidden = true; play.hidden = false;
@@ -279,13 +305,19 @@
 
   async function send(value, skip = false) {
     if (busy || !session || session.finished || !session.turn) return;
+    const captured = { sessionId: session.sessionId, turnId: session.turn.line };
+    const token = generation;
+    const current = new AbortController();
+    controller = current;
     setBusy(true);
     result.textContent = "";
     try {
-      const response = await AdamApi(`/dialogs/sessions/${session.sessionId}/answer`, {
+      const response = await AdamApi(`/dialogs/sessions/${captured.sessionId}/answer`, {
         method: "POST",
-        body: JSON.stringify({ turnId: session.turn.line, value, skip })
+        signal: current.signal,
+        body: JSON.stringify({ turnId: captured.turnId, value, skip })
       });
+      if (isStale(token)) return;
       lastValue = skip ? "" : (value || "").trim();
       session.lines = session.lines.concat(response.lines);
       session.turn = response.turn;
@@ -300,15 +332,25 @@
       if (response.correct) hintBox.hidden = true;
       else if (response.hint) showHint(response.hint);
     } catch (error) {
+      if (isStale(token) || error.name === "AbortError") return;
+      controller = null;
+      if (error.status === 409) {
+        result.textContent = error.message;
+        await resync(captured);
+        return;
+      }
       result.textContent = error.message;
       setBusy(false);
       if (!isChoice()) input.focus();
+    } finally {
+      if (!isStale(token) && controller === current) controller = null;
     }
   }
 
   const isChoice = () => session && session.turn && session.turn.kind === "choice";
 
   function back() {
+    cancelPending();
     closeWord();
     play.hidden = true; list.hidden = false; $("dialog-history-block").hidden = false;
     session = null; load();
