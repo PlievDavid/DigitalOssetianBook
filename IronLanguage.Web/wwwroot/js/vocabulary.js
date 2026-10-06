@@ -1,5 +1,5 @@
 (() => {
-  const root = document.getElementById('vocabulary-app'); if (!root || !document.getElementById('saved-words')) return;
+  const root = document.getElementById('vocabulary-app'); if (!root) return;
   const savedEl = document.getElementById('saved-words');
   const availableEl = document.getElementById('available-words');
   const status = document.getElementById('vocabulary-status');
@@ -13,15 +13,15 @@
     if (word.dictionaryNote) { const note = document.createElement('small'); note.textContent = word.dictionaryNote; copy.append(note); }
     const button = document.createElement('button'); button.type = 'button'; button.className = 'vocabulary-row-action'; button.textContent = label;
     button.onclick = async () => { button.disabled = true; try { await action(); await load(); } catch (error) { status.textContent = error.message; button.disabled = false; } };
-    item.append(copy, button); return item;
+    item.append(copy); if (AdamAuthenticated) item.append(button); return item;
   };
   async function load() {
-    const [all, saved] = await Promise.all([AdamApi('/words'), AdamApi('/vocabulary')]);
+    const [all, saved] = await Promise.all([AdamApi('/words'), (AdamAuthenticated ? AdamApi('/vocabulary') : Promise.resolve([]))]);
     const ids = new Set(saved.map(x => x.wordId));
-    savedEl.replaceChildren(); availableEl.replaceChildren();
+    savedEl?.replaceChildren(); availableEl.replaceChildren();
     for (const word of saved) savedEl.append(row(word, 'Убрать', () => AdamApi(`/vocabulary/${word.wordId}`, { method: 'DELETE' })));
     for (const word of all.filter(x => !ids.has(x.id))) availableEl.append(row(word, 'Добавить', () => AdamApi(`/vocabulary/${word.id}`, { method: 'POST' })));
-    if (!saved.length) {
+    if (savedEl && !saved.length) {
       const empty = document.createElement('p'); empty.className = 'vocabulary-empty-line';
       empty.textContent = 'Здесь пока пусто. Добавьте слово из списка ниже или нажмите на него во время чтения.'; savedEl.append(empty);
     }
@@ -29,7 +29,7 @@
       const empty = document.createElement('p'); empty.className = 'vocabulary-empty-line';
       empty.textContent = 'Новых опубликованных слов пока нет.'; availableEl.append(empty);
     }
-    status.textContent = `${saved.length} ${saved.length === 1 ? 'слово' : 'слов'} сохранено`;
+    status.textContent = AdamAuthenticated ? `${saved.length} ${saved.length === 1 ? 'слово' : 'слов'} сохранено` : '';
   }
   load().catch(error => { status.textContent = error.message; });
 })();

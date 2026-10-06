@@ -3,7 +3,6 @@ using IronLanguage.Db;
 using IronLanguage.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace IronLanguage.Web.Controllers;
 
@@ -13,7 +12,7 @@ public sealed record ReviewInput(string Translation);
 public sealed record BookToken(string Text, Guid? WordId, DictionaryMatch[]? Matches = null);
 
 [ApiController, AutoValidateAntiforgeryToken, Route("api/v1")]
-public sealed class LearningApiController(ICatalogRepository catalog, IProgressRepository progress, LearningService learning, DictionaryService dictionary, AdamDbContext db) : ControllerBase
+public sealed class LearningApiController(ICatalogRepository catalog, IProgressRepository progress, LearningService learning, DictionaryService dictionary, GuestLearningStore guests) : ControllerBase
 {
     private static readonly JsonSerializerOptions BookJsonOptions = new(JsonSerializerDefaults.Web);
     [HttpGet("catalog")]
@@ -32,12 +31,21 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
         return x is null ? NotFound() : Ok(new { x.Id, x.Kind, x.RussianPrompt, x.AudioPath, tokens = LearningService.ParseTokens(x.TokensJson) });
     }
 
-    [Authorize, HttpPost("exercises/{id:guid}/attempts")]
+    [HttpPost("exercises/{id:guid}/attempts")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)
     {
-        var result = await learning.Start(User.UserId(), id, ct);
-        return result is null ? NotFound() : Ok(new { result.Value.Card, attemptId = result.Value.Attempt!.Id,
-            draftIndices = JsonSerializer.Deserialize<int[]>(result.Value.Attempt.DraftIndicesJson) ?? [] });
+        try
+        {
+            if (User.UserId() is null)
+            {
+                var guest = await learning.StartGuest(guests.Owner(HttpContext), id, ct);
+                return guest is null ? NotFound() : Ok(new { guest.Value.Card, attemptId = guest.Value.Attempt.Id, draftIndices = Array.Empty<int>() });
+            }
+            var result = await learning.Start(User.UserId(), id, ct);
+            return result is null ? NotFound() : Ok(new { result.Value.Card, attemptId = result.Value.Attempt!.Id,
+                draftIndices = JsonSerializer.Deserialize<int[]>(result.Value.Attempt.DraftIndicesJson) ?? [] });
+        }
+        catch (GuestCapacityException error) { return StatusCode(503, new { error = error.Message }); }
     }
 
     [Authorize, HttpGet("attempts/{id:guid}")]
@@ -47,12 +55,14 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
         return attempt is null ? NotFound() : Ok(new { attempt.Id, attempt.ExerciseId, attempt.StartedAt, attempt.CompletedAt, attempt.Correct, attempt.SubmittedAnswer });
     }
 
-    [Authorize, HttpPost("attempts/{id:guid}/answer")]
+    [HttpPost("attempts/{id:guid}/answer")]
     public async Task<IActionResult> Answer(Guid id, AnswerInput input, CancellationToken ct)
     {
         try
         {
-            var answer = await learning.Answer(User.UserId()!.Value, id, input.TokenIndices ?? [], ct);
+            var answer = User.UserId() is Guid userId
+                ? await learning.Answer(userId, id, input.TokenIndices ?? [], ct)
+                : await learning.AnswerGuest(guests.Owner(HttpContext), id, input.TokenIndices ?? [], ct);
             return answer is null ? NotFound() : Ok(answer);
         }
         catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
@@ -71,22 +81,6 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
 
     [HttpGet("words")]
     public async Task<IActionResult> Words(CancellationToken ct) => Ok((await catalog.Words(ct)).Select(x => new { x.Id, x.Ossetian, x.Russian, x.Example, x.AudioPath }));
-
-    [HttpGet("lessons/{slug}/words")]
-    public async Task<IActionResult> LessonWords(string slug, CancellationToken ct)
-    {
-        var lesson = IronLanguage.Web.Models.LessonCatalog.Find(slug);
-        if (lesson is null) return NotFound();
-        var keys = lesson.Words.Select(x => DictionaryService.Key(x.Ossetian)).ToArray();
-        var forms = await db.DictionaryForms.AsNoTracking().Include(x => x.Sense)
-            .Where(x => keys.Contains(x.SearchKey) && x.Sense.Active).ToListAsync(ct);
-        return Ok(lesson.Words.Select(word => new
-        {
-            word.Ossetian,
-            SenseId = forms.FirstOrDefault(x => x.SearchKey == DictionaryService.Key(word.Ossetian)
-                && x.Sense.Russian == word.Russian)?.SenseId
-        }));
-    }
 
     [Authorize, HttpGet("vocabulary")]
     public async Task<IActionResult> Vocabulary(CancellationToken ct) => Ok((await progress.SavedWords(User.UserId()!.Value, ct)).Select(x =>
@@ -110,10 +104,16 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     {
         var word = await catalog.Word(id, ct);
         if (word is null) return NotFound();
-        var answer = word.DictionarySenseId is null ? input.Translation : input.Translation.Replace("\u0301", "");
-        var expected = word.DictionarySenseId is null ? word.Russian : word.Russian.Replace("\u0301", "");
-        var correct = LearningService.Normalize(answer) == LearningService.Normalize(expected);
+        var correct = LearningService.IsWordAnswerCorrect(word, input.Translation);
         return await progress.ReviewWord(User.UserId()!.Value, id, correct, ct) ? Ok(new { correct, expected = word.Russian }) : NotFound();
+    }
+
+    [HttpPost("words/{id:guid}/review")]
+    public async Task<IActionResult> GuestReview(Guid id, ReviewInput input, CancellationToken ct)
+    {
+        var word = await catalog.Word(id, ct);
+        if (word is null) return NotFound();
+        return Ok(new { correct = LearningService.IsWordAnswerCorrect(word, input.Translation), expected = word.Russian });
     }
 
     [HttpGet("books")]

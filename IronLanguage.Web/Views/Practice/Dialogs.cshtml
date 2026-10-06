@@ -24,9 +24,12 @@
         <div id="dialog-summary" class="dialog-summary" hidden></div>
         <aside id="dialog-word-popup" class="reader-popup" aria-label="Словарная статья" hidden></aside>
     </div>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
     <div id="dialog-history-block">
         <h2>История прохождений</h2>
         <div id="dialog-history" class="dialog-history"></div>
     </div>
+    }
 </section>
 @section Scripts { <script src="~/js/dialog.js" asp-append-version="true" defer></script> }

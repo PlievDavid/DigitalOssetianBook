@@ -1,18 +1,11 @@
-@{ ViewData["Title"] = "Мои слова"; }
+@{ var signedIn = User.Identity?.IsAuthenticated == true; ViewData["Title"] = signedIn ? "Мои слова" : "Словарь"; }
 <section class="feature-shell vocabulary-shell" id="vocabulary-app">
-    <div class="vocabulary-page-header"><div><h1>Мои слова</h1><p>Личный список слов из книг и заданий.</p></div><nav class="vocabulary-actions" aria-label="Занятия со словами"><a class="button secondary" href="/word-practice">Тренировка слов ↗</a><a class="button secondary" href="/game">Подбор пар ↗</a></nav></div>
-    @if (User.Identity?.IsAuthenticated == true)
+    <div class="vocabulary-page-header"><div><h1>@ViewData["Title"]</h1><p>@(signedIn ? "Личный список слов из книг и заданий." : "Опубликованные слова, переводы и примеры.")</p></div><nav class="vocabulary-actions" aria-label="Занятия со словами"><a class="button secondary" href="/word-practice">Тренировка слов ↗</a><a class="button secondary" href="/game">Подбор пар ↗</a></nav></div>
+    <div id="vocabulary-status" class="vocabulary-status" role="status"></div>
+    @if (signedIn)
     {
-        <div id="vocabulary-status" class="vocabulary-status" role="status"></div>
         <section class="vocabulary-section"><h2>Сохранено</h2><div id="saved-words" class="vocabulary-list"></div></section>
-        <section class="vocabulary-section"><h2>Доступные слова</h2><p>Нажмите на слово в книге, чтобы увидеть перевод. Здесь можно добавить уже опубликованные слова в свой список.</p><div id="available-words" class="vocabulary-list"></div></section>
     }
-    else
-    {
-        <div class="vocabulary-empty"><strong>Слова будут здесь</strong><p>Войдите, чтобы сохранять их при чтении и занятиях.</p><a class="button primary" href="/account/login?ReturnUrl=%2Fvocabulary">Войти</a></div>
-    }
+    <section class="vocabulary-section"><h2>Доступные слова</h2><p>Открывайте перевод при чтении или тренируйтесь со словами из этого списка.</p><div id="available-words" class="vocabulary-list"></div></section>
 </section>
-@if (User.Identity?.IsAuthenticated == true)
-{
-    @section Scripts { <script src="~/js/vocabulary.js" asp-append-version="true" defer></script> }
-}
+@section Scripts { <script src="~/js/vocabulary.js" asp-append-version="true" defer></script> }

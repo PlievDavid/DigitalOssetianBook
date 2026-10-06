@@ -1,3 +1,4 @@
+window.AdamAuthenticated = document.body.dataset.authenticated === 'true';
 window.AdamApi = async (path, options = {}) => {
   const token = document.querySelector('#api-antiforgery input[name="__RequestVerificationToken"]')?.value;
   const response = await fetch(`/api/v1${path}`, {

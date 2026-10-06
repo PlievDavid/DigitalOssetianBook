@@ -59,6 +59,7 @@
   audio.addEventListener("error", () => { $("exercise-audio-error").hidden = false; $("exercise-submit").disabled = true; });
   audio.addEventListener("canplay", () => { $("exercise-audio-error").hidden = true; render(); });
   function saveDraft() {
+    if (!AdamAuthenticated) return;
     const current = [...indices], id = attemptId;
     pendingDraft = pendingDraft.catch(() => {}).then(() => AdamApi(`/attempts/${id}/draft`, { method: "PUT", body: JSON.stringify({ tokenIndices: current }) }))
       .catch(error => { status.textContent = `Не удалось сохранить выбранные слова: ${error.message}`; });
@@ -76,7 +77,8 @@
       for (const word of card.words) {
         const el = document.createElement("div"); el.className = "feature-card";
         const title = document.createElement("h3"); title.textContent = `${word.ossetian} — ${word.russian}`;
-        el.append(title, button("В мой словарь", async () => {
+        el.append(title);
+        if (AdamAuthenticated) el.append(button("В мой словарь", async () => {
           try { await AdamApi(`/vocabulary/${word.id}`, { method: "POST" }); status.textContent = "Слово сохранено."; }
           catch (error) { status.textContent = error.message; }
         })); words.append(el);

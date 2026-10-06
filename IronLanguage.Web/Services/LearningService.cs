@@ -8,7 +8,7 @@ public sealed record ExerciseCard(Guid Id, string Kind, string RussianPrompt, st
 public sealed record AnswerResult(bool Correct, string ExpectedAnswer, string Explanation, bool AlreadySubmitted);
 public sealed record ProgressSummary(int Points, int Streak, string[] Achievements);
 
-public sealed class LearningService(ICatalogRepository catalog, IProgressRepository progress)
+public sealed class LearningService(ICatalogRepository catalog, IProgressRepository progress, GuestLearningStore guests)
 {
     public static string[] ParseTokens(string json) => JsonSerializer.Deserialize<string[]>(json) ?? [];
     public static string Normalize(string value) => string.Join(' ', value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
@@ -30,6 +30,11 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
                 await progress.CreateAttempt(attempt, ct);
             }
         }
+        return (await Card(exercise, attempt, ct), attempt);
+    }
+
+    private async Task<ExerciseCard> Card(Exercise exercise, ExerciseAttempt? attempt, CancellationToken ct)
+    {
         var tokensJson = attempt?.TokensJson is { Length: > 2 } ? attempt.TokensJson : exercise.TokensJson;
         var wordIdsJson = attempt?.WordIdsJson ?? exercise.WordIdsJson;
         var wordIds = JsonSerializer.Deserialize<Guid[]>(wordIdsJson) ?? [];
@@ -39,8 +44,8 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
             var word = await catalog.Word(wordId, ct);
             if (word is not null) words.Add(new ExerciseWord(word.Id, word.Ossetian, word.Russian));
         }
-        return (new ExerciseCard(exercise.Id, exercise.Kind, attempt?.RussianPrompt is { Length: > 0 } ? attempt.RussianPrompt : exercise.RussianPrompt,
-            attempt is null ? exercise.AudioPath : attempt.AudioPath, ParseTokens(tokensJson), words.ToArray()), attempt);
+        return new ExerciseCard(exercise.Id, exercise.Kind, attempt?.RussianPrompt is { Length: > 0 } ? attempt.RussianPrompt : exercise.RussianPrompt,
+            attempt is null ? exercise.AudioPath : attempt.AudioPath, ParseTokens(tokensJson), words.ToArray());
     }
 
     public async Task<AnswerResult?> Answer(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct)
@@ -50,12 +55,9 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         if (attempt.CompletedAt is not null)
             return new AnswerResult(attempt.Correct ?? false, attempt.ExpectedAnswer, attempt.Explanation, true);
         var tokens = ParseTokens(attempt.TokensJson);
-        if (tokenIndices.Length == 0 || tokenIndices.Length > tokens.Length || tokenIndices.Distinct().Count() != tokenIndices.Length || tokenIndices.Any(i => i < 0 || i >= tokens.Length))
-            throw new ArgumentException("Неверный набор слов.");
+        ValidateIndices(tokenIndices, tokens.Length);
         var answer = string.Join(' ', tokenIndices.Select(i => tokens[i]));
-        var expected = Normalize(attempt.ExpectedAnswer);
-        var alternatives = JsonSerializer.Deserialize<string[]>(attempt.AlternativesJson) ?? [];
-        var correct = Normalize(answer) == expected || alternatives.Any(x => Normalize(x) == Normalize(answer));
+        var correct = IsCorrect(attempt, answer);
         var saved = await progress.CompleteAttempt(userId, attemptId, answer, correct, ct);
         if (!saved)
         {
@@ -64,6 +66,52 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         }
         return new AnswerResult(correct, attempt.ExpectedAnswer, attempt.Explanation, false);
     }
+
+    public async Task<(ExerciseCard Card, ExerciseAttempt Attempt)?> StartGuest(Guid owner, Guid exerciseId, CancellationToken ct)
+    {
+        var exercise = await catalog.Exercise(exerciseId, ct: ct);
+        if (exercise is null) return null;
+        var attempt = new ExerciseAttempt
+        {
+            ExerciseId = exerciseId, ExerciseVersion = exercise.Version,
+            ExpectedAnswer = exercise.OssetianAnswer, AlternativesJson = exercise.AlternativesJson,
+            TokensJson = exercise.TokensJson, WordIdsJson = exercise.WordIdsJson, RussianPrompt = exercise.RussianPrompt,
+            Explanation = exercise.Explanation, AudioPath = exercise.AudioPath
+        };
+        var card = await Card(exercise, attempt, ct);
+        guests.Add(owner, attempt.Id, attempt);
+        return (card, attempt);
+    }
+
+    public async Task<AnswerResult?> AnswerGuest(Guid owner, Guid attemptId, int[] tokenIndices, CancellationToken ct)
+    {
+        var entry = guests.Find<ExerciseAttempt>(owner, attemptId);
+        if (entry is null) return null;
+        await entry.Gate.WaitAsync(ct);
+        try
+        {
+            var attempt = entry.Value;
+            if (attempt.CompletedAt is not null)
+                return new AnswerResult(attempt.Correct ?? false, attempt.ExpectedAnswer, attempt.Explanation, true);
+            var tokens = ParseTokens(attempt.TokensJson);
+            ValidateIndices(tokenIndices, tokens.Length);
+            var answer = string.Join(' ', tokenIndices.Select(i => tokens[i]));
+            attempt.Correct = IsCorrect(attempt, answer);
+            attempt.CompletedAt = DateTimeOffset.UtcNow;
+            return new AnswerResult(attempt.Correct.Value, attempt.ExpectedAnswer, attempt.Explanation, false);
+        }
+        finally { entry.Gate.Release(); }
+    }
+
+    private static void ValidateIndices(int[] indices, int length)
+    {
+        if (indices.Length == 0 || indices.Length > length || indices.Distinct().Count() != indices.Length || indices.Any(i => i < 0 || i >= length))
+            throw new ArgumentException("Неверный набор слов.");
+    }
+
+    private static bool IsCorrect(ExerciseAttempt attempt, string answer) =>
+        Normalize(answer) == Normalize(attempt.ExpectedAnswer)
+        || ParseTokens(attempt.AlternativesJson).Any(x => Normalize(x) == Normalize(answer));
 
     public async Task<bool?> SaveDraft(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct)
     {
@@ -74,6 +122,13 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         if (tokenIndices.Length > length || tokenIndices.Distinct().Count() != tokenIndices.Length || tokenIndices.Any(i => i < 0 || i >= length))
             throw new ArgumentException("Неверный набор слов.");
         return await progress.SaveDraft(userId, attemptId, JsonSerializer.Serialize(tokenIndices), ct);
+    }
+
+    public static bool IsWordAnswerCorrect(WordEntry word, string translation)
+    {
+        var answer = word.DictionarySenseId is null ? translation : translation.Replace("\u0301", "");
+        var expected = word.DictionarySenseId is null ? word.Russian : word.Russian.Replace("\u0301", "");
+        return Normalize(answer) == Normalize(expected);
     }
 
     public static ProgressSummary Summarize(List<DailyActivity> activities, List<Achievement> achievements)

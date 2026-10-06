@@ -80,7 +80,7 @@
       $('book-literary-text').textContent = book.literaryTranslation || '';
       showView('reader');
       let saved = null;
-      try { saved = await AdamApi(`/books/${book.id}/position`); } catch { /* guests can read */ }
+      try { if (AdamAuthenticated) saved = await AdamApi(`/books/${book.id}/position`); } catch { /* guests can read */ }
       showChapter(book.chapters.find(x => x.id === saved?.chapterId) || book.chapters[0], saved?.tokenIndex || 0);
     } catch (error) { status.textContent = error.message; }
   }
@@ -142,6 +142,7 @@
     close.onclick = closeWord;
     header.append(heading, close); popup.append(header);
     const appendSave = (container, path) => {
+      if (!AdamAuthenticated) return;
       const save = document.createElement('button'); save.type = 'button'; save.className = 'book-text-button';
       save.textContent = 'В мой словарь';
       save.onclick = async () => {

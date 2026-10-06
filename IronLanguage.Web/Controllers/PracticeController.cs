@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IronLanguage.Web.Controllers;
 
-[Authorize]
 public sealed class PracticeController : Controller
 {
     [HttpGet("translate")]
@@ -24,6 +23,6 @@ public sealed class PracticeController : Controller
     [HttpGet("game")]
     public IActionResult Game() => View();
 
-    [HttpGet("progress")]
+    [Authorize, HttpGet("progress")]
     public IActionResult Progress() => View();
 }

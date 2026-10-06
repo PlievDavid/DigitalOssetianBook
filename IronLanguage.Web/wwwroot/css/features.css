@@ -90,17 +90,6 @@
 .home-practice-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 30px; }
 .home-practice-links a { padding: 10px 15px; border: 1px solid #dfe5ef; border-radius: 8px; color: #294d84; font-size: 14px; font-weight: 600; }
 .home-practice-links a:hover { background: #f4f7fb; border-color: #bbcae2; }
-.home-more-heading { margin: 0 0 18px; font-size: 22px; font-weight: 650; }
-.catalog-home .lesson-grid { gap: 18px; }
-.lesson-card--compact { display: flex; flex-direction: column; min-height: 215px; padding: 22px 24px 20px; border-radius: 12px; box-shadow: none; }
-.lesson-card--compact:hover { transform: translateY(-2px); box-shadow: 0 10px 24px #17233c10; }
-.lesson-card-top, .lesson-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.lesson-number { color: #9daac0; font-size: 24px; font-weight: 700; }
-.lesson-duration, .lesson-card-bottom { color: #77869c; font-size: 13px; }
-.lesson-card--compact h2 { margin: 24px 0 7px; font-size: 20px; letter-spacing: -.02em; }
-.lesson-card--compact p { margin: 0 0 22px; color: #64748b; font-size: 14px; line-height: 1.5; }
-.lesson-card-bottom { margin-top: auto; padding-top: 15px; border-top: 1px solid #edf0f5; }
-.lesson-card-bottom span:last-child { color: #405dca; font-size: 20px; }
 .game-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 700px; margin: 24px 0; }
 .game-board > div { display: grid; gap: 10px; align-content: start; }
 .game-shell { max-width: 760px; }
@@ -118,35 +107,11 @@
 .site-header { border-top: 0; }
 .header-inner {
     display: grid;
-    grid-template-columns: minmax(210px, 1fr) minmax(260px, 460px) minmax(170px, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 24px;
     height: 88px;
 }
 .brand { min-width: 0; }
-.header-search {
-    width: 100%;
-    height: 48px;
-    margin: 0;
-    border-color: #c9d2df;
-    border-radius: 5px;
-    padding: 0 14px;
-    gap: 9px;
-}
-.header-search:focus-within { border-color: #405dca; box-shadow: 0 0 0 3px #405dca1c; }
-.search-submit {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 30px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #334966;
-    flex: none;
-}
-.search-submit svg { width: 21px; height: 21px; }
-.header-search input { font-size: 16px; min-width: 0; }
-.header-search input::placeholder { color: #9aa7b7; }
 .header-actions { display: flex; align-items: center; justify-self: end; gap: 18px; white-space: nowrap; }
 .header-actions form { margin: 0; }
 .account-action { color: #17233c; font-size: 15px; font-weight: 700; }
@@ -224,15 +189,13 @@ body, button, input, textarea, select, summary { font-family: var(--site-font); 
     .profile-action-label { display: none; }
 }
 @media (max-width: 850px) {
-    .header-inner { grid-template-columns: minmax(170px, 1fr) minmax(180px, 300px) auto; height: 78px; gap: 14px; padding: 0 24px; }
-    .header-search { max-width: none; }
+    .header-inner { grid-template-columns: minmax(0, 1fr) auto; height: 78px; gap: 14px; padding: 0 24px; }
     .profile-action-label { display: none; }
     .nav-inner { height: 56px; gap: 5px; }
     .nav-inner a, .nav-inner .nav-menu-trigger { padding: 10px 13px; font-size: 15px; }
 }
 @media (max-width: 620px) {
     .header-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding: 12px 18px; }
-    .header-search { grid-column: 1 / -1; grid-row: 2; order: initial; width: 100%; height: 44px; margin: 0; }
     .header-actions { grid-column: 2; grid-row: 1; }
     .brand-copy small { display: none; }
     .nav-inner { padding: 0 12px; }
@@ -325,30 +288,9 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
     .book-page .reader-popup, .dialog-page .reader-popup { right: 12px; bottom: 12px; width: calc(100vw - 24px); max-height: 55vh; }
 }
 
-/* Shared page rhythm and focused lesson/puzzle surfaces. */
+/* Shared page rhythm and puzzle surfaces. */
 .container { max-width: 1200px; padding-left: 40px; padding-right: 40px; }
 .feature-shell { padding-top: 46px; }
-.lesson-reading { margin: 44px 0 0; padding-bottom: 30px; border-bottom: 1px solid #e5ebf1; }
-.lesson-reading h1 { margin: 9px 0 12px; font-size: clamp(30px, 3vw, 39px); letter-spacing: -.03em; }
-.lesson-reading > p { max-width: 640px; margin: 0 0 23px; color: #52657c; line-height: 1.6; }
-.lesson-word-list { display: grid; gap: 10px; }
-.lesson-word { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; border: 1px solid #e0e7ef; border-radius: 11px; }
-.lesson-word > div { display: grid; grid-template-columns: minmax(100px, auto) 1fr; gap: 3px 18px; align-items: baseline; }
-.lesson-word strong { font-size: 22px; }
-.lesson-word span { color: #40536a; font-size: 18px; }
-.lesson-word small { grid-column: 1 / -1; color: #71829a; font-size: 14px; }
-.lesson-save-word { flex: none; border: 1px solid #c7d4e4; border-radius: 8px; background: #fff; padding: 9px 13px; color: #25568d; font-size: 14px; font-weight: 600; }
-.lesson-save-word:hover { background: #f4f8fc; }
-.lesson-save-word:disabled { color: #50735e; background: #f0f8f2; border-color: #cee4d2; }
-.lesson-word-status { min-height: 20px; margin: 12px 0 0 !important; color: #42644f !important; font-size: 14px; }
-.lesson-word-list { gap: 0; border-top: 1px solid #e6ebf1; }
-.lesson-word { border: 0; border-bottom: 1px solid #e6ebf1; border-radius: 0; padding: 18px 2px; }
-.lesson-word > div { grid-template-columns: minmax(78px, auto) 1fr; }
-.lesson-word strong { font-size: 19px; }
-.lesson-word span { font-size: 17px; }
-.lesson-word small { font-size: 13px; }
-.lesson-save-word { border: 0; background: transparent; padding: 9px 6px; }
-.lesson-save-word:hover { background: transparent; text-decoration: underline; }
 .vocabulary-page-header { align-items: center; padding-bottom: 0; border-bottom: 0; }
 .vocabulary-page-header h1 { margin-bottom: 4px; }
 .vocabulary-status { margin: 20px 0 25px; }
@@ -361,9 +303,6 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
 .header-streak[hidden] { display: none; }
 .header-streak strong { font-size: 15px; }
 .header-streak-icon { display: block; width: 20px; height: 24px; flex: none; }
-.learn-top { margin-top: 32px; }
-.learn-top h2 { margin: 5px 0 16px; font-size: 25px; }
-.question-panel { margin-top: 27px; }
 .exercise-list { display: grid; gap: 20px; max-width: 950px; }
 .exercise-list[hidden], .exercise-play[hidden] { display: none !important; }
 .exercise-entry { display: grid; grid-template-columns: 38% 1fr; overflow: hidden; border: 1px solid #e1e8ef; border-radius: 13px; background: #fff; }
@@ -422,7 +361,6 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
 @media (max-width: 700px) {
   .container { padding-left: 20px; padding-right: 20px; }
   .feature-shell { padding: 28px 20px 70px; }
-  .lesson-word { align-items: start; flex-direction: column; }
   .exercise-entry { grid-template-columns: 1fr; }
   .exercise-entry > img { height: 200px; min-height: 0; }
   .exercise-entry-copy { padding: 22px; }
@@ -430,3 +368,6 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
   .dialog-bubble { max-width: 86%; }
   .dialog-feed { max-height: 46vh; padding: 12px; }
 }
+
+.guest-notice { margin-top: 24px; color: #52657c; font-size: 14px; line-height: 1.6; }
+.guest-notice a { color: #3056be; text-decoration: underline; }

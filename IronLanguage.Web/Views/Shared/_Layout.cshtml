@@ -11,7 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="~/images/adam-mark.svg" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body data-authenticated="@(User.Identity?.IsAuthenticated == true ? "true" : "false")">
     @{ var currentPath = Context.Request.Path.Value?.ToLowerInvariant() ?? "/"; }
     <header class="site-header">
         <div class="header-inner">
@@ -19,10 +19,6 @@
                 <img class="brand-mark" src="~/images/adam-mark.svg" width="58" height="48" alt="" />
                 <span class="brand-copy"><strong>Адам</strong><small>Осетинский язык для всех</small></span>
             </a>
-            <form class="header-search" asp-controller="Home" asp-action="Index" method="get" role="search">
-                <button type="submit" class="search-submit" aria-label="Искать"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></button>
-                <input name="q" type="search" value="@ViewData["Query"]" placeholder="Найти упражнение" aria-label="Найти упражнение" />
-            </form>
             <div class="header-actions">
                 @if (User.Identity?.IsAuthenticated == true) {
                     <a id="header-streak" class="header-streak" href="/progress" aria-label="Серия занятий" hidden><img class="header-streak-icon" src="~/images/streak-flame.svg" asp-append-version="true" width="20" height="24" alt="" /><strong id="header-streak-value"></strong><span id="header-streak-label" class="header-streak-label">дней подряд</span></a>
@@ -43,7 +39,7 @@
             <div class="nav-menu nav-menu-words">
                 <a class="nav-menu-link @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" href="/vocabulary">Слова</a>
                 <div class="nav-menu-panel">
-                    <a class="nav-menu-item" href="/vocabulary">Мои слова</a>
+                    <a class="nav-menu-item" href="/vocabulary">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Словарь")</a>
                     <a class="nav-menu-item" href="/word-practice">Тренировка слов</a>
                     <a class="nav-menu-item" href="/game">Подбор пар</a>
                 </div>
@@ -59,7 +55,13 @@
             <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" href="/books">Книги</a>
         </div></nav>
     </header>
-    <main>@RenderBody()</main>
+        <main>
+        @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/books", "/vocabulary", "/word-practice", "/game" }.Contains(currentPath))
+        {
+            <p class="guest-notice container">Занимайтесь без входа. Прогресс и слова не сохраняются. <a href="/account/login?ReturnUrl=@Uri.EscapeDataString(currentPath)">Войти, чтобы сохранять</a></p>
+        }
+        @RenderBody()
+    </main>
     <form hidden id="api-antiforgery">@Html.AntiForgeryToken()</form>
     <footer class="site-footer">
         <div class="footer-inner">
@@ -70,7 +72,7 @@
             <nav class="footer-links" aria-label="Разделы в подвале">
                 <a href="/">Задания</a>
                 <a href="/books">Книги</a>
-                <a href="/vocabulary">Мои слова</a>
+                <a href="/vocabulary">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Словарь")</a>
                 <a href="/word-practice">Тренировка слов</a>
             </nav>
             <span class="footer-copyright">© @DateTime.UtcNow.Year Адам</span>

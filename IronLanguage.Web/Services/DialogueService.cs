@@ -216,7 +216,7 @@ public static class DialogueScript
             .Select(x => x.Trim()).Where(x => x.Length > 0);
 }
 
-public sealed class DialogueService(ICatalogRepository catalog, IProgressRepository progress)
+public sealed class DialogueService(ICatalogRepository catalog, IProgressRepository progress, GuestLearningStore guests)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly Regex WordPattern = new(@"[\p{L}\p{M}]+", RegexOptions.Compiled);
@@ -266,6 +266,61 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
     {
         var session = await progress.Session(userId, sessionId, ct);
         if (session is null) return null;
+        return await AnswerCore(session, input,
+            (revision, state, attempts, errors, hints, turns) => progress.SaveSessionState(userId, sessionId, revision, state, attempts, errors, hints, turns, ct),
+            revision => progress.CompleteSession(userId, sessionId, revision, ct));
+    }
+
+    public async Task<DialogueSessionView?> StartGuest(Guid owner, Guid dialogueId, CancellationToken ct)
+    {
+        var dialogue = await catalog.Dialogue(dialogueId, ct);
+        if (dialogue is null) return null;
+        var (index, consumed) = Advance(Material(dialogue), 1);
+        var session = new DialogueSession
+        {
+            DialogueId = dialogue.Id, DialogueVersion = dialogue.Version, DialogueTitle = dialogue.Title,
+            ScriptJson = dialogue.ScriptJson, StateJson = Save(new DialogueState(index, consumed, 0))
+        };
+        guests.Add(owner, session.Id, session);
+        return View(session);
+    }
+
+    public async Task<DialogueSessionView?> GetGuestSession(Guid owner, Guid sessionId, CancellationToken ct)
+    {
+        var entry = guests.Find<DialogueSession>(owner, sessionId);
+        if (entry is null) return null;
+        await entry.Gate.WaitAsync(ct);
+        try { return View(entry.Value); }
+        finally { entry.Gate.Release(); }
+    }
+
+    public async Task<DialogueAnswerView?> AnswerGuest(Guid owner, Guid sessionId, DialogueAnswerInput input, CancellationToken ct)
+    {
+        var entry = guests.Find<DialogueSession>(owner, sessionId);
+        if (entry is null) return null;
+        await entry.Gate.WaitAsync(ct);
+        try
+        {
+            var session = entry.Value;
+            return await AnswerCore(session, input, (revision, state, attempts, errors, hints, turns) =>
+            {
+                if (session.CompletedAt is not null || session.Revision != revision) return Task.FromResult(false);
+                session.StateJson = state; session.Attempts = attempts; session.Errors = errors;
+                session.Hints = hints; session.TurnsCompleted = turns; session.Revision++;
+                return Task.FromResult(true);
+            }, revision =>
+            {
+                if (session.CompletedAt is not null || session.Revision != revision) return Task.FromResult(false);
+                session.CompletedAt = DateTimeOffset.UtcNow;
+                return Task.FromResult(true);
+            });
+        }
+        finally { entry.Gate.Release(); }
+    }
+
+    private static async Task<DialogueAnswerView> AnswerCore(DialogueSession session, DialogueAnswerInput input,
+        Func<int, string, int, int, int, int, Task<bool>> saveState, Func<int, Task<bool>> complete)
+    {
         if (session.CompletedAt is not null)
             return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session), []);
         var revision = session.Revision;
@@ -275,9 +330,9 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         var line = material.Lines.SingleOrDefault(x => x.Number == state.Index);
         if (line is null)
         {
-            if (!await progress.SaveSessionState(userId, sessionId, revision, Save(state), session.Attempts, session.Errors, session.Hints, session.TurnsCompleted, ct))
+            if (!await saveState(revision, Save(state), session.Attempts, session.Errors, session.Hints, session.TurnsCompleted))
                 throw new DialogueConflictException();
-            if (!await progress.CompleteSession(userId, sessionId, revision + 1, ct))
+            if (!await complete(revision + 1))
                 throw new DialogueConflictException();
             return new DialogueAnswerView(false, null, [], null, Counters(session), true, Summary(session), []);
         }
@@ -308,6 +363,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         {
             var value = (input.Value ?? "").Trim();
             if (value.Length == 0) throw new ArgumentException("Введите ответ.");
+            if (value.Length > 300) throw new ArgumentException("Ответ должен быть не длиннее 300 символов.");
             if (DialogueScript.HasLatin(value)) throw new ArgumentException("Переключите раскладку — в ответе есть латинские буквы.");
             totalAttempts++;
             attempts++;
@@ -334,13 +390,13 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
         }
         var finished = nextIndex > material.Lines.Max(x => x.Number);
         var newState = new DialogueState(nextIndex, log.ToArray(), attempts);
-        if (!await progress.SaveSessionState(userId, sessionId, revision, Save(newState), totalAttempts, errors, hints, turns, ct))
+        if (!await saveState(revision, Save(newState), totalAttempts, errors, hints, turns))
             throw new DialogueConflictException();
         DialogueSummary? summary = null;
         DialogueTurnView? nextTurn = null;
         if (finished)
         {
-            if (!await progress.CompleteSession(userId, sessionId, revision + 1, ct))
+            if (!await complete(revision + 1))
                 throw new DialogueConflictException();
             summary = new DialogueSummary(turns, errors, hints);
         }

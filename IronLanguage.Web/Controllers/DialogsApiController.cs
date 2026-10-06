@@ -7,35 +7,48 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [ApiController, AutoValidateAntiforgeryToken, Route("api/v1")]
-public sealed class DialogsApiController(ICatalogRepository catalog, DialogueService dialogs, DictionaryService dictionary) : ControllerBase
+public sealed class DialogsApiController(ICatalogRepository catalog, DialogueService dialogs, DictionaryService dictionary, GuestLearningStore guests) : ControllerBase
 {
-    [Authorize, HttpGet("dialogs")]
+    [HttpGet("dialogs")]
     public async Task<IActionResult> Dialogs(CancellationToken ct) =>
         Ok((await catalog.Dialogues(ct)).Select(x => new { x.Id, x.Title, x.Dialect, x.Level, x.Version }));
 
-    [Authorize, HttpGet("dialogs/{id:guid}")]
+    [HttpGet("dialogs/{id:guid}")]
     public async Task<IActionResult> Conditions(Guid id, CancellationToken ct) =>
         await dialogs.Conditions(id, ct) is { } view ? Ok(view) : NotFound();
 
-    [Authorize, HttpPost("dialogs/{id:guid}/sessions")]
-    public async Task<IActionResult> Start(Guid id, CancellationToken ct) =>
-        await dialogs.Start(User.UserId()!.Value, id, ct) is { } view ? Ok(await WithDictionary(view, ct)) : NotFound();
+    [HttpPost("dialogs/{id:guid}/sessions")]
+    public async Task<IActionResult> Start(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var view = User.UserId() is Guid userId ? await dialogs.Start(userId, id, ct)
+                : await dialogs.StartGuest(guests.Owner(HttpContext), id, ct);
+            return view is null ? NotFound() : Ok(await WithDictionary(view, ct));
+        }
+        catch (GuestCapacityException error) { return StatusCode(503, new { error = error.Message }); }
+    }
 
-    [Authorize, HttpPost("dialogs/sessions/{sid:guid}/answer")]
+    [HttpPost("dialogs/sessions/{sid:guid}/answer")]
     public async Task<IActionResult> Answer(Guid sid, DialogueAnswerInput input, CancellationToken ct)
     {
         try
         {
-            var view = await dialogs.Answer(User.UserId()!.Value, sid, input, ct);
+            var view = User.UserId() is Guid userId ? await dialogs.Answer(userId, sid, input, ct)
+                : await dialogs.AnswerGuest(guests.Owner(HttpContext), sid, input, ct);
             return view is null ? NotFound() : Ok(await WithDictionary(view, ct));
         }
         catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
         catch (DialogueConflictException error) { return Conflict(new { error = error.Message }); }
     }
 
-    [Authorize, HttpGet("dialogs/sessions/{sid:guid}")]
-    public async Task<IActionResult> Session(Guid sid, CancellationToken ct) =>
-        await dialogs.GetSession(User.UserId()!.Value, sid, ct) is { } view ? Ok(await WithDictionary(view, ct)) : NotFound();
+    [HttpGet("dialogs/sessions/{sid:guid}")]
+    public async Task<IActionResult> Session(Guid sid, CancellationToken ct)
+    {
+        var view = User.UserId() is Guid userId ? await dialogs.GetSession(userId, sid, ct)
+            : await dialogs.GetGuestSession(guests.Owner(HttpContext), sid, ct);
+        return view is null ? NotFound() : Ok(await WithDictionary(view, ct));
+    }
 
     [Authorize, HttpGet("dialogs/sessions/history")]
     public async Task<IActionResult> History(CancellationToken ct) => Ok(await dialogs.History(User.UserId()!.Value, ct));

@@ -82,7 +82,7 @@
   async function load() {
     status.textContent = "Загрузка…";
     try {
-      const [dialogs, history] = await Promise.all([AdamApi("/dialogs"), AdamApi("/dialogs/sessions/history")]);
+      const [dialogs, history] = await Promise.all([AdamApi("/dialogs"), (AdamAuthenticated ? AdamApi("/dialogs/sessions/history") : Promise.resolve([]))]);
       list.replaceChildren();
       for (const item of dialogs) {
         const card = document.createElement("article"); card.className = "exercise-entry";
@@ -101,6 +101,7 @@
   }
 
   function renderHistory(history) {
+    if (!AdamAuthenticated) return;
     const block = $("dialog-history");
     block.replaceChildren();
     if (!history.length) {
@@ -124,7 +125,7 @@
     try {
       session = await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
       hideSyncActions();
-      list.hidden = true; $("dialog-history-block").hidden = true; play.hidden = false;
+      list.hidden = true; if ($("dialog-history-block")) $("dialog-history-block").hidden = true; play.hidden = false;
       $("dialog-title").textContent = session.title;
       feed.replaceChildren(); result.textContent = ""; summaryBox.hidden = true;
       closeWord();
@@ -175,7 +176,7 @@
           save.textContent = "Сохранено"; save.disabled = true;
         } catch (error) { status.textContent = error.message; }
       }, "book-text-button");
-      entry.append(save);
+      if (AdamAuthenticated) entry.append(save);
       wordPopup.append(entry);
     }
     if (!entries.length) {
@@ -386,7 +387,7 @@
     hideSyncActions();
     setBusy(false);
     closeWord();
-    play.hidden = true; list.hidden = false; $("dialog-history-block").hidden = false;
+    play.hidden = true; list.hidden = false; if ($("dialog-history-block")) $("dialog-history-block").hidden = false;
     session = null; load();
   }
 

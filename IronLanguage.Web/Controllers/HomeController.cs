@@ -6,16 +6,7 @@ namespace IronLanguage.Web.Controllers;
 
 public class HomeController : Controller
 {
-    public IActionResult Index(string? q)
-    {
-        var lessons = LessonCatalog.All.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(q))
-            lessons = lessons.Where(x => x.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
-                || x.Description.Contains(q, StringComparison.OrdinalIgnoreCase));
-
-        ViewData["Query"] = q?.Trim() ?? "";
-        return View(lessons.ToArray());
-    }
+    public IActionResult Index() => View();
 
     public IActionResult Privacy()
     {
