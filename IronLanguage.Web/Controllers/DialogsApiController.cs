@@ -20,9 +20,13 @@ public sealed class DialogsApiController(ICatalogRepository catalog, DialogueSer
     [HttpPost("dialogs/{id:guid}/sessions")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)
     {
-        var view = User.UserId() is Guid userId ? await dialogs.Start(userId, id, ct)
-            : await dialogs.StartGuest(guests.Owner(HttpContext), id, ct);
-        return view is null ? NotFound() : Ok(await WithDictionary(view, ct));
+        try
+        {
+            var view = User.UserId() is Guid userId ? await dialogs.Start(userId, id, ct)
+                : await dialogs.StartGuest(guests.Owner(HttpContext), id, ct);
+            return view is null ? NotFound() : Ok(await WithDictionary(view, ct));
+        }
+        catch (GuestCapacityException error) { return StatusCode(503, new { error = error.Message }); }
     }
 
     [HttpPost("dialogs/sessions/{sid:guid}/answer")]

@@ -34,14 +34,18 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     [HttpPost("exercises/{id:guid}/attempts")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)
     {
-        if (User.UserId() is null)
+        try
         {
-            var guest = await learning.StartGuest(guests.Owner(HttpContext), id, ct);
-            return guest is null ? NotFound() : Ok(new { guest.Value.Card, attemptId = guest.Value.Attempt.Id, draftIndices = Array.Empty<int>() });
+            if (User.UserId() is null)
+            {
+                var guest = await learning.StartGuest(guests.Owner(HttpContext), id, ct);
+                return guest is null ? NotFound() : Ok(new { guest.Value.Card, attemptId = guest.Value.Attempt.Id, draftIndices = Array.Empty<int>() });
+            }
+            var result = await learning.Start(User.UserId(), id, ct);
+            return result is null ? NotFound() : Ok(new { result.Value.Card, attemptId = result.Value.Attempt!.Id,
+                draftIndices = JsonSerializer.Deserialize<int[]>(result.Value.Attempt.DraftIndicesJson) ?? [] });
         }
-        var result = await learning.Start(User.UserId(), id, ct);
-        return result is null ? NotFound() : Ok(new { result.Value.Card, attemptId = result.Value.Attempt!.Id,
-            draftIndices = JsonSerializer.Deserialize<int[]>(result.Value.Attempt.DraftIndicesJson) ?? [] });
+        catch (GuestCapacityException error) { return StatusCode(503, new { error = error.Message }); }
     }
 
     [Authorize, HttpGet("attempts/{id:guid}")]
@@ -100,9 +104,7 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     {
         var word = await catalog.Word(id, ct);
         if (word is null) return NotFound();
-        var answer = word.DictionarySenseId is null ? input.Translation : input.Translation.Replace("\u0301", "");
-        var expected = word.DictionarySenseId is null ? word.Russian : word.Russian.Replace("\u0301", "");
-        var correct = LearningService.Normalize(answer) == LearningService.Normalize(expected);
+        var correct = LearningService.IsWordAnswerCorrect(word, input.Translation);
         return await progress.ReviewWord(User.UserId()!.Value, id, correct, ct) ? Ok(new { correct, expected = word.Russian }) : NotFound();
     }
 
@@ -111,9 +113,7 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     {
         var word = await catalog.Word(id, ct);
         if (word is null) return NotFound();
-        var answer = word.DictionarySenseId is null ? input.Translation : input.Translation.Replace("\u0301", "");
-        var expected = word.DictionarySenseId is null ? word.Russian : word.Russian.Replace("\u0301", "");
-        return Ok(new { correct = LearningService.Normalize(answer) == LearningService.Normalize(expected), expected = word.Russian });
+        return Ok(new { correct = LearningService.IsWordAnswerCorrect(word, input.Translation), expected = word.Russian });
     }
 
     [HttpGet("books")]

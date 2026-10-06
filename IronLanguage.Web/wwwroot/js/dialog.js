@@ -101,9 +101,9 @@
   }
 
   function renderHistory(history) {
+    if (!AdamAuthenticated) return;
     const block = $("dialog-history");
     block.replaceChildren();
-    if (!AdamAuthenticated) { document.getElementById("dialog-history-block").hidden = true; return; }
     if (!history.length) {
       const empty = document.createElement("p"); empty.className = "field-help";
       empty.textContent = "Пройденных диалогов пока нет.";
@@ -125,7 +125,7 @@
     try {
       session = await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
       hideSyncActions();
-      list.hidden = true; $("dialog-history-block").hidden = true; play.hidden = false;
+      list.hidden = true; if ($("dialog-history-block")) $("dialog-history-block").hidden = true; play.hidden = false;
       $("dialog-title").textContent = session.title;
       feed.replaceChildren(); result.textContent = ""; summaryBox.hidden = true;
       closeWord();
@@ -387,7 +387,7 @@
     hideSyncActions();
     setBusy(false);
     closeWord();
-    play.hidden = true; list.hidden = false; $("dialog-history-block").hidden = false;
+    play.hidden = true; list.hidden = false; if ($("dialog-history-block")) $("dialog-history-block").hidden = false;
     session = null; load();
   }
 

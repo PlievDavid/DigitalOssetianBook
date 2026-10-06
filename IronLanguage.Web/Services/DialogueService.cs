@@ -304,12 +304,14 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
             var session = entry.Value;
             return await AnswerCore(session, input, (revision, state, attempts, errors, hints, turns) =>
             {
+                if (session.CompletedAt is not null || session.Revision != revision) return Task.FromResult(false);
                 session.StateJson = state; session.Attempts = attempts; session.Errors = errors;
                 session.Hints = hints; session.TurnsCompleted = turns; session.Revision++;
                 return Task.FromResult(true);
             }, revision =>
             {
-                session.CompletedAt = DateTimeOffset.UtcNow; session.Revision++;
+                if (session.CompletedAt is not null || session.Revision != revision) return Task.FromResult(false);
+                session.CompletedAt = DateTimeOffset.UtcNow;
                 return Task.FromResult(true);
             });
         }

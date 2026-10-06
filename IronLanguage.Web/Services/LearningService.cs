@@ -124,6 +124,13 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         return await progress.SaveDraft(userId, attemptId, JsonSerializer.Serialize(tokenIndices), ct);
     }
 
+    public static bool IsWordAnswerCorrect(WordEntry word, string translation)
+    {
+        var answer = word.DictionarySenseId is null ? translation : translation.Replace("\u0301", "");
+        var expected = word.DictionarySenseId is null ? word.Russian : word.Russian.Replace("\u0301", "");
+        return Normalize(answer) == Normalize(expected);
+    }
+
     public static ProgressSummary Summarize(List<DailyActivity> activities, List<Achievement> achievements)
     {
         var days = activities.Select(x => x.Day).ToHashSet();
