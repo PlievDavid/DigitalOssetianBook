@@ -21,6 +21,7 @@ public sealed class EditorFormModel
     public string OssetianAnswer { get; set; } = "";
     public string TokensText { get; set; } = "";
     public string AlternativesText { get; set; } = "";
+    public string DistractorsText { get; set; } = "";
     public string Explanation { get; set; } = "";
     public string WordIdsCsv { get; set; } = "";
     public string ChaptersJson { get; set; } = "[]";
@@ -47,6 +48,7 @@ public sealed class EditorFormModel
             var p = JsonSerializer.Deserialize<ExerciseMaterial>(json, options)!;
             model.RussianPrompt = p.RussianPrompt; model.OssetianAnswer = p.OssetianAnswer;
             model.TokensText = string.Join('\n', p.Tokens); model.AlternativesText = string.Join('\n', p.Alternatives);
+            model.DistractorsText = string.Join('\n', (p.Distractors ?? []).Select(d => string.Join(" | ", d)));
             model.Explanation = p.Explanation; model.WordIdsCsv = string.Join(',', p.WordIds); model.ExistingAudioPath = p.AudioPath;
         }
         else if (kind == "book")

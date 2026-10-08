@@ -7,7 +7,7 @@ public sealed record DictionaryMatch(Guid SenseId, bool Approximate);
 public sealed record MaterialToken(string Text, Guid? WordId, DictionaryMatch[]? Matches = null);
 public sealed record MaterialChapter(Guid Id, int Number, string Title, MaterialToken[] Tokens);
 public sealed record WordMaterial(string Ossetian, string Russian, string Example, string? AudioPath);
-public sealed record ExerciseMaterial(string Kind, string RussianPrompt, string OssetianAnswer, string[] Tokens, string[] Alternatives, string Explanation, Guid[] WordIds, string? AudioPath);
+public sealed record ExerciseMaterial(string Kind, string RussianPrompt, string OssetianAnswer, string[] Tokens, string[] Alternatives, string Explanation, Guid[] WordIds, string? AudioPath, string[][]? Distractors = null);
 public sealed record BookMaterial(string Title, string Description, MaterialChapter[] Chapters, string LiteraryTranslation = "",
     string Authors = "", string Difficulty = "", string? CoverImagePath = null);
 public sealed record DialogueCharacter(string Id, string Name, string Color);
@@ -91,6 +91,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var p = Parse<ExerciseMaterial>(payloadJson);
             var exercise = new Exercise { Kind = kind, RussianPrompt = p.RussianPrompt, OssetianAnswer = p.OssetianAnswer,
                 TokensJson = JsonSerializer.Serialize(p.Tokens), AlternativesJson = JsonSerializer.Serialize(p.Alternatives),
+                DistractorsJson = JsonSerializer.Serialize(p.Distractors ?? []),
                 WordIdsJson = JsonSerializer.Serialize(p.WordIds), Explanation = p.Explanation, AudioPath = p.AudioPath };
             db.Exercises.Add(exercise); await db.SaveChangesAsync(ct); return exercise.Id;
         }
@@ -295,7 +296,8 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
     private static T Parse<T>(string json) => JsonSerializer.Deserialize<T>(json, JsonOptions) ?? throw new ArgumentException("Invalid material payload");
     private static string Capture(WordEntry x) => JsonSerializer.Serialize(new WordMaterial(x.Ossetian, x.Russian, x.Example, x.AudioPath), JsonOptions);
     private static string Capture(Exercise x) => JsonSerializer.Serialize(new ExerciseMaterial(x.Kind, x.RussianPrompt, x.OssetianAnswer,
-        Parse<string[]>(x.TokensJson), Parse<string[]>(x.AlternativesJson), x.Explanation, Parse<Guid[]>(x.WordIdsJson), x.AudioPath), JsonOptions);
+        Parse<string[]>(x.TokensJson), Parse<string[]>(x.AlternativesJson), x.Explanation, Parse<Guid[]>(x.WordIdsJson), x.AudioPath,
+        Parse<string[][]>(x.DistractorsJson)), JsonOptions);
     private static string Capture(Book x) => JsonSerializer.Serialize(new BookMaterial(x.Title, x.Description, x.Chapters.OrderBy(c => c.Number)
         .Select(c => new MaterialChapter(c.Id, c.Number, c.Title, Parse<MaterialToken[]>(c.TokensJson))).ToArray(),
         x.LiteraryTranslation, x.Authors, x.Difficulty, x.CoverImagePath), JsonOptions);
@@ -304,6 +306,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
     {
         x.RussianPrompt = p.RussianPrompt; x.OssetianAnswer = p.OssetianAnswer; x.Explanation = p.Explanation; x.AudioPath = p.AudioPath;
         x.TokensJson = JsonSerializer.Serialize(p.Tokens); x.AlternativesJson = JsonSerializer.Serialize(p.Alternatives); x.WordIdsJson = JsonSerializer.Serialize(p.WordIds);
+        x.DistractorsJson = JsonSerializer.Serialize(p.Distractors ?? []);
     }
     private static string Capture(Dialogue x)
     {

@@ -16,16 +16,15 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
     [HttpPost("exercise"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
     public async Task<IActionResult> Exercise(string kind, string russianPrompt, string ossetianAnswer, string tokens, string? alternatives, string? explanation, string? wordIds, IFormFile? audio, CancellationToken ct)
     {
-        if (kind is not ("audio" or "translation") || string.IsNullOrWhiteSpace(russianPrompt) || string.IsNullOrWhiteSpace(ossetianAnswer)) return BadRequest();
+        if (kind == "audio") return BadRequest("Аудиопазл создавайте в конструкторе: /editor/new/audio.");
+        if (kind != "translation" || string.IsNullOrWhiteSpace(russianPrompt) || string.IsNullOrWhiteSpace(ossetianAnswer)) return BadRequest();
         var pieces = tokens.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (pieces.Length < 2 || pieces.Length > 30 || pieces.Any(x => x.Length > 80)) return BadRequest("Укажите от 2 до 30 слов, каждое с новой строки.");
         var accepted = (alternatives ?? "").Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         var linkedWords = (wordIds ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (linkedWords.Any(x => !Guid.TryParse(x, out _))) return BadRequest("Неверный идентификатор слова.");
         if (!CanAssemble(ossetianAnswer, pieces)) return BadRequest("Ответ должен собираться из указанных слов.");
-        if (kind == "audio" && audio is null) return BadRequest("Для аудиопазла нужна запись.");
         var audioPath = audio is null ? null : await SaveAudio(audio, ct);
-        if (kind == "audio" && audioPath is null) return BadRequest("Поддерживаются MP3, OGG и WAV до 10 МБ.");
         await catalog.AddExercise(new Exercise { Kind = kind, RussianPrompt = russianPrompt.Trim(), OssetianAnswer = ossetianAnswer.Trim(),
             TokensJson = JsonSerializer.Serialize(pieces), WordIdsJson = JsonSerializer.Serialize(linkedWords.Select(Guid.Parse)),
             AlternativesJson = JsonSerializer.Serialize(accepted), Explanation = (explanation ?? "").Trim(), AudioPath = audioPath }, ct);

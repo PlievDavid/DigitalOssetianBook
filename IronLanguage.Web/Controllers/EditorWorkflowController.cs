@@ -152,7 +152,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.Ossetian ??= ""; model.Russian ??= ""; model.Example ??= ""; model.LiteraryTranslation ??= "";
         model.Authors ??= ""; model.Difficulty ??= "";
         model.RussianPrompt ??= ""; model.OssetianAnswer ??= ""; model.TokensText ??= "";
-        model.AlternativesText ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
+        model.AlternativesText ??= ""; model.DistractorsText ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
         model.DialogueTitle ??= ""; model.Dialect ??= ""; model.CharactersText ??= ""; model.LinesText ??= ""; model.TurnsText ??= "";
         var kind = model.Kind;
         var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
@@ -173,25 +173,62 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         else if (kind is "audio" or "translation")
         {
             var tokens = model.TokensText.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            var alternatives = model.AlternativesText.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             var wordIds = new List<Guid>();
             foreach (var value in model.WordIdsCsv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             {
                 if (!Guid.TryParse(value, out var id) || !publishedWords.Contains(id)) ModelState.AddModelError(nameof(model.WordIdsCsv), "Выберите опубликованные слова из списка.");
                 else wordIds.Add(id);
             }
-            if (string.IsNullOrWhiteSpace(model.RussianPrompt)) ModelState.AddModelError(nameof(model.RussianPrompt), "Укажите русскую подсказку.");
-            if (string.IsNullOrWhiteSpace(model.OssetianAnswer)) ModelState.AddModelError(nameof(model.OssetianAnswer), "Укажите осетинский ответ.");
-            if (tokens.Length is < 2 or > 30 || tokens.Any(x => x.Length > 80)) ModelState.AddModelError(nameof(model.TokensText), "Нужно от 2 до 30 слов, каждое с новой строки.");
-            else if (!CanAssemble(model.OssetianAnswer, tokens) || alternatives.Any(x => !CanAssemble(x, tokens)))
-                ModelState.AddModelError(nameof(model.TokensText), "Ответ и допустимые варианты должны собираться из этих слов.");
+            if (string.IsNullOrWhiteSpace(model.RussianPrompt))
+                ModelState.AddModelError(nameof(model.RussianPrompt), kind == "audio" ? "Укажите перевод предложения." : "Укажите русскую подсказку.");
+            if (tokens.Length is < 2 or > 30 || tokens.Any(x => x.Length > 80))
+                ModelState.AddModelError(nameof(model.TokensText), kind == "audio"
+                    ? "Предложение: от 2 до 30 слов, каждое с новой строки."
+                    : "Нужно от 2 до 30 слов, каждое с новой строки.");
+            string ossetianAnswer;
+            string[] alternatives;
+            string[][] distractors = [];
+            if (kind == "audio")
+            {
+                // Для аудиопазла ответ собирается из правильного предложения, варианты — из двух отвлекающих слов на шаг.
+                var distractorLines = model.DistractorsText.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                if (distractorLines.Length != tokens.Length)
+                    ModelState.AddModelError(nameof(model.DistractorsText), "Добавьте строку с двумя отвлекающими словами для каждого слова предложения.");
+                else
+                {
+                    var pairs = new List<string[]>();
+                    for (var i = 0; i < distractorLines.Length; i++)
+                    {
+                        var parts = distractorLines[i].Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length != 2 || parts.Any(x => x.Length > 80))
+                            ModelState.AddModelError(nameof(model.DistractorsText), $"Строка {i + 1}: укажите два варианта через «|», каждый до 80 символов.");
+                        else if (parts.Any(x => LearningService.Normalize(x) == LearningService.Normalize(tokens[i])))
+                            ModelState.AddModelError(nameof(model.DistractorsText), $"Строка {i + 1}: отвлекающее слово не должно совпадать с правильным «{tokens[i]}».");
+                        else if (LearningService.Normalize(parts[0]) == LearningService.Normalize(parts[1]))
+                            ModelState.AddModelError(nameof(model.DistractorsText), $"Строка {i + 1}: два отвлекающих слова не должны совпадать.");
+                        else pairs.Add(parts);
+                    }
+                    distractors = pairs.ToArray();
+                }
+                ossetianAnswer = string.Join(' ', tokens);
+                alternatives = [];
+                model.OssetianAnswer = ossetianAnswer;
+            }
+            else
+            {
+                alternatives = model.AlternativesText.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                ossetianAnswer = model.OssetianAnswer;
+                if (string.IsNullOrWhiteSpace(model.OssetianAnswer)) ModelState.AddModelError(nameof(model.OssetianAnswer), "Укажите осетинский ответ.");
+                if (tokens.Length is >= 2 and <= 30 && (!CanAssemble(model.OssetianAnswer, tokens) || alternatives.Any(x => !CanAssemble(x, tokens))))
+                    ModelState.AddModelError(nameof(model.TokensText), "Ответ и допустимые варианты должны собираться из этих слов.");
+            }
             if (kind == "audio" && model.Audio is not { Length: > 0 } && string.IsNullOrEmpty(originalAudioPath))
                 ModelState.AddModelError(nameof(model.Audio), "Для аудиопазла нужна запись.");
             if (ModelState.IsValid)
             {
                 var audio = kind == "audio" ? model.Audio is { Length: > 0 } ? await SaveAudio(model.Audio, ct) : originalAudioPath : null;
-                payload = JsonSerializer.Serialize(new ExerciseMaterial(kind, model.RussianPrompt.Trim(), model.OssetianAnswer.Trim(), tokens,
-                    alternatives, model.Explanation.Trim(), wordIds.Distinct().ToArray(), audio), JsonOptions);
+                payload = JsonSerializer.Serialize(new ExerciseMaterial(kind, model.RussianPrompt.Trim(), ossetianAnswer.Trim(), tokens,
+                    alternatives, model.Explanation.Trim(), wordIds.Distinct().ToArray(), audio, distractors), JsonOptions);
             }
         }
         else if (kind == "book")

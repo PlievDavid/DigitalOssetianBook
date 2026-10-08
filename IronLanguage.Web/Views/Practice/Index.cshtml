@@ -3,21 +3,32 @@
 <section class="feature-shell" id="exercise-app" data-kind="@Model">
     <a class="back-link" href="/">← К заданиям</a>
     <h1>@ViewData["Title"]</h1>
-    <p>@(isAudio ? "Слушайте осетинскую запись и собирайте услышанную фразу." : "Соберите осетинский перевод русской фразы.")</p>
+    <p>@(isAudio ? "Слушайте осетинскую запись и выбирайте слова по одному." : "Соберите осетинский перевод русской фразы.")</p>
     <div id="exercise-status" role="status"></div>
     <div id="exercise-list" class="exercise-list"></div>
     <div id="exercise-play" class="exercise-play" hidden>
         @if (isAudio) { <img class="exercise-scene" src="~/images/audio-greeting.png" alt="Два собеседника приветствуют друг друга" /> }
         <div class="exercise-play-body">
         <a id="exercise-back" class="back-link" href="/audio-puzzles">← К списку</a>
+        <span id="exercise-eyebrow" class="eyebrow" hidden></span>
         <h2 id="exercise-prompt"></h2>
-        <p id="exercise-instruction">@(isAudio ? "Сначала прослушайте запись. Затем соберите услышанные слова в том же порядке." : "Соберите осетинскую фразу из слов ниже.")</p>
+        <p id="exercise-instruction">@(isAudio ? "Прослушайте запись и выбирайте слова по одному. Неверный вариант можно заменить другим." : "Соберите осетинскую фразу из слов ниже.")</p>
         <audio id="exercise-audio" controls preload="metadata" hidden></audio>
         <p id="exercise-audio-error" class="form-error" hidden>Запись недоступна. Попробуйте загрузить её снова.</p>
-        <span class="exercise-tiles-label">Ваш ответ</span>
-        <div id="exercise-picked" class="word-tiles" aria-label="Собранная фраза"></div>
-        <span class="exercise-tiles-label">Выберите слова</span>
-        <div id="exercise-tiles" class="word-tiles" aria-label="Доступные слова"></div>
+        <div id="exercise-steps" hidden>
+            <span class="exercise-tiles-label">Ваш ответ</span>
+            <div id="exercise-step-slots" class="word-tiles" aria-label="Собранная фраза"></div>
+            <p id="exercise-progress" class="exercise-progress" role="status"></p>
+            <span id="exercise-options-label" class="exercise-tiles-label">Выберите слово</span>
+            <div id="exercise-options" class="word-tiles" aria-label="Варианты слова"></div>
+            <p id="exercise-hint" class="exercise-hint" hidden>Неверный вариант. Выберите другой.</p>
+        </div>
+        <div id="exercise-tiles-block">
+            <span class="exercise-tiles-label">Ваш ответ</span>
+            <div id="exercise-picked" class="word-tiles" aria-label="Собранная фраза"></div>
+            <span class="exercise-tiles-label">Выберите слова</span>
+            <div id="exercise-tiles" class="word-tiles" aria-label="Доступные слова"></div>
+        </div>
         <div class="exercise-actions"><button id="exercise-submit" class="button primary" disabled>Проверить ответ</button><button id="exercise-clear" class="button secondary" type="button">Сбросить</button></div>
         <div id="exercise-result" role="status"></div>
         <div id="exercise-words" class="feature-grid"></div>
