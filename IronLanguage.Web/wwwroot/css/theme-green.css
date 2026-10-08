@@ -231,9 +231,7 @@
     .home-reading-card p { font-size: 14px; max-width: 80%; }
 }
 
-.green-theme .nav-menu.nav-menu-section { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-.green-theme .nav-section-link { display: flex; align-items: center; min-height: var(--theme-touch-size); padding: 12px 6px 12px 14px; border-radius: var(--theme-radius-sm); font-size: 14px; font-weight: 600; }
-.green-theme .nav-section-toggle { display: grid; place-items: center; width: var(--theme-touch-size); min-height: var(--theme-touch-size); padding: 10px; }
-.nav-section-toggle svg { width: 18px; height: 18px; }
-.nav-section-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
-.green-theme .nav-menu-section > .nav-menu-panel { grid-column: 1 / -1; }
+.green-theme .nav-section-link { display: flex; align-items: center; min-height: var(--theme-touch-size); padding: 12px 14px; border-radius: var(--theme-radius-sm); font-size: 14px; font-weight: 600; }
+@media (max-width: 1023px) {
+    .green-theme .mobile-is-open .nav-menu-section .nav-menu-panel { display: grid; }
+}
