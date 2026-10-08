@@ -20,7 +20,7 @@
   const audio = $("exercise-audio");
   const submit = $("exercise-submit");
   const clear = $("exercise-clear");
-  let card, attemptId, indices = [], submitted = false, pendingDraft = Promise.resolve();
+  let card, attemptId, indices = [], submitted = false, checking = false, pendingDraft = Promise.resolve();
 
   const button = (label, action, className = "button secondary") => {
     const b = document.createElement("button"); b.type = "button"; b.className = className; b.textContent = label; b.addEventListener("click", action); return b;
@@ -73,10 +73,10 @@
   }
   function renderTiles() {
     picked.replaceChildren(); tiles.replaceChildren();
-    indices.forEach((index, position) => picked.append(button(card.tokens[index], () => { if (!submitted) { indices.splice(position, 1); renderTiles(); saveDraft(); } }, "word-tile selected")));
-    card.tokens.forEach((word, index) => { if (!indices.includes(index)) tiles.append(button(word, () => { if (!submitted) { indices.push(index); renderTiles(); saveDraft(); } }, "word-tile")); });
-    submit.disabled = indices.length < 2 || submitted;
-    clear.disabled = !indices.length || submitted;
+    indices.forEach((index, position) => picked.append(button(card.tokens[index], () => { if (!submitted && !checking) { indices.splice(position, 1); renderTiles(); saveDraft(); } }, "word-tile selected")));
+    card.tokens.forEach((word, index) => { if (!indices.includes(index)) tiles.append(button(word, () => { if (!submitted && !checking) { indices.push(index); renderTiles(); saveDraft(); } }, "word-tile")); });
+    submit.disabled = indices.length < 2 || submitted || checking;
+    clear.disabled = !indices.length || submitted || checking;
   }
   function renderSteps() {
     slots.replaceChildren();
@@ -92,14 +92,14 @@
       const choices = card.steps && card.steps[step] ? card.steps[step] : [card.tokens[step]];
       choices.forEach(word => {
         const choice = button(word, () => pick(word, step), "word-tile");
-        choice.disabled = submitted || !ready;
+        choice.disabled = submitted || checking || !ready;
         options.append(choice);
       });
     }
-    clear.disabled = !indices.length || submitted;
+    clear.disabled = !indices.length || submitted || checking;
   }
   function pick(word, step) {
-    if (submitted || step !== indices.length) return;
+    if (submitted || checking || step !== indices.length) return;
     if (norm(word) === norm(card.tokens[step])) {
       hint.hidden = true;
       indices.push(step);
@@ -133,8 +133,10 @@
       .catch(error => { status.textContent = `Не удалось сохранить выбранные слова: ${error.message}`; });
   }
   async function submitAnswer() {
-    if (submitted) return;
+    if (submitted || checking) return;
     if (audioFlow && audio.error) { $("exercise-audio-error").hidden = false; return; }
+    checking = true;
+    render();
     try {
       await pendingDraft;
       const answer = await AdamApi(`/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ tokenIndices: indices }) });
@@ -163,13 +165,16 @@
       if (audioFlow && indices.length === card.tokens.length) {
         submit.hidden = false; submit.disabled = false; submit.textContent = "Отправить ответ";
       }
+    } finally {
+      checking = false;
+      if (!submitted) render();
     }
   }
   submit.addEventListener("click", submitAnswer);
   function back() { audio.pause(); play.hidden = true; list.hidden = false; load(); }
   $("exercise-back").addEventListener("click", event => { event.preventDefault(); back(); });
   clear.addEventListener("click", () => {
-    if (submitted) return;
+    if (submitted || checking) return;
     indices = []; hint.hidden = true;
     render(); saveDraft();
   });
