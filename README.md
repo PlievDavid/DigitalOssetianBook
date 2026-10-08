@@ -75,6 +75,19 @@ dotnet run --project IronLanguage.Web/IronLanguage.Web.csproj
 
 Применяйте миграции до запуска сайта. Загруженные записи сохраняются в `IronLanguage.Web/wwwroot/media`; ключи входа — в `IronLanguage.Web/.data-protection-keys`. При развёртывании подключите для них постоянные тома и включите медиа вместе с PostgreSQL в резервное копирование. Путь к ключам можно задать через `DataProtection__KeysDirectory`.
 
+### Запуск из Visual Studio
+
+Откройте `IronLanguage.slnx` в Visual Studio 2026 с компонентом «ASP.NET и веб-разработка» и SDK .NET 10. Назначьте `IronLanguage.Web` запускаемым проектом, выберите профиль `http` или `https` и нажмите F5. PostgreSQL должен быть запущен, а миграции — применены к выбранной базе.
+
+Для запуска из Visual Studio без предварительного задания переменных окружения сохраните строку подключения в локальных User Secrets. В этом рабочем окружении выполните из корня проекта:
+
+```powershell
+. .\.run-local\connection.ps1
+dotnet user-secrets set 'ConnectionStrings:Adam' "$env:ConnectionStrings__Adam" --project IronLanguage.Web/IronLanguage.Web.csproj
+```
+
+На другом компьютере задайте `ConnectionStrings:Adam` через «Управление секретами пользователя» у Web-проекта, указав свои host, port, database, username и password. User Secrets находятся вне репозитория и автоматически загружаются в режиме Development; это локальный инструмент разработки, а не зашифрованное хранилище production. Не записывайте пароль в `appsettings.json`, `launchSettings.json` или C#-файлы. Переменная `ConnectionStrings__Adam`, если задана, имеет приоритет над User Secrets. `AdamDbContextFactory` используется инструментами EF; изменение только его резервной строки не меняет подключение обычного Web-запуска.
+
 ## Содержание и редактор
 
 После регистрации назначьте первого редактора через административный доступ к БД: `UPDATE "Users" SET "IsEditor" = true WHERE "Email" = 'editor@example.com';`. Выйдите и войдите снова, чтобы обновилась роль в cookie. Публичная регистрация никогда не выдаёт роль редактора.

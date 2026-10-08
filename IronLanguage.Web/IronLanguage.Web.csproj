@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseAppHost>false</UseAppHost>
+    <UserSecretsId>adam-ironlanguage-web-41f99485-63c0-4685-b9e5-93e07b9a36ad</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
