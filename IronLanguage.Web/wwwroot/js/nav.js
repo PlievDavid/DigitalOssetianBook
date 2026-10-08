@@ -8,7 +8,7 @@
     const closeMenus = () => {
         games.setAttribute('aria-expanded', 'false');
         menus.forEach(menu => {
-            menu.classList.remove('is-open');
+            menu.classList.remove('is-open', 'is-pinned');
             menu.querySelector('.nav-menu-trigger').setAttribute('aria-expanded', 'false');
         });
     };
@@ -21,18 +21,22 @@
     };
     menus.forEach(menu => {
         const trigger = menu.querySelector('.nav-menu-trigger');
-        const setMenu = open => {
+        const setMenu = (open, pinned = false) => {
             closeMenus();
             menu.classList.toggle('is-open', open);
+            menu.classList.toggle('is-pinned', open && pinned);
             trigger.setAttribute('aria-expanded', String(open));
             games.setAttribute('aria-expanded', String(compact.matches && open && menu.classList.contains('nav-menu-games')));
         };
-        trigger.addEventListener('click', () => setMenu(!menu.classList.contains('is-open')));
+        trigger.addEventListener('click', () => {
+            const open = !menu.classList.contains('is-pinned');
+            setMenu(open, open);
+        });
         menu.addEventListener('pointerenter', event => {
-            if (!compact.matches && event.pointerType === 'mouse') setMenu(true);
+            if (!compact.matches && event.pointerType === 'mouse' && !menu.classList.contains('is-pinned')) setMenu(true);
         });
         menu.addEventListener('pointerleave', event => {
-            if (!compact.matches && event.pointerType === 'mouse' && !menu.contains(document.activeElement)) setMenu(false);
+            if (!compact.matches && event.pointerType === 'mouse' && !menu.classList.contains('is-pinned') && !menu.contains(document.activeElement)) setMenu(false);
         });
         menu.addEventListener('focusout', event => {
             if (!menu.contains(event.relatedTarget)) setMenu(false);

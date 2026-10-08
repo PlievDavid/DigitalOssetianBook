@@ -24,18 +24,20 @@
                 <span class="brand-copy"><strong>Адам</strong><small>Осетинский язык для всех</small></span>
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
-            <div class="nav-menu">
-                <button class="nav-menu-link nav-menu-trigger @(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" type="button" aria-haspopup="true" aria-expanded="false">Задания</button>
-                <div class="nav-menu-panel">
+            <div class="nav-menu nav-menu-section">
+                <a class="nav-section-link @(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" href="/">Задания</a>
+                <button class="nav-menu-trigger nav-section-toggle" type="button" aria-label="Меню заданий" aria-controls="practice-menu" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
+                <div id="practice-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/">Все задания</a>
                     <a class="nav-menu-item" href="/audio-puzzles">Аудиопазлы</a>
                     <a class="nav-menu-item" href="/translate">Перевод фраз</a>
                     <a class="nav-menu-item" href="/dialogs">Диалоги</a>
                 </div>
             </div>
-            <div class="nav-menu nav-menu-words">
-                <button class="nav-menu-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" type="button" aria-haspopup="true" aria-expanded="false">Слова</button>
-                <div class="nav-menu-panel">
+            <div class="nav-menu nav-menu-words nav-menu-section">
+                <a class="nav-section-link @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" href="/vocabulary">Слова</a>
+                <button class="nav-menu-trigger nav-section-toggle" type="button" aria-label="Меню слов" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
+                <div id="words-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/vocabulary">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Словарь")</a>
                     <a class="nav-menu-item" href="/word-practice">Тренировка слов</a>
                     <a class="nav-menu-item" href="/game">Подбор пар</a>
