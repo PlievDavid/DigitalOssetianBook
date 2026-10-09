@@ -23,10 +23,19 @@
         }
         else if (Model.Kind is "audio" or "translation")
         {
-            <label>Русская подсказка <input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
-            <label>Осетинский ответ <input asp-for="OssetianAnswer" required /><span asp-validation-for="OssetianAnswer" class="form-error"></span></label>
-            <label>Слова для сборки <span class="field-help">Каждое слово — с новой строки. Добавьте также отвлекающие слова, если нужно.</span><textarea asp-for="TokensText" rows="6" required></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
-            <label>Другие допустимые ответы <span class="field-help">Необязательно; каждый вариант с новой строки.</span><textarea asp-for="AlternativesText" rows="3"></textarea></label>
+            @if (Model.Kind == "audio")
+            {
+                <label>Перевод предложения <span class="field-help">Показывается ученику всегда, во время прохождения.</span><input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
+                <label>Правильное предложение <span class="field-help">По одному слову на строке, от 2 до 30 слов.</span><textarea asp-for="TokensText" rows="6" required></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
+                <div class="editor-steps"><span class="editor-field-label">Варианты ответа</span><p class="field-help">К каждому слову — два отвлекающих варианта. Ученик выбирает слово из трёх, порядок вариантов сайт перемешивает.</p><div id="editor-steps"></div><input asp-for="DistractorsText" type="hidden" /><span asp-validation-for="DistractorsText" class="form-error"></span></div>
+            }
+            else
+            {
+                <label>Русская подсказка <input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
+                <label>Осетинский ответ <input asp-for="OssetianAnswer" required /><span asp-validation-for="OssetianAnswer" class="form-error"></span></label>
+                <label>Слова для сборки <span class="field-help">Каждое слово — с новой строки. Добавьте также отвлекающие слова, если нужно.</span><textarea asp-for="TokensText" rows="6" required></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
+                <label>Другие допустимые ответы <span class="field-help">Необязательно; каждый вариант с новой строки.</span><textarea asp-for="AlternativesText" rows="3"></textarea></label>
+            }
             <label>Пояснение после ответа <textarea asp-for="Explanation" rows="3"></textarea></label>
             <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
         }

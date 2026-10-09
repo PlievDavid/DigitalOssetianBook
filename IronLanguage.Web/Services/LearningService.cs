@@ -4,7 +4,7 @@ using IronLanguage.Db;
 namespace IronLanguage.Web.Services;
 
 public sealed record ExerciseWord(Guid Id, string Ossetian, string Russian);
-public sealed record ExerciseCard(Guid Id, string Kind, string RussianPrompt, string? AudioPath, string[] Tokens, ExerciseWord[] Words);
+public sealed record ExerciseCard(Guid Id, string Kind, string RussianPrompt, string? AudioPath, string[] Tokens, ExerciseWord[] Words, string[][] Steps);
 public sealed record AnswerResult(bool Correct, string ExpectedAnswer, string Explanation, bool AlreadySubmitted);
 public sealed record ProgressSummary(int Points, int Streak, string[] Achievements);
 
@@ -25,7 +25,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
             {
                 attempt = new ExerciseAttempt { UserId = id, ExerciseId = exerciseId, ExerciseVersion = exercise.Version,
                     ExpectedAnswer = exercise.OssetianAnswer, AlternativesJson = exercise.AlternativesJson,
-                    TokensJson = exercise.TokensJson, WordIdsJson = exercise.WordIdsJson,
+                    TokensJson = exercise.TokensJson, DistractorsJson = exercise.DistractorsJson, WordIdsJson = exercise.WordIdsJson,
                     RussianPrompt = exercise.RussianPrompt, Explanation = exercise.Explanation, AudioPath = exercise.AudioPath };
                 await progress.CreateAttempt(attempt, ct);
             }
@@ -44,8 +44,30 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
             var word = await catalog.Word(wordId, ct);
             if (word is not null) words.Add(new ExerciseWord(word.Id, word.Ossetian, word.Russian));
         }
+        var tokens = ParseTokens(tokensJson);
         return new ExerciseCard(exercise.Id, exercise.Kind, attempt?.RussianPrompt is { Length: > 0 } ? attempt.RussianPrompt : exercise.RussianPrompt,
-            attempt is null ? exercise.AudioPath : attempt.AudioPath, ParseTokens(tokensJson), words.ToArray());
+            attempt is null ? exercise.AudioPath : attempt.AudioPath, tokens, words.ToArray(), BuildSteps(exercise, attempt, tokens));
+    }
+
+    // Для аудиопазла: на каждый шаг — три варианта (правильное слово и два отвлекающих), порядок перемешивается.
+    private static string[][] BuildSteps(Exercise exercise, ExerciseAttempt? attempt, string[] tokens)
+    {
+        if (exercise.Kind != "audio") return [];
+        var distractorsJson = attempt?.DistractorsJson is { Length: > 2 } ? attempt.DistractorsJson : exercise.DistractorsJson;
+        var distractors = JsonSerializer.Deserialize<string[][]>(distractorsJson) ?? [];
+        var steps = new string[tokens.Length][];
+        for (var i = 0; i < tokens.Length; i++)
+        {
+            var options = new List<string> { tokens[i] };
+            if (i < distractors.Length) options.AddRange(distractors[i] ?? []);
+            for (var j = options.Count - 1; j > 0; j--)
+            {
+                var swap = Random.Shared.Next(j + 1);
+                (options[j], options[swap]) = (options[swap], options[j]);
+            }
+            steps[i] = [.. options];
+        }
+        return steps;
     }
 
     public async Task<AnswerResult?> Answer(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct)
@@ -75,8 +97,8 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         {
             ExerciseId = exerciseId, ExerciseVersion = exercise.Version,
             ExpectedAnswer = exercise.OssetianAnswer, AlternativesJson = exercise.AlternativesJson,
-            TokensJson = exercise.TokensJson, WordIdsJson = exercise.WordIdsJson, RussianPrompt = exercise.RussianPrompt,
-            Explanation = exercise.Explanation, AudioPath = exercise.AudioPath
+            TokensJson = exercise.TokensJson, DistractorsJson = exercise.DistractorsJson, WordIdsJson = exercise.WordIdsJson,
+            RussianPrompt = exercise.RussianPrompt, Explanation = exercise.Explanation, AudioPath = exercise.AudioPath
         };
         var card = await Card(exercise, attempt, ct);
         guests.Add(owner, attempt.Id, attempt);

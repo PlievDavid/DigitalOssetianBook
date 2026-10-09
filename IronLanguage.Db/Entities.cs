@@ -50,6 +50,7 @@ public sealed class Exercise
     public string OssetianAnswer { get; set; } = "";
     public string AlternativesJson { get; set; } = "[]";
     public string TokensJson { get; set; } = "[]";
+    public string DistractorsJson { get; set; } = "[]"; // по два отвлекающих слова на каждый шаг (звуковой пазл)
     public string WordIdsJson { get; set; } = "[]";
     public string Explanation { get; set; } = "";
     public string? AudioPath { get; set; }
@@ -102,6 +103,7 @@ public sealed class ExerciseAttempt
     public string ExpectedAnswer { get; set; } = "";
     public string AlternativesJson { get; set; } = "[]";
     public string TokensJson { get; set; } = "[]";
+    public string DistractorsJson { get; set; } = "[]";
     public string WordIdsJson { get; set; } = "[]";
     public string RussianPrompt { get; set; } = "";
     public string Explanation { get; set; } = "";

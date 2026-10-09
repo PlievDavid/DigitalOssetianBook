@@ -348,6 +348,10 @@ namespace IronLanguage.Db.Migrations
                     b.Property<string>("AudioPath")
                         .HasColumnType("text");
 
+                    b.Property<string>("DistractorsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Explanation")
                         .IsRequired()
                         .HasColumnType("text");
@@ -401,6 +405,10 @@ namespace IronLanguage.Db.Migrations
 
                     b.Property<bool?>("Correct")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("DistractorsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("DraftIndicesJson")
                         .IsRequired()

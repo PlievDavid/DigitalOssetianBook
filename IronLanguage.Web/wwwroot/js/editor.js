@@ -56,6 +56,40 @@
     search.addEventListener('input', render); render();
   }
 
+  if (kind === 'audio') {
+    const tokensArea = document.getElementById('TokensText'), hidden = document.getElementById('DistractorsText');
+    const container = document.getElementById('editor-steps');
+    let pairs = (hidden.value || '').split('\n').map(line => line.split('|').map(part => part.trim()));
+    const wordsOf = () => (tokensArea.value || '').split('\n').map(word => word.trim()).filter(Boolean);
+    const sync = () => {
+      const words = wordsOf();
+      hidden.value = words.map((_, i) => (pairs[i] || []).join(' | ')).join('\n');
+    };
+    const render = () => {
+      sync(); container.replaceChildren();
+      wordsOf().forEach((word, i) => {
+        const row = document.createElement('div'); row.className = 'editor-step-row';
+        const number = document.createElement('span'); number.className = 'editor-step-number'; number.textContent = `${i + 1}.`;
+        const correct = document.createElement('span'); correct.className = 'editor-step-word'; correct.textContent = word;
+        row.append(number, correct);
+        for (let variant = 0; variant < 2; variant++) {
+          const input = document.createElement('input'); input.type = 'text'; input.autocomplete = 'off';
+          input.placeholder = `Отвлекающее слово ${variant + 1}`; input.value = (pairs[i] || [])[variant] || '';
+          input.addEventListener('input', () => {
+            if (!pairs[i]) pairs[i] = ['', ''];
+            pairs[i][variant] = input.value; sync();
+          });
+          row.append(input);
+        }
+        container.append(row);
+      });
+      if (!wordsOf().length) { const empty = document.createElement('p'); empty.className = 'field-help'; empty.textContent = 'Добавьте слова предложения — варианты появятся здесь.'; container.append(empty); }
+    };
+    tokensArea.addEventListener('input', render);
+    formRoot.querySelector('form').addEventListener('submit', sync);
+    render();
+  }
+
   if (kind === 'book') {
     const hidden = document.getElementById('ChaptersJson'), container = document.getElementById('editor-chapters');
     let chapters; try { chapters = JSON.parse(hidden.value || '[]'); } catch { chapters = []; }

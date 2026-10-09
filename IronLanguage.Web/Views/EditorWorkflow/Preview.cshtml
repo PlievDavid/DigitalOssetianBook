@@ -17,9 +17,29 @@
         }
         else if (Model.Exercise is not null)
         {
-            <h2>@(Model.Kind == "audio" ? "Прослушайте фразу и соберите её" : Model.Exercise.RussianPrompt)</h2>
-            @if (Model.Kind == "audio" && Model.Exercise.AudioPath is not null) { <audio controls src="@Model.Exercise.AudioPath"></audio> }
-            <div class="editor-preview-tiles">@foreach (var token in Model.Exercise.Tokens) { <span>@token</span> }</div>
+            var distractors = Model.Exercise.Distractors ?? [];
+            if (Model.Kind == "audio")
+            {
+                <h2>@Model.Exercise.RussianPrompt</h2>
+                <p class="field-help">Перевод виден ученику всегда.</p>
+                @if (Model.Exercise.AudioPath is not null) { <audio controls src="@Model.Exercise.AudioPath"></audio> }
+                <div class="editor-preview-tiles">@foreach (var token in Model.Exercise.Tokens) { <span>@token</span> }</div>
+                <div class="editor-preview-answer">
+                    <strong>Шаги и варианты:</strong>
+                    <ol class="editor-preview-steps">
+                        @for (var i = 0; i < Model.Exercise.Tokens.Length; i++)
+                        {
+                            var options = i < distractors.Length ? distractors[i] : Array.Empty<string>();
+                            <li><strong>@Model.Exercise.Tokens[i]</strong> — @string.Join(", ", options)</li>
+                        }
+                    </ol>
+                </div>
+            }
+            else
+            {
+                <h2>@Model.Exercise.RussianPrompt</h2>
+                <div class="editor-preview-tiles">@foreach (var token in Model.Exercise.Tokens) { <span>@token</span> }</div>
+            }
             <div class="editor-preview-answer"><strong>Правильный ответ:</strong> @Model.Exercise.OssetianAnswer</div>
             @if (!string.IsNullOrWhiteSpace(Model.Exercise.Explanation)) { <p>@Model.Exercise.Explanation</p> }
             @if (Model.Exercise.WordIds.Length > 0) { <p class="field-help">Связанные слова: @string.Join(", ", Model.Exercise.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p> }

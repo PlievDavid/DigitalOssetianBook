@@ -323,6 +323,13 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
 .exercise-feedback { padding: 15px 18px; border-radius: 9px; line-height: 1.5; }
 .exercise-feedback.is-correct { background: #ebf7ef; color: #215e3b; }
 .exercise-feedback.is-incorrect { background: #fff3ec; color: #864d2d; }
+#exercise-step-slots { min-height: 58px; margin-top: 8px; }
+.exercise-progress { margin: 10px 0 0; color: #52657c; font-size: 14px; font-weight: 700; }
+.exercise-hint { margin: 10px 0 0; color: #864d2d; font-size: 14px; font-weight: 600; }
+.word-tile.is-wrong { background: #fdecea; border-color: #e0a99f; color: #8a2f24; }
+.word-tile.is-wrong:disabled { opacity: .75; cursor: default; }
+@keyframes exercise-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.word-tile.shake { animation: exercise-shake .25s ease 2; }
 
 #dialog-play { max-width: 760px; }
 .dialog-play-head { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }

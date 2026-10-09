@@ -25,6 +25,7 @@ builder.Services.AddSingleton<GuestLearningStore>();
 builder.Services.AddScoped<DialogueService>();
 builder.Services.AddScoped<DictionaryService>();
 builder.Services.AddScoped<DialogueSeedService>();
+builder.Services.AddScoped<ExerciseSeedService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
     options.LoginPath = "/account/login";
@@ -98,6 +99,33 @@ if (args.Contains("dialogue-check", StringComparer.OrdinalIgnoreCase)
     catch (Exception error) when (error is InvalidOperationException or JsonException or IOException)
     {
         Console.WriteLine($"Dialogue seed failed: {error.Message}");
+        Environment.ExitCode = 1;
+    }
+    return;
+}
+
+if (args.Contains("exercise-check", StringComparer.OrdinalIgnoreCase)
+    || args.Contains("exercise-seed", StringComparer.OrdinalIgnoreCase))
+{
+    var dryRun = args.Contains("exercise-check", StringComparer.OrdinalIgnoreCase);
+    var editorEmail = args.FirstOrDefault(x => !x.StartsWith("exercise-", StringComparison.OrdinalIgnoreCase));
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var source = Path.Combine(app.Environment.ContentRootPath, "Data", "exercises", "exercises.json");
+        var seeds = ExerciseSeedService.Read(source);
+        if (!dryRun) await scope.ServiceProvider.GetRequiredService<AdamDbContext>().Database.MigrateAsync();
+        var results = await scope.ServiceProvider.GetRequiredService<ExerciseSeedService>()
+            .ImportAsync(seeds, editorEmail, dryRun, CancellationToken.None);
+        foreach (var result in results)
+            Console.WriteLine($"{result.Prompt}: {result.Action}{(result.Error is null ? "" : $" — {result.Error}")}");
+        var failed = results.Count(x => x.Error is not null);
+        Console.WriteLine($"Audio puzzles: {results.Count} in {seeds.Count} seeds; created {results.Count(x => x.Action == "создан")}, updated {results.Count(x => x.Action is "обновлён" or "дополнен")}, unchanged {results.Count(x => x.Action == "без изменений")}, errors {failed}.");
+        if (failed > 0) Environment.ExitCode = 1;
+    }
+    catch (Exception error) when (error is InvalidOperationException or JsonException or IOException)
+    {
+        Console.WriteLine($"Exercise seed failed: {error.Message}");
         Environment.ExitCode = 1;
     }
     return;
