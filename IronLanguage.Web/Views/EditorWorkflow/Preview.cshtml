@@ -2,11 +2,15 @@
 @{
     var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", _ => "Книга" };
     ViewData["Title"] = $"Предпросмотр: {title}";
+    ViewData["PageClass"] = "editor-page";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
 }
 <section class="feature-shell editor-preview-shell">
-    <a class="back-link" href="/editor">← К материалам</a>
-    <div class="editor-preview-heading"><div><span class="editor-item-type">@title · версия @Model.Version · @(Model.Published ? "опубликовано" : "черновик")</span><h1>Предпросмотр</h1></div></div>
+    <header class="editor-page-heading editor-preview-heading">
+        <a class="back-link" href="/editor">← К материалам</a>
+        <h1>Предпросмотр</h1>
+        <span class="editor-status">@title · версия @Model.Version · @(Model.Published ? "опубликовано" : "черновик")</span>
+    </header>
     @if (Model.Error is not null) { <p class="form-error" role="alert">@Model.Error</p> }
     <div class="editor-learner-preview">
         @if (Model.Word is not null)

@@ -4,14 +4,17 @@
 @{
     var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", _ => "Книга" };
     ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
+    ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
         : Model.ContentId is Guid contentId ? $"/editor/draft/{Model.Kind}/{contentId}" : $"/editor/new/{Model.Kind}";
     var words = (await Catalog.Words()).Select(x => new { id = x.Id, ossetian = x.Ossetian, russian = x.Russian }).ToArray();
 }
 <section class="feature-shell editor-form-shell" id="editor-form-app" data-kind="@Model.Kind">
-    <a class="back-link" href="/editor">← К материалам</a>
-    <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind == "book" ? "книгу" : title.ToLowerInvariant())</h1>
-    <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
+    <header class="editor-page-heading">
+        <a class="back-link" href="/editor">← К материалам</a>
+        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind == "book" ? "книгу" : title.ToLowerInvariant())</h1>
+        <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
+    </header>
     <form method="post" action="@action" enctype="multipart/form-data" class="editor-form">
         @Html.AntiForgeryToken()
         <div asp-validation-summary="ModelOnly" class="form-error"></div>
