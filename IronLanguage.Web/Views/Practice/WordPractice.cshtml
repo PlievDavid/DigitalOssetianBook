@@ -1,9 +1,13 @@
+@inject IronLanguage.Web.Services.AvatarService Avatars
 @{ ViewData["Title"] = "Практика слов"; }
 <section class="feature-shell word-practice-shell" id="word-practice-app">
     <a class="back-link" href="/vocabulary">← К словарю</a>
     <h1>Практика слов</h1>
     <p>@(User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова и проверяйте перевод." : "Повторяйте опубликованные слова и проверяйте перевод.")</p>
     <div id="practice-status" role="status"></div>
-    <section class="practice-card" id="review-panel" hidden><span class="vocabulary-kicker">Переведите на русский</span><h2 id="review-word"></h2><form id="review-form" class="vocabulary-review-form"><label for="review-answer">Ваш ответ</label><input id="review-answer" autocomplete="off" required /><button class="button primary">Проверить</button></form><p id="review-result" role="status"></p></section>
+    <section class="practice-card" id="review-panel" hidden>
+        <div class="practice-avatar" id="practice-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel((await Avatars.Current(User)).With("Background", "plain"), Emotion: AvatarEmotion.Thinking))</div>
+        <span class="vocabulary-kicker">Переведите на русский</span><h2 id="review-word"></h2><form id="review-form" class="vocabulary-review-form"><label for="review-answer">Ваш ответ</label><input id="review-answer" autocomplete="off" required /><button class="button primary">Проверить</button></form><p id="review-result" role="status"></p>
+    </section>
 </section>
 @section Scripts { <script src="~/js/word-practice.js" asp-append-version="true" defer></script> }

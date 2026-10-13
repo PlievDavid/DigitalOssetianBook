@@ -25,6 +25,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.Entity<UserAccount>().HasIndex(x => x.Email).IsUnique();
+        model.Entity<UserAccount>().Property(x => x.AvatarJson).HasMaxLength(2048);
         model.Entity<WordEntry>().HasIndex(x => x.Ossetian);
         model.Entity<WordEntry>().HasIndex(x => x.DictionarySenseId).IsUnique();
         model.Entity<DictionarySense>().HasIndex(x => new { x.SourceRow, x.SourceColumn });

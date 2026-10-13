@@ -1,4 +1,5 @@
 @model string
+@inject IronLanguage.Web.Services.AvatarService Avatars
 @{ var isAudio = Model == "audio"; ViewData["Title"] = isAudio ? "Аудиопазлы" : "Перевод фраз"; }
 <section class="feature-shell" id="exercise-app" data-kind="@Model">
     <a class="back-link" href="/">← К заданиям</a>
@@ -7,7 +8,7 @@
     <div id="exercise-status" role="status"></div>
     <div id="exercise-list" class="exercise-list"></div>
     <div id="exercise-play" class="exercise-play" hidden>
-        @if (isAudio) { <img class="exercise-scene" src="~/images/audio-greeting.png" alt="Два собеседника приветствуют друг друга" /> }
+        <div class="exercise-avatar" id="exercise-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel((await Avatars.Current(User)).With("Background", "plain"), Emotion: AvatarEmotion.Thinking))</div>
         <div class="exercise-play-body">
         <a id="exercise-back" class="back-link" href="/audio-puzzles">← К списку</a>
         <h2 id="exercise-prompt"></h2>

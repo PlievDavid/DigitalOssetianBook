@@ -43,6 +43,7 @@
       const data = await AdamApi(`/exercises/${id}/attempts`, { method: "POST" });
       card = data.card; attemptId = data.attemptId; indices = data.draftIndices || []; submitted = false;
       list.hidden = true; play.hidden = false; result.textContent = ""; status.textContent = "";
+      AdamAvatar.setEmotion($("exercise-avatar"), "Thinking");
       $("exercise-prompt").textContent = kind === "audio" ? "Соберите услышанную фразу" : card.russianPrompt;
       audio.hidden = kind !== "audio"; $("exercise-audio-error").hidden = true;
       if (kind === "audio") { audio.src = card.audioPath; audio.load(); audio.play().catch(() => {}); }
@@ -70,6 +71,7 @@
       await pendingDraft;
       const answer = await AdamApi(`/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ tokenIndices: indices }) });
       submitted = true; render();
+      AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
       result.className = answer.correct ? "exercise-feedback is-correct" : "exercise-feedback is-incorrect";
       result.textContent = `${answer.correct ? "Верно!" : "Пока неверно."} Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`;
       result.append(button("К заданиям", back));

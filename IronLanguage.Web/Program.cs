@@ -17,6 +17,7 @@ var connection = builder.Configuration.GetConnectionString("Adam")
     ?? throw new InvalidOperationException("Set ConnectionStrings:Adam to a PostgreSQL connection string.");
 builder.Services.AddDbContext<AdamDbContext>(options => options.UseNpgsql(connection));
 builder.Services.AddScoped<IAccountRepository, EfAccountRepository>();
+builder.Services.AddScoped<AvatarService>();
 builder.Services.AddScoped<ICatalogRepository, EfCatalogRepository>();
 builder.Services.AddScoped<IEditorRepository, EfEditorRepository>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();

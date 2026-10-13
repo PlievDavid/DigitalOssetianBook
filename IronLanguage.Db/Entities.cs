@@ -6,6 +6,7 @@ public sealed class UserAccount
     public string Email { get; set; } = "";
     public string PasswordHash { get; set; } = "";
     public bool IsEditor { get; set; }
+    public string? AvatarJson { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
