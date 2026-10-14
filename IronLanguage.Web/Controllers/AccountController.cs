@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using IronLanguage.Db;
+using IronLanguage.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,7 @@ public sealed class AccountInput
 }
 
 [Route("account")]
-public sealed class AccountController(IAccountRepository accounts) : Controller
+public sealed class AccountController(IAccountRepository accounts, AvatarService avatars) : Controller
 {
     private readonly PasswordHasher<UserAccount> hasher = new();
 
@@ -42,7 +43,7 @@ public sealed class AccountController(IAccountRepository accounts) : Controller
     public IActionResult AccessDenied() => View();
 
     [Authorize, HttpGet("/profile")]
-    public IActionResult Profile() => View();
+    public async Task<IActionResult> Profile() => View(await avatars.Current(User));
 
     [HttpPost("register"), ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(AccountInput input, CancellationToken ct)
@@ -53,7 +54,7 @@ public sealed class AccountController(IAccountRepository accounts) : Controller
         if (!await accounts.Create(user, ct))
         { ModelState.AddModelError(nameof(input.Email), "Этот адрес уже зарегистрирован."); return View(input); }
         await SignIn(user);
-        return Redirect("/");
+        return Redirect("/profile/avatar?onboarding=true");
     }
 
     [Authorize, HttpPost("logout"), ValidateAntiForgeryToken]

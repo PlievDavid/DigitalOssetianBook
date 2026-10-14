@@ -8,6 +8,8 @@ public class HomeController : Controller
 {
     public IActionResult Index() => View();
 
+    public IActionResult Illustrations() => View();
+
     public IActionResult Privacy()
     {
         return View();

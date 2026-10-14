@@ -1,0 +1,87 @@
+@using IronLanguage.Web.Services
+@model AvatarEditorModel
+@{
+    ViewData["Title"] = Model.Onboarding ? "Настройте свой аватар" : "Мой аватар";
+    var cancel = Model.Onboarding ? "/" : "/profile";
+}
+<section class="feature-shell avatar-shell" id="avatar-editor" data-avatar-renderer-version="@AvatarRenderer.Version">
+    <div class="avatar-heading">
+        <div>
+            @if (!Model.Onboarding) { <a class="back-link" href="/profile">← К профилю</a> }
+            <h1>@(Model.Onboarding ? "Познакомимся?" : "Создайте своего персонажа")</h1>
+            <p>Выберите внешность, причёску и одежду — всё можно изменить позже.</p>
+        </div>
+        @if (Model.Onboarding) { <a class="avatar-skip" href="/">Пропустить →</a> }
+    </div>
+    <form method="post" action="/profile/avatar" id="avatar-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Onboarding" />
+        <div asp-validation-summary="All" class="form-error" role="alert"></div>
+        <div class="avatar-editor-grid">
+            <div class="avatar-preview-column">
+                <div class="avatar-preview" aria-label="Предпросмотр вашего персонажа">
+                    <img id="avatar-preview-image" class="adam-avatar" src="@AvatarRenderer.Url(Model.Options)" width="320" height="520" alt="Ваш персонаж во весь рост" />
+                </div>
+                <button class="avatar-random theme-button theme-button-secondary" type="button" id="avatar-random" hidden>⚄ Случайный образ</button>
+                <p id="avatar-preview-status" class="avatar-note" role="status">Образ сохранится после нажатия кнопки.</p>
+            </div>
+            <div class="avatar-options">
+                <nav class="avatar-categories" aria-label="Детали аватара" hidden>
+                    @foreach (var category in AvatarCatalog.Sections)
+                    {
+                        <button type="button" data-avatar-section="@category.Id" aria-controls="avatar-panel-@category.Id" aria-expanded="@(category.Id == "face" ? "true" : "false")">@category.Label</button>
+                    }
+                </nav>
+                @foreach (var category in AvatarCatalog.Sections)
+                {
+                    <section class="avatar-panel" id="avatar-panel-@category.Id" aria-label="@category.Label">
+                        @foreach (var group in category.Groups)
+                        {
+                            <fieldset class="avatar-group">
+                                <legend>@group.Label</legend>
+                                <div class="@(group.IsColor ? "avatar-swatches" : "avatar-choices")">
+                                    @foreach (var choice in group.Choices)
+                                    {
+                                        var id = $"avatar-{group.Property}-{choice.Id}";
+                                        <label class="avatar-choice @(group.IsColor ? "avatar-swatch" : "")" for="@id">
+                                            <input type="radio" id="@id" name="Options.@group.Property" value="@choice.Id" checked="@(Model.Options.Get(group.Property) == choice.Id)" data-avatar-property="@group.Property" />
+                                            @if (group.IsColor)
+                                            {
+                                                <span class="avatar-color" style="--swatch:@choice.Color" aria-hidden="true"></span>
+                                                <span class="avatar-color-label">@choice.Label</span>
+                                            }
+                                            else
+                                            {
+                                                <img src="@AvatarRenderer.Url(Model.Options.With(group.Property, choice.Id), portrait: group.Property is not ("Top" or "Background"))" alt="" width="120" height="120" loading="lazy" data-avatar-thumbnail="@group.Property" data-avatar-choice="@choice.Id" />
+                                                <span>@choice.Label</span>
+                                            }
+                                        </label>
+                                    }
+                                </div>
+                            </fieldset>
+                        }
+                    </section>
+                }
+                <div class="avatar-save-actions">
+                    <button type="submit" class="theme-button theme-button-primary">@(Model.Onboarding ? "Сохранить и продолжить" : "Сохранить аватар")</button>
+                    <a class="avatar-cancel" href="@cancel">@(Model.Onboarding ? "Настроить позже" : "Отмена")</a>
+                </div>
+                <p class="avatar-note">@(Model.Onboarding ? "Настройку можно пропустить и вернуться к ней в профиле." : "Аватар появится в профиле и заданиях.")</p>
+            </div>
+        </div>
+    </form>
+    <section class="avatar-emotions" aria-labelledby="avatar-emotions-title">
+        <h2 id="avatar-emotions-title">Ваш персонаж в заданиях</h2>
+        <p>Внешность остаётся вашей, а выражение лица меняется вместе с заданием.</p>
+        <div class="avatar-emotion-grid">
+            @foreach (var (emotion, label) in new[] { (AvatarEmotion.Neutral, "Спокойствие"), (AvatarEmotion.Happy, "Радость"), (AvatarEmotion.Thinking, "Задумчивость"), (AvatarEmotion.Surprised, "Удивление"), (AvatarEmotion.Sad, "Грусть"), (AvatarEmotion.Supportive, "Поддержка") })
+            {
+                <figure>
+                    <img src="@AvatarRenderer.Url(Model.Options.With("Background", "plain"), emotion)" alt="" width="160" height="260" loading="lazy" data-avatar-preview-emotion="@emotion" />
+                    <figcaption>@label</figcaption>
+                </figure>
+            }
+        </div>
+    </section>
+</section>
+@section Scripts { <script src="~/js/avatar-editor.js" asp-append-version="true" defer></script> }

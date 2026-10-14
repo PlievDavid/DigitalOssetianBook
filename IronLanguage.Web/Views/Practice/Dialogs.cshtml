@@ -1,8 +1,7 @@
 @{ ViewData["Title"] = "Диалоги"; }
 <section class="feature-shell dialog-page" id="dialog-app">
     <a class="back-link" href="/">← К заданиям</a>
-    <h1>Диалоги</h1>
-    <p>Читайте реплики собеседника и отвечайте на осетинском. После нескольких неудачных попыток появится подсказка.</p>
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Диалоги", "Читайте реплики собеседника и отвечайте на осетинском. Подсказки помогут продолжить разговор.", "dialogs"))
     <div id="dialog-status" role="status"></div>
     <div id="dialog-list" class="exercise-list"></div>
     <div id="dialog-play" hidden>

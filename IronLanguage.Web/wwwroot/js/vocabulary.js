@@ -13,7 +13,9 @@
     if (word.dictionaryNote) { const note = document.createElement('small'); note.textContent = word.dictionaryNote; copy.append(note); }
     const button = document.createElement('button'); button.type = 'button'; button.className = 'vocabulary-row-action'; button.textContent = label;
     button.onclick = async () => { button.disabled = true; try { await action(); await load(); } catch (error) { status.textContent = error.message; button.disabled = false; } };
-    item.append(copy); if (AdamAuthenticated) item.append(button); return item;
+    item.append(copy);
+    if (word.audioPath) { const audio = document.createElement("audio"); audio.className = "vocabulary-word-audio"; audio.controls = true; audio.preload = "none"; audio.src = word.audioPath; audio.setAttribute("aria-label", `Произношение: ${word.ossetian}`); item.append(audio); }
+    if (AdamAuthenticated) item.append(button); return item;
   };
   async function load() {
     const [all, saved] = await Promise.all([AdamApi('/words'), (AdamAuthenticated ? AdamApi('/vocabulary') : Promise.resolve([]))]);

@@ -3,11 +3,13 @@
     if (!header) return;
     const toggle = header.querySelector('.mobile-menu-toggle');
     const games = document.querySelector('.bottom-games');
+    const backdrop = document.querySelector('.menu-backdrop');
+    const outside = [...document.querySelectorAll('#main-content, .site-footer, .mobile-bottom-nav')];
     const menus = [...header.querySelectorAll('.nav-menu')];
     let suppressFocusOpen = false;
     const compact = window.matchMedia('(max-width: 1023px)');
     const closeMenus = () => {
-        games.setAttribute('aria-expanded', 'false');
+        if (games.tagName === 'BUTTON') games.setAttribute('aria-expanded', 'false');
         menus.forEach(menu => {
             menu.classList.remove('is-open', 'is-pinned');
             menu.querySelector('.nav-menu-trigger').setAttribute('aria-expanded', String(compact.matches && header.classList.contains('mobile-is-open') && menu.classList.contains('nav-menu-section')));
@@ -17,7 +19,10 @@
         header.classList.toggle('mobile-is-open', open);
         toggle.setAttribute('aria-expanded', String(open));
         toggle.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
-        games.setAttribute('aria-expanded', String(open && header.querySelector('.nav-menu-games.is-open') !== null));
+        document.body.classList.toggle('mobile-nav-open', open && compact.matches);
+        backdrop.hidden = !open || !compact.matches;
+        outside.forEach(element => { element.inert = open && compact.matches; });
+        toggle.querySelector('svg').innerHTML = open ? '<path d="m6 6 12 12M18 6 6 18"/>' : '<path d="M3 6h18M3 12h18M3 18h18"/>';
         menus.filter(menu => menu.classList.contains('nav-menu-section')).forEach(menu => {
             menu.querySelector('.nav-menu-trigger').setAttribute('aria-expanded', String(open));
         });
@@ -30,7 +35,7 @@
             menu.classList.toggle('is-open', open);
             menu.classList.toggle('is-pinned', open && pinned);
             trigger.setAttribute('aria-expanded', String(open || (compact.matches && header.classList.contains('mobile-is-open') && menu.classList.contains('nav-menu-section'))));
-            games.setAttribute('aria-expanded', String(compact.matches && open && menu.classList.contains('nav-menu-games')));
+            if (games.tagName === 'BUTTON') games.setAttribute('aria-expanded', String(compact.matches && open && menu.classList.contains('nav-menu-games')));
         };
         if (trigger.tagName === 'BUTTON') trigger.addEventListener('click', () => {
             const open = !menu.classList.contains('is-pinned');
@@ -56,7 +61,8 @@
         });
     });
     toggle.addEventListener('click', () => setMobile(!header.classList.contains('mobile-is-open')));
-    games.addEventListener('click', () => {
+    backdrop.addEventListener('click', () => { setMobile(false); toggle.focus(); });
+    if (games.tagName === 'BUTTON') games.addEventListener('click', () => {
         const open = games.getAttribute('aria-expanded') !== 'true';
         setMobile(open);
         if (open) {
@@ -70,10 +76,16 @@
         }
     });
     document.addEventListener('click', event => {
-        if (!header.contains(event.target) && !games.contains(event.target)) setMobile(false);
+        if (!event.composedPath().includes(header) && !games.contains(event.target)) setMobile(false);
         if (header.querySelector('.main-nav').contains(event.target) && event.target.closest('a')) setMobile(false);
     });
     document.addEventListener('keydown', event => {
+        if (event.key === 'Tab' && compact.matches && header.classList.contains('mobile-is-open')) {
+            const focusable = [...header.querySelectorAll('a, button')].filter(el => el.getClientRects().length && !el.closest('[hidden]'));
+            const first = focusable[0], last = focusable.at(-1);
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
         if (event.key !== 'Escape') return;
         const activeMenu = menus.find(menu => menu.contains(document.activeElement));
         const wasMobileOpen = header.classList.contains('mobile-is-open');

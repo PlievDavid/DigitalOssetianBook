@@ -1,0 +1,6 @@
+@{ var path = Context.Request.Path.Value ?? ""; }
+<nav class="account-navigation" aria-label="Учётная запись">
+    <a href="/profile" aria-current="@(path == "/profile" ? "page" : null)">@await Html.PartialAsync("_NavIcon", "profile")<span>Учётная запись</span></a>
+    <a href="/progress" aria-current="@(path == "/progress" ? "page" : null)">@await Html.PartialAsync("_NavIcon", "progress")<span>Мои результаты</span></a>
+    @if (User.IsInRole("Editor")) { <a href="/editor">@await Html.PartialAsync("_NavIcon", "materials")<span>Редактор материалов</span></a> }
+</nav>

@@ -1,0 +1,7 @@
+@using IronLanguage.Web.Services
+@model AvatarDisplayModel
+<img class="adam-avatar @(Model.Portrait ? "adam-avatar-portrait" : "")"
+     src="@AvatarRenderer.Url(Model.Options, Model.Emotion, Model.Portrait)"
+     data-avatar-url="@AvatarRenderer.Url(Model.Options, portrait: Model.Portrait)"
+     data-avatar-emotion="@Model.Emotion"
+     width="@(Model.Portrait ? 240 : 320)" height="@(Model.Portrait ? 240 : 520)" alt="" />

@@ -2,6 +2,24 @@
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     @switch (Model)
     {
+        case "audio":
+            <path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3" y="13" width="4" height="8" rx="2" /><rect x="17" y="13" width="4" height="8" rx="2" />
+            break;
+        case "translate":
+            <path d="M3 7h18m-5-5 5 5-5 5M21 17H3m5-5-5 5 5 5" />
+            break;
+        case "dialogs":
+            <path d="M3 3h18v13H10l-5 5v-5H3Z" /><path d="M7 8h10M7 12h6" />
+            break;
+        case "profile":
+            <circle cx="12" cy="7" r="4" /><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" />
+            break;
+        case "progress":
+            <path d="M7 3h10v7a5 5 0 0 1-10 0ZM7 5H3v3a4 4 0 0 0 4 4M17 5h4v3a4 4 0 0 1-4 4M12 15v6M8 21h8" />
+            break;
+        case "materials":
+            <path d="M5 2h10l4 4v16H5ZM14 2v5h5M8 12h8M8 16h8" />
+            break;
         case "home":
             <path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z" />
             break;

@@ -33,18 +33,19 @@
             </div>
         </section>
         <section class="home-reading" aria-labelledby="reading-title">
-            <h2 id="reading-title">Читайте и запоминайте</h2>
+            <h2 id="reading-title">От чтения к тренировке</h2>
             <div class="home-learning-grid">
                 <article class="home-reading-card">
-                    <h3>Книги на осетинском</h3>
-                    <p>Читайте и нажимайте на слова, чтобы узнать перевод.</p>
+                    <span class="reading-step">Шаг 1</span>
+                    <h3>Читайте и сохраняйте слова</h3>
+                    <p>Откройте книгу, нажмите на незнакомое слово и узнайте перевод. После входа его можно добавить в свой словарь.</p>
                     <a class="theme-button theme-button-primary" href="/books">Выбрать книгу <span aria-hidden="true">→</span></a>
                 </article>
                 <aside class="home-words-card" aria-labelledby="words-title">
                     <img src="~/images/green/book.png" asp-append-version="true" alt="" width="160" height="160" />
-                    <h3 id="words-title">Ваши слова —<br />всегда рядом</h3>
-                    <p>Сохраняйте слова из книг<br />и возвращайтесь к ним<br />в тренировке.</p>
-                    <a class="theme-button theme-button-secondary" href="@(User.Identity?.IsAuthenticated == true ? "/vocabulary" : "/account/register")"><span class="words-action-label">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Создать аккаунт")</span> <span aria-hidden="true">→</span></a>
+                    <span class="reading-step">Шаг 2</span><h3 id="words-title">Повторяйте в тренировке</h3>
+                    <p>@(User.Identity?.IsAuthenticated == true ? "Проверьте, какие переводы вы запомнили: тренировка использует слова из вашего словаря." : "Войдите, чтобы повторять сохранённые слова. Без входа можно попробовать тренировку с опубликованными словами.")</p>
+                    <a class="theme-button theme-button-secondary" href="/word-practice"><span class="words-action-label">Тренировать слова</span> <span aria-hidden="true">→</span></a>
                 </aside>
             </div>
         </section>

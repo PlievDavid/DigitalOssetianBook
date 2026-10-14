@@ -1,0 +1,5 @@
+@model SectionHeadingModel
+<header class="section-heading-banner section-tone-@Model.Tone">
+    <span class="section-symbol" aria-hidden="true">@await Html.PartialAsync("_NavIcon", Model.Icon)</span>
+    <div><h1>@Model.Title</h1><p>@Model.Description</p></div>
+</header>

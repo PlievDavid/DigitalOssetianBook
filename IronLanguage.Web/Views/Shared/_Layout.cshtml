@@ -1,3 +1,4 @@
+@inject IronLanguage.Web.Services.AvatarService Avatars
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -11,6 +12,8 @@
     <link rel="icon" type="image/svg+xml" href="~/images/adam-mark.svg" />
     <link rel="preload" href="~/fonts/onest/Onest-Variable.ttf" as="font" type="font/ttf" crossorigin />
     <link rel="stylesheet" href="~/css/theme-green.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/avatar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/sections-green.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="green-theme @ViewData["PageClass"]" data-authenticated="@(User.Identity?.IsAuthenticated == true ? "true" : "false")">
@@ -50,16 +53,24 @@
                 </div>
             </div>
             <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" href="/books">Книги</a>
+            <div class="mobile-account-links">
+                @if (User.Identity?.IsAuthenticated == true) {
+                    <a href="/profile">Учётная запись</a><a href="/progress">Мои результаты</a>
+                    @if (User.IsInRole("Editor")) { <a href="/editor">Редактор материалов</a> }
+                } else { <a class="button primary" href="/account/login">Войти</a><a href="/account/register">Создать аккаунт</a> }
+                <a class="mobile-info-link" href="/Home/Privacy">Политика конфиденциальности</a><a class="mobile-info-link" href="/Home/Illustrations">Об иллюстрациях</a>
+            </div>
         </div></nav>
             <div class="header-actions">
                 @if (User.Identity?.IsAuthenticated == true) {
                     <a id="header-streak" class="header-streak" href="/progress" aria-label="Серия занятий" hidden><img class="header-streak-icon" src="~/images/streak-flame.svg" asp-append-version="true" width="20" height="24" alt="" /><strong id="header-streak-value"></strong><span id="header-streak-label" class="header-streak-label">дней подряд</span></a>
-                    <a class="profile-action" href="/profile" aria-label="@(User.IsInRole("Editor") ? "Профиль редактора" : "Профиль")"><span class="profile-avatar" aria-hidden="true">@(User.Identity?.Name?.Substring(0, 1).ToUpperInvariant() ?? "Я")@if (User.IsInRole("Editor")) { <span class="profile-role-mark">Р</span> }</span><span class="profile-action-label">@(User.IsInRole("Editor") ? "Редактор · профиль" : "Профиль")</span></a>
+                    <a class="profile-action" href="/profile" aria-label="@(User.IsInRole("Editor") ? "Профиль редактора" : "Профиль")"><span class="profile-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel(await Avatars.Current(User), true))</span><span class="profile-action-label">@(User.IsInRole("Editor") ? "Редактор · профиль" : "Профиль")</span></a>
                 } else { <a class="account-action" href="/account/login">Войти</a> }
             </div>
             <button class="mobile-menu-toggle" type="button" aria-controls="main-navigation" aria-expanded="false" aria-label="Открыть меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
         </div>
     </header>
+    <button class="menu-backdrop" type="button" aria-label="Закрыть меню" tabindex="-1" hidden></button>
     <main id="main-content" tabindex="-1">
         @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/books", "/vocabulary", "/word-practice", "/game" }.Contains(currentPath))
         {
@@ -71,19 +82,20 @@
     <footer class="site-footer">
         <div class="footer-inner">
             <a class="footer-brand" href="/" aria-label="Адам — главная"><img src="/images/adam-mark.svg" width="32" height="28" alt="" />Адам</a>
-            <p>Язык, который объединяет</p>
-            <img class="footer-mountains" src="/images/green/mountains.png" width="180" height="60" alt="" />
+            <p>Изучайте осетинский в своём темпе</p>
+            <nav class="footer-links" aria-label="Информация о сайте"><a href="/Home/Privacy">Политика конфиденциальности</a><a href="/Home/Illustrations">Об иллюстрациях</a></nav>
         </div>
     </footer>
     <nav class="mobile-bottom-nav" aria-label="Основные разделы">
         <a class="@(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Задания</span></a>
         <a class="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
-        <button type="button" class="bottom-games" aria-controls="main-navigation" aria-expanded="false">@await Html.PartialAsync("_NavIcon", "games")<span>Игры</span></button>
+        <a class="bottom-games @(currentPath.StartsWith("/game") ? "is-current" : "")" href="/game">@await Html.PartialAsync("_NavIcon", "games")<span>Игры</span></a>
         <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" href="/books">@await Html.PartialAsync("_NavIcon", "books")<span>Книги</span></a>
     </nav>
     </div>
     <script src="~/js/nav.js" asp-append-version="true" defer></script>
     <script src="~/js/api.js" asp-append-version="true"></script>
+    <script src="~/js/avatar.js" asp-append-version="true"></script>
     @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/streak.js" asp-append-version="true" defer></script> }
     @await RenderSectionAsync("Scripts", required: false)
 </body>

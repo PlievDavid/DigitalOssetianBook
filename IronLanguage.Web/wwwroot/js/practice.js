@@ -35,10 +35,9 @@
       list.replaceChildren();
       for (const item of exercises) {
         const cardEl = document.createElement("article"); cardEl.className = "exercise-entry";
-        if (kind === "audio") {
-          const image = document.createElement("img"); image.src = "/images/audio-greeting.png";
-          image.alt = "Два собеседника приветствуют друг друга"; cardEl.append(image);
-        }
+        const icon = document.createElement("span"); icon.className = "exercise-entry-icon"; icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = root.querySelector(".section-symbol").innerHTML;
+        cardEl.append(icon);
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
         const eyebrowEl = document.createElement("span"); eyebrowEl.className = "eyebrow";
         eyebrowEl.textContent = kind === "audio" ? "АУДИРОВАНИЕ" : "ПЕРЕВОД";
@@ -57,6 +56,7 @@
     try {
       const data = await AdamApi(`/exercises/${id}/attempts`, { method: "POST" });
       card = data.card; attemptId = data.attemptId; submitted = false;
+      AdamAvatar.setEmotion($("exercise-avatar"), "Thinking");
       const draft = data.draftIndices || [];
       indices = audioFlow ? (draft.every((value, position) => value === position) ? [...draft] : []) : [...draft];
       list.hidden = true; play.hidden = false; result.textContent = ""; result.className = ""; status.textContent = ""; clear.hidden = false;
@@ -141,6 +141,7 @@
       await pendingDraft;
       const answer = await AdamApi(`/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ tokenIndices: indices }) });
       submitted = true;
+      AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
       submit.hidden = audioFlow; submit.textContent = "Проверить ответ"; submit.disabled = true;
       hint.hidden = true; clear.hidden = true;
       render();
