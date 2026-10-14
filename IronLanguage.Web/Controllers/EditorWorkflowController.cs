@@ -155,6 +155,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.AlternativesText ??= ""; model.DistractorsText ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
         model.DialogueTitle ??= ""; model.Dialect ??= ""; model.CharactersText ??= ""; model.LinesText ??= ""; model.TurnsText ??= "";
         var kind = model.Kind;
+        CleanOssetianText(kind, model);
         var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
         if (model.Audio is { Length: > 0 } && (model.Audio.Length > 10_000_000 || Path.GetExtension(model.Audio.FileName).ToLowerInvariant() is not (".mp3" or ".ogg" or ".wav")))
             ModelState.AddModelError(nameof(model.Audio), "Выберите MP3, OGG или WAV до 10 МБ.");
@@ -243,6 +244,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             MaterialChapter[] chapters = [];
             try { chapters = JsonSerializer.Deserialize<MaterialChapter[]>(model.ChaptersJson, JsonOptions) ?? []; }
             catch (JsonException) { ModelState.AddModelError(nameof(model.ChaptersJson), "Не удалось прочитать разметку глав."); }
+            chapters = OssetianText.FixAe(chapters);
             if (chapters.Length == 0 || chapters.Length > 100) ModelState.AddModelError(nameof(model.ChaptersJson), "Добавьте хотя бы одну главу.");
             if (chapters.Any(x => x.Id == Guid.Empty || x.Number < 1 || string.IsNullOrWhiteSpace(x.Title) || x.Tokens is null || x.Tokens.Length is < 1 or > 10000 || x.Tokens.All(t => string.IsNullOrWhiteSpace(t.Text))))
                 ModelState.AddModelError(nameof(model.ChaptersJson), "У каждой главы должны быть название и текст.");
@@ -273,6 +275,30 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         }
         else return null;
         return payload;
+    }
+
+    /// <summary>Приводит латинские æ/Æ к осетинским ӕ/Ӕ в полях, где по-осетински пишет редактор.</summary>
+    private static void CleanOssetianText(string kind, EditorFormModel model)
+    {
+        if (kind == "word")
+        {
+            model.Ossetian = OssetianText.FixAe(model.Ossetian);
+            model.Example = OssetianText.FixAe(model.Example);
+        }
+        else if (kind is "audio" or "translation")
+        {
+            model.TokensText = OssetianText.FixAe(model.TokensText);
+            model.OssetianAnswer = OssetianText.FixAe(model.OssetianAnswer);
+            model.AlternativesText = OssetianText.FixAe(model.AlternativesText);
+            model.DistractorsText = OssetianText.FixAe(model.DistractorsText);
+        }
+        else if (kind == "dialogue")
+        {
+            model.DialogueTitle = OssetianText.FixAe(model.DialogueTitle);
+            model.CharactersText = OssetianText.FixAe(model.CharactersText);
+            model.LinesText = OssetianText.FixAe(model.LinesText);
+            model.TurnsText = OssetianText.FixAe(model.TurnsText);
+        }
     }
 
     private static string? AudioPath(string kind, string payload)

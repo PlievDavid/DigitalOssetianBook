@@ -15,7 +15,7 @@
         <div id="dialog-hint" class="dialog-hint" hidden></div>
         <div id="dialog-composer" hidden>
             <div id="dialog-options" class="dialog-options"></div>
-            <input id="dialog-input" type="text" autocomplete="off" maxlength="300" placeholder="Ваш ответ по-осетински" aria-label="Ваш ответ" />
+            <input id="dialog-input" type="text" autocomplete="off" maxlength="300" placeholder="Ваш ответ по-осетински" aria-label="Ваш ответ" data-ossetian />
             <button id="dialog-send" class="button primary" type="button">Отправить</button>
             <button id="dialog-skip" class="button secondary" type="button" hidden>Пропустить ход</button>
         </div>
@@ -32,4 +32,4 @@
     </div>
     }
 </section>
-@section Scripts { <script src="~/js/dialog.js" asp-append-version="true" defer></script> }
+@section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/dialog.js" asp-append-version="true" defer></script> }
