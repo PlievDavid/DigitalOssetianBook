@@ -75,6 +75,7 @@
         for (let variant = 0; variant < 2; variant++) {
           const input = document.createElement('input'); input.type = 'text'; input.autocomplete = 'off';
           input.placeholder = `Отвлекающее слово ${variant + 1}`; input.value = (pairs[i] || [])[variant] || '';
+          input.setAttribute('aria-label', `Шаг ${i + 1}, ${word}: отвлекающий вариант ${variant + 1}`);
           input.addEventListener('input', () => {
             if (!pairs[i]) pairs[i] = ['', ''];
             pairs[i][variant] = input.value; sync();
