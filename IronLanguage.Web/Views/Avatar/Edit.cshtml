@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.Onboarding ? "Настройте свой аватар" : "Мой аватар";
     var cancel = Model.Onboarding ? "/" : "/profile";
 }
-<section class="feature-shell avatar-shell" id="avatar-editor">
+<section class="feature-shell avatar-shell" id="avatar-editor" data-avatar-renderer-version="@AvatarRenderer.Version">
     <div class="avatar-heading">
         <div>
             @if (!Model.Onboarding) { <a class="back-link" href="/profile">← К профилю</a> }

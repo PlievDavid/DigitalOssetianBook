@@ -9,7 +9,7 @@
   const buttons = [...categories.querySelectorAll("button")];
   const random = document.getElementById("avatar-random");
   const values = () => Object.fromEntries(fields.filter(x => x.checked).map(x => [x.dataset.avatarProperty, x.value]));
-  const url = (state, emotion = "Neutral", portrait = false) => "/avatars/render?" + new URLSearchParams({ v: "1", ...state, emotion, portrait });
+  const url = (state, emotion = "Neutral", portrait = false) => "/avatars/render?" + new URLSearchParams({ v: root.dataset.avatarRendererVersion, ...state, emotion, portrait });
   function update() {
     const state = values();
     preview.src = url(state);
