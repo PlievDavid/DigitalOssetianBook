@@ -27,6 +27,13 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     return p;
   }
   try {
+    for (const asset of ["/css/theme-green.css", "/css/avatar.css", "/js/nav.js", "/js/avatar-editor.js"]) {
+      for (const encoding of ["identity", "gzip", "br"]) {
+        const response = await page.request.get(base + asset, { headers: { "Accept-Encoding": encoding } });
+        const body = await response.body();
+        check(response.ok() && body.length > 100, "Static asset is not empty with " + encoding + ": " + asset);
+      }
+    }
     const anonymous = await page.request.get(base + "/profile/avatar", { maxRedirects: 0 });
     check(anonymous.status() === 302, "Editor requires authentication.");
     for (const query of ["Hair=unknown", "HairColor=%3Cscript%3E", "emotion=99", "portrait=invalid"]) {
