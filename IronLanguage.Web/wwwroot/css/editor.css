@@ -34,7 +34,7 @@
 .field-help { display: block; margin: 0; color: #6c7b91; font-size: 13px; line-height: 1.45; font-weight: 400; }
 .editor-word-picker { display: grid; gap: 9px; }
 .editor-steps { display: grid; gap: 9px; }
-.editor-step-row { display: grid; gap: 8px; align-items: center; grid-template-columns: auto minmax(110px, 1fr) repeat(2, minmax(150px, 1.3fr)); }
+.editor-step-row { display: grid; gap: 8px; align-items: center; grid-template-columns: auto minmax(110px, 1fr) repeat(2, minmax(190px, 1.3fr)); }
 .editor-step-number { color: #6c7b91; font-size: 14px; font-weight: 700; }
 .editor-step-word { font-weight: 600; overflow-wrap: anywhere; }
 .editor-word-picker > label, .editor-field-label { font-size: 15px; font-weight: 600; }
@@ -89,5 +89,6 @@
   .editor-book-heading { align-items: start; flex-direction: column; }
   .editor-step-row { grid-template-columns: auto 1fr; }
   .editor-step-row input { grid-column: 1 / -1; }
+  .editor-step-row .letter-field { grid-column: 1 / -1; }
   .editor-learner-preview { padding: 18px; }
 }

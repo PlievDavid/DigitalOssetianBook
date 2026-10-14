@@ -378,3 +378,10 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
 
 .guest-notice { margin-top: 24px; color: #52657c; font-size: 14px; line-height: 1.6; }
 .guest-notice a { color: #3056be; text-decoration: underline; }
+.letter-field { display: flex; align-items: center; gap: 6px; flex: 1 1 240px; min-width: 0; }
+.letter-field[hidden] { display: none; }
+.letter-field > input, .letter-field > textarea { flex: 1 1 0; min-width: 0; }
+.letter-keys { display: inline-flex; gap: 6px; flex: none; }
+.letter-key { min-width: 38px; min-height: 38px; padding: 0 8px; border: 1px solid #bcc9db; border-radius: 8px; background: #fff; color: #17233c; font: inherit; font-size: 16px; font-weight: 600; line-height: 1; }
+.letter-key:hover:not(:disabled) { border-color: #425fcd; color: #304dbb; }
+.letter-key:disabled { opacity: .45; cursor: default; }
