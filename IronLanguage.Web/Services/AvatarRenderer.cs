@@ -6,7 +6,7 @@ namespace IronLanguage.Web.Services;
 /// <summary>Shared, versioned SVG renderer. Expressions and poses do not modify saved appearance.</summary>
 public static class AvatarRenderer
 {
-    public const string Version = "2";
+    public const string Version = "3";
     public static string Url(AvatarOptions options, AvatarEmotion emotion = AvatarEmotion.Neutral, bool portrait = false) =>
         "/avatars/render?v=" + Version + "&" + string.Join("&", AvatarCatalog.Groups.Select(g => $"{g.Property}={Uri.EscapeDataString(options.Get(g.Property))}"))
         + $"&emotion={emotion}&portrait={portrait.ToString().ToLowerInvariant()}";
@@ -52,12 +52,13 @@ public static class AvatarRenderer
             </g>
             """);
         Add("<ellipse cx=\"160\" cy=\"495\" rx=\"76\" ry=\"9\" fill=\"#536347\" opacity=\".14\"/>");
+        // A continuous scalp joins every fringe to the temples, independently of face shape.
+        Add("<path data-avatar-layer=\"scalp\" d=\"M106 139C99 125 96 102 103 82C111 59 130 47 160 47C191 47 210 61 217 83C225 104 221 126 214 139L205 120L115 120Z\" fill=\"url(#hair)\"/>");
         // Long hair sits behind the face and shoulders.
         if (o.Hair is "long" or "bob")
             Add($"<path d=\"M102 94Q96 48 158 48q69-2 65 62l{(o.Hair == "long" ? "9 157q-37 13-53-15-34 28-85 7Z" : "0 95q-18 14-29 0-19 15-51 0Z")}\" fill=\"url(#hair)\"/>");
         if (o.Hair == "ponytail")
         {
-            Add("<path d=\"M105 137Q92 72 118 54q36-26 72-7 37 11 30 57l-7 36-16-21-77 4Z\" fill=\"url(#hair)\"/>");
             Add("<path d=\"M211 79q42-9 32 53l-10 62q-19-5-17-38l-5-54Z\" fill=\"url(#hair)\"/><path d=\"m217 91 19 4\" stroke=\"#d6b470\" stroke-width=\"6\"/>");
         }
         // Fixed lower outfit.
