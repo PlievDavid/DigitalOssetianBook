@@ -242,9 +242,14 @@
 .editor-page .back-link { color: var(--theme-green); }
 .editor-page h2,.editor-page h3 { font-family: var(--theme-heading-font); }
 .editor-page .editor-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 12px; margin: 0 0 36px; }
-.editor-page .editor-choices a { min-height: 118px; grid-template-rows: auto auto; align-content: center; column-gap: 14px; row-gap: 6px; border-color: #e2e8df; background: #fafbf8; padding: 20px; }
-.editor-page .editor-choices a:hover { border-color: #8ea99a; background: var(--theme-sage); }
-.editor-page .editor-choices a > span { background: #dce7d3; color: var(--theme-green); border-radius: 50%; }
+.editor-page .editor-choices a { min-height: 118px; grid-template-rows: auto auto; align-content: center; column-gap: 14px; row-gap: 6px; border-color: var(--choice-border); background: var(--choice-bg); padding: 20px; }
+.editor-page .editor-choices a[href$="/word"] { --choice-bg: #eff4e9; --choice-border: #dce6d2; --choice-icon-bg: #dce9cf; --choice-ink: #315329; }
+.editor-page .editor-choices a[href$="/audio"] { --choice-bg: #edf4fc; --choice-border: #d8e5f4; --choice-icon-bg: #cfe2f7; --choice-ink: #28598d; }
+.editor-page .editor-choices a[href$="/translation"] { --choice-bg: #fff5e7; --choice-border: #efdfc7; --choice-icon-bg: #ffe2b6; --choice-ink: #805018; }
+.editor-page .editor-choices a[href$="/book"] { --choice-bg: #f3eef9; --choice-border: #e3d9ef; --choice-icon-bg: #e4d7f2; --choice-ink: #68508a; }
+.editor-page .editor-choices a[href$="/dialogue"] { --choice-bg: #fceeed; --choice-border: #efd9d5; --choice-icon-bg: #f6d7d0; --choice-ink: #994c42; }
+.editor-page .editor-choices a:hover { border-color: var(--choice-ink); }
+.editor-page .editor-choices a > span { background: var(--choice-icon-bg); color: var(--choice-ink); border-radius: 50%; }
 .editor-page .editor-choices small,.editor-page .field-help,.editor-page .editor-item-type { color: var(--theme-muted); }
 .editor-page .editor-choices small { line-height: 1.5; }
 .editor-page .editor-form { padding: 28px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); margin-top: 0; background: white; }
