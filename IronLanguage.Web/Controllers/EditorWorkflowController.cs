@@ -244,6 +244,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             MaterialChapter[] chapters = [];
             try { chapters = JsonSerializer.Deserialize<MaterialChapter[]>(model.ChaptersJson, JsonOptions) ?? []; }
             catch (JsonException) { ModelState.AddModelError(nameof(model.ChaptersJson), "Не удалось прочитать разметку глав."); }
+            chapters = OssetianText.FixAe(chapters);
             if (chapters.Length == 0 || chapters.Length > 100) ModelState.AddModelError(nameof(model.ChaptersJson), "Добавьте хотя бы одну главу.");
             if (chapters.Any(x => x.Id == Guid.Empty || x.Number < 1 || string.IsNullOrWhiteSpace(x.Title) || x.Tokens is null || x.Tokens.Length is < 1 or > 10000 || x.Tokens.All(t => string.IsNullOrWhiteSpace(t.Text))))
                 ModelState.AddModelError(nameof(model.ChaptersJson), "У каждой главы должны быть название и текст.");
@@ -290,10 +291,6 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             model.OssetianAnswer = OssetianText.FixAe(model.OssetianAnswer);
             model.AlternativesText = OssetianText.FixAe(model.AlternativesText);
             model.DistractorsText = OssetianText.FixAe(model.DistractorsText);
-        }
-        else if (kind == "book")
-        {
-            model.ChaptersJson = OssetianText.FixAe(model.ChaptersJson);
         }
         else if (kind == "dialogue")
         {
