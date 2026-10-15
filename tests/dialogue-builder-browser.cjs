@@ -21,7 +21,7 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
       }, seed);
       await page.addScriptTag({ content: read('IronLanguage.Web/wwwroot/js/dialogue-builder.js') });
     };
-    for (const width of [360, 768, 1280]) {
+    for (const width of [360, 768, 902, 1280]) {
       await page.setViewportSize({ width, height: 800 }); await load();
       await page.getByRole('button', { name: 'Добавить персонажа', exact: true }).first().click();
       await page.locator('#character-name').fill('Алан');
@@ -32,6 +32,27 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
       await page.locator('#line-answers label input').nth(0).fill('Дӕ бон хорз!');
       await page.locator('#line-answers label input').nth(1).fill('Фӕндараст!');
       await page.locator('#line-answers input[type=radio]').nth(0).check();
+      const checkAnswerLayout = async () => {
+        assert(await page.locator('#line-dialog').evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth));
+        for (const row of await page.locator('.builder-answer-row').all()) {
+          const boxes = await row.evaluate(row => [...row.children].map(child => {
+            const rect = child.getBoundingClientRect(); return { x: rect.x, right: rect.right, width: rect.width, height: rect.height };
+          }));
+          assert.equal(boxes[0].width, 20); assert.equal(boxes[0].height, 20);
+          assert(boxes[1].width >= 140, `Answer input too narrow at ${width}`);
+          assert(boxes[0].right <= boxes[1].x && boxes[1].right <= boxes[2].x, 'Answer controls overlap');
+          assert.equal(boxes[2].width, 36);
+        }
+      };
+      await checkAnswerLayout();
+      if (process.env.DIALOGUE_BUILDER_SCREENSHOTS) {
+        fs.mkdirSync(process.env.DIALOGUE_BUILDER_SCREENSHOTS, { recursive: true });
+        await page.locator('#line-answers').scrollIntoViewIfNeeded();
+        await page.screenshot({ path: `${process.env.DIALOGUE_BUILDER_SCREENSHOTS}/choice-${width}.png` });
+      }
+      await page.addStyleTag({ content: 'body {font-size:200%}' });
+      await checkAnswerLayout();
+      await page.addStyleTag({ content: 'body {font-size:16px}' });
       await page.locator('#line-skippable').check(); await page.locator('#save-line').click();
       assert.match(await page.locator('#TurnsText').inputValue(), /^2 \| choice \| Дӕ бон хорз! \|/);
       // Moving the student's answer must move its turn, too.
@@ -88,6 +109,6 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
     await page.getByRole('button', { name: 'Изменить реплику 2', exact: true }).click();
     assert(await page.locator('#line-answers input[type=radio]').nth(1).isChecked());
     assert.deepEqual(errors, []);
-    console.log('Dialogue builder: three widths, character rename, turns and reordering, cancel, keyboard, text 200%, two seed round-trips passed.');
+    console.log('Dialogue builder: four widths, choice row geometry, character rename, turns and reordering, cancel, keyboard, text 200%, two seed round-trips passed.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

@@ -27,7 +27,7 @@
 .editor-form-shell h1, .editor-preview-shell h1 { margin-top: 25px; }
 .editor-form { display: grid; gap: 23px; margin-top: 28px; }
 .editor-form > label, .editor-chapter label { display: grid; gap: 8px; color: #21314c; font-size: 15px; font-weight: 600; }
-.editor-form input:not([type="checkbox"]):not([type="file"]):not([type="hidden"]), .editor-form textarea, .editor-form select, .editor-word-chooser input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #bcc9db; border-radius: 8px; background: white; color: #17233c; font: inherit; font-weight: 400; }
+.editor-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), .editor-form textarea, .editor-form select, .editor-word-chooser input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #bcc9db; border-radius: 8px; background: white; color: #17233c; font: inherit; font-weight: 400; }
 .editor-form textarea { resize: vertical; line-height: 1.5; }
 .editor-form input:focus, .editor-form textarea:focus, .editor-form select:focus, .editor-word-chooser input:focus { outline: 2px solid #425fcd; outline-offset: 1px; }
 .editor-form .form-error { display: block; font-size: 14px; font-weight: 400; }
@@ -112,9 +112,12 @@
 .builder-dialog > label, .builder-dialog #student-settings > label, .builder-answer-row label { display: grid; gap: 8px; margin: 18px 0; font-size: 15px; font-weight: 600; }
 .builder-dialog .builder-heading > button { border: 0; background: transparent; font-size: 28px; color: inherit; cursor: pointer; min-width: 40px; min-height: 40px; }
 .builder-dialog .builder-checkbox { display: flex !important; align-items: center; }
-.builder-dialog input[type="checkbox"], .builder-dialog input[type="radio"] { width: 20px; height: 20px; accent-color: #173f31; flex-shrink: 0; }
+.editor-form .builder-dialog input:is([type="checkbox"], [type="radio"]) { box-sizing: border-box; width: 20px; min-width: 20px; max-width: 20px; height: 20px; min-height: 20px; padding: 0; margin: 0; accent-color: #173f31; flex-shrink: 0; }
 .editor-form .builder-dialog input[type="color"] { width: 80px; height: 46px; padding: 4px; }
-.builder-answer-row { display: flex; align-items: center; gap: 10px; }
+.builder-answer-row { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: end; gap: 10px; min-width: 0; }
+.builder-answer-row:has(input[type="radio"]) { grid-template-columns: 20px minmax(0, 1fr) 36px; }
+.editor-form .builder-answer-row input[type="radio"] { margin-bottom: 13px; }
+.builder-answer-row > .builder-small-button { box-sizing: border-box; width: 36px; height: 46px; min-height: 46px; padding: 0; margin: 0; align-self: end; font-size: 20px; line-height: 1; }
 .builder-answer-row label { flex: 1; min-width: 0; margin: 0; }
 .builder-dialog .form-error:empty { display: none; }
 .builder-dialog .builder-actions { margin-top: 20px; }
