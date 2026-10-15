@@ -18,6 +18,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert(await page.locator('#main-navigation').isHidden());
       assert(await page.locator('.mobile-bottom-nav').isVisible());
       assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
+      assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), 1);
+      assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       checks += 5;
     }

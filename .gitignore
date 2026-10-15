@@ -10,3 +10,5 @@
 
 IronLanguage.Tests/
 **/*.user
+
+/node_modules/

@@ -62,6 +62,7 @@ public record AvatarOptions : IValidatableObject
             return options is { IsValid: true } ? options : new();
         }
         catch (JsonException) { return new(); }
+        catch (NotSupportedException) { return new(); }
     }
 }
 

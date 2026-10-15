@@ -28,8 +28,12 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
       await page.locator('#character-name').fill('Алан');
       await page.locator('#save-character').click();
       await page.locator('#add-line').click();
+      await page.locator('#save-line').click();
+      assert(await page.locator('#line-text').evaluate(input => input === document.activeElement));
       await page.locator('#line-text').fill('Дӕ бон хорз!'); await page.locator('#save-line').click();
       await page.locator('#add-line').click(); await page.locator('#line-speaker').selectOption('Ученик');
+      await page.locator('#save-line').click();
+      assert(await page.locator('#line-answers label input').first().evaluate(input => input === document.activeElement));
       await page.locator('#line-answers label input').nth(0).fill('Дӕ бон хорз!');
       await page.locator('#line-answers label input').nth(1).fill('Фӕндараст!');
       const secondAnswer = page.locator('#line-answers label').nth(1);
@@ -101,6 +105,36 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
       assert(await page.locator('#line-dialog').evaluate(d => d.scrollWidth <= d.clientWidth));
       await page.keyboard.press('Escape');
     }
+    // Invalid transport data must survive initialization and submit byte-for-byte.
+    for (const width of [360, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      const validTurn = '2 | free | Дӕ бон хорз! | | 2 | нет';
+      for (const broken of [
+        { LinesText: 'Алан: Дӕ бон хорз!\nАланӕ' },
+        { TurnsText: '3 | free | Дӕ бон хорз! | | 2 | нет' },
+        { TurnsText: 'номер | free | Дӕ бон хорз! | | 2 | нет' },
+        { TurnsText: '0 | free | Дӕ бон хорз! | | 2 | нет' },
+        { TurnsText: '-1 | free | Дӕ бон хорз! | | 2 | нет' },
+        { TurnsText: `${validTurn}\n02 | free | Фӕндараст! | | 2 | нет` }
+      ]) {
+        const values = { CharactersText: '  Алан | #203f34  ', LinesText: 'Алан: Дӕ бон хорз!\nУченик:', TurnsText: validTurn, ...broken };
+        await load(values);
+        assert.match(await page.locator('#dialogue-builder [role=alert]').innerText(), /Данные сохранены/);
+        for (const [id, value] of Object.entries(values)) assert.equal(await page.locator(`#${id}`).inputValue(), value);
+        await page.locator('form').evaluate(form => {
+          form.addEventListener('submit', event => { event.preventDefault(); window.submittedDialogue = Object.fromEntries(new FormData(form)); });
+        });
+        await page.getByRole('button', { name: 'Сохранить черновик', exact: true }).click();
+        assert.deepEqual(await page.evaluate(() => window.submittedDialogue), values);
+        await page.locator('#LinesText').fill('Алан: Дӕ бон хорз!\nУченик:');
+        await page.locator('#TurnsText').fill(validTurn);
+        await page.getByRole('button', { name: 'Сохранить черновик', exact: true }).click();
+        const corrected = await page.evaluate(() => window.submittedDialogue);
+        await load(corrected);
+        assert.equal(await page.locator('#builder-lines article').count(), 2);
+        assert.equal(await page.locator('#dialogue-builder [role=alert]').count(), 0);
+      }
+    }
     // Existing published material must round-trip without losing student text or turn settings.
     const seeds = JSON.parse(read('IronLanguage.Web/Data/dialogues/dialogues.json'));
     for (const seed of seeds) {
@@ -114,6 +148,6 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
     await page.getByRole('button', { name: 'Изменить реплику 2', exact: true }).click();
     assert(await page.locator('#line-answers input[type=radio]').nth(1).isChecked());
     assert.deepEqual(errors, []);
-    console.log('Dialogue builder: four widths, choice row geometry, character rename, turns and reordering, cancel, keyboard, text 200%, two seed round-trips passed.');
+    console.log('Dialogue builder: four widths, error focus, malformed input preservation and recovery, choice row geometry, rename, reorder, cancel, keyboard, text 200%, two seed round-trips passed.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

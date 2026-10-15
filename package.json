@@ -1,0 +1,15 @@
+{
+  "name": "adam-browser-checks",
+  "private": true,
+  "scripts": {
+    "test:dialogue-builder": "node tests/dialogue-builder-browser.cjs",
+    "test:navigation": "node tests/navigation-browser.cjs",
+    "test:learning-layout": "node tests/learning-layout-browser.cjs",
+    "test:avatar-artwork": "node tests/avatar-artwork.cjs",
+    "test:avatar": "node tests/avatar-browser.cjs",
+    "test:editor-audio": "node tests/editor-audio-layout-browser.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}

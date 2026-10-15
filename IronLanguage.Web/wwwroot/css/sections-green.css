@@ -209,7 +209,7 @@
 .green-theme .footer-inner p { border-left: 0; padding-left: 0; }
 .privacy-shell { min-height: 55vh; }
 .illustration-credits-page { border-top: 0; padding-top: 0; margin-top: 0; }
-@media (max-width: 700px) { .green-theme .site-footer { display: block; } .green-theme .footer-inner { margin-inline: 18px; gap: 14px; } .footer-links { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; } }
+@media (max-width: 700px) { .green-theme .footer-inner { margin-inline: 18px; gap: 14px; } .footer-links { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; } }
 .green-theme .books-catalog-heading { background: var(--theme-sage); }
 .green-theme .books-catalog-heading::before { opacity: .65; background-image: linear-gradient(90deg, var(--theme-sage) 20%, #eff2e800 90%), url('../images/green/tsey-sage-watercolor.png'); }
 .auth-scene { background-color: var(--theme-sage); background-image: linear-gradient(90deg, #eff2e8e6, #eff2e8a0), url('../images/green/tsey-sage-watercolor.png'); }

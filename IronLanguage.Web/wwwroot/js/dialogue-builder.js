@@ -3,6 +3,26 @@
   if (!root) return;
   const el = id => document.getElementById(id);
   const rows = text => text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const sourceLines = rows(el('LinesText').value);
+  const turnNumbers = rows(el('TurnsText').value).map(row => row.split('|')[0].trim());
+  // Do not normalize malformed input: it must reach server validation without data loss.
+  if (sourceLines.some(row => !row.includes(':')) ||
+      turnNumbers.some(number => !/^[+-]?\d+$/.test(number) || !Number.isInteger(Number(number)) || Number(number) < 1 || Number(number) > sourceLines.length) ||
+      new Set(turnNumbers.map(Number)).size !== turnNumbers.length) {
+    root.querySelectorAll('section').forEach(section => section.remove());
+    const warning = document.createElement('p');
+    warning.className = 'form-error'; warning.setAttribute('role', 'alert');
+    warning.textContent = 'В исходном диалоге есть реплика без «:», неверный номер хода или повторный ход. Данные сохранены без изменений. Исправьте текст ниже и сохраните черновик; сервер проверит его, после чего снова откроется конструктор.';
+    root.prepend(warning);
+    for (const [id, title] of [['CharactersText', 'Персонажи: имя | цвет'], ['LinesText', 'Реплики: персонаж: текст'],
+      ['TurnsText', 'Ходы: № реплики | choice или free | эталоны через ; | варианты через ; | порог подсказки | да или нет']]) {
+      const input = el(id), label = document.createElement('label'), textarea = document.createElement('textarea');
+      label.className = 'editor-field-label'; label.textContent = title;
+      textarea.id = id; textarea.name = input.name; textarea.value = input.value; textarea.rows = 6;
+      label.append(textarea); input.replaceWith(label);
+    }
+    return;
+  }
   const characters = rows(el('CharactersText').value).map(row => {
     const [name, color] = row.split('|').map(x => x.trim());
     return { name, color: color || '#203f34' };
@@ -189,13 +209,22 @@
     const speaker = el('line-speaker').value, text = el('line-text').value.trim(), isStudent = student(speaker);
     const answers = (choice() ? choiceAnswers : freeAnswers).map(x => x.trim());
     const threshold = Number(el('line-threshold').value);
+    let errorField = el('line-text');
     let error = !text && !isStudent ? 'Введите текст реплики.' : invalidText(text) ? 'Реплика должна быть на одной строке, без латинских букв и разделителя |.' : '';
     if (isStudent && !error) {
-      if (answers.some(x => !x || invalidText(x) || x.includes(';'))) error = 'Заполните ответы без латинских букв и разделителей.';
-      else if (new Set(answers.map(answerKey)).size !== answers.length) error = 'Варианты ответа должны различаться.';
-      else if (!Number.isInteger(threshold) || threshold < 1 || threshold > 2147483647) error = 'Укажите номер попытки от 1.';
+      const invalidAnswer = answers.findIndex(x => !x || invalidText(x) || x.includes(';'));
+      const duplicateAnswer = answers.findIndex((x, i) => answers.slice(0, i).some(previous => answerKey(previous) === answerKey(x)));
+      if (invalidAnswer >= 0) {
+        error = 'Заполните ответы без латинских букв и разделителей.';
+        errorField = el('line-answers').querySelectorAll('label input')[invalidAnswer];
+      } else if (duplicateAnswer >= 0) {
+        error = 'Варианты ответа должны различаться.';
+        errorField = el('line-answers').querySelectorAll('label input')[duplicateAnswer];
+      } else if (!Number.isInteger(threshold) || threshold < 1 || threshold > 2147483647) {
+        error = 'Укажите номер попытки от 1.'; errorField = el('line-threshold');
+      }
     }
-    el('line-error').textContent = error; if (error) return;
+    el('line-error').textContent = error; if (error) { errorField.focus(); return; }
     const line = { speaker, text, turn: isStudent ? { kind: el('line-kind').value,
       references: choice() ? [answers[correct]] : answers, options: choice() ? answers : [], threshold: String(threshold), skippable: el('line-skippable').checked } : null };
     if (lineIndex < 0) lines.push(line); else lines[lineIndex] = line;
