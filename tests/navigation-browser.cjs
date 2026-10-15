@@ -14,6 +14,9 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
     for (const width of [360, 587, 768]) {
       await page.setViewportSize({ width, height: 668 });
       await page.goto(base);
+      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
+      assert.equal(await page.locator('#main-navigation a[href="/Home/Privacy"], #main-navigation a[href="/Home/Illustrations"]').count(), 0);
+      checks += 2;
       const toggle = page.locator('.mobile-menu-toggle');
       // Click the SVG itself: its paths are replaced while the event is still bubbling.
       await toggle.locator('svg').click();

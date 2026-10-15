@@ -2,14 +2,12 @@
     const header = document.querySelector('.site-header');
     if (!header) return;
     const toggle = header.querySelector('.mobile-menu-toggle');
-    const games = document.querySelector('.bottom-games');
     const backdrop = document.querySelector('.menu-backdrop');
     const outside = [...document.querySelectorAll('#main-content, .site-footer, .mobile-bottom-nav')];
     const menus = [...header.querySelectorAll('.nav-menu')];
     let suppressFocusOpen = false;
     const compact = window.matchMedia('(max-width: 1023px)');
     const closeMenus = () => {
-        if (games.tagName === 'BUTTON') games.setAttribute('aria-expanded', 'false');
         menus.forEach(menu => {
             menu.classList.remove('is-open', 'is-pinned');
             menu.querySelector('.nav-menu-trigger').setAttribute('aria-expanded', String(compact.matches && header.classList.contains('mobile-is-open') && menu.classList.contains('nav-menu-section')));
@@ -35,7 +33,6 @@
             menu.classList.toggle('is-open', open);
             menu.classList.toggle('is-pinned', open && pinned);
             trigger.setAttribute('aria-expanded', String(open || (compact.matches && header.classList.contains('mobile-is-open') && menu.classList.contains('nav-menu-section'))));
-            if (games.tagName === 'BUTTON') games.setAttribute('aria-expanded', String(compact.matches && open && menu.classList.contains('nav-menu-games')));
         };
         if (trigger.tagName === 'BUTTON') trigger.addEventListener('click', () => {
             const open = !menu.classList.contains('is-pinned');
@@ -62,21 +59,8 @@
     });
     toggle.addEventListener('click', () => setMobile(!header.classList.contains('mobile-is-open')));
     backdrop.addEventListener('click', () => { setMobile(false); toggle.focus(); });
-    if (games.tagName === 'BUTTON') games.addEventListener('click', () => {
-        const open = games.getAttribute('aria-expanded') !== 'true';
-        setMobile(open);
-        if (open) {
-            closeMenus();
-            const menu = header.querySelector('.nav-menu-games');
-            menu.classList.add('is-open');
-            menu.querySelector('.nav-menu-trigger').setAttribute('aria-expanded', 'true');
-            games.setAttribute('aria-expanded', 'true');
-            menu.querySelector('.nav-menu-trigger').focus();
-            header.scrollIntoView({ block: 'start' });
-        }
-    });
     document.addEventListener('click', event => {
-        if (!event.composedPath().includes(header) && !games.contains(event.target)) setMobile(false);
+        if (!event.composedPath().includes(header)) setMobile(false);
         if (header.querySelector('.main-nav').contains(event.target) && event.target.closest('a')) setMobile(false);
     });
     document.addEventListener('keydown', event => {

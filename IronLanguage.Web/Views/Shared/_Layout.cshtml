@@ -58,7 +58,6 @@
                     <a href="/profile">Учётная запись</a><a href="/progress">Мои результаты</a>
                     @if (User.IsInRole("Editor")) { <a href="/editor">Редактор материалов</a> }
                 } else { <a class="button primary" href="/account/login">Войти</a><a href="/account/register">Создать аккаунт</a> }
-                <a class="mobile-info-link" href="/Home/Privacy">Политика конфиденциальности</a><a class="mobile-info-link" href="/Home/Illustrations">Об иллюстрациях</a>
             </div>
         </div></nav>
             <div class="header-actions">
@@ -89,8 +88,8 @@
     <nav class="mobile-bottom-nav" aria-label="Основные разделы">
         <a class="@(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Задания</span></a>
         <a class="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
-        <a class="bottom-games @(currentPath.StartsWith("/game") ? "is-current" : "")" href="/game">@await Html.PartialAsync("_NavIcon", "games")<span>Игры</span></a>
         <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" href="/books">@await Html.PartialAsync("_NavIcon", "books")<span>Книги</span></a>
+        <a class="@(currentPath.StartsWith("/profile") || currentPath.StartsWith("/account") || currentPath.StartsWith("/progress") ? "is-current" : "")" href="/profile">@await Html.PartialAsync("_NavIcon", "profile")<span>Профиль</span></a>
     </nav>
     </div>
     <script src="~/js/nav.js" asp-append-version="true" defer></script>
