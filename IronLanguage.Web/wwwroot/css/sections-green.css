@@ -226,7 +226,7 @@
   .menu-backdrop:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 35; border: 0; background: #15271e66; backdrop-filter: blur(3px); }
   .green-theme .site-header.mobile-is-open { position: fixed; inset: 0 0 auto; z-index: 40; background: white; box-shadow: 0 4px 18px #162c2314; }
   .green-theme .mobile-is-open .header-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  .green-theme .mobile-is-open .main-nav { display: block; position: fixed; top: 78px; left: 16px; right: 16px; max-height: calc(100dvh - 100px); overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--theme-border); border-radius: 16px; background: white; box-shadow: var(--theme-menu-shadow); }
+  .green-theme .mobile-is-open .main-nav { display: block; position: absolute; top: calc(100% + 12px); left: 16px; right: 16px; max-height: calc(100dvh - 100% - 32px); overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--theme-border); border-radius: 16px; background: white; box-shadow: var(--theme-menu-shadow); }
   .green-theme .mobile-is-open .header-actions { display: none; }
   .green-theme .mobile-is-open .nav-inner { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 8px 16px; }
   .green-theme .mobile-is-open .nav-menu-section { min-width: 0; }

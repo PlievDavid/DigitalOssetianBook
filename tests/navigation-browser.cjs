@@ -34,6 +34,9 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
       assert(await page.locator('#main-content').evaluate(element => element.inert));
       assert(await page.locator('#main-navigation').isVisible());
+      const headerBottom = await page.locator('.site-header').evaluate(element => element.getBoundingClientRect().bottom);
+      const menuTop = await page.locator('#main-navigation').evaluate(element => element.getBoundingClientRect().top);
+      assert(Math.abs(menuTop - headerBottom - 12) < 1, 'Tablet menu has a 12px gap below the actual header.');
       const headings = await page.locator('.nav-menu-section > .nav-section-link').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
       assert(Math.abs(headings[0] - headings[1]) < 1, 'Mobile section headings share the same top edge.');
       assert(await page.locator('#main-navigation').evaluate(element => element.getBoundingClientRect().bottom <= innerHeight));
@@ -48,7 +51,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert(await toggle.evaluate(element => element === document.activeElement));
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       if (width <= 700) assert(await page.locator('.site-footer').isHidden());
-      checks += width <= 700 ? 13 : 12;
+      checks += width <= 700 ? 14 : 13;
     }
     await page.locator('.mobile-menu-toggle').click();
     await page.setViewportSize({ width: 478, height: 668 });
