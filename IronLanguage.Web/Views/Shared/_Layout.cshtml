@@ -53,12 +53,9 @@
                 </div>
             </div>
             <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" href="/books">Книги</a>
-            <div class="mobile-account-links">
-                @if (User.Identity?.IsAuthenticated == true) {
-                    <a href="/profile">Учётная запись</a><a href="/progress">Мои результаты</a>
-                    @if (User.IsInRole("Editor")) { <a href="/editor">Редактор материалов</a> }
-                } else { <a class="button primary" href="/account/login">Войти</a><a href="/account/register">Создать аккаунт</a> }
-            </div>
+            @if (User.Identity?.IsAuthenticated != true) {
+                <div class="mobile-account-links"><a class="button primary" href="/account/login">Войти</a><a href="/account/register">Создать аккаунт</a></div>
+            }
         </div></nav>
             <div class="header-actions">
                 @if (User.Identity?.IsAuthenticated == true) {

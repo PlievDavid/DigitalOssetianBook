@@ -23,6 +23,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
       assert(await page.locator('#main-content').evaluate(element => element.inert));
       assert(await page.locator('#main-navigation').isVisible());
+      const headings = await page.locator('.nav-menu-section > .nav-section-link').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
+      assert(Math.abs(headings[0] - headings[1]) < 1, 'Mobile section headings share the same top edge.');
       assert(await page.locator('#main-navigation').evaluate(element => element.getBoundingClientRect().bottom <= innerHeight));
       await toggle.focus();
       await page.keyboard.press('Tab');
@@ -35,7 +37,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert(await toggle.evaluate(element => element === document.activeElement));
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       if (width <= 700) assert(await page.locator('.site-footer').isHidden());
-      checks += width <= 700 ? 11 : 10;
+      checks += width <= 700 ? 12 : 11;
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(base);
