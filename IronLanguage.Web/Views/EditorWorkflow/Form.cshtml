@@ -20,27 +20,27 @@
         <div asp-validation-summary="ModelOnly" class="form-error"></div>
         @if (Model.Kind == "word")
         {
-            <label>Осетинское слово <input asp-for="Ossetian" autocomplete="off" required maxlength="200" /><span asp-validation-for="Ossetian" class="form-error"></span></label>
+            <label>Осетинское слово <input asp-for="Ossetian" autocomplete="off" required maxlength="200" data-ossetian /><span asp-validation-for="Ossetian" class="form-error"></span></label>
             <label>Русский перевод <input asp-for="Russian" autocomplete="off" required maxlength="200" /><span asp-validation-for="Russian" class="form-error"></span></label>
-            <label>Пример употребления <textarea asp-for="Example" rows="3"></textarea></label>
+            <label>Пример употребления <textarea asp-for="Example" rows="3" data-ossetian></textarea></label>
         }
         else if (Model.Kind is "audio" or "translation")
         {
             @if (Model.Kind == "audio")
             {
                 <label>Перевод предложения <span class="field-help">Показывается ученику всегда, во время прохождения.</span><input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
-                <label>Правильное предложение <span class="field-help">По одному слову на строке, от 2 до 30 слов.</span><textarea asp-for="TokensText" rows="6" required></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
+                <label>Правильное предложение <span class="field-help">По одному слову на строке, от 2 до 30 слов.</span><textarea asp-for="TokensText" rows="6" required data-ossetian></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
                 <div class="editor-steps"><span class="editor-field-label">Варианты ответа</span><p class="field-help">К каждому слову — два отвлекающих варианта. Ученик выбирает слово из трёх, порядок вариантов сайт перемешивает.</p><div id="editor-steps"></div><input asp-for="DistractorsText" type="hidden" /><span asp-validation-for="DistractorsText" class="form-error"></span></div>
             }
             else
             {
                 <label>Русская подсказка <input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
-                <label>Осетинский ответ <input asp-for="OssetianAnswer" required /><span asp-validation-for="OssetianAnswer" class="form-error"></span></label>
-                <label>Слова для сборки <span class="field-help">Каждое слово — с новой строки. Добавьте также отвлекающие слова, если нужно.</span><textarea asp-for="TokensText" rows="6" required></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
-                <label>Другие допустимые ответы <span class="field-help">Необязательно; каждый вариант с новой строки.</span><textarea asp-for="AlternativesText" rows="3"></textarea></label>
+                <label>Осетинский ответ <input asp-for="OssetianAnswer" required data-ossetian /><span asp-validation-for="OssetianAnswer" class="form-error"></span></label>
+                <label>Слова для сборки <span class="field-help">Каждое слово — с новой строки. Добавьте также отвлекающие слова, если нужно.</span><textarea asp-for="TokensText" rows="6" required data-ossetian></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
+                <label>Другие допустимые ответы <span class="field-help">Необязательно; каждый вариант с новой строки.</span><textarea asp-for="AlternativesText" rows="3" data-ossetian></textarea></label>
             }
             <label>Пояснение после ответа <textarea asp-for="Explanation" rows="3"></textarea></label>
-            <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
+            <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
         }
         else if (Model.Kind == "book")
         {
@@ -58,10 +58,11 @@
         }
         else if (Model.Kind == "dialogue")
         {
-            <label>Название диалога <input asp-for="DialogueTitle" autocomplete="off" required maxlength="200" /><span asp-validation-for="DialogueTitle" class="form-error"></span></label>
+            <label>Название диалога <input asp-for="DialogueTitle" autocomplete="off" required maxlength="200" data-ossetian /><span asp-validation-for="DialogueTitle" class="form-error"></span></label>
             <label>Диалект <select asp-for="Dialect" required><option value="Iron">Иронский</option><option value="Dval">Дигорский</option></select></label>
             <label>Уровень <select asp-for="Level" required>@for (var level = 1; level <= 5; level++) { <option value="@level">@level</option> }</select></label>
             @await Html.PartialAsync("_DialogueBuilder", Model)
+
         }
         @if (Model.Kind is "word" or "audio")
         {
@@ -71,6 +72,7 @@
     </form>
 </section>
 <script id="editor-words-data" type="application/json">@Html.Raw(JsonSerializer.Serialize(words))</script>
-@section Scripts { <script src="~/js/editor.js" asp-append-version="true" defer></script>
+@section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/editor.js" asp-append-version="true" defer></script>
     @if (Model.Kind == "dialogue") { <script src="~/js/dialogue-builder.js" asp-append-version="true" defer></script> }
 }
+

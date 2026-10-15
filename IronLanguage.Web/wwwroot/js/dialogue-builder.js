@@ -149,7 +149,7 @@
         radio.addEventListener('change', () => { correct = i; }); row.append(radio);
       }
       const label = element('label', choice() ? `Вариант ${i + 1}` : `Допустимый ответ ${i + 1}`);
-      const input = document.createElement('input'); input.value = answer; input.maxLength = choice() ? 200 : 300;
+      const input = document.createElement('input'); input.dataset.ossetian = ''; input.value = answer; input.maxLength = choice() ? 200 : 300;
       input.setAttribute('form', 'dialogue-modal-fields');
       input.addEventListener('input', () => { answers[i] = input.value; }); label.append(input); row.append(label);
       const remove = button('×', () => {

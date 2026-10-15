@@ -73,7 +73,7 @@
         const correct = document.createElement('span'); correct.className = 'editor-step-word'; correct.textContent = word;
         row.append(number, correct);
         for (let variant = 0; variant < 2; variant++) {
-          const input = document.createElement('input'); input.type = 'text'; input.autocomplete = 'off';
+          const input = document.createElement('input'); input.type = 'text'; input.autocomplete = 'off'; input.dataset.ossetian = '';
           input.placeholder = `Отвлекающее слово ${variant + 1}`; input.value = (pairs[i] || [])[variant] || '';
           input.setAttribute('aria-label', `Шаг ${i + 1}, ${word}: отвлекающий вариант ${variant + 1}`);
           input.addEventListener('input', () => {
@@ -108,10 +108,10 @@
         const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Удалить главу'; remove.disabled = chapters.length === 1;
         remove.addEventListener('click', () => { chapters.splice(index, 1); render(); }); header.append(h, remove);
         const titleLabel = document.createElement('label'); titleLabel.textContent = 'Название главы';
-        const title = document.createElement('input'); title.value = chapter.title || ''; title.required = true;
+        const title = document.createElement('input'); title.value = chapter.title || ''; title.required = true; title.dataset.ossetian = '';
         title.addEventListener('input', () => { chapter.title = title.value; sync(); }); titleLabel.append(title);
         const textLabel = document.createElement('label'); textLabel.textContent = 'Текст главы';
-        const textarea = document.createElement('textarea'); textarea.rows = 8; textarea.required = true;
+        const textarea = document.createElement('textarea'); textarea.rows = 8; textarea.required = true; textarea.dataset.ossetian = '';
         textarea.value = (chapter.tokens || []).map(token => token.text).join('');
         textarea.addEventListener('input', () => {
           const next = tokenize(textarea.value);

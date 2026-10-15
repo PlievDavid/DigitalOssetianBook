@@ -40,6 +40,14 @@ const proof = process.env.LEARNING_LAYOUT_SCREENSHOTS;
       await page.locator('#dialog-play').waitFor({ state: 'visible' });
       assert(await page.locator('#dialog-feed .dialog-line').count() > 0);
       assert(await page.locator('#dialog-composer').isVisible());
+      const letterField = page.locator('#dialog-composer .letter-field');
+      if (await page.locator('#dialog-input').isVisible()) {
+        await page.locator('#dialog-input').fill('Д');
+        await letterField.getByRole('button', { name: 'Вставить букву ӕ', exact: true }).click();
+        assert.equal(await page.locator('#dialog-input').inputValue(), 'Дӕ');
+      } else {
+        assert(await letterField.isHidden());
+      }
       await overflow(); await capture(`dialog-play-${index}`);
       await page.locator('#dialog-back-link').click();
       assert(await page.locator('#dialog-list').isVisible());

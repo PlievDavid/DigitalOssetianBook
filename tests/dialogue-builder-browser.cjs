@@ -19,6 +19,7 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
       if (seed) await page.evaluate(seed => {
         for (const [id, value] of Object.entries(seed)) document.getElementById(id).value = value;
       }, seed);
+      await page.addScriptTag({ content: read('IronLanguage.Web/wwwroot/js/letter-keys.js') });
       await page.addScriptTag({ content: read('IronLanguage.Web/wwwroot/js/dialogue-builder.js') });
     };
     for (const width of [360, 768, 902, 1280]) {
@@ -31,6 +32,10 @@ const read = path => fs.readFileSync(`${root}/${path}`, 'utf8');
       await page.locator('#add-line').click(); await page.locator('#line-speaker').selectOption('Ученик');
       await page.locator('#line-answers label input').nth(0).fill('Дӕ бон хорз!');
       await page.locator('#line-answers label input').nth(1).fill('Фӕндараст!');
+      const secondAnswer = page.locator('#line-answers label').nth(1);
+      await secondAnswer.getByRole('button', { name: 'Вставить букву Ӕ', exact: true }).click();
+      assert.equal(await secondAnswer.locator('input').inputValue(), 'Фӕндараст!Ӕ');
+      await secondAnswer.locator('input').fill('Фӕндараст!');
       await page.locator('#line-answers input[type=radio]').nth(0).check();
       const checkAnswerLayout = async () => {
         assert(await page.locator('#line-dialog').evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth));

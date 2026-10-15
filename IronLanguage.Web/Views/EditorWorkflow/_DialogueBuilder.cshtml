@@ -18,7 +18,7 @@
 </div>
 <dialog id="character-dialog" class="builder-dialog" aria-labelledby="character-dialog-title">
     <div class="builder-heading"><h2 id="character-dialog-title">Добавить персонажа</h2><button type="button" data-close aria-label="Закрыть настройки персонажа">×</button></div>
-    <label>Имя персонажа<input id="character-name" maxlength="100" autocomplete="off" /></label>
+    <label>Имя персонажа<input id="character-name" data-ossetian maxlength="100" autocomplete="off" /></label>
     <label>Цвет персонажа<input id="character-color" type="color" value="#203f34" /></label>
     <p class="form-error" id="character-error" role="alert"></p>
     <div class="builder-actions"><button type="button" class="button primary" id="save-character">Добавить персонажа</button><button type="button" class="button secondary" data-close>Отмена</button></div>
@@ -26,7 +26,7 @@
 <dialog id="line-dialog" class="builder-dialog" aria-labelledby="line-dialog-title">
     <div class="builder-heading"><h2 id="line-dialog-title">Добавить реплику</h2><button type="button" data-close aria-label="Закрыть настройки реплики">×</button></div>
     <label>Кто говорит<select id="line-speaker"></select></label>
-    <label id="line-text-label">Текст реплики<textarea id="line-text" rows="3" maxlength="500"></textarea></label>
+    <label id="line-text-label">Текст реплики<textarea id="line-text" data-ossetian rows="3" maxlength="500"></textarea></label>
     <div id="student-settings">
         <label>Как отвечает ученик<select id="line-kind"><option value="choice">Выбирает из вариантов</option><option value="free">Вводит текст</option></select></label>
         <p class="field-help" id="answer-help"></p>
