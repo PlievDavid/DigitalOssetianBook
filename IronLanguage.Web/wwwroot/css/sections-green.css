@@ -264,6 +264,13 @@
 
 /* Mobile hero: clear type and a separate illustration, with no image under the copy. */
 .hero-mobile-art { display: none; }
+/* Phones use bottom navigation; the upper menu is available from tablet width. */
+@media (max-width: 599px) {
+  .green-theme .site-header .mobile-menu-toggle,
+  .green-theme .site-header .main-nav,
+  .green-theme .site-header .header-actions { display: none; }
+  .green-theme .header-inner { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 700px) {
   .green-theme .home-hero { min-height: 0; background: var(--theme-sage); border: 1px solid #e6eadf; }
   .green-theme .home-hero::before { display: none; }

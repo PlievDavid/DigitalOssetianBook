@@ -6,7 +6,7 @@
     const outside = [...document.querySelectorAll('#main-content, .site-footer, .mobile-bottom-nav')];
     const menus = [...header.querySelectorAll('.nav-menu')];
     let suppressFocusOpen = false;
-    const compact = window.matchMedia('(max-width: 1023px)');
+    const compact = window.matchMedia('(min-width: 600px) and (max-width: 1023px)');
     const closeMenus = () => {
         menus.forEach(menu => {
             menu.classList.remove('is-open', 'is-pinned');
@@ -14,6 +14,7 @@
         });
     };
     const setMobile = open => {
+        open = open && compact.matches;
         header.classList.toggle('mobile-is-open', open);
         toggle.setAttribute('aria-expanded', String(open));
         toggle.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');

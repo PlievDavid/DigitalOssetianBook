@@ -11,7 +11,17 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    for (const width of [360, 587, 768]) {
+    for (const width of [360, 478, 599]) {
+      await page.setViewportSize({ width, height: 668 });
+      await page.goto(base);
+      assert(await page.locator('.mobile-menu-toggle').isHidden());
+      assert(await page.locator('#main-navigation').isHidden());
+      assert(await page.locator('.mobile-bottom-nav').isVisible());
+      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      checks += 5;
+    }
+    for (const width of [600, 768, 1023]) {
       await page.setViewportSize({ width, height: 668 });
       await page.goto(base);
       assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
@@ -20,6 +30,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       const toggle = page.locator('.mobile-menu-toggle');
       // Click the SVG itself: its paths are replaced while the event is still bubbling.
       await toggle.locator('svg').click();
+      assert(await page.locator('.mobile-bottom-nav').isHidden());
       assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
       assert(await page.locator('#main-content').evaluate(element => element.inert));
       assert(await page.locator('#main-navigation').isVisible());
@@ -37,8 +48,15 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert(await toggle.evaluate(element => element === document.activeElement));
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       if (width <= 700) assert(await page.locator('.site-footer').isHidden());
-      checks += width <= 700 ? 12 : 11;
+      checks += width <= 700 ? 13 : 12;
     }
+    await page.locator('.mobile-menu-toggle').click();
+    await page.setViewportSize({ width: 478, height: 668 });
+    assert.equal(await page.locator('.mobile-menu-toggle').getAttribute('aria-expanded'), 'false');
+    assert(await page.locator('#main-content').evaluate(element => !element.inert));
+    assert(await page.locator('.menu-backdrop').isHidden());
+    assert(await page.evaluate(() => !document.body.classList.contains('mobile-nav-open')));
+    checks += 4;
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(base);
     const section = page.locator('a[aria-controls="practice-menu"]');
