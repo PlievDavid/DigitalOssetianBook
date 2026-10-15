@@ -46,7 +46,7 @@
                     <img src="~/images/green/book.png" asp-append-version="true" alt="" width="160" height="160" />
                     <span class="reading-step">Шаг 2</span><h3 id="words-title">Повторяйте в тренировке</h3>
                     <p>@(User.Identity?.IsAuthenticated == true ? "Проверьте, какие переводы вы запомнили: тренировка использует слова из вашего словаря." : "Войдите, чтобы повторять сохранённые слова. Без входа можно попробовать тренировку с опубликованными словами.")</p>
-                    <a class="theme-button theme-button-secondary" href="/word-practice"><span class="words-action-label">Тренировать слова</span> <span aria-hidden="true">→</span></a>
+                    <a class="theme-button theme-button-primary" href="/word-practice"><span class="words-action-label">Тренировать слова</span> <span aria-hidden="true">→</span></a>
                 </aside>
             </div>
         </section>
