@@ -146,12 +146,12 @@
   });
   $('back').addEventListener('click', () => {
     if (busy) return; remember(); $('play').hidden = true; $('levels').hidden = false; cards();
-    message('Выберите любой кроссворд. Проверенные слова отмечены звёздами.');
+    message('');
     [...$('levels').children].find((_, i) => levels[i].id === level.id)?.focus();
   });
   async function load() {
     $('retry').hidden = true;
-    try { levels = await api('/crosswords'); cards(); message('10 тем — начните с той, что вам интереснее.'); }
+    try { levels = await api('/crosswords'); cards(); message(''); }
     catch (error) { message(error.message); $('retry').hidden = false; }
   }
   $('retry').addEventListener('click', load);
