@@ -1,0 +1,763 @@
+[
+  {
+    "id": 1,
+    "version": 1,
+    "title": "Семья",
+    "rows": 4,
+    "columns": 8,
+    "words": [
+      {
+        "clue": "Сын",
+        "answer": "фырт",
+        "sourceRow": 3688,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 4,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Брат",
+        "answer": "ӕфсымӕр",
+        "sourceRow": 207,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 1,
+        "down": false,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Отец",
+        "answer": "фыд",
+        "sourceRow": 2261,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 2,
+        "down": true,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Мать",
+        "answer": "мад",
+        "sourceRow": 1669,
+        "sourceColumn": 4,
+        "row": 3,
+        "column": 0,
+        "down": false,
+        "number": 4,
+        "id": 4
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "version": 1,
+    "title": "Дом",
+    "rows": 6,
+    "columns": 6,
+    "words": [
+      {
+        "clue": "Дверь",
+        "answer": "дуар",
+        "sourceRow": 777,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 1,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Дом",
+        "answer": "хӕдзар",
+        "sourceRow": 869,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 3,
+        "down": true,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Кровать",
+        "answer": "сынтӕг",
+        "sourceRow": 1493,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 5,
+        "down": true,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Стул",
+        "answer": "бандон",
+        "sourceRow": 3655,
+        "sourceColumn": 4,
+        "row": 2,
+        "column": 0,
+        "down": false,
+        "number": 4,
+        "id": 4
+      },
+      {
+        "clue": "Крыша",
+        "answer": "сӕр",
+        "sourceRow": 1507,
+        "sourceColumn": 4,
+        "row": 5,
+        "column": 1,
+        "down": false,
+        "number": 5,
+        "id": 5
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "version": 1,
+    "title": "Природа",
+    "rows": 4,
+    "columns": 8,
+    "words": [
+      {
+        "clue": "Земля",
+        "answer": "зӕхх",
+        "sourceRow": 1157,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 4,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Гора",
+        "answer": "хох",
+        "sourceRow": 673,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 6,
+        "down": true,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Река",
+        "answer": "цӕугӕдон",
+        "sourceRow": 3157,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 0,
+        "down": false,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Озеро",
+        "answer": "цад",
+        "sourceRow": 2137,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 0,
+        "down": true,
+        "number": 3,
+        "id": 4
+      },
+      {
+        "clue": "Камень",
+        "answer": "дур",
+        "sourceRow": 1318,
+        "sourceColumn": 4,
+        "row": 3,
+        "column": 0,
+        "down": false,
+        "number": 4,
+        "id": 5
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "version": 1,
+    "title": "Погода и небо",
+    "rows": 6,
+    "columns": 7,
+    "words": [
+      {
+        "clue": "Звезда",
+        "answer": "стъалы",
+        "sourceRow": 1130,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 3,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Туман",
+        "answer": "мигъ",
+        "sourceRow": 3798,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 5,
+        "down": true,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Снег",
+        "answer": "мит",
+        "sourceRow": 3439,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 1,
+        "down": false,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Луна",
+        "answer": "мӕй",
+        "sourceRow": 1623,
+        "sourceColumn": 4,
+        "row": 2,
+        "column": 0,
+        "down": true,
+        "number": 4,
+        "id": 4
+      },
+      {
+        "clue": "Облако",
+        "answer": "ӕврагъ",
+        "sourceRow": 2058,
+        "sourceColumn": 4,
+        "row": 3,
+        "column": 0,
+        "down": false,
+        "number": 5,
+        "id": 5
+      },
+      {
+        "clue": "Ветер",
+        "answer": "дымгӕ",
+        "sourceRow": 321,
+        "sourceColumn": 4,
+        "row": 5,
+        "column": 2,
+        "down": false,
+        "number": 6,
+        "id": 6
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "version": 1,
+    "title": "За столом",
+    "rows": 9,
+    "columns": 5,
+    "words": [
+      {
+        "clue": "Мясо",
+        "answer": "дзидза",
+        "sourceRow": 1802,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 2,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Хлеб",
+        "answer": "дзул",
+        "sourceRow": 3983,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 1,
+        "down": false,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Вода",
+        "answer": "дон",
+        "sourceRow": 396,
+        "sourceColumn": 4,
+        "row": 3,
+        "column": 2,
+        "down": false,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Масло",
+        "answer": "царв",
+        "sourceRow": 1658,
+        "sourceColumn": 4,
+        "row": 5,
+        "column": 1,
+        "down": false,
+        "number": 4,
+        "id": 4
+      },
+      {
+        "clue": "Соль",
+        "answer": "цӕхх",
+        "sourceRow": 3503,
+        "sourceColumn": 4,
+        "row": 5,
+        "column": 1,
+        "down": true,
+        "number": 4,
+        "id": 5
+      },
+      {
+        "clue": "Молоко",
+        "answer": "ӕхсыр",
+        "sourceRow": 1756,
+        "sourceColumn": 4,
+        "row": 7,
+        "column": 0,
+        "down": false,
+        "number": 5,
+        "id": 6
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "version": 1,
+    "title": "В саду",
+    "rows": 7,
+    "columns": 9,
+    "words": [
+      {
+        "clue": "Груша",
+        "answer": "кӕрдо",
+        "sourceRow": 738,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 2,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Слива",
+        "answer": "чылауи",
+        "sourceRow": 3394,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 7,
+        "down": true,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Яблоко",
+        "answer": "фӕткъуы",
+        "sourceRow": 4177,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 1,
+        "down": false,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Абрикос",
+        "answer": "курага",
+        "sourceRow": 7,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 4,
+        "down": true,
+        "number": 4,
+        "id": 4
+      },
+      {
+        "clue": "Вишня",
+        "answer": "бал",
+        "sourceRow": 355,
+        "sourceColumn": 4,
+        "row": 3,
+        "column": 6,
+        "down": false,
+        "number": 5,
+        "id": 5
+      },
+      {
+        "clue": "Персик",
+        "answer": "алтъами",
+        "sourceRow": 2399,
+        "sourceColumn": 4,
+        "row": 6,
+        "column": 0,
+        "down": false,
+        "number": 6,
+        "id": 6
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "version": 1,
+    "title": "Домашние животные",
+    "rows": 4,
+    "columns": 8,
+    "words": [
+      {
+        "clue": "Конь",
+        "answer": "бӕх",
+        "sourceRow": 1426,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 1,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Корова",
+        "answer": "хъуг",
+        "sourceRow": 1443,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 3,
+        "down": false,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Гусь",
+        "answer": "хъаз",
+        "sourceRow": 750,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 3,
+        "down": true,
+        "number": 2,
+        "id": 3
+      },
+      {
+        "clue": "Кошка",
+        "answer": "гӕды",
+        "sourceRow": 1467,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 6,
+        "down": true,
+        "number": 3,
+        "id": 4
+      },
+      {
+        "clue": "Коза",
+        "answer": "сӕгъ",
+        "sourceRow": 1399,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 0,
+        "down": false,
+        "number": 4,
+        "id": 5
+      },
+      {
+        "clue": "Овца",
+        "answer": "фыс",
+        "sourceRow": 2113,
+        "sourceColumn": 4,
+        "row": 3,
+        "column": 5,
+        "down": false,
+        "number": 5,
+        "id": 6
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "version": 1,
+    "title": "Дикие животные",
+    "rows": 5,
+    "columns": 12,
+    "words": [
+      {
+        "clue": "Олень",
+        "answer": "саг",
+        "sourceRow": 2150,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 4,
+        "down": true,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Волк",
+        "answer": "бирӕгъ",
+        "sourceRow": 435,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 6,
+        "down": false,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Лиса",
+        "answer": "рувас",
+        "sourceRow": 1596,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 8,
+        "down": true,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Лев",
+        "answer": "домбай",
+        "sourceRow": 1555,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 0,
+        "down": false,
+        "number": 4,
+        "id": 4
+      },
+      {
+        "clue": "Мышь",
+        "answer": "мыст",
+        "sourceRow": 1797,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 2,
+        "down": true,
+        "number": 5,
+        "id": 5
+      },
+      {
+        "clue": "Медведь",
+        "answer": "арс",
+        "sourceRow": 1675,
+        "sourceColumn": 4,
+        "row": 3,
+        "column": 0,
+        "down": false,
+        "number": 6,
+        "id": 6
+      },
+      {
+        "clue": "Заяц",
+        "answer": "тӕрхъус",
+        "sourceRow": 1127,
+        "sourceColumn": 4,
+        "row": 4,
+        "column": 2,
+        "down": false,
+        "number": 7,
+        "id": 7
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "version": 1,
+    "title": "Человек",
+    "rows": 9,
+    "columns": 6,
+    "words": [
+      {
+        "clue": "Глаз",
+        "answer": "цӕст",
+        "sourceRow": 636,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 1,
+        "down": false,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Голова",
+        "answer": "сӕр",
+        "sourceRow": 665,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 3,
+        "down": true,
+        "number": 2,
+        "id": 2
+      },
+      {
+        "clue": "Зуб",
+        "answer": "дӕндаг",
+        "sourceRow": 1187,
+        "sourceColumn": 4,
+        "row": 1,
+        "column": 5,
+        "down": true,
+        "number": 3,
+        "id": 3
+      },
+      {
+        "clue": "Сердце",
+        "answer": "зӕрдӕ",
+        "sourceRow": 3329,
+        "sourceColumn": 4,
+        "row": 2,
+        "column": 1,
+        "down": false,
+        "number": 4,
+        "id": 4
+      },
+      {
+        "clue": "Язык",
+        "answer": "ӕвзаг",
+        "sourceRow": 4185,
+        "sourceColumn": 4,
+        "row": 2,
+        "column": 2,
+        "down": true,
+        "number": 5,
+        "id": 5
+      },
+      {
+        "clue": "Нога",
+        "answer": "къах",
+        "sourceRow": 2017,
+        "sourceColumn": 4,
+        "row": 5,
+        "column": 0,
+        "down": false,
+        "number": 6,
+        "id": 6
+      },
+      {
+        "clue": "Рука",
+        "answer": "къух",
+        "sourceRow": 3209,
+        "sourceColumn": 4,
+        "row": 5,
+        "column": 0,
+        "down": true,
+        "number": 6,
+        "id": 7
+      },
+      {
+        "clue": "Ухо",
+        "answer": "хъус",
+        "sourceRow": 3938,
+        "sourceColumn": 4,
+        "row": 8,
+        "column": 0,
+        "down": false,
+        "number": 7,
+        "id": 8
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "version": 1,
+    "title": "Одежда и дом",
+    "rows": 7,
+    "columns": 11,
+    "words": [
+      {
+        "clue": "Платок",
+        "answer": "кӕлмӕрзӕн",
+        "sourceRow": 2442,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 2,
+        "down": false,
+        "number": 1,
+        "id": 1
+      },
+      {
+        "clue": "Платье",
+        "answer": "къаба",
+        "sourceRow": 2443,
+        "sourceColumn": 4,
+        "row": 0,
+        "column": 2,
+        "down": true,
+        "number": 1,
+        "id": 2
+      },
+      {
+        "clue": "Дверь",
+        "answer": "дуар",
+        "sourceRow": 777,
+        "sourceColumn": 4,
+        "row": 2,
+        "column": 0,
+        "down": false,
+        "number": 2,
+        "id": 3
+      },
+      {
+        "clue": "Дом",
+        "answer": "хӕдзар",
+        "sourceRow": 869,
+        "sourceColumn": 4,
+        "row": 2,
+        "column": 5,
+        "down": false,
+        "number": 3,
+        "id": 4
+      },
+      {
+        "clue": "Рубашка",
+        "answer": "хӕдон",
+        "sourceRow": 3200,
+        "sourceColumn": 4,
+        "row": 2,
+        "column": 5,
+        "down": true,
+        "number": 3,
+        "id": 5
+      },
+      {
+        "clue": "Обувь",
+        "answer": "къахыдарӕс",
+        "sourceRow": 2088,
+        "sourceColumn": 4,
+        "row": 4,
+        "column": 0,
+        "down": false,
+        "number": 4,
+        "id": 6
+      },
+      {
+        "clue": "Шапка",
+        "answer": "худ",
+        "sourceRow": 4102,
+        "sourceColumn": 4,
+        "row": 4,
+        "column": 3,
+        "down": true,
+        "number": 5,
+        "id": 7
+      },
+      {
+        "clue": "Стул",
+        "answer": "бандон",
+        "sourceRow": 3655,
+        "sourceColumn": 4,
+        "row": 6,
+        "column": 0,
+        "down": false,
+        "number": 6,
+        "id": 8
+      }
+    ]
+  }
+]

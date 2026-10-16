@@ -157,6 +157,25 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("ContentRevisions");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LevelId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WordId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "LevelId", "Version", "WordId");
+
+                    b.ToTable("CrosswordSolvedWords");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.DailyActivity", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -606,6 +625,15 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.DictionaryForm", b =>

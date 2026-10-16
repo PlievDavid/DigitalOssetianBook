@@ -39,7 +39,7 @@
                 </div>
             </div>
             <div class="nav-menu nav-menu-words nav-menu-section">
-                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" href="/vocabulary" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false">Слова</a>
+                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath == "/game" ? "is-current" : "")" href="/vocabulary" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false">Слова</a>
                 <div id="words-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/vocabulary">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Словарь")</a>
                     <a class="nav-menu-item" href="/word-practice">Тренировка слов</a>
@@ -49,7 +49,7 @@
             <div class="nav-menu nav-menu-games">
                 <button class="nav-menu-link nav-menu-trigger @(currentPath.StartsWith("/games") ? "is-current" : "")" type="button" aria-haspopup="true" aria-expanded="false">Игры</button>
                 <div class="nav-menu-panel" aria-label="Игры">
-                    <span class="nav-menu-item nav-menu-item-placeholder"><span>Кроссворды</span><small>В разработке</small></span>
+                    <a class="nav-menu-item" href="/games/crosswords">Кроссворды</a>
                     <span class="nav-menu-item nav-menu-item-placeholder"><span>Вордли</span><small>В разработке</small></span>
                     <span class="nav-menu-item nav-menu-item-placeholder"><span>Переводилка</span><small>В разработке</small></span>
                 </div>
@@ -86,7 +86,8 @@
     </footer>
     <nav class="mobile-bottom-nav" aria-label="Основные разделы">
         <a class="@(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" aria-current="@(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "page" : null)" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Задания</span></a>
-        <a class="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
+        <a class="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath == "/game" ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath == "/game" ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
+        <a class="@(currentPath.StartsWith("/games") ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/games") ? "page" : null)" href="/games/crosswords">@await Html.PartialAsync("_NavIcon", "games")<span>Игры</span></a>
         <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/books") ? "page" : null)" href="/books">@await Html.PartialAsync("_NavIcon", "books")<span>Книги</span></a>
         <a class="@(currentPath.StartsWith("/profile") || currentPath.StartsWith("/account") || currentPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/profile") || currentPath.StartsWith("/account") || currentPath.StartsWith("/progress") ? "page" : null)" href="/profile">@await Html.PartialAsync("_NavIcon", "profile")<span>Профиль</span></a>
     </nav>

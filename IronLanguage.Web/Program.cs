@@ -25,6 +25,9 @@ builder.Services.AddScoped<LearningService>();
 builder.Services.AddSingleton<GuestLearningStore>();
 builder.Services.AddScoped<DialogueService>();
 builder.Services.AddScoped<DictionaryService>();
+builder.Services.AddSingleton<CrosswordCatalog>();
+builder.Services.AddScoped<CrosswordService>();
+builder.Services.AddScoped<ICrosswordRepository, EfCrosswordRepository>();
 builder.Services.AddScoped<DialogueSeedService>();
 builder.Services.AddScoped<ExerciseSeedService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>

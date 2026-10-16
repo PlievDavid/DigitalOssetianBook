@@ -1,0 +1,32 @@
+@{ ViewData["Title"] = "Кроссворды"; }
+<section class="feature-shell" id="crosswords-app">
+    <div class="cw-heading">
+        <div><span class="cw-kicker">СЛОВА НА ПЕРЕСЕЧЕНИИ</span><h1>Кроссворды</h1><p>Вспоминайте слова по-осетински, находите пересечения и собирайте звёзды.</p></div>
+        <div class="cw-heading-art" aria-hidden="true"><span>Ӕ</span><span>Д</span><span>А</span><span>М</span></div>
+    </div>
+    <p class="cw-note">Любой уровень открыт сразу. 1 звезда — есть верные слова, 2 — решена хотя бы половина, 3 — весь кроссворд.</p>
+    <p id="cw-guest" class="cw-note" hidden>Вы решаете без входа. Результаты доступны до обновления страницы. <a href="/account/login?ReturnUrl=%2Fgames%2Fcrosswords">Войти, чтобы сохранять</a></p>
+    <p id="cw-status" role="status" aria-live="polite">Загружаем кроссворды…</p>
+    <button class="button secondary" id="cw-retry" hidden>Повторить загрузку</button>
+    <div id="cw-levels" class="cw-levels" aria-label="Выберите кроссворд"></div>
+    <div id="cw-play" class="cw-play" hidden>
+        <div class="cw-toolbar"><button id="cw-back" class="button secondary">← Все кроссворды</button><span id="cw-progress"></span></div>
+        <h2 id="cw-title" tabindex="-1"></h2>
+        <div class="cw-workspace">
+            <div class="cw-puzzle">
+                <div class="cw-grid-scroll" tabindex="0" aria-label="Поле кроссворда, при необходимости прокрутите"><div id="cw-grid" class="cw-grid"></div></div>
+                <p class="cw-help">Нажмите клетку или подсказку. Повторное нажатие на пересечение меняет направление.</p>
+                <form id="cw-entry">
+                    <label for="cw-answer" id="cw-answer-label">Слово</label>
+                    <div class="cw-answer-row"><input id="cw-answer" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="cw-input-help" /><button id="cw-letter" class="button secondary" type="button" aria-label="Вставить букву ӕ">ӕ</button><button class="button secondary" type="submit">Вписать</button></div>
+                    <small id="cw-input-help">Введите слово целиком. Ӕ занимает одну клетку, ъ и ь — отдельные клетки.</small>
+                </form>
+                <button id="cw-check" class="button primary">Проверить</button>
+                <p class="cw-help">Звёзды и сохранение учитывают только слова, подтверждённые кнопкой «Проверить». Очки за кроссворды не начисляются.</p>
+            </div>
+            <div class="cw-clues"><h3>По горизонтали</h3><div id="cw-across"></div><h3>По вертикали</h3><div id="cw-down"></div></div>
+        </div>
+    </div>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/crosswords.css" asp-append-version="true" /> }
+@section Scripts { <script src="~/js/crosswords.js" asp-append-version="true" defer></script> }

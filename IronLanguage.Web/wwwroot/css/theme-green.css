@@ -211,7 +211,7 @@ html { scrollbar-gutter: stable; }
     .home-words-card img { width: 54px; right: 44px; top: 4px; height: 74px; }
     .home-words-card .theme-button { position: absolute; right: 6px; bottom: 12px; min-height: 44px; width: 44px; padding: 0; border: 0; border-radius: 50%; background: white; }
     .words-action-label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    .mobile-bottom-nav { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; min-height: calc(var(--theme-bottom-height) + env(safe-area-inset-bottom)); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); background: #fffffffa; border-radius: 18px 18px 0 0; box-shadow: 0 -4px 24px #172c230a; }
+    .mobile-bottom-nav { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; min-height: calc(var(--theme-bottom-height) + env(safe-area-inset-bottom)); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); background: #fffffffa; border-radius: 18px 18px 0 0; box-shadow: 0 -4px 24px #172c230a; }
     .mobile-bottom-nav a,.mobile-bottom-nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 52px; padding: 4px; border: 0; background: none; color: #627797; font-size: 10px; line-height: 14px; }
     .mobile-bottom-nav svg { width: 24px; height: 24px; }
     .mobile-bottom-nav .is-current { color: var(--theme-green); font-weight: 700; }
