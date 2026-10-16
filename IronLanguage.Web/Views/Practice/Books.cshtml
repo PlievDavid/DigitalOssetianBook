@@ -1,4 +1,5 @@
 @{ ViewData["Title"] = "Книги"; }
+@section Styles { <link rel="stylesheet" href="~/css/books-green.css" asp-append-version="true" /> }
 <section class="book-page" id="books-app">
     <div id="books-catalog" class="books-catalog">
         <header class="books-catalog-heading">
@@ -21,18 +22,29 @@
                 <button id="detail-read" class="button primary" type="button">Начать чтение →</button>
             </div>
         </div>
+        <section id="detail-chapters-section" class="book-detail-chapters" hidden>
+            <h2>Главы</h2>
+            <nav id="detail-chapters" aria-label="Содержание книги"></nav>
+        </section>
     </div>
 
     <div id="book-reader" class="book-reader" hidden>
         <header class="reader-toolbar">
             <button id="books-back" class="book-text-button reader-back" type="button">‹ Описание книги</button>
-            <div class="reader-book-heading"><strong id="book-title"></strong><span id="book-author"></span></div>
+            <div class="reader-book-heading"><h1 id="book-title" tabindex="-1"></h1><p id="book-author"></p></div>
         </header>
-        <nav id="chapter-buttons" class="reader-chapters" aria-label="Главы" hidden></nav>
+        <div class="reader-layout">
+        <aside id="reader-chapter-panel" class="reader-chapter-panel" hidden>
+            <h2>Главы</h2>
+            <nav id="chapter-buttons" class="reader-chapters" aria-label="Главы"></nav>
+            <label class="reader-chapter-picker" for="chapter-select">Глава<select id="chapter-select"></select></label>
+        </aside>
         <div id="reader-columns" class="reader-columns">
-            <section class="reader-pane" aria-label="Осетинский текст"><div id="book-text" class="reader-text"></div></section>
-            <section id="book-literary" class="reader-pane reader-translation" aria-label="Литературный перевод" hidden><div id="book-literary-text" class="reader-text"></div></section>
+            <section class="reader-pane" aria-labelledby="original-heading"><h2 id="original-heading">Осетинский текст</h2><p class="reader-hint">Нажмите на слово, чтобы посмотреть перевод.</p><div id="book-text" class="reader-text"></div></section>
+            <section id="book-literary" class="reader-pane reader-translation" aria-labelledby="translation-heading" hidden><h2 id="translation-heading">Литературный перевод</h2><div id="book-literary-text" class="reader-text"></div></section>
         </div>
+        </div>
+        <nav id="reader-pagination" class="reader-pagination" aria-label="Переход между главами" hidden><button id="chapter-previous" class="theme-button theme-button-secondary" type="button">← Предыдущая глава</button><button id="chapter-next" class="theme-button theme-button-primary" type="button">Следующая глава →</button></nav>
         <aside id="word-popup" class="reader-popup" aria-label="Словарная статья" hidden></aside>
     </div>
     <div id="books-status" role="status" aria-live="polite"></div>

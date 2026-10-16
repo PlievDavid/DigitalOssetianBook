@@ -2,6 +2,7 @@
   "name": "adam-browser-checks",
   "private": true,
   "scripts": {
+    "test:books-layout": "node tests/books-layout-browser.cjs",
     "test:dialogue-builder": "node tests/dialogue-builder-browser.cjs",
     "test:navigation": "node tests/navigation-browser.cjs",
     "test:learning-layout": "node tests/learning-layout-browser.cjs",

@@ -1,0 +1,69 @@
+/* Book screens follow the approved library and parallel-reading layouts. */
+.green-theme .book-page { color: var(--theme-ink); }
+.green-theme .book-detail-content { gap: 40px; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); align-items: start; }
+.green-theme .book-detail-copy { padding-top: 12px; min-width: 0; }
+.green-theme .book-detail-copy h1 { font-size: clamp(30px, 3vw, 44px); overflow-wrap: anywhere; }
+.green-theme .book-authors, .green-theme .book-description, .green-theme .book-card-authors { color: var(--theme-muted); }
+.green-theme .book-description { margin: 24px 0; }
+.green-theme #detail-read { width: 100%; }
+.green-theme .book-detail-chapters { margin-top: 40px; }
+.green-theme .book-detail-chapters h2 { font-size: 24px; }
+.green-theme #detail-chapters { display: grid; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); overflow: hidden; }
+.green-theme #detail-chapters button { padding: 18px 24px; min-height: 56px; overflow-wrap: anywhere; }
+.green-theme #detail-chapters button + button { border-top: 1px solid var(--theme-border); }
+.green-theme #detail-chapters button:hover { background: var(--theme-sage); }
+.green-theme.is-reading-book .site-header { display: block; }
+.green-theme .book-reader { max-width: 1440px; padding: 24px 40px 48px; }
+.green-theme .reader-toolbar { position: static; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; border: 0; padding: 0 0 24px; min-height: 0; }
+.green-theme .reader-toolbar .reader-back { font-size: 15px; }
+.green-theme .reader-book-heading { white-space: normal; overflow: visible; }
+.green-theme .reader-book-heading h1 { font-size: clamp(26px, 2.8vw, 36px); margin: 0 0 8px; color: var(--theme-ink); overflow-wrap: anywhere; }
+.green-theme .reader-book-heading p { margin: 0; color: var(--theme-muted); }
+.green-theme .reader-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.green-theme .has-chapters .reader-layout { grid-template-columns: 180px minmax(0, 1fr); }
+.green-theme .reader-chapter-panel { border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); padding: 20px 12px; }
+.green-theme .reader-chapter-panel h2 { font-size: 18px; margin: 0 8px 16px; }
+.green-theme .reader-chapters { display: grid; gap: 8px; padding: 0; border: 0; }
+.green-theme .reader-chapters .book-text-button { width: 100%; min-height: 44px; color: var(--theme-ink); overflow-wrap: anywhere; }
+.green-theme .reader-chapter-picker { display: none; }
+.green-theme .book-page .reader-columns { width: 100%; max-width: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: 0; }
+.green-theme .book-page .reader-columns.single { grid-template-columns: minmax(0, 780px); }
+.green-theme .reader-pane { display: block; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); padding: 24px; background: #fafbfd; }
+.green-theme .reader-pane h2 { font-size: 19px; margin: 0 0 18px; line-height: 1.4; }
+.green-theme .reader-hint { font-size: 13px; color: var(--theme-muted); margin: -6px 0 24px; line-height: 1.5; }
+.green-theme .book-page .reader-translation { background: var(--theme-sand); }
+.green-theme .reader-translation::before { content: none; }
+.green-theme .book-page .reader-text { width: 100%; max-width: 100%; font-size: 20px; line-height: 1.85; overflow-wrap: anywhere; }
+.green-theme .book-page .reader-word:hover, .green-theme .book-page .reader-current { background: #dcecf8; }
+.green-theme .reader-pagination { display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid var(--theme-border); margin-top: 28px; padding-top: 20px; }
+.green-theme .reader-pagination button { white-space: normal; }
+.green-theme .reader-pagination button:disabled { opacity: .45; cursor: default; }
+.green-theme .book-page .reader-popup { border-radius: var(--theme-radius-card); padding: 16px 20px; }
+.green-theme .book-page .reader-popup-label { margin: 0; color: var(--theme-muted); font-size: 13px; }
+.green-theme .book-page .reader-popup-header { padding-top: 8px; }
+.green-theme .book-page .reader-popup-header strong { font-size: 26px; overflow-wrap: anywhere; }
+.green-theme .book-page .reader-meaning { gap: 12px; border-color: var(--theme-border); }
+.green-theme .book-page .reader-meaning strong { background: var(--theme-sand); border-radius: 8px; padding: 12px; overflow-wrap: anywhere; }
+.green-theme .book-page .reader-meaning .theme-button { width: 100%; min-height: 44px; }
+.green-theme .reader-login { display: block; margin-top: 16px; color: var(--theme-green); }
+@media (max-width: 1100px) {
+  .green-theme .has-chapters .reader-layout { grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
+  .green-theme .reader-pane { padding: 20px; }
+  .green-theme .book-reader { padding-left: 24px; padding-right: 24px; }
+}
+@media (max-width: 900px) {
+  .green-theme .has-chapters .reader-layout { grid-template-columns: minmax(0, 1fr); }
+  .green-theme .reader-chapter-panel { padding: 0; border: 0; }
+  .green-theme .reader-chapter-panel h2, .green-theme .reader-chapters { display: none; }
+  .green-theme .reader-chapter-picker { display: grid; gap: 8px; color: var(--theme-muted); font-size: 14px; }
+  .green-theme .reader-chapter-picker select { width: 100%; min-width: 0; min-height: 48px; padding: 12px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-sm); background: var(--theme-sage); color: var(--theme-ink); font: inherit; }
+}
+@media (max-width: 700px) {
+  .green-theme .book-detail-content { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .green-theme .book-detail-cover { width: min(100%, 220px); }
+  .green-theme .book-reader { padding: 20px 18px 32px; }
+  .green-theme .book-page .reader-columns, .green-theme .book-page .reader-columns.single { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .green-theme .reader-pane { padding: 20px 16px; }
+  .green-theme .reader-pagination { gap: 12px; }
+  .green-theme .reader-pagination button { flex: 1; min-width: 0; padding: 12px; font-size: 14px; }
+}
