@@ -24,3 +24,11 @@
 .green-theme .header-streak-slot .header-streak { max-width: 100%; }
 .green-theme .header-streak strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 @media (max-width: 1023px) { .green-theme .header-streak-slot { width: 210px; } }
+
+/* Shared reading width for active lessons; outer page shells remain full width. */
+:root { --lesson-width: 760px; }
+.green-theme :is(#exercise-play, #dialog-play, #matching-play, #game-app .game-play-area) {
+    width: 100%;
+    max-width: var(--lesson-width);
+    margin-inline: auto;
+}

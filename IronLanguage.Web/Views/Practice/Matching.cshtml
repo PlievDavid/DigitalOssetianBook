@@ -1,19 +1,21 @@
 @{ ViewData["Title"] = "Соотнесение"; }
-<section class="feature-shell dialog-page" id="matching-app">
+<section class="feature-shell matching-page game-shell" id="matching-app">
     <a class="back-link" href="/">← К заданиям</a>
-    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Соотнесение", "Соотнесите осетинские слова с русскими переводами. Неверный выбор можно исправить.", "matching"))
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Соотнесение", "Соотнесите осетинские слова с русскими переводами. Неверный выбор можно исправить.", "matching", "teal"))
     <div id="matching-status" role="status"></div>
     <div id="matching-list" class="exercise-list"></div>
-    <div id="matching-play" hidden>
+    <div id="matching-play" class="game-play-area" hidden>
         <div class="dialog-play-head">
             <a id="matching-back-link" class="back-link" href="/matching">← К списку</a>
             <span id="matching-counters" class="dialog-counters" aria-live="polite"></span>
         </div>
         <h2 id="matching-title"></h2>
-        <p class="field-help">Выберите слово слева, затем его пару справа.</p>
-        <div class="matching-board">
-            <div id="matching-left" class="matching-column" aria-label="Осетинские слова"></div>
-            <div id="matching-right" class="matching-column" aria-label="Пары"></div>
+        <p id="matching-instructions" class="field-help">Соедините пары ниткой или нажмите на слово слева и его пару справа.</p>
+        <div class="game-language-labels" aria-hidden="true"><span>Слова</span><span>Пары</span></div>
+        <div id="matching-board" class="matching-board game-board">
+            <svg id="matching-threads" class="game-threads" aria-hidden="true"></svg>
+            <div id="matching-left" class="matching-column game-column game-column-left" role="group" aria-label="Осетинские слова"></div>
+            <div id="matching-right" class="matching-column game-column game-column-right" role="group" aria-label="Пары"></div>
         </div>
         <p id="matching-result" role="status"></p>
         <div id="matching-summary" class="dialog-summary" hidden></div>
@@ -21,3 +23,5 @@
     </div>
 </section>
 @section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/matching.js" asp-append-version="true" defer></script> }
+
+@section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/matching.css" asp-append-version="true" /> }

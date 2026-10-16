@@ -50,6 +50,21 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
     await page.keyboard.press('Escape');
     assert(await page.locator('#word-popup').isHidden());
     assert.equal(await page.locator('.reader-current').count(), 0);
+    // A local row change should not measure every pair in a long chapter.
+    await page.setViewportSize({ width: 1280, height: 800 }); await settle();
+    await page.evaluate(() => {
+      window.rowMeasurements = 0;
+      const original = Element.prototype.getBoundingClientRect;
+      window.restoreRowMeasurements = () => { Element.prototype.getBoundingClientRect = original; };
+      Element.prototype.getBoundingClientRect = function () {
+        if (this.classList.contains('reader-line-content')) window.rowMeasurements++;
+        return original.call(this);
+      };
+      document.querySelector('#book-text .reader-line-content').style.minHeight = '150px';
+    });
+    await page.waitForFunction(() => window.rowMeasurements > 0); await settle();
+    assert((await page.evaluate(() => window.rowMeasurements)) <= 4, 'A row resize measures only its pair');
+    await page.evaluate(() => { window.restoreRowMeasurements(); document.querySelector('#book-text .reader-line-content').style.minHeight = ''; });
     // Unequal line counts and absent translation must keep the original reading flow.
     for (const translation of [book.literaryTranslation.split('\n').slice(0, -1).join('\n'), null]) {
       await page.route('**/api/v1/books/*', route => route.fulfill({ json: { ...book, literaryTranslation: translation } }));

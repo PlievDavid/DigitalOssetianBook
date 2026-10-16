@@ -108,7 +108,7 @@
 .game-column .word-tile::after { content: ""; position: absolute; top: 50%; width: 10px; height: 10px; border: 2px solid currentColor; border-radius: 50%; background: #fff; transform: translateY(-50%); }
 .game-column-left .word-tile::after { right: -7px; }
 .game-column-right .word-tile::after { left: -7px; }
-.game-word { touch-action: none; cursor: grab; }
+.game-word { touch-action: pan-y; cursor: grab; }
 .game-word:active { cursor: grabbing; }
 .game-shell .game-column .word-tile:focus-visible { outline: 3px solid #286aab; outline-offset: 4px; }
 .game-shell .game-column .word-tile.matched::after { background: #357348; border-color: #357348; }

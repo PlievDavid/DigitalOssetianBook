@@ -18,11 +18,11 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
         window.AdamAuthenticated = authenticated;
         // Deliberately synthetic labels, not learning content or proposed translations.
         window.fixtures = Array.from({ length: count }, (_, i) => ({ id: i + 1, wordId: i + 1, ossetian: `Ӕӕ ${i + 1}`, russian: `Тест ${i + 1}` }));
-        window.calls = []; window.fail = false;
+        window.calls = []; window.fail = false; window.failLoad = false;
         window.AdamApi = async (url, options) => {
           calls.push({ url, options });
           await new Promise(resolve => setTimeout(resolve, 100));
-          if (!options) return fixtures;
+          if (!options) { if (window.failLoad) { window.failLoad = false; throw new Error('Ошибка загрузки слов'); } return fixtures; }
           if (window.fail) { window.fail = false; throw new Error('Ошибка тестовой сети'); }
           const id = Number(url.split('/')[2]), expected = fixtures.find(x => x.wordId === id).russian;
           return { correct: JSON.parse(options.body).translation === expected, expected };
@@ -89,6 +89,11 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
     assert(await page.locator('#game-restart').evaluate(el => el === document.activeElement));
     fs.mkdirSync(path.join(root, '.run-local/game-threads'), { recursive: true });
     await page.screenshot({ path: path.join(root, '.run-local/game-threads/desktop.png'), fullPage: true });
+    await page.evaluate(() => window.failLoad = true);
+    await page.locator('#game-restart').click(); await idle();
+    assert.match(await page.locator('#game-status').innerText(), /Ошибка загрузки слов/);
+    assert.equal(await page.locator('#game-board').locator('*').count(), 0, 'Failed restart clears stale tiles and SVG');
+    assert(await page.locator('#game-restart').isEnabled());
     await page.locator('#game-restart').click(); await idle();
     assert.equal(await page.locator('.game-thread').count(), 0); assert.equal(await page.locator('.game-word:enabled').count(), 5);
     // Drop outside the board never submits; the selection can be reused.
@@ -105,6 +110,19 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
     await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await idle();
     assert.equal(await page.locator('.game-thread-matched').count(), 1);
     await page.screenshot({ path: path.join(root, '.run-local/game-threads/mobile.png'), fullPage: true });
+    // Native vertical touch must scroll when it starts on an unmatched left tile.
+    await setup();
+    await page.evaluate(() => { document.body.style.minHeight = '2000px'; window.scrollTo(0, 0); });
+    const scrollTile = await left(1).boundingBox();
+    const tx = scrollTile.x + scrollTile.width / 2, ty = scrollTile.y + scrollTile.height / 2;
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: tx, y: ty }] });
+    for (let dy = 15; dy <= 120; dy += 15) {
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: tx, y: ty - dy }] });
+    }
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForFunction(() => scrollY > 30);
+    assert.equal(await page.evaluate(() => calls.filter(x => x.options).length), 0, 'Scrolling never submits an answer');
+    assert.equal(await page.locator('.game-thread-active').count(), 0, 'Cancelled touch leaves no thread');
     await setup(2, true); await left(1).click(); await right(1).click(); await idle();
     assert.equal(await page.evaluate(() => calls.at(-1).url), '/vocabulary/1/review');
     for (const count of [0, 1]) { await setup(count); assert(await page.locator('#game-find-words').isVisible()); assert.equal(await page.locator('.game-word').count(), 0); }
