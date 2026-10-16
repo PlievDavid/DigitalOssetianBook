@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(`cw-${id}`);
   const api = window.AdamApi;
   const drafts = new Map();
-  let levels = [], level = null, cells = {}, solved = new Set(), selected = null, busy = false;
+  let levels = [], level = null, cells = {}, solved = new Set(), selected = null, activeKey = null, busy = false;
   const key = (w, i) => `${w.row + (w.down ? i : 0)},${w.column + (w.down ? 0 : i)}`;
   const keys = w => Array.from({ length: w.length }, (_, i) => key(w, i));
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').normalize('NFC');
@@ -35,28 +35,63 @@
     $('play').setAttribute('aria-busy', String(value));
     $('check').disabled = value || solved.size === level?.words.length;
     $('back').disabled = value;
-    $('entry').querySelectorAll('input,button').forEach(el => el.disabled = value || !!selected && solved.has(selected.id));
-    $('grid').querySelectorAll('button').forEach(el => el.disabled = value);
+    $('letter').disabled = value || solved.size === level?.words.length;
+    $('grid').querySelectorAll('input').forEach(el => el.disabled = value);
     $('play').querySelectorAll('.cw-clue').forEach(el => el.disabled = value);
   }
   function select(word, focus = false) {
     if (busy) return;
     selected = word;
     $('answer-label').textContent = `${word.number}. ${word.clue} · ${word.down ? 'по вертикали' : 'по горизонтали'} · ${word.length} букв`;
-    $('answer').maxLength = word.length;
-    $('answer').value = keys(word).map(k => cells[k] || ' ').join('').trimEnd();
-    $('answer').placeholder = `${word.length} букв по-осетински`;
-    $('entry').querySelectorAll('input,button').forEach(el => el.disabled = solved.has(word.id));
     paint();
-    if (focus && !solved.has(word.id)) $('answer').focus();
+    if (focus) {
+      const fixed = fixedCells();
+      const wordKeys = keys(word);
+      focusCell(wordKeys.find(k => !fixed.has(k) && !cells[k]) || wordKeys.find(k => !fixed.has(k)) || wordKeys[0]);
+    }
+  }
+  const fixedCells = () => new Set(level.words.filter(w => solved.has(w.id)).flatMap(keys));
+  const inputAt = k => $('grid').querySelector(`input[data-key="${k}"]`);
+  function focusCell(k) { activeKey = k; const input = inputAt(k); input.focus(); if (!input.readOnly) input.select(); }
+  function chooseCell(k, toggle = false, down = null) {
+    const choices = level.words.filter(w => keys(w).includes(k));
+    const word = down !== null ? choices.find(w => w.down === down) : null;
+    select(word || (toggle ? choices[(choices.indexOf(selected) + 1) % choices.length] : choices.includes(selected) ? selected : choices.find(w => !solved.has(w.id)) || choices[0]));
+    activeKey = k;
+  }
+  function writeText(text, start = activeKey) {
+    if (busy || !selected || !start) return;
+    const answer = normalize(text.trim());
+    if (!answer || !/^[а-яёӕ]+$/u.test(answer)) { paint(); return; }
+    const wordKeys = keys(selected), first = wordKeys.indexOf(start), fixed = fixedCells();
+    if (first < 0 || answer.length > wordKeys.length - first) { message('В слове недостаточно клеток для вставки.'); paint(); return; }
+    const target = wordKeys.slice(first, first + answer.length);
+    if (target.some((k, i) => fixed.has(k) && cells[k] !== answer[i])) { message('Проверенные буквы на пересечении менять нельзя.'); paint(); return; }
+    target.forEach((k, i) => cells[k] = answer[i]);
+    remember(); paint(); message('');
+    const next = wordKeys.slice(first + answer.length).find(k => !fixed.has(k));
+    focusCell(next || [...target].reverse().find(k => !fixed.has(k)) || start);
+  }
+  function erase(k, backward) {
+    if (busy || !selected) return;
+    const fixed = fixedCells();
+    if (fixed.has(k)) return;
+    let target = k;
+    if (backward && !cells[k]) {
+      const wordKeys = keys(selected);
+      target = wordKeys.slice(0, wordKeys.indexOf(k)).reverse().find(candidate => !fixed.has(candidate)) || k;
+    }
+    delete cells[target]; remember(); paint(); focusCell(target);
   }
   function paint() {
     const active = new Set(selected ? keys(selected) : []), fixed = new Set(level.words.filter(w => solved.has(w.id)).flatMap(keys));
     $('grid').querySelectorAll('.cw-cell').forEach(el => {
-      el.querySelector('.cw-cell-letter').textContent = (cells[el.dataset.key] || '').toUpperCase();
+      const input = el.querySelector('input');
+      input.value = (cells[el.dataset.key] || '').toUpperCase();
+      input.readOnly = fixed.has(el.dataset.key);
       el.classList.toggle('is-selected', active.has(el.dataset.key));
       el.classList.toggle('is-solved', fixed.has(el.dataset.key));
-      el.setAttribute('aria-label', `Строка ${Number(el.dataset.key.split(',')[0]) + 1}, столбец ${Number(el.dataset.key.split(',')[1]) + 1}: ${cells[el.dataset.key] || 'пусто'}${fixed.has(el.dataset.key) ? ', верно' : ''}`);
+      input.setAttribute('aria-label', `Строка ${Number(el.dataset.key.split(',')[0]) + 1}, столбец ${Number(el.dataset.key.split(',')[1]) + 1}: ${cells[el.dataset.key] || 'пусто'}${fixed.has(el.dataset.key) ? ', верно' : ''}`);
     });
     $('play').querySelectorAll('.cw-clue').forEach(el => {
       el.classList.toggle('is-selected', Number(el.dataset.id) === selected?.id);
@@ -80,25 +115,47 @@
     }
     for (let r = 0; r < level.rows; r++) for (let c = 0; c < level.columns; c++) {
       const k = `${r},${c}`, cell = occupied.get(k);
-      const el = document.createElement(cell ? 'button' : 'span');
+      const el = document.createElement(cell ? 'div' : 'span');
       if (cell) {
-        el.type = 'button'; el.className = 'cw-cell'; el.dataset.key = k;
+        el.className = 'cw-cell'; el.dataset.key = k;
         const number = document.createElement('small'); number.textContent = cell.number || ''; el.append(number);
-        const letter = document.createElement('span'); letter.className = 'cw-cell-letter'; el.append(letter);
-        el.addEventListener('click', () => {
-          const choices = level.words.filter(w => keys(w).includes(k));
-          select(choices[(choices.indexOf(selected) + 1) % choices.length]);
+        const input = document.createElement('input');
+        input.type = 'text'; input.className = 'cw-cell-input'; input.dataset.key = k;
+        input.autocomplete = 'off'; input.autocapitalize = 'none'; input.spellcheck = false;
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('aria-describedby', 'cw-answer-label');
+        el.append(input);
+        input.addEventListener('pointerdown', () => {
+          if (!busy) chooseCell(k, document.activeElement === input);
         });
-        el.addEventListener('keydown', event => {
+        input.addEventListener('focus', () => { if (!busy) { chooseCell(k); if (!input.readOnly) input.select(); } });
+        input.addEventListener('click', () => { if (!input.readOnly) input.select(); });
+        input.addEventListener('beforeinput', event => {
+          if (!event.isComposing && event.inputType?.startsWith('delete') && event.cancelable) {
+            event.preventDefault(); erase(k, event.inputType === 'deleteContentBackward');
+          }
+        });
+        input.addEventListener('input', event => {
+          if (event.isComposing) return;
+          if (input.readOnly || busy) { paint(); return; }
+          if (event.inputType?.startsWith('delete')) { delete cells[k]; remember(); paint(); return; }
+          writeText(event.data || input.value, k);
+        });
+        input.addEventListener('paste', event => { event.preventDefault(); writeText(event.clipboardData.getData('text'), k); });
+        input.addEventListener('keydown', event => {
+          if (busy || event.isComposing) return;
           const delta = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[event.key];
           if (delta) {
             event.preventDefault();
             let y = r + delta[0], x = c + delta[1];
             while (y >= 0 && y < level.rows && x >= 0 && x < level.columns) {
-              const next = $('grid').querySelector(`[data-key="${y},${x}"]`);
-              if (next) { next.focus(); next.click(); break; } y += delta[0]; x += delta[1];
+              const nextKey = `${y},${x}`;
+              if (inputAt(nextKey)) { chooseCell(nextKey, false, delta[0] !== 0); focusCell(nextKey); break; } y += delta[0]; x += delta[1];
             }
-          } else if (event.key === 'Enter') { event.preventDefault(); el.click(); if (!solved.has(selected.id)) $('answer').focus(); }
+          } else if (event.key === 'Backspace' || event.key === 'Delete') {
+            event.preventDefault();
+            erase(k, event.key === 'Backspace');
+          } else if (event.key === 'Enter') { event.preventDefault(); chooseCell(k, true); focusCell(k); }
         });
       } else { el.className = 'cw-void'; el.setAttribute('aria-hidden', 'true'); }
       $('grid').append(el);
@@ -119,17 +176,11 @@
     } catch (error) { message(error.message); }
     finally { busy = false; $('levels').setAttribute('aria-busy', 'false'); }
   }
-  $('entry').addEventListener('submit', event => {
-    event.preventDefault(); if (busy || !selected || solved.has(selected.id)) return;
-    const answer = normalize($('answer').value.trim());
-    if (answer.length !== selected.length || !/^[а-яёӕ]+$/u.test(answer)) { message(`Нужно ${selected.length} букв осетинского слова.`); return; }
-    const fixed = new Set(level.words.filter(w => solved.has(w.id)).flatMap(keys));
-    if (keys(selected).some((k, i) => fixed.has(k) && cells[k] !== answer[i])) { message('Ответ расходится с уже проверенным словом на пересечении.'); return; }
-    keys(selected).forEach((k, i) => cells[k] = answer[i]); remember(); paint();
-    message('Слово вписано. Нажмите «Проверить», чтобы зачесть верные ответы.');
-  });
   $('letter').addEventListener('click', () => {
-    const input = $('answer'); input.setRangeText('ӕ', input.selectionStart, input.selectionEnd, 'end'); input.focus();
+    if (!selected || busy) return;
+    const fixed = fixedCells();
+    const k = keys(selected).includes(activeKey) && !fixed.has(activeKey) ? activeKey : keys(selected).find(k => !fixed.has(k));
+    if (k) writeText('ӕ', k);
   });
   $('check').addEventListener('click', async () => {
     if (busy) return;

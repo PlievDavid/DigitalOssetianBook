@@ -24,16 +24,18 @@
 .cw-puzzle { min-width: 0; }
 .cw-grid-scroll { max-width: 100%; overflow: auto; padding: 5px; border-radius: 12px; }
 .cw-grid { display: grid; grid-template-columns: repeat(var(--columns), minmax(28px, 1fr)); gap: 3px; width: 100%; min-width: calc(var(--columns) * 31px - 3px); max-width: calc(var(--columns) * 46px); margin: auto; }
-.green-theme .cw-cell { position: relative; padding: 8px 0 0; aspect-ratio: 1; min-width: 0; border: 1px solid #bdd0ad; border-bottom-width: 3px; border-radius: 5px; background: white; color: #244e39; font-family: inherit; font-size: clamp(14px, 2vw, 23px); font-weight: 600; cursor: pointer; }
-.cw-cell small { position: absolute; top: 1px; left: 3px; font-size: 9px; line-height: 1; }
+.green-theme .cw-cell { position: relative; aspect-ratio: 1; min-width: 0; border: 1px solid #bdd0ad; border-bottom-width: 3px; border-radius: 5px; background: white; color: #244e39; }
+.cw-cell small { position: absolute; top: 2px; left: 3px; font-size: 9px; line-height: 1; pointer-events: none; }
+.green-theme .cw-cell-input { display: block; width: 100%; height: 100%; min-width: 0; padding: 7px 0 0; border: 0; border-radius: 4px; background: transparent; color: inherit; font-family: inherit; font-size: clamp(16px, 2vw, 23px); font-weight: 600; text-align: center; text-transform: uppercase; caret-color: #244e39; }
+.cw-cell:focus-within { outline: 2px solid #376b52; outline-offset: 1px; }
+.green-theme #crosswords-app .cw-cell-input:focus-visible { outline: none; }
+.cw-cell-input::selection { background: #cfdfc8; color: #244e39; }
 .green-theme .cw-cell.is-selected { background: #fff0cd; border-color: #b89b61; }
 .green-theme .cw-cell.is-solved { background: #edf3e9; border-color: #b9cdb5; border-bottom-width: 1px; }
 .green-theme .cw-cell.is-selected.is-solved { border-color: #709578; }
 .cw-help { font-size: 13px; }
-#cw-entry { padding: 16px; border: 1px solid #dfcca7; background: #fff5df; border-radius: 12px; margin: 16px 0; }
-#cw-answer-label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 10px; }
-.cw-answer-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.green-theme #cw-answer { flex: 1 1 130px; width: 130px; min-width: 0; padding: 10px; font-family: inherit; font-size: 18px; letter-spacing: .12em; text-transform: uppercase; border: 1px solid #c4bead; border-radius: 8px; background: white; }
+.cw-input-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0; }
+#cw-answer-label { font-weight: 600; font-size: 14px; line-height: 1.5; }
 .cw-clues h3 { margin: 0 0 12px; font-size: 16px; }
 .cw-clues h3:not(:first-child) { margin-top: 24px; }
 .green-theme .cw-clue { display: block; width: 100%; margin-bottom: 8px; padding: 12px; border: 1px solid #dce3d3; border-radius: 10px; background: white; color: #244e39; text-align: left; font-family: inherit; font-size: 15px; line-height: 1.5; cursor: pointer; }
