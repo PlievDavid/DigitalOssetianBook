@@ -28,6 +28,10 @@ builder.Services.AddScoped<DictionaryService>();
 builder.Services.AddSingleton<CrosswordCatalog>();
 builder.Services.AddScoped<CrosswordService>();
 builder.Services.AddScoped<ICrosswordRepository, EfCrosswordRepository>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<WordleCatalog>();
+builder.Services.AddScoped<WordleService>();
+builder.Services.AddScoped<IWordleRepository, EfWordleRepository>();
 builder.Services.AddScoped<DialogueSeedService>();
 builder.Services.AddScoped<ExerciseSeedService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>

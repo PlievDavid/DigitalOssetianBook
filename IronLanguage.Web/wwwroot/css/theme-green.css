@@ -87,6 +87,12 @@ html { scrollbar-gutter: stable; }
 .green-theme .profile-action:hover { color: var(--theme-green); }
 .green-theme .profile-action-label,.green-theme .header-streak-label { display: none; }
 .mobile-menu-toggle,.mobile-bottom-nav { display: none; }
+.mobile-games-nav { display: none; }
+@media (max-width: 599px) {
+    .green-theme .mobile-games-nav { display: flex; gap: 8px; margin: 18px 0 0; }
+    .mobile-games-nav a { padding: 9px 14px; border: 1px solid var(--theme-border); border-radius: 10px; color: var(--theme-green); font-size: 14px; }
+    .mobile-games-nav a[aria-current="page"] { background: #edf3e9; border-color: #b9cdb5; font-weight: 600; }
+}
 .green-theme .site-footer { display: block; margin: 0; padding: 0; background: transparent; border: 0; border-radius: 0 0 var(--theme-radius-shell) var(--theme-radius-shell); }
 .green-theme .footer-inner { padding: var(--space-6) var(--space-12) var(--space-3); display: flex; align-items: center; gap: var(--space-3); position: relative; overflow: hidden; min-height: 60px; }
 .green-theme .footer-brand { display: flex; align-items: center; gap: var(--space-3); font: 700 16px var(--theme-font); color: var(--theme-ink); }

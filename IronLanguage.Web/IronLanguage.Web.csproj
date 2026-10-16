@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Content Update="Data\crosswords\levels.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="Data\wordle\words.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\IronLanguage.Db\IronLanguage.Db.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10" PrivateAssets="all" />
     <Content Include="Data\ossetian-russian-dictionary.csv" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

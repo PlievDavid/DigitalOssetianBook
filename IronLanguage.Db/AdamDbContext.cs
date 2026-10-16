@@ -22,9 +22,15 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<DialogueSession> DialogueSessions => Set<DialogueSession>();
     public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
     public DbSet<CrosswordSolvedWord> CrosswordSolvedWords => Set<CrosswordSolvedWord>();
+    public DbSet<WordleGame> WordleGames => Set<WordleGame>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        model.Entity<WordleGame>().HasKey(x => new { x.UserId, x.Day });
+        model.Entity<WordleGame>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordleGame>().Property(x => x.ExpectedWord).HasMaxLength(5);
+        model.Entity<WordleGame>().Property(x => x.Russian).HasMaxLength(250);
+        model.Entity<WordleGame>().Property(x => x.GuessesJson).HasMaxLength(1024);
         model.Entity<CrosswordSolvedWord>().HasKey(x => new { x.UserId, x.LevelId, x.Version, x.WordId });
         model.Entity<CrosswordSolvedWord>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<UserAccount>().HasIndex(x => x.Email).IsUnique();

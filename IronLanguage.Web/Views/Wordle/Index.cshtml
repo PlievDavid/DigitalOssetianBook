@@ -1,0 +1,29 @@
+@{ ViewData["Title"] = "Вордли"; ViewData["PageClass"] = "wordle-page"; }
+<section class="feature-shell" id="wordle-app">
+    <div class="wl-shell">
+        <div class="wl-heading">
+            <div><h1>Вордли</h1><p>Одно слово в день. Шесть попыток.</p></div>
+            <div class="wl-heading-actions"><button id="wl-statistics" class="button secondary" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V12h4v8M10 20V4h4v16M16 20V8h4v12" /></svg>Статистика</button><time id="wl-date"></time></div>
+        </div>
+        <p id="wl-guest" class="wl-guest" hidden>Играйте без входа. <a href="/account/login?ReturnUrl=%2Fgames%2Fwordle">Войдите, чтобы сохранять попытки и серию.</a></p>
+        <div class="wl-game">
+            <div id="wl-board" class="wl-board" role="group" aria-label="Шесть попыток по пять букв"></div>
+            <label class="wl-input-label" for="wl-input">Ваше слово</label>
+            <input id="wl-input" class="wl-input" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Слово из пяти букв" aria-describedby="wl-status" disabled />
+            <p id="wl-status" class="wl-status" role="status" aria-live="polite">Загружаем слово дня…</p>
+            <div id="wl-result" class="wl-result" hidden><strong id="wl-result-title"></strong><span id="wl-answer"></span><span id="wl-next"></span><button id="wl-share" class="button secondary">Поделиться</button></div>
+            <button id="wl-retry" class="button secondary" hidden>Повторить загрузку</button>
+            <div id="wl-keyboard" class="wl-keyboard" role="group" aria-label="Осетинская клавиатура"></div>
+        </div>
+    </div>
+    <dialog id="wl-stats-dialog" class="wl-dialog" aria-labelledby="wl-stats-title">
+        <div class="wl-dialog-heading"><h2 id="wl-stats-title">Статистика</h2><button id="wl-stats-close" class="button secondary" aria-label="Закрыть статистику">×</button></div>
+        <p id="wl-stats-status" role="status"></p>
+        <div id="wl-stats-content" hidden>
+            <div id="wl-stats-metrics" class="wl-stats-metrics"></div>
+            <h3>Попытки до победы</h3><div id="wl-distribution" class="wl-distribution"></div>
+        </div>
+    </dialog>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/wordle.css" asp-append-version="true" /> }
+@section Scripts { <script src="~/js/wordle.js" asp-append-version="true" defer></script> }

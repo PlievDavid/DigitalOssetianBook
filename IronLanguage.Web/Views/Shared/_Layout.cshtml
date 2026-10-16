@@ -50,7 +50,7 @@
                 <button class="nav-menu-link nav-menu-trigger @(currentPath.StartsWith("/games") ? "is-current" : "")" type="button" aria-haspopup="true" aria-expanded="false">Игры</button>
                 <div class="nav-menu-panel" aria-label="Игры">
                     <a class="nav-menu-item" href="/games/crosswords">Кроссворды</a>
-                    <span class="nav-menu-item nav-menu-item-placeholder"><span>Вордли</span><small>В разработке</small></span>
+                    <a class="nav-menu-item" href="/games/wordle">Вордли</a>
                     <span class="nav-menu-item nav-menu-item-placeholder"><span>Переводилка</span><small>В разработке</small></span>
                 </div>
             </div>
@@ -73,6 +73,13 @@
         @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/books", "/vocabulary", "/word-practice", "/game" }.Contains(currentPath))
         {
             <p class="guest-notice container">Занимайтесь без входа. Прогресс и слова не сохраняются. <a href="/account/login?ReturnUrl=@Uri.EscapeDataString(currentPath)">Войти, чтобы сохранять</a></p>
+        }
+        @if (currentPath.StartsWith("/games"))
+        {
+            <nav class="mobile-games-nav" aria-label="Игры">
+                <a href="/games/crosswords" aria-current="@(currentPath.StartsWith("/games/crosswords") ? "page" : null)">Кроссворды</a>
+                <a href="/games/wordle" aria-current="@(currentPath.StartsWith("/games/wordle") ? "page" : null)">Вордли</a>
+            </nav>
         }
         @RenderBody()
     </main>
