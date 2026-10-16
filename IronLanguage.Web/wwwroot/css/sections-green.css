@@ -278,8 +278,8 @@
   .green-theme .home-hero { min-height: 0; background: var(--theme-sage); border: 1px solid #e6eadf; }
   .green-theme .home-hero::before { display: none; }
   .green-theme .hero-copy { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 20px; }
-  .hero-mobile-art { display: block; grid-column: 1; grid-row: 1; overflow: hidden; border-radius: 12px; width: 100%; height: clamp(168px, 45vw, 240px); }
-  .hero-mobile-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 70% 18%; }
+  .hero-mobile-art { display: block; grid-column: 1; grid-row: 1; overflow: hidden; border-radius: 12px; width: 100%; aspect-ratio: 4 / 3; }
+  .hero-mobile-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
   .green-theme .hero-copy h1 { grid-column: 1; grid-row: 2; max-width: none; margin: 0; font-size: clamp(25px, 5.7vw, 34px); line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; }
   .green-theme .hero-copy > p { grid-column: 1; grid-row: 3; max-width: none; min-height: 0; margin: 0; font-size: 14px; line-height: 1.55; }
   .green-theme .hero-actions { grid-column: 1; grid-row: 4; display: grid; gap: 4px; margin-top: 0; }
