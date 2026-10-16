@@ -37,13 +37,13 @@
             <h2 id="reading-title">От чтения к тренировке</h2>
             <div class="home-learning-grid">
                 <article class="home-reading-card">
-                    <span class="reading-step"><span class="reading-step-number" aria-hidden="true">01</span> Читайте</span>
+                    <span class="reading-step"><span class="reading-step-icon">@await Html.PartialAsync("_NavIcon", "books")</span> Читайте</span>
                     <h3>Нашли новое слово?</h3>
                     <p>Нажмите на него в книге и сохраните перевод в свой словарь после входа.</p>
                     <a class="theme-button theme-button-primary" href="/books">Выбрать книгу <span aria-hidden="true">→</span></a>
                 </article>
                 <aside class="home-words-card" aria-labelledby="words-title">
-                    <span class="reading-step"><span class="reading-step-number" aria-hidden="true">02</span> Закрепляйте</span><h3 id="words-title">Проверьте, что запомнили</h3>
+                    <span class="reading-step"><span class="reading-step-icon">@await Html.PartialAsync("_NavIcon", "words")</span> Закрепляйте</span><h3 id="words-title">Проверьте, что запомнили</h3>
                     <p>@(User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова в короткой тренировке: посмотрите слово и вспомните перевод." : "Повторяйте свои слова после входа. Или попробуйте тренировку без аккаунта.")</p>
                     <a class="theme-button theme-button-primary" href="/word-practice"><span class="words-action-label">Тренировать слова</span> <span aria-hidden="true">→</span></a>
                 </aside>
