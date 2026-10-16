@@ -64,6 +64,15 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
     checks += 4;
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(base);
+    for (const width of [1024, 1110, 1280, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => document.fonts.ready);
+      const textTops = await page.locator('.nav-inner > a, .nav-inner > .nav-menu > .nav-menu-trigger').evaluateAll(nodes => nodes.map(el => {
+        const range = document.createRange(); range.selectNodeContents(el); return range.getBoundingClientRect().top;
+      }));
+      assert(Math.max(...textTops) - Math.min(...textTops) < .5, 'Navigation text shares the same height at ' + width);
+      checks++;
+    }
     const section = page.locator('a[aria-controls="practice-menu"]');
     await section.focus();
     await page.keyboard.press('ArrowDown');
