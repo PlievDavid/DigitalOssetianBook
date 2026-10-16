@@ -14,6 +14,12 @@ const url = process.env.ADAM_TEST_URL || 'http://127.0.0.1:58326';
     const output = path.join(root, '.run-local/crosswords'); fs.mkdirSync(output, { recursive: true });
     async function ready() { await page.goto(`${url}/games/crosswords`); await page.waitForFunction(() => document.querySelectorAll('.cw-card').length === 10); }
     const cell = (w, i = 0) => page.locator(`.cw-cell-input[data-key="${w.row + (w.down ? i : 0)},${w.column + (w.down ? 0 : i)}"]`);
+    async function assertRating(n, selector = '#cw-progress .cw-stars') {
+      const rating = page.locator(selector);
+      assert.equal(await rating.locator('svg').count(), 3);
+      assert.equal(await rating.locator('.is-earned').count(), n);
+      assert.equal(await rating.getAttribute('aria-label'), `${n} из 3 звёзд`);
+    }
     async function pasteWord(word, text = word.answer) {
       await page.locator(`.cw-clue[data-id="${word.id}"]`).click();
       await cell(word).evaluate((input, text) => {
@@ -54,14 +60,14 @@ const url = process.env.ADAM_TEST_URL || 'http://127.0.0.1:58326';
     await page.keyboard.type('а'.repeat(words[0].answer.length));
     await page.locator('#cw-check').click();
     await page.waitForFunction(() => document.querySelector('#cw-play').getAttribute('aria-busy') === 'false');
-    assert.match(await page.locator('#cw-progress').innerText(), /☆☆☆/);
+    await assertRating(0);
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
       await pasteWord(word, word.answer.toUpperCase().replaceAll('Ӕ', 'Æ'));
       if (i === 0 || i === 1) {
         await page.locator('#cw-check').click();
         await page.waitForFunction(() => document.querySelector('#cw-play').getAttribute('aria-busy') === 'false');
-        assert.match(await page.locator('#cw-progress').innerText(), i === 0 ? /★☆☆/ : /★★☆/);
+        await assertRating(i === 0 ? 1 : 2);
       }
     }
     // Network failure leaves the board intact; rapid clicks send only one request.
@@ -72,12 +78,12 @@ const url = process.env.ADAM_TEST_URL || 'http://127.0.0.1:58326';
     let checks = 0; page.on('request', request => { if (request.url().endsWith('/1/1/check')) checks++; });
     await page.locator('#cw-check').evaluate(el => { el.click(); el.click(); });
     await page.waitForFunction(() => document.querySelector('#cw-play').getAttribute('aria-busy') === 'false');
-    assert.equal(checks, 1); assert.match(await page.locator('#cw-progress').innerText(), /★★★/);
+    assert.equal(checks, 1); await assertRating(3);
     assert(await page.locator('#cw-check').isDisabled());
-    await page.locator('#cw-back').click(); assert.match(await page.locator('.cw-card').first().innerText(), /★★★/);
+    await page.locator('#cw-back').click(); await assertRating(3, '.cw-card:first-child .cw-stars');
     await page.locator('.cw-card').first().click(); await page.locator('#cw-play').waitFor({ state: 'visible' });
-    assert.match(await page.locator('#cw-progress').innerText(), /★★★/);
-    await ready(); assert.match(await page.locator('.cw-card').first().innerText(), /☆☆☆/, 'Guest reload resets progress');
+    await assertRating(3);
+    await ready(); await assertRating(0, '.cw-card:first-child .cw-stars');
     // All grids across breakpoints and doubled text, including осетинская ӕ.
     for (const width of [320, 360, 600, 768, 1024, 1280, 1920]) {
       await page.setViewportSize({ width, height: 1000 });

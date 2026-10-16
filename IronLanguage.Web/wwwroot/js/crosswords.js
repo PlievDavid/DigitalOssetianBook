@@ -22,7 +22,19 @@
       [{ transform: 'translateY(0)' }, { transform: `translateY(-${solved.size === level.words.length ? 4 : 2}px)` }, { transform: 'translateY(0)' }],
       { duration: 340, easing: 'ease-out' });
   }
-  function rating(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
+  function rating(n) {
+    const group = document.createElement('span'); group.className = 'cw-stars'; group.dataset.rating = n;
+    group.setAttribute('role', 'img'); group.setAttribute('aria-label', `${n} из 3 звёзд`);
+    for (let i = 0; i < 3; i++) {
+      const star = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      star.setAttribute('viewBox', '0 0 24 24'); star.setAttribute('aria-hidden', 'true'); star.setAttribute('focusable', 'false');
+      star.setAttribute('class', `cw-star${i < n ? ' is-earned' : ''}`);
+      const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      shape.setAttribute('d', 'M10.9 3.8Q12 1.6 13.1 3.8L15.1 7.9Q15.4 8.5 16.1 8.6L20.6 9.2Q23 9.5 21.3 11.2L18 14.4Q17.5 14.9 17.6 15.6L18.4 20.1Q18.8 22.5 16.6 21.3L12.6 19.2Q12 18.9 11.4 19.2L7.4 21.3Q5.2 22.5 5.6 20.1L6.4 15.6Q6.5 14.9 6 14.4L2.7 11.2Q1 9.5 3.4 9.2L7.9 8.6Q8.6 8.5 8.9 7.9Z');
+      star.append(shape); group.append(star);
+    }
+    return group;
+  }
   function remember() {
     if (!level) return;
     drafts.set(`${level.id}/${level.version}`, { cells: { ...cells }, solved: [...solved] });
@@ -34,11 +46,11 @@
     for (const item of levels) {
       const button = document.createElement('button');
       button.className = 'cw-card';
-      button.innerHTML = '<span class="cw-card-top"></span><strong></strong><span class="cw-card-count"></span><span class="cw-stars"></span>';
+      button.innerHTML = '<span class="cw-card-top"></span><strong></strong><span class="cw-card-count"></span>';
       button.querySelector('.cw-card-top').textContent = `КРОССВОРД ${String(item.id).padStart(2, '0')}`;
       button.querySelector('strong').textContent = item.title;
       button.querySelector('.cw-card-count').textContent = `${item.solved} из ${item.total} слов`;
-      const star = button.querySelector('.cw-stars'); star.textContent = rating(item.stars); star.setAttribute('aria-label', `${item.stars} из 3 звёзд`);
+      button.append(rating(item.stars));
       button.addEventListener('click', () => open(item));
       $('levels').append(button);
     }
@@ -115,7 +127,7 @@
       el.classList.toggle('is-solved', solved.has(Number(el.dataset.id)));
       el.setAttribute('aria-pressed', String(Number(el.dataset.id) === selected?.id));
     });
-    $('progress').textContent = `${rating(stars(solved.size))} · ${solved.size} из ${level.words.length} слов`;
+    $('progress').replaceChildren(rating(stars(solved.size)), document.createTextNode(`· ${solved.size} из ${level.words.length} слов`));
     $('check').disabled = busy || solved.size === level.words.length;
   }
   function render() {

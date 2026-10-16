@@ -56,6 +56,15 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert(await page.locator('#wl-input').isHidden());
     const complete = await (await page.request.get(`${base}/api/v1/wordle`)).json();
     assert.equal(complete.revision, 2); assert.equal(complete.won, true); assert.equal(complete.countedInStreak, false);
+    // Capture this page's clipboard request without replacing the user's system clipboard.
+    await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+      configurable: true, value: { writeText: async text => { window.sharedResult = text; } }
+    }));
+    await page.locator('#wl-share').click();
+    const shared = await page.evaluate(() => window.sharedResult);
+    assert(shared.startsWith(`Адам · Пять букв ${complete.day} 2/6\n`));
+    assert(shared.endsWith(`\n\n${new URL('/games/wordle', base).href}`), 'Share includes the current platform link without query parameters.');
+    for (const row of shared.split('\n').slice(1, 3)) assert.equal(Array.from(row).length, 5, 'Share keeps the five-cell result grid.');
     for (const letter of new Set(answer)) assert(await page.locator(`[data-letter="${letter}"]`).evaluate(el => el.classList.contains('is-correct')), 'Keyboard never downgrades a correct letter');
     await page.setViewportSize({ width: 1280, height: 1000 });
     const output = path.join(root, '.run-local/wordle'); fs.mkdirSync(output, { recursive: true });

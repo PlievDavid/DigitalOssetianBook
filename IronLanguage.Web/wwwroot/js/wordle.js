@@ -165,7 +165,8 @@
   $('share').addEventListener('click', async () => {
     if (!state?.finished) return;
     const marks = { correct: '🟩', present: '🟨', absent: '⬜' };
-    const text = `Адам · Пять букв ${state.day} ${state.won ? state.revision : 'X'}/6\n${state.rows.map(row => row.marks.map(mark => marks[mark]).join('')).join('\n')}`;
+    const link = new URL('/games/wordle', window.location.origin).href;
+    const text = `Адам · Пять букв ${state.day} ${state.won ? state.revision : 'X'}/6\n${state.rows.map(row => row.marks.map(mark => marks[mark]).join('')).join('\n')}\n\n${link}`;
     try { await navigator.clipboard.writeText(text); message('Результат скопирован.'); }
     catch { message('Не удалось скопировать результат. Разрешите доступ к буферу обмена.'); }
   });

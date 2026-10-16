@@ -51,7 +51,7 @@ const levels = JSON.parse(fs.readFileSync(path.join(__dirname, '../IronLanguage.
         for (const word of words.slice(1)) await pasteWord(word);
         await page.evaluate(() => { window.motionCalls = []; });
         await page.locator('#cw-check').click(); await idle();
-        assert.match(await page.locator('#cw-progress').textContent(), /★★★/);
+        assert.equal(await page.locator('#cw-progress .cw-star.is-earned').count(), 3);
         calls = await page.evaluate(() => motionCalls);
         if (reducedMotion === 'reduce') assert.equal(calls.length, 0);
         else assert(calls.some(call => call.target === 'cw-progress' && call.frames.some(frame => frame.transform === 'translateY(-4px)')));
