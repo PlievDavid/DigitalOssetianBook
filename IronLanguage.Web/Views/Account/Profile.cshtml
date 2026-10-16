@@ -13,14 +13,12 @@
         <h2 id="profile-results-title">Мои результаты</h2>
         <p id="progress-status" role="status">Загрузка…</p>
         <div class="profile-result-grid">
-            <a href="/progress"><strong id="progress-points">—</strong><span>Очки</span></a>
-            <a href="/progress"><strong id="progress-streak">—</strong><span>Дней подряд</span></a>
+            <div><strong id="progress-points">—</strong><span>Очки</span></div>
+            <div><strong id="progress-streak">—</strong><span>Дней подряд</span></div>
         </div>
-        <details class="profile-awards"><summary>Награды</summary><ul id="progress-achievements"></ul></details>
     </section>
     <div class="profile-links">
         <a href="/profile/avatar"><strong>Мой аватар</strong><span>Внешность, причёска и одежда персонажа</span></a>
-        <a class="mobile-profile-results-link" href="/progress"><strong>Мои результаты</strong><span>Очки, серия занятий и награды</span></a>
         @if (User.IsInRole("Editor")) { <a class="mobile-profile-results-link" href="/editor"><strong>Редактор материалов</strong><span>Управление учебными материалами</span></a> }
     </div>
     <form action="/account/logout" method="post" class="profile-logout">@Html.AntiForgeryToken()<button type="submit">Выйти из аккаунта</button></form>

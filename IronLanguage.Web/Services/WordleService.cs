@@ -16,11 +16,11 @@ public sealed class WordleCatalog
     public WordleCatalog(IWebHostEnvironment environment)
     {
         Data = JsonSerializer.Deserialize<WordleData>(File.ReadAllText(Path.Combine(environment.ContentRootPath, "Data/wordle/words.json")), new JsonSerializerOptions(JsonSerializerDefaults.Web))
-            ?? throw new InvalidOperationException("Не удалось загрузить слова Иронли.");
+            ?? throw new InvalidOperationException("Не удалось загрузить слова Пять букв.");
         if (Data.Answers.Length != 300 || Data.Answers.Select(x => x.Word).Distinct().Count() != 300 || Data.Answers.Any(x => !ValidWord(x.Word)))
-            throw new InvalidOperationException("В наборе Иронли должно быть 300 разных слов из пяти букв.");
+            throw new InvalidOperationException("В наборе Пять букв должно быть 300 разных слов из пяти букв.");
         allowed = Data.Allowed.ToHashSet(StringComparer.Ordinal);
-        if (Data.Answers.Any(x => !allowed.Contains(x.Word))) throw new InvalidOperationException("Ответ отсутствует в словаре Иронли.");
+        if (Data.Answers.Any(x => !allowed.Contains(x.Word))) throw new InvalidOperationException("Ответ отсутствует в словаре Пять букв.");
     }
     public WordleWord ForDay(DateOnly day) => Data.Answers[((day.DayNumber - Data.StartDate.DayNumber) % 300 + 300) % 300];
     public bool Accepts(string word) => allowed.Contains(word);

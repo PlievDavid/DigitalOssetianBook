@@ -58,15 +58,15 @@
     .green-theme .books-eyebrow { display: none; }
     .green-theme .books-catalog-heading h1 { font-size: 30px; margin: 0 0 8px; }
     .green-theme .books-catalog-heading p { font-size: 14px; line-height: 1.5; margin: 0; }
-    .green-theme .books-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
-    .green-theme .book-card { grid-template-columns: 96px minmax(0, 1fr); align-items: start; gap: 16px; padding: 20px 0; border: 0; border-bottom: 1px solid #dfe5da; border-radius: 0; background: transparent; }
-    .green-theme .book-card-cover { width: 96px; height: 144px; border-radius: 6px; }
-    .green-theme .book-card-cover img { width: 100%; height: 100%; object-fit: cover; }
-    .green-theme .book-card-copy { min-width: 0; padding: 0; overflow-wrap: anywhere; }
-    .green-theme .book-card-copy strong { font-size: 20px; line-height: 1.3; }
+    .green-theme .books-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 24px 16px; }
+    .green-theme .book-card { display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; text-align: left; }
+    .green-theme .book-card-cover { display: flex; align-items: center; justify-content: center; width: 100%; height: auto; aspect-ratio: 2 / 3; border-radius: 8px; background: #f1eee7; overflow: hidden; }
+    .green-theme .book-card-cover img { width: 100%; height: 100%; object-fit: contain; }
+    .green-theme .book-card-copy { min-width: 0; padding: 0; gap: 6px; overflow-wrap: anywhere; }
+    .green-theme .book-card-copy strong { font-size: 18px; line-height: 1.3; }
     .green-theme .book-card-authors { font-size: 13px; }
-    .green-theme .book-card-description { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.5; }
-    .green-theme .book-card-open { width: fit-content; min-height: 44px; margin-top: 12px; padding: 10px 16px; font-size: 14px; }
+    .green-theme .book-card .book-difficulty { padding: 0; background: none; font-size: 11px; font-weight: 500; color: #526273; }
+    .green-theme .book-card-description, .green-theme .book-card-open { display: none; }
     .green-theme .mobile-profile-layout { display: block; padding-top: 24px; }
     .green-theme .mobile-profile-layout > .account-navigation { display: none; }
     .green-theme .mobile-profile-layout .profile-shell { padding-top: 0; }
@@ -81,31 +81,12 @@
     .green-theme .mobile-profile-results h2 { font-size: 21px; margin: 0 0 12px; }
     .green-theme #progress-status { font-size: 13px; color: #526273; }
     .green-theme .profile-result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .green-theme .profile-result-grid a { display: grid; gap: 4px; background: #eff2e8; padding: 16px; border-radius: 12px; color: #173f31; }
+    .green-theme .profile-result-grid > div { display: grid; gap: 4px; background: #eff2e8; padding: 16px; border-radius: 12px; color: #173f31; }
     .green-theme .profile-result-grid strong { font-size: 30px; line-height: 1.2; }
     .green-theme .profile-result-grid span { font-size: 13px; }
-    .green-theme .profile-awards { margin-top: 12px; border: 1px solid #dfe5da; padding: 14px; border-radius: 12px; }
-    .green-theme .profile-awards summary { cursor: pointer; min-height: 24px; font-weight: 600; }
-    .green-theme .profile-awards li { margin-top: 8px; font-size: 14px; }
-    .green-theme .profile-awards #progress-achievements { display: block; margin: 12px 0 0; padding-left: 20px; }
-    .green-theme .profile-awards #progress-achievements li { padding: 0; border: 0; background: transparent; border-radius: 0; }
     .green-theme .profile-links { gap: 0; }
     .green-theme .profile-links a { display: grid; gap: 4px; padding: 18px 0; border: 0; border-bottom: 1px solid #dfe5da; border-radius: 0; }
     .green-theme .profile-links span { font-size: 13px; }
     .green-theme .profile-links .mobile-profile-results-link { display: grid; }
     .green-theme .profile-logout { margin-top: 24px; }
-
-    /* Original watercolor accents stay inside the compact touch targets. */
-    .green-theme .home-shell .format-card:has(.format-icon) { grid-template-columns: clamp(64px, 19vw, 82px) minmax(0, 1fr) 20px; min-height: 104px; }
-    .green-theme .home-shell .format-card .format-icon { width: 100%; height: 68px; background-color: transparent; background-size: contain; background-repeat: no-repeat; background-position: center; }
-    .green-theme .home-shell .format-audio .format-icon { background-image: url('../images/green/mobile-practice-watercolor.png'); }
-    .green-theme .home-shell .format-translate .format-icon { background-image: url('../images/green/mobile-words-watercolor.png'); }
-    .green-theme .home-shell .home-games .format-icon { background-image: url('../images/green/mobile-games-watercolor.png'); font-size: 0; }
-    .green-theme .home-shell .format-audio .format-icon svg,
-    .green-theme .home-shell .format-translate .format-icon svg,
-    .green-theme .home-shell .home-games .format-icon svg { visibility: hidden; }
-    .green-theme .vocabulary-actions .button { min-height: 170px; }
-    .green-theme .vocabulary-actions .word-mode-icon { width: 100%; height: 82px; background: url('../images/green/mobile-practice-watercolor.png') center / contain no-repeat; }
-    .green-theme .vocabulary-actions .secondary .word-mode-icon { background-image: url('../images/green/mobile-words-watercolor.png'); }
-    .green-theme .vocabulary-actions .word-mode-icon svg { visibility: hidden; }
 }
