@@ -31,6 +31,8 @@ public sealed class EditorFormModel
     public string CharactersText { get; set; } = "";
     public string LinesText { get; set; } = "";
     public string TurnsText { get; set; } = "";
+    public string MatchingTitle { get; set; } = "";
+    public string PairsText { get; set; } = "";
     public string? ExistingAudioPath { get; set; }
     public IFormFile? Audio { get; set; }
 
@@ -70,6 +72,14 @@ public sealed class EditorFormModel
             model.TurnsText = string.Join('\n', p.Turns.Select(x =>
                 $"{x.LineNumber} | {x.Kind} | {string.Join("; ", x.References)} | {string.Join("; ", x.Options)} | {x.HintThreshold} | {(x.Skippable ? "да" : "нет")}"));
         }
+        else if (kind == "matching")
+        {
+            var p = JsonSerializer.Deserialize<MatchingMaterial>(json, options)!;
+            model.MatchingTitle = p.Title;
+            model.PairsText = string.Join('\n', p.Pairs.Select(x => $"{x.Left} | {x.Right}"));
+            model.DistractorsText = string.Join('\n', p.Distractors);
+            model.WordIdsCsv = string.Join(',', p.WordIds);
+        }
         return model;
     }
 }
@@ -89,6 +99,7 @@ public sealed class EditorPreviewModel
     public ExerciseMaterial? Exercise { get; init; }
     public BookMaterial? Book { get; init; }
     public DialogueMaterial? Dialogue { get; init; }
+    public MatchingMaterial? Matching { get; init; }
     public List<ContentRevision> History { get; init; } = [];
     public Dictionary<Guid, WordEntry> Words { get; init; } = [];
 }

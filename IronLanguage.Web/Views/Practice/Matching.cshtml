@@ -1,0 +1,23 @@
+@{ ViewData["Title"] = "Соотнесение"; }
+<section class="feature-shell dialog-page" id="matching-app">
+    <a class="back-link" href="/">← К заданиям</a>
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Соотнесение", "Соотнесите осетинские слова с русскими переводами. Неверный выбор можно исправить.", "matching"))
+    <div id="matching-status" role="status"></div>
+    <div id="matching-list" class="exercise-list"></div>
+    <div id="matching-play" hidden>
+        <div class="dialog-play-head">
+            <a id="matching-back-link" class="back-link" href="/matching">← К списку</a>
+            <span id="matching-counters" class="dialog-counters" aria-live="polite"></span>
+        </div>
+        <h2 id="matching-title"></h2>
+        <p class="field-help">Выберите слово слева, затем его пару справа.</p>
+        <div class="matching-board">
+            <div id="matching-left" class="matching-column" aria-label="Осетинские слова"></div>
+            <div id="matching-right" class="matching-column" aria-label="Пары"></div>
+        </div>
+        <p id="matching-result" role="status"></p>
+        <div id="matching-summary" class="dialog-summary" hidden></div>
+        <div id="matching-words" class="feature-grid"></div>
+    </div>
+</section>
+@section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/matching.js" asp-append-version="true" defer></script> }

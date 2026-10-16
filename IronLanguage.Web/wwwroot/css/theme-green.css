@@ -221,6 +221,9 @@ html { scrollbar-gutter: stable; }
 .format-dialogs { background: var(--theme-sage); }
 .format-dialogs .format-icon { background: #dce7d3; color: var(--theme-green); }
 .format-dialogs .round-arrow { color: var(--theme-green); }
+.format-matching { background: #fcf0ef; }
+.format-matching .format-icon { background: #f5d4d0; color: #8a2f24; }
+.format-matching .round-arrow { color: #8a2f24; }
 .home-formats { scroll-margin-top: var(--space-6); }
 .home-reading-card h3 { font: 600 23px/1.2 var(--theme-heading-font); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
 .home-reading-card p { color: var(--theme-muted); line-height: 1.4; margin: 0 0 var(--space-5); max-width: 75%; }

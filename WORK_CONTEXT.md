@@ -115,6 +115,16 @@ Playwright и команды проверок объявлены в package.json
 
 Проверенного стартового контента пока нет. Для запуска нужны 30 озвученных фраз, 50 слов и 3 коротких адаптированных текста с подтверждёнными правами. Их не следует заменять случайными или автоматически сгенерированными переводами. Тестовый скрипт с учётными данными не сохранялся.
 
+## Вид упражнения «Соотнесение» (#32)
+
+Ветка `feat/matching-exercise` от `dev` (`9a20bca`). Kind `matching`: таблица `Matchings` (миграция `20261016103238_AddMatchingMaterials`), сущность `Matching` (Title, ScriptJson, Published, Archived, Version), репозитории `EditorRepository` (ветка kind во всех методах) и `CatalogRepository` (`Matchings`/`Matching`). `Services/MatchingScript.cs` — парсер `PairsText` («лево | право») и `DistractorsText` (0–5), лимиты 2–10 пар, ≤200 символов, без латиницы, уникальный нормализованный Left (NFC, lowercase, `æ/Æ→\u04D5`, кавычки краями через while-loop).
+
+`Services/MatchingService.cs` — сессии в `GuestLearningStore` снимком (Lefts, Rights shuffled, RightSource, MatchedByLeft, RightLocked, Matched), `entry.Gate`; `Check` по индексам. `MatchingApiController` — `GET /api/v1/matching`, `POST matching/{id}/sessions` (sessionId = `Guid.NewGuid()`, 503 при `GuestCapacityException`), `POST matching/sessions/{sid}/check`, `GET matching/sessions/{sid}`; owner = `User.UserId() ?? guests.Owner(HttpContext)`. Страница `/matching` (`Views/Practice/Matching.cshtml` + `wwwroot/js/matching.js`): выбор left→right, неверный — пометка без раскрытия, верный — блокировка; `sessionStorage["adam.matching.session"]`; «В мой словарь» только для `AdamAuthenticated`. Очки не начисляются.
+
+Конструктор: `_MatchingBuilder.cshtml` (карточки пар, ↑/↓/Удалить с guard `pairs.length <= 2`, дистракторы, `sync()` на submit, фолбэк на textarea при некорректной разметке), `wwwroot/js/matching-builder.js`, подключён из `Form.cshtml`; `editor.css` — `.builder-pair-row`/`.builder-pair-separator`; `features.css` — `.matching-board`/`.matching-tile` (is-selected/is-matched/is-wrong). В меню `_Layout` и главной — пункт «Соотнесение». Тесты: `MatchingScriptTests`, `MatchingServiceTests`; `FakeCatalog` дополнен matching-сущностями.
+
+Проверено: `dotnet build` без ошибок/предупреждений; `dotnet test IronLanguage.Tests` — 109/109 зелёные; `node --check` для `matching-builder.js` и `matching.js`; jsdom-тест конструктора в `%TEMP%\opencode\domtest` — passed. Не выполнено (ограничения окружения): БД-сценарий через `.run-local/connection.ps1` (файл отсутствует), браузерная проверка Playwright (`tests/matching-builder-browser.cjs` написан, модуль недоступен). Flaky DbProbe-тесты `ParallelAnswers_OnlyOneWins_AndNoLostUpdate`, `Finish_Parallel_CompletesOnce_AndAwardsOnce` не связаны с matching. Урок: не использовать `dotnet ef migrations add --no-build` (stale-сборка даёт пустую миграцию).
+
 ## Где продолжать
 
 Подготовлено UX-предложение в `UX_CONTENT.md`: три учебных раздела («Упражнения», «Мои слова», «Книги»), результаты и редактор в профиле, подбор пар внутри личного словаря, тексты страниц и состояний. Это предложение, а не реализованная навигация. Демонстрационный каталог уроков удалён; упоминания пробного урока в старых макетах относятся к прежним концептам. При дальнейших изменениях сверять фактический контент и не переносить демонстрационные названия из PNG-макетов.

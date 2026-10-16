@@ -378,6 +378,13 @@ body.is-reading-book .site-header, body.is-reading-book .site-footer { display: 
 .dialog-history { display: flex; flex-direction: column; gap: 8px; }
 .dialog-history-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; padding: 10px 14px; border: 1px solid #DEE4D9; border-radius: 10px; background: #fff; }
 .dialog-history-row > span:first-child { min-width: 90px; color: #69756D; font-size: 14px; }
+#matching-play { max-width: 900px; }
+.matching-board { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px; }
+.matching-column { display: flex; flex-direction: column; gap: 10px; }
+.matching-tile { width: 100%; text-align: left; }
+.matching-tile.is-selected { background: #DCECAF; border-color: #203F34; color: #203F34; box-shadow: 0 0 0 2px #203F34 inset; }
+.matching-tile.is-matched { background: #E3F4EA; border-color: #B7DCC5; color: #6B8575; opacity: 0.45; cursor: default; }
+.matching-tile.is-wrong { background: #FBE7E2; border-color: #E2B3A6; color: #8A2F24; }
 @media (max-width: 700px) {
   .container { padding-left: 20px; padding-right: 20px; }
   .feature-shell { padding: 28px 20px 70px; }

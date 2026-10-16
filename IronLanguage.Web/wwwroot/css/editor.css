@@ -120,6 +120,13 @@
 .editor-form .builder-answer-row input[type="radio"] { margin-bottom: 13px; }
 .builder-answer-row > .builder-small-button { box-sizing: border-box; width: 36px; height: 46px; min-height: 46px; padding: 0; margin: 0; align-self: end; font-size: 20px; line-height: 1; }
 .builder-answer-row label { flex: 1; min-width: 0; margin: 0; }
+.builder-pair-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; min-width: 0; margin-top: 12px; }
+.builder-pair-row input { min-width: 0; }
+.builder-pair-separator { color: var(--theme-muted, #69756D); font-weight: 700; }
+@media (max-width: 599px) {
+  .builder-pair-row { grid-template-columns: 1fr; }
+  .builder-pair-separator { display: none; }
+}
 .builder-dialog .form-error:empty { display: none; }
 .builder-dialog .builder-actions { margin-top: 20px; }
 @media (max-width: 599px) {
