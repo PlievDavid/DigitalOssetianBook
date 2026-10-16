@@ -14,6 +14,8 @@ public sealed record DialogueCharacter(string Id, string Name, string Color);
 public sealed record DialogueLine(int Number, string CharacterId, string Text, string? AudioPath = null);
 public sealed record DialogueTurn(int LineNumber, string Kind, string[] References, string[] Options, int HintThreshold, bool Skippable);
 public sealed record DialogueMaterial(string Title, string Dialect, int Level, DialogueCharacter[] Characters, DialogueLine[] Lines, DialogueTurn[] Turns);
+public sealed record MatchingPair(string Left, string Right);
+public sealed record MatchingMaterial(string Title, MatchingPair[] Pairs, string[] Distractors, Guid[] WordIds);
 public sealed record EditorItem(string Kind, Guid Id, string Title, bool Published, int Version, Guid? PendingRevisionId, bool Archived);
 public sealed record EditorMaterial(string Kind, Guid Id, bool Published, int Version, string PayloadJson);
 
@@ -44,12 +46,14 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         var exercises = await db.Exercises.AsNoTracking().ToListAsync(ct);
         var books = await db.Books.AsNoTracking().ToListAsync(ct);
         var dialogues = await db.Dialogues.AsNoTracking().ToListAsync(ct);
+        var matchings = await db.Matchings.AsNoTracking().ToListAsync(ct);
         var pending = await db.ContentRevisions.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
         Guid? Pending(string kind, Guid id) => pending.FirstOrDefault(x => x.Kind == kind && x.ContentId == id)?.Id;
         return words.Select(x => new EditorItem("word", x.Id, x.Ossetian, x.Published, x.Version, Pending("word", x.Id), x.Archived))
             .Concat(exercises.Select(x => new EditorItem(x.Kind, x.Id, x.RussianPrompt, x.Published, x.Version, Pending(x.Kind, x.Id), x.Archived)))
             .Concat(books.Select(x => new EditorItem("book", x.Id, x.Title, x.Published, x.Version, Pending("book", x.Id), x.Archived)))
             .Concat(dialogues.Select(x => new EditorItem("dialogue", x.Id, x.Title, x.Published, x.Version, Pending("dialogue", x.Id), x.Archived)))
+            .Concat(matchings.Select(x => new EditorItem("matching", x.Id, x.Title, x.Published, x.Version, Pending("matching", x.Id), x.Archived)))
             .OrderBy(x => x.Title).ToList();
     }
 
@@ -74,6 +78,11 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var dialogue = await db.Dialogues.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
             return dialogue is null ? null : new(kind, id, dialogue.Published, dialogue.Version, Capture(dialogue));
+        }
+        if (kind == "matching")
+        {
+            var matching = await db.Matchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+            return matching is null ? null : new(kind, id, matching.Published, matching.Version, Capture(matching));
         }
         return null;
     }
@@ -110,6 +119,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var dialogue = new Dialogue { Title = p.Title, Dialect = p.Dialect, Level = p.Level, ScriptJson = payloadJson };
             db.Dialogues.Add(dialogue); await db.SaveChangesAsync(ct); return dialogue.Id;
         }
+        if (kind == "matching")
+        {
+            var p = Parse<MatchingMaterial>(payloadJson);
+            var matching = new Matching { Title = p.Title, ScriptJson = payloadJson };
+            db.Matchings.Add(matching); await db.SaveChangesAsync(ct); return matching.Id;
+        }
         throw new ArgumentException("Unknown material kind", nameof(kind));
     }
 
@@ -139,6 +154,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (dialogue is null) return false;
             Apply(dialogue, Parse<DialogueMaterial>(payloadJson));
         }
+        else if (kind == "matching")
+        {
+            var matching = await db.Matchings.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (matching is null) return false;
+            Apply(matching, Parse<MatchingMaterial>(payloadJson));
+        }
         else return false;
         await db.SaveChangesAsync(ct); return true;
     }
@@ -151,6 +172,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         if (kind == "word") (await db.Words.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "book") (await db.Books.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "dialogue") (await db.Dialogues.SingleAsync(x => x.Id == id, ct)).Published = true;
+        else if (kind == "matching") (await db.Matchings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else (await db.Exercises.SingleAsync(x => x.Id == id, ct)).Published = true;
         db.ContentRevisions.Add(new ContentRevision { Kind = kind, ContentId = id, Version = 1, BaseVersion = 0,
             PayloadJson = material.PayloadJson, Published = true, EditorId = editorId, PublishedAt = DateTimeOffset.UtcNow });
@@ -228,6 +250,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (dialogue is null) return false;
             Apply(dialogue, Parse<DialogueMaterial>(revision.PayloadJson)); dialogue.Version++;
         }
+        else if (revision.Kind == "matching")
+        {
+            var matching = await db.Matchings.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            if (matching is null) return false;
+            Apply(matching, Parse<MatchingMaterial>(revision.PayloadJson)); matching.Version++;
+        }
         else return false;
         revision.Published = true; revision.PublishedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return true;
@@ -260,6 +288,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (dialogue is null) return false;
             db.Dialogues.Remove(dialogue);
         }
+        else if (kind == "matching")
+        {
+            var matching = await db.Matchings.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (matching is null) return false;
+            db.Matchings.Remove(matching);
+        }
         else return false;
         await db.ContentRevisions.Where(x => x.Kind == kind && x.ContentId == id && !x.Published).ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);
@@ -290,6 +324,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         if (kind == "dialogue")
             return await db.Dialogues.Where(x => x.Id == id && x.Published && x.Archived != archived)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
+        if (kind == "matching")
+            return await db.Matchings.Where(x => x.Id == id && x.Published && x.Archived != archived)
+                .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
         return false;
     }
 
@@ -316,6 +353,16 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
     private void Apply(Dialogue x, DialogueMaterial p)
     {
         x.Title = p.Title; x.Dialect = p.Dialect; x.Level = p.Level;
+        x.ScriptJson = JsonSerializer.Serialize(p, JsonOptions);
+    }
+    private static string Capture(Matching x)
+    {
+        var p = Parse<MatchingMaterial>(x.ScriptJson);
+        return JsonSerializer.Serialize(p with { Title = x.Title }, JsonOptions);
+    }
+    private void Apply(Matching x, MatchingMaterial p)
+    {
+        x.Title = p.Title;
         x.ScriptJson = JsonSerializer.Serialize(p, JsonOptions);
     }
     private void Apply(Book x, BookMaterial p)

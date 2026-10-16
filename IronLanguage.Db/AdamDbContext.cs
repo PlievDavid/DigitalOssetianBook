@@ -19,6 +19,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<ContentRevision> ContentRevisions => Set<ContentRevision>();
     public DbSet<Dialogue> Dialogues => Set<Dialogue>();
+    public DbSet<Matching> Matchings => Set<Matching>();
     public DbSet<DialogueSession> DialogueSessions => Set<DialogueSession>();
     public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
 

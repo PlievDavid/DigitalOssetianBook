@@ -11,7 +11,7 @@ namespace IronLanguage.Web.Controllers;
 public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly string[] Kinds = ["word", "audio", "translation", "book", "dialogue"];
+    private static readonly string[] Kinds = ["word", "audio", "translation", "book", "dialogue", "matching"];
 
     [HttpGet("new/{kind}")]
     public IActionResult New(string kind) => Kinds.Contains(kind) ? View("Form", new EditorFormModel { Kind = kind }) : NotFound();
@@ -142,6 +142,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             Exercise = kind is "audio" or "translation" ? JsonSerializer.Deserialize<ExerciseMaterial>(payload, JsonOptions) : null,
             Book = kind == "book" ? JsonSerializer.Deserialize<BookMaterial>(payload, JsonOptions) : null,
             Dialogue = kind == "dialogue" ? JsonSerializer.Deserialize<DialogueMaterial>(payload, JsonOptions) : null,
+            Matching = kind == "matching" ? JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions) : null,
             History = await editor.History(kind, id, ct), Words = words
         };
     }
@@ -154,6 +155,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.RussianPrompt ??= ""; model.OssetianAnswer ??= ""; model.TokensText ??= "";
         model.AlternativesText ??= ""; model.DistractorsText ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
         model.DialogueTitle ??= ""; model.Dialect ??= ""; model.CharactersText ??= ""; model.LinesText ??= ""; model.TurnsText ??= "";
+        model.MatchingTitle ??= ""; model.PairsText ??= "";
         var kind = model.Kind;
         CleanOssetianText(kind, model);
         var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
@@ -273,6 +275,18 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             foreach (var error in errors) ModelState.AddModelError("", error);
             if (material is not null) payload = JsonSerializer.Serialize(material, JsonOptions);
         }
+        else if (kind == "matching")
+        {
+            var wordIds = new List<Guid>();
+            foreach (var value in model.WordIdsCsv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!Guid.TryParse(value, out var id) || !publishedWords.Contains(id)) ModelState.AddModelError(nameof(model.WordIdsCsv), "Выберите опубликованные слова из списка.");
+                else wordIds.Add(id);
+            }
+            var (material, errors) = MatchingScript.Parse(model.MatchingTitle, model.PairsText, model.DistractorsText);
+            foreach (var error in errors) ModelState.AddModelError("", error);
+            if (material is not null) payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
+        }
         else return null;
         return payload;
     }
@@ -298,6 +312,12 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             model.CharactersText = OssetianText.FixAe(model.CharactersText);
             model.LinesText = OssetianText.FixAe(model.LinesText);
             model.TurnsText = OssetianText.FixAe(model.TurnsText);
+        }
+        else if (kind == "matching")
+        {
+            model.MatchingTitle = OssetianText.FixAe(model.MatchingTitle);
+            model.PairsText = OssetianText.FixAe(model.PairsText);
+            model.DistractorsText = OssetianText.FixAe(model.DistractorsText);
         }
     }
 
@@ -341,6 +361,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     {
         "audio" or "translation" => (JsonSerializer.Deserialize<ExerciseMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         "book" => (JsonSerializer.Deserialize<BookMaterial>(payload, JsonOptions)?.Chapters ?? []).SelectMany(x => x.Tokens).All(x => x.WordId is null || words.Contains(x.WordId.Value)),
+        "matching" => (JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         _ => true
     };
 
