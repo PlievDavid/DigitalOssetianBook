@@ -24,10 +24,8 @@
 .green-theme #game-app .game-column .word-tile::after { width: 11px; height: 11px; background: #fafaf5; }
 .green-theme #game-app .game-column .word-tile.matched::after { background: #357348; }
 .green-theme #game-app .game-thread { stroke-width: 3; }
-.green-theme #game-app .game-keyboard-hint { margin: 22px 0 0; padding-top: 16px; border-top: 1px solid #e3e6d7; color: #657061; font-size: 12px; line-height: 1.6; text-align: center; }
 .green-theme #game-app #game-find-words { margin-top: 12px; width: auto; }
-.green-theme #game-app .game-play-area:has(#game-board:empty) .game-language-labels,
-.green-theme #game-app .game-play-area:has(#game-board:empty) .game-keyboard-hint { display: none; }
+.green-theme #game-app .game-play-area:has(#game-board:empty) .game-language-labels { display: none; }
 @media (max-width: 599px) {
     .green-theme #game-app .game-page-heading { flex-direction: row; margin-bottom: 20px; }
     .green-theme #game-app .game-heading-art { display: none; }
@@ -37,7 +35,6 @@
     .green-theme #game-app .game-board, .green-theme #game-app .game-language-labels { column-gap: 36px; }
     .green-theme #game-app .game-language-labels { font-size: 10px; letter-spacing: .02em; }
     .green-theme #game-app .game-column .word-tile { min-height: 56px; padding: 10px 8px; font-size: 15px; }
-    .green-theme #game-app .game-keyboard-hint { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) {
     .green-theme #game-app .game-column .word-tile { transition: none; }
