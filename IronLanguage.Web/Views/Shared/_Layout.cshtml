@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="~/css/avatar.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/sections-green.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
+    <link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
 </head>
 <body class="green-theme @ViewData["PageClass"]" data-authenticated="@(User.Identity?.IsAuthenticated == true ? "true" : "false")">
     <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -61,7 +62,7 @@
         </div></nav>
             <div class="header-actions">
                 @if (User.Identity?.IsAuthenticated == true) {
-                    <a id="header-streak" class="header-streak" href="/progress" aria-label="Серия занятий" hidden><img class="header-streak-icon" src="~/images/streak-flame.svg" asp-append-version="true" width="20" height="24" alt="" /><strong id="header-streak-value"></strong><span id="header-streak-label" class="header-streak-label">дней подряд</span></a>
+                    <span class="header-streak-slot"><a id="header-streak" class="header-streak" href="/progress" aria-label="Серия занятий" hidden><img class="header-streak-icon" src="~/images/streak-flame.svg" asp-append-version="true" width="20" height="24" alt="" /><strong id="header-streak-value"></strong><span id="header-streak-label" class="header-streak-label">дней подряд</span></a></span>
                     <a class="profile-action" href="/profile" aria-label="@(User.IsInRole("Editor") ? "Профиль редактора" : "Профиль")"><span class="profile-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel(await Avatars.Current(User), true))</span><span class="profile-action-label">@(User.IsInRole("Editor") ? "Редактор · профиль" : "Профиль")</span></a>
                 } else { <a class="account-action" href="/account/login">Войти</a> }
             </div>

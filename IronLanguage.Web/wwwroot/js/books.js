@@ -5,6 +5,9 @@
   const status = $('books-status');
   let selectedItem, book, chapter, position = 0;
   let words = new Map(), wordsByText = new Map(), meanings = new Map();
+  let parallelRows = [], lineObserver, lineFrame;
+  const dirtyRows = new Set();
+  let rowByContent = new WeakMap();
   const key = text => text.trim().replaceAll('æ', 'ӕ').replaceAll('Æ', 'Ӕ').replace(/\u0301/g, '')
     .normalize('NFC').toLocaleLowerCase('ru').replace(/^[^\p{L}]+|[^\p{L}]+$/gu, '');
 
@@ -90,6 +93,74 @@
     $('book-text').querySelectorAll('.reader-current').forEach(x => x.classList.remove('reader-current'));
   }
 
+  function syncParallelLines() {
+    lineFrame = null;
+    const stacked = window.matchMedia('(max-width: 700px)').matches;
+    // Read changed pairs together before writing heights to avoid forced layout per row.
+    const updates = [...dirtyRows].map(rows => ({ rows, height: stacked ? '' : Math.max(...rows.map(row => row.firstElementChild.getBoundingClientRect().height)) + 'px' }));
+    dirtyRows.clear();
+    for (const { rows, height } of updates) {
+      for (const row of rows) if (row.style.minHeight !== height) row.style.minHeight = height;
+    }
+  }
+
+  function scheduleParallelLines(entries) {
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        const rows = rowByContent.get(entry.target);
+        if (rows) dirtyRows.add(rows);
+      }
+    } else {
+      for (const rows of parallelRows) dirtyRows.add(rows);
+    }
+    if (!lineFrame) lineFrame = requestAnimationFrame(syncParallelLines);
+  }
+
+  function alignParallelLines() {
+    lineObserver?.disconnect();
+    if (lineFrame) cancelAnimationFrame(lineFrame);
+    lineFrame = null;
+    parallelRows = []; dirtyRows.clear(); rowByContent = new WeakMap();
+    root.classList.remove('has-aligned-lines');
+    const original = $('book-text'), translation = $('book-literary-text');
+    const count = original.textContent.split('\n').length;
+    if (!book.literaryTranslation || count < 2 || count !== translation.textContent.split('\n').length) return;
+    // Keep interactive word nodes intact. A malformed multiline word falls back to normal text flow.
+    if ([...original.querySelectorAll('.reader-word')].some(node => node.textContent.includes('\n'))) return;
+    const wrap = container => {
+      const nodes = [...container.childNodes], rows = [];
+      container.replaceChildren();
+      let content;
+      const next = () => {
+        const row = document.createElement('span'); row.className = 'reader-line';
+        content = document.createElement('span'); content.className = 'reader-line-content';
+        row.append(content); container.append(row); rows.push(row);
+      };
+      next();
+      for (const node of nodes) {
+        const parts = node.textContent.split('\n');
+        if (parts.length === 1) { content.append(node); continue; }
+        parts.forEach((part, index) => {
+          if (index) { container.append(document.createTextNode('\n')); next(); }
+          if (part) { const fragment = node.cloneNode(false); fragment.textContent = part; content.append(fragment); }
+        });
+      }
+      return rows;
+    };
+    const left = wrap(original), right = wrap(translation);
+    parallelRows = left.map((row, index) => [row, right[index]]);
+    root.classList.add('has-aligned-lines');
+    if (window.ResizeObserver) {
+      lineObserver = new ResizeObserver(scheduleParallelLines);
+      for (const rows of parallelRows) for (const row of rows) {
+        rowByContent.set(row.firstElementChild, rows);
+        lineObserver.observe(row.firstElementChild);
+      }
+    }
+    scheduleParallelLines();
+    document.fonts.ready.then(scheduleParallelLines);
+  }
+
   function showChapter(value, savedIndex) {
     if (!value) return;
     chapter = value;
@@ -131,6 +202,9 @@
       }
       $('book-text').append(span);
     });
+    // Rebuild translation wrappers when switching chapters without altering the saved text.
+    $('book-literary-text').textContent = book.literaryTranslation || '';
+    alignParallelLines();
   }
 
   function showWord(token) {
@@ -186,5 +260,6 @@
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeWord();
   });
+  window.addEventListener('resize', scheduleParallelLines);
   load();
 })();

@@ -1,0 +1,34 @@
+/* App-wide page geometry. Loaded after page styles so sections cannot resize it. */
+:root { --page-gutter: 40px; }
+@media (max-width: 599px) { :root { --page-gutter: 16px; } }
+
+.green-theme #main-content { padding-inline: var(--page-gutter); }
+.green-theme .site-header .header-inner { padding-inline: var(--page-gutter); }
+.green-theme .site-footer { width: 100%; max-width: none; }
+.green-theme .site-footer .footer-inner { margin-inline: var(--page-gutter); padding-inline: 0; }
+
+/* Only page shells are reset; cards, columns and controls keep their own spacing. */
+.green-theme #main-content > :is(.home-shell, .feature-shell, .account-layout, .auth-scene, .book-page),
+.green-theme #main-content > .book-page > :is(.books-catalog, .book-detail, .book-reader) {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-inline: 0;
+    padding-inline: 0;
+}
+.green-theme #main-content .home-content { padding-inline: 0; }
+.green-theme #main-content > .guest-notice { width: 100%; max-width: none; margin-inline: 0; }
+
+/* Keep the authenticated header still while progress loads or the count changes. */
+.green-theme .header-streak-slot { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 88px; min-height: 36px; }
+.green-theme .header-streak-slot .header-streak { max-width: 100%; }
+.green-theme .header-streak strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+@media (max-width: 1023px) { .green-theme .header-streak-slot { width: 210px; } }
+
+/* Shared reading width for active lessons; outer page shells remain full width. */
+:root { --lesson-width: 760px; }
+.green-theme :is(#exercise-play, #dialog-play, #matching-play, #game-app .game-play-area) {
+    width: 100%;
+    max-width: var(--lesson-width);
+    margin-inline: auto;
+}

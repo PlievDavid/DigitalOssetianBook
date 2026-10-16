@@ -19,7 +19,7 @@
 #exercise-result { margin-top: 20px; font-weight: 600; }
 #exercise-result button { margin-left: 12px; }
 .reader-text { max-width: 760px; font-size: 23px; line-height: 2; white-space: pre-wrap; }
-#book-literary-text { white-space: pre-wrap; line-height: 1.8; }
+#book-literary-text { white-space: pre-wrap; }
 .reader-meaning { padding-top: 6px; border-top: 1px solid #dfe6f0; }
 .reader-word { color: #3056be; cursor: pointer; border-bottom: 1px dotted; }
 .reader-current { background: #fff0bc; }
@@ -98,7 +98,20 @@
 .game-page-heading p { margin: 0; color: #60718a; line-height: 1.45; }
 .game-page-heading .button { flex: none; min-height: 42px; padding: 9px 15px; border-radius: 8px; }
 .game-shell #game-status { margin: 0 0 18px; color: #52627a; }
-.game-shell .game-board { max-width: none; gap: 12px; margin: 0; }
+.game-shell .game-board { position: relative; isolation: isolate; max-width: none; gap: clamp(40px, 9vw, 100px); margin: 0; }
+.game-threads { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: -1; }
+.game-thread { fill: none; stroke: #286aab; stroke-width: 3; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.game-thread-matched { stroke: #357348; }
+.game-thread-active { stroke-dasharray: 7 5; }
+.game-thread-wrong { stroke: #b42318; stroke-dasharray: 4 5; }
+.game-shell .game-column .word-tile { position: relative; width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.game-column .word-tile::after { content: ""; position: absolute; top: 50%; width: 10px; height: 10px; border: 2px solid currentColor; border-radius: 50%; background: #fff; transform: translateY(-50%); }
+.game-column-left .word-tile::after { right: -7px; }
+.game-column-right .word-tile::after { left: -7px; }
+.game-word { touch-action: pan-y; cursor: grab; }
+.game-word:active { cursor: grabbing; }
+.game-shell .game-column .word-tile:focus-visible { outline: 3px solid #286aab; outline-offset: 4px; }
+.game-shell .game-column .word-tile.matched::after { background: #357348; border-color: #357348; }
 .game-shell .game-board > div { gap: 10px; }
 .game-shell .word-tile { min-height: 52px; padding: 11px 14px; border-color: #cfd8e7; border-radius: 8px; background: #fff; color: #17233c; font-size: 16px; }
 .game-shell .word-tile:hover:not(:disabled) { border-color: #536bc2; }

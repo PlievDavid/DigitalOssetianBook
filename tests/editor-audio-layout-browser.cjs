@@ -12,15 +12,21 @@ const read = file => fs.readFileSync(path.join(root, 'IronLanguage.Web/wwwroot',
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     for (const width of [320, 360, 600, 768, 899, 900, 1024, 1280, 1920]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.setContent(`<body class="green-theme editor-page"><div class="site-frame"><main>
+      await page.setContent(`<body class="green-theme editor-page"><div class="site-frame"><main id="main-content">
         <section id="editor-form-app" class="feature-shell editor-form-shell" data-kind="audio"><form class="editor-form">
         <textarea id="TokensText">Дӕ\nбон\nхорз!</textarea><input id="DistractorsText" type="hidden">
         <div id="editor-steps"></div><input id="WordIdsCsv" type="hidden"><input id="word-search">
         <div id="word-results"></div><div id="selected-words"></div></form></section></main></div>
         <script id="editor-words-data" type="application/json">[]</script></body>`);
-      for (const css of ['site', 'brand', 'features', 'editor', 'theme-green', 'avatar', 'sections-green'])
+      for (const css of ['site', 'brand', 'features', 'editor', 'theme-green', 'avatar', 'sections-green', 'layout'])
         await page.addStyleTag({ content: read(`css/${css}.css`) });
       for (const js of ['letter-keys', 'editor']) await page.addScriptTag({ content: read(`js/${js}.js`) });
+      assert((await page.locator('.editor-form').boundingBox()).width <= 860.5, `Form too wide at ${width}`);
+      const centered = await page.locator('.editor-form').evaluate(form => {
+        const a = form.getBoundingClientRect(), b = form.parentElement.getBoundingClientRect();
+        return Math.abs(a.left + a.width / 2 - b.left - b.width / 2) < 1;
+      });
+      assert(centered, `Form not centered at ${width}`);
       for (const fontSize of ['100%', '200%']) {
         await page.addStyleTag({ content: `body {font-size:${fontSize}}` });
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow at ${width}/${fontSize}`);
@@ -46,6 +52,11 @@ const read = file => fs.readFileSync(path.join(root, 'IronLanguage.Web/wwwroot',
         fs.mkdirSync(process.env.EDITOR_AUDIO_SCREENSHOTS, { recursive: true });
         await page.screenshot({ path: `${process.env.EDITOR_AUDIO_SCREENSHOTS}/audio-${width}.png`, fullPage: true });
       }
+      await page.locator('#editor-form-app').evaluate(el => el.dataset.kind = 'word');
+      const wordForm = await page.locator('.editor-form').boundingBox();
+      assert(wordForm.width <= 640.5, `Word form too wide at ${width}`);
+      const shell = await page.locator('#editor-form-app').boundingBox();
+      assert(Math.abs(wordForm.x + wordForm.width / 2 - shell.x - shell.width / 2) < 1, `Word form not centered at ${width}`);
     }
     assert.deepEqual(errors, []);
     console.log('Audio editor: nine widths, text 200%, letter field geometry, ӕ/Ӕ input, keyboard and transport passed.');

@@ -1,0 +1,13 @@
+/* Matching uses the same compact thread board as the vocabulary game. */
+.section-tone-teal { background: #edf6f4; }
+.section-tone-teal .section-symbol { background: #cfe8e2; color: #23675f; }
+.green-theme #matching-status { color: var(--theme-muted); line-height: 1.6; margin: 18px 0; }
+.green-theme #matching-app .exercise-entry-icon { background: #cfe8e2; color: #23675f; }
+.green-theme #matching-app .matching-tile { text-align: center; }
+.green-theme #matching-app .matching-tile.is-wrong { background: #fbe7e2; border-color: #b42318; color: #8a2f24; }
+.green-theme #matching-app .matching-board { margin-top: 0; align-items: start; row-gap: 0; }
+.green-theme #matching-app #matching-title { font-size: 22px; margin: 22px 0 10px; }
+.green-theme #matching-app #matching-instructions { margin-bottom: 24px; line-height: 1.6; }
+.green-theme #matching-app .dialog-play-head { gap: 12px; flex-wrap: wrap; }
+.green-theme #matching-app #matching-result { min-height: 24px; margin: 18px 0 0; line-height: 1.5; }
+.green-theme #matching-app #matching-words:empty { display: none; }

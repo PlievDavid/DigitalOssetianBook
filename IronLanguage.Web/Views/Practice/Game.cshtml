@@ -2,11 +2,18 @@
 <section class="feature-shell game-shell" id="game-app">
     <a class="back-link" href="/vocabulary">← К словарю</a>
     <div class="game-page-heading">
-        <div><h1>Подберите пары</h1><p>Найдите осетинские слова и их переводы.</p></div>
-        <button id="game-restart" class="button secondary" hidden>Новая игра</button>
+        <div class="game-heading-copy"><span class="game-kicker">СЛОВА И СВЯЗИ</span><h1>Подберите пары</h1><p id="game-instructions">Соедините слово с его переводом: протяните нитку или нажмите на пару по очереди.</p></div>
+        <svg class="game-heading-art" viewBox="0 0 144 100" fill="none" aria-hidden="true"><rect x="4" y="8" width="54" height="34" rx="11" fill="#d7e7bc" transform="rotate(-8 4 8)"/><rect x="86" y="61" width="54" height="34" rx="11" fill="#f6d996" transform="rotate(6 86 61)"/><path d="M52 22C110 16 26 84 91 78" stroke="#286b53" stroke-width="3" stroke-linecap="round"/><circle cx="52" cy="22" r="5" fill="#286b53"/><circle cx="91" cy="78" r="5" fill="#286b53"/></svg>
     </div>
-    <div id="game-status" role="status"></div>
-    <div id="game-board" class="game-board"></div>
-    <a id="game-find-words" class="button secondary" href="/vocabulary" hidden>К словарю</a>
+    <div class="game-play-area">
+        <div class="game-play-toolbar">
+            <div id="game-status" role="status"></div>
+            <button id="game-restart" class="button secondary" hidden>Новая игра</button>
+        </div>
+        <div class="game-language-labels" aria-hidden="true"><span>По-осетински</span><span>По-русски</span></div>
+        <div id="game-board" class="game-board"></div>
+        <a id="game-find-words" class="button secondary" href="/vocabulary" hidden>К словарю</a>
+    </div>
 </section>
+@section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> }
 @section Scripts { <script src="~/js/game.js" asp-append-version="true" defer></script> }
