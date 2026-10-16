@@ -1,0 +1,97 @@
+/* Compact phone sections; tablet and desktop retain their existing layouts. */
+.mobile-page-intro, .word-mode-icon, .word-mode-description, .mobile-profile-title,
+.mobile-profile-results, .green-theme .profile-links .mobile-profile-results-link { display: none; }
+@media (max-width: 599px) {
+    .green-theme { background: #fafbf7; }
+    .green-theme .site-frame { background: #fafbf7; }
+    .green-theme #main-content { min-width: 0; }
+    .green-theme .mobile-bottom-nav { background: #fffffff5; border-top: 1px solid #e6e9e2; box-shadow: none; padding-inline: 8px; }
+    .green-theme .mobile-bottom-nav a { margin: 5px 2px; border-radius: 12px; gap: 3px; }
+    .green-theme .mobile-bottom-nav a.is-current { background: #edf1e7; }
+    .green-theme .mobile-bottom-nav svg { width: 24px; height: 24px; }
+    .green-theme .mobile-bottom-nav span { font-size: 11px; }
+    .green-theme .mobile-page-intro { display: block; padding: 24px 0 0; }
+    .green-theme .mobile-page-intro h1 { margin: 0; font-size: 30px; line-height: 1.2; }
+    .green-theme .mobile-page-intro p { margin: 8px 0 0; color: #526273; font-size: 15px; }
+    .green-theme .home-shell .home-hero { display: none; }
+    .green-theme .home-content { padding-top: 24px; }
+    .green-theme .home-formats, .green-theme .home-games { margin: 0 0 24px; padding: 0; }
+    .green-theme .home-formats h2, .green-theme .home-games h2 { text-align: left; margin: 0 0 12px; font-size: 21px; }
+    .green-theme .home-shell .format-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .green-theme .home-shell .format-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; grid-template-rows: auto auto; gap: 3px 12px; align-items: center; min-height: 88px; padding: 16px; border: 0; border-radius: 12px; box-shadow: none; }
+    .green-theme .home-shell .format-card .format-icon { grid-column: 1; grid-row: 1 / 3; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0; border-radius: 10px; background: #ffffff80; }
+    .green-theme .home-shell .format-icon svg { width: 28px; height: 28px; }
+    .green-theme .home-shell .format-card h3 { grid-column: 2; margin: 0; font-size: 18px; line-height: 1.25; }
+    .green-theme .home-shell .format-card p { grid-column: 2; margin: 0; font-size: 13px; line-height: 1.45; color: #526273; }
+    .green-theme .home-shell .format-card .round-arrow { grid-column: 3; grid-row: 1 / 3; position: static; width: auto; height: auto; border: 0; background: none; font-size: 22px; }
+    .green-theme .home-shell .format-audio { background: #ecf4fc; }
+    .green-theme .home-shell .format-translate { background: #fcf5e9; }
+    .green-theme .home-shell .format-dialogs { background: #eff2e8; }
+    .green-theme .home-reading { margin-top: 32px; }
+    .green-theme .vocabulary-shell { padding-top: 24px; }
+    .green-theme .vocabulary-shell .section-heading-banner { background: none; padding: 0; margin: 0 0 22px; }
+    .green-theme .vocabulary-shell .section-symbol, .green-theme .vocabulary-shell .section-heading-banner p { display: none; }
+    .green-theme .vocabulary-shell .section-heading-banner h1 { margin: 0; font-size: 30px; }
+    .green-theme .vocabulary-page-header { display: block; padding: 0; border: 0; }
+    .green-theme .vocabulary-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .green-theme .vocabulary-actions .button { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 8px; width: 100%; min-width: 0; min-height: 146px; padding: 16px 12px; white-space: normal; border: 0; background: #edf1e7; color: #173f31; border-radius: 12px; text-align: left; box-shadow: none; }
+    .green-theme .vocabulary-actions .button.secondary { background: #ecf4fc; color: #274e72; }
+    .green-theme .vocabulary-actions strong { font-size: 15px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+    .green-theme .vocabulary-actions strong > span { display: none; }
+    .green-theme .word-mode-icon { display: block; margin-bottom: auto; }
+    .green-theme .word-mode-icon svg { width: 38px; height: 32px; }
+    .green-theme .word-mode-description { display: block; font-size: 12px; font-weight: 400; color: #526273; }
+    .green-theme .vocabulary-status { margin: 12px 0 0; font-size: 13px; }
+    .green-theme .vocabulary-status:empty { display: none; }
+    .green-theme .vocabulary-section { margin: 24px 0; padding: 0; border: 0; background: transparent; }
+    .green-theme .vocabulary-section h2 { font-size: 21px; }
+    .green-theme .vocabulary-section > p { font-size: 13px; }
+    .green-theme .vocabulary-list { border: 0; gap: 8px; }
+    .green-theme .vocabulary-row { flex-wrap: wrap; gap: 8px; min-height: 80px; padding: 14px; background: #fff; border: 1px solid #e3e7df; border-radius: 12px; }
+    .green-theme .vocabulary-row-copy { flex: 1; display: grid; gap: 3px; min-width: 100px; overflow-wrap: anywhere; }
+    .green-theme .vocabulary-row-copy strong { font-size: 20px; }
+    .green-theme .vocabulary-row-action { min-width: 44px; min-height: 44px; padding: 8px; color: #173f31; border-radius: 8px; background: #eff2e8; font-size: 12px; }
+    .green-theme .vocabulary-word-audio { flex-basis: 100%; width: 100%; max-width: 100%; height: 36px; }
+    .green-theme .books-catalog { padding-top: 24px; }
+    .green-theme .books-catalog-heading { margin-bottom: 24px; padding: 0; text-align: left; background: none; }
+    .green-theme .books-catalog-heading::before { display: none; }
+    .green-theme .books-eyebrow { display: none; }
+    .green-theme .books-catalog-heading h1 { font-size: 30px; margin: 0 0 8px; }
+    .green-theme .books-catalog-heading p { font-size: 14px; line-height: 1.5; margin: 0; }
+    .green-theme .books-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .green-theme .book-card { grid-template-columns: 96px minmax(0, 1fr); align-items: start; gap: 16px; padding: 20px 0; border: 0; border-bottom: 1px solid #dfe5da; border-radius: 0; background: transparent; }
+    .green-theme .book-card-cover { width: 96px; height: 144px; border-radius: 6px; }
+    .green-theme .book-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+    .green-theme .book-card-copy { min-width: 0; padding: 0; overflow-wrap: anywhere; }
+    .green-theme .book-card-copy strong { font-size: 20px; line-height: 1.3; }
+    .green-theme .book-card-authors { font-size: 13px; }
+    .green-theme .book-card-description { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.5; }
+    .green-theme .book-card-open { width: fit-content; min-height: 44px; margin-top: 12px; padding: 10px 16px; font-size: 14px; }
+    .green-theme .mobile-profile-layout { display: block; padding-top: 24px; }
+    .green-theme .mobile-profile-layout > .account-navigation { display: none; }
+    .green-theme .mobile-profile-layout .profile-shell { padding-top: 0; }
+    .green-theme .profile-shell h1 { font-size: 30px; margin: 0 0 24px; }
+    .green-theme .desktop-profile-title { display: none; }
+    .green-theme .mobile-profile-title { display: inline; }
+    .green-theme .profile-identity { padding: 0 0 24px; margin-bottom: 24px; gap: 16px; }
+    .green-theme .profile-identity strong { overflow-wrap: anywhere; font-size: 20px; }
+    .green-theme .profile-identity > div { min-width: 0; }
+    .green-theme .profile-avatar-large { flex: none; width: 80px; height: 80px; }
+    .green-theme .mobile-profile-results { display: block; margin-bottom: 24px; }
+    .green-theme .mobile-profile-results h2 { font-size: 21px; margin: 0 0 12px; }
+    .green-theme #progress-status { font-size: 13px; color: #526273; }
+    .green-theme .profile-result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .green-theme .profile-result-grid a { display: grid; gap: 4px; background: #eff2e8; padding: 16px; border-radius: 12px; color: #173f31; }
+    .green-theme .profile-result-grid strong { font-size: 30px; line-height: 1.2; }
+    .green-theme .profile-result-grid span { font-size: 13px; }
+    .green-theme .profile-awards { margin-top: 12px; border: 1px solid #dfe5da; padding: 14px; border-radius: 12px; }
+    .green-theme .profile-awards summary { cursor: pointer; min-height: 24px; font-weight: 600; }
+    .green-theme .profile-awards li { margin-top: 8px; font-size: 14px; }
+    .green-theme .profile-awards #progress-achievements { display: block; margin: 12px 0 0; padding-left: 20px; }
+    .green-theme .profile-awards #progress-achievements li { padding: 0; border: 0; background: transparent; border-radius: 0; }
+    .green-theme .profile-links { gap: 0; }
+    .green-theme .profile-links a { display: grid; gap: 4px; padding: 18px 0; border: 0; border-bottom: 1px solid #dfe5da; border-radius: 0; }
+    .green-theme .profile-links span { font-size: 13px; }
+    .green-theme .profile-links .mobile-profile-results-link { display: grid; }
+    .green-theme .profile-logout { margin-top: 24px; }
+}

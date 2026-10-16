@@ -1,17 +1,29 @@
 @model AvatarOptions
 @{ ViewData["Title"] = "Профиль"; }
-<div class="account-layout">
+<div class="account-layout mobile-profile-layout">
     @await Html.PartialAsync("_AccountNavigation")
 <section class="feature-shell profile-shell">
-    <h1>Учётная запись</h1>
+    <h1><span class="desktop-profile-title">Учётная запись</span><span class="mobile-profile-title">Профиль</span></h1>
     @if (TempData["AvatarSaved"] is true) { <p class="avatar-saved-message" role="status">Аватар сохранён.</p> }
     <div class="profile-identity">
         <span class="profile-avatar profile-avatar-large" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel(Model, true))</span>
         <div><span class="profile-caption">@(User.IsInRole("Editor") ? "Редактор материалов" : "Учётная запись")</span><strong>@User.Identity?.Name</strong></div>
     </div>
+    <section class="mobile-profile-results" id="progress-app" aria-labelledby="profile-results-title">
+        <h2 id="profile-results-title">Мои результаты</h2>
+        <p id="progress-status" role="status">Загрузка…</p>
+        <div class="profile-result-grid">
+            <a href="/progress"><strong id="progress-points">—</strong><span>Очки</span></a>
+            <a href="/progress"><strong id="progress-streak">—</strong><span>Дней подряд</span></a>
+        </div>
+        <details class="profile-awards"><summary>Награды</summary><ul id="progress-achievements"></ul></details>
+    </section>
     <div class="profile-links">
         <a href="/profile/avatar"><strong>Мой аватар</strong><span>Внешность, причёска и одежда персонажа</span></a>
+        <a class="mobile-profile-results-link" href="/progress"><strong>Мои результаты</strong><span>Очки, серия занятий и награды</span></a>
+        @if (User.IsInRole("Editor")) { <a class="mobile-profile-results-link" href="/editor"><strong>Редактор материалов</strong><span>Управление учебными материалами</span></a> }
     </div>
     <form action="/account/logout" method="post" class="profile-logout">@Html.AntiForgeryToken()<button type="submit">Выйти из аккаунта</button></form>
 </section>
 </div>
+@section Scripts { <script src="~/js/progress.js" asp-append-version="true" defer></script> }
