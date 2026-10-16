@@ -94,4 +94,18 @@
     .green-theme .profile-links span { font-size: 13px; }
     .green-theme .profile-links .mobile-profile-results-link { display: grid; }
     .green-theme .profile-logout { margin-top: 24px; }
+
+    /* Original watercolor accents stay inside the compact touch targets. */
+    .green-theme .home-shell .format-card:has(.format-icon) { grid-template-columns: clamp(64px, 19vw, 82px) minmax(0, 1fr) 20px; min-height: 104px; }
+    .green-theme .home-shell .format-card .format-icon { width: 100%; height: 68px; background-color: transparent; background-size: contain; background-repeat: no-repeat; background-position: center; }
+    .green-theme .home-shell .format-audio .format-icon { background-image: url('../images/green/mobile-practice-watercolor.png'); }
+    .green-theme .home-shell .format-translate .format-icon { background-image: url('../images/green/mobile-words-watercolor.png'); }
+    .green-theme .home-shell .home-games .format-icon { background-image: url('../images/green/mobile-games-watercolor.png'); font-size: 0; }
+    .green-theme .home-shell .format-audio .format-icon svg,
+    .green-theme .home-shell .format-translate .format-icon svg,
+    .green-theme .home-shell .home-games .format-icon svg { visibility: hidden; }
+    .green-theme .vocabulary-actions .button { min-height: 170px; }
+    .green-theme .vocabulary-actions .word-mode-icon { width: 100%; height: 82px; background: url('../images/green/mobile-practice-watercolor.png') center / contain no-repeat; }
+    .green-theme .vocabulary-actions .secondary .word-mode-icon { background-image: url('../images/green/mobile-words-watercolor.png'); }
+    .green-theme .vocabulary-actions .word-mode-icon svg { visibility: hidden; }
 }
