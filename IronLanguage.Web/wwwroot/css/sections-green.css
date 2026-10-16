@@ -87,10 +87,10 @@
 .green-theme .books-catalog-heading::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .45; background: linear-gradient(90deg, #f4f6f2 30%, #f4f6f200 100%), url('../images/green/tsey-sage-watercolor.png') right center / auto 180% no-repeat; }
 .green-theme .books-catalog-heading p { max-width: 480px; color: var(--theme-muted); }
 .green-theme .books-eyebrow { color: var(--theme-green); }
-.green-theme .books-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.green-theme .books-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 240px)); gap: 20px; }
 .green-theme .book-card { grid-template-columns: minmax(0, 1fr); padding: 12px; border-radius: 16px; box-shadow: none; border-color: var(--theme-border); }
-.green-theme .book-card-cover { height: 260px; min-height: 0; border-radius: 10px; }
-.green-theme .book-card-copy { padding: 20px 8px 8px; }
+.green-theme .book-card-cover { height: 180px; min-height: 0; border-radius: 10px; }
+.green-theme .book-card-copy { padding: 14px 4px 4px; }
 .green-theme .book-card-copy strong { font-family: var(--theme-heading-font); }
 .green-theme .book-card-open { display: block; text-align: center; padding: 12px 16px; border-radius: 10px; background: var(--theme-green); color: #fff; }
 .green-theme .book-cover-placeholder { font-family: var(--theme-heading-font); background: linear-gradient(145deg, #ecf1e6, #bdd1bd); color: #355d49; }
@@ -138,7 +138,7 @@
 .illustration-credits { border-top: 1px solid var(--theme-border); padding-top: 24px; margin-top: 32px; line-height: 1.7; }
 .illustration-credits a { color: var(--theme-green); text-decoration: underline; }
 @media (max-width: 1023px) {
-  .green-theme .vocabulary-list, .green-theme .books-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .green-theme .vocabulary-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .account-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 24px; padding-inline: 24px; }
   .green-theme .exercise-entry-copy { grid-template-columns: 1fr; }
   .green-theme .exercise-entry-copy .button { grid-row: auto; grid-column: 1; justify-self: start; margin-top: 10px; }
