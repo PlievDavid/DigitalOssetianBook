@@ -8,10 +8,18 @@ public interface IAccountRepository
     Task<UserAccount?> FindById(Guid id, CancellationToken ct = default);
     Task<UserAccount?> FirstEditor(CancellationToken ct = default);
     Task<bool> Create(UserAccount user, CancellationToken ct = default);
+    Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default);
 }
 
 public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
 {
+    public async Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(avatarJson);
+        if (avatarJson.Length > 2048) throw new ArgumentException("Настройки аватара длиннее 2048 символов.", nameof(avatarJson));
+        return await db.Users.Where(x => x.Id == id).ExecuteUpdateAsync(x => x.SetProperty(p => p.AvatarJson, avatarJson), ct) == 1;
+    }
+
     public Task<UserAccount?> FindByEmail(string email, CancellationToken ct = default) =>
         db.Users.AsNoTracking().SingleOrDefaultAsync(x => x.Email == email, ct);
 

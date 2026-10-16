@@ -12,6 +12,7 @@
     wordEl.textContent = word.ossetian;
     answer.value = '';
     result.replaceChildren();
+    AdamAvatar.setEmotion(document.getElementById("practice-avatar"), "Thinking");
     answer.focus();
   };
   (AdamAuthenticated ? AdamApi('/vocabulary') : AdamApi('/words').then(items => items.map(x => ({ ...x, wordId: x.id })))).then(saved => {
@@ -25,6 +26,7 @@
     try {
       const outcome = await AdamApi(`${AdamAuthenticated ? "/vocabulary" : "/words"}/${word.wordId}/review`, { method: 'POST', body: JSON.stringify({ translation: answer.value }) });
       result.textContent = outcome.correct ? 'Верно!' : `Пока неверно. Перевод: ${outcome.expected}.`;
+      AdamAvatar.setEmotion(document.getElementById("practice-avatar"), outcome.correct ? "Happy" : "Supportive");
       const next = document.createElement('button'); next.type = 'button'; next.className = 'button secondary';
       next.textContent = words.length > 1 ? 'Следующее слово' : 'Повторить';
       next.onclick = () => { index++; showWord(); };

@@ -1,6 +1,7 @@
 @{ var signedIn = User.Identity?.IsAuthenticated == true; ViewData["Title"] = signedIn ? "Мои слова" : "Словарь"; }
 <section class="feature-shell vocabulary-shell" id="vocabulary-app">
-    <div class="vocabulary-page-header"><div><h1>@ViewData["Title"]</h1><p>@(signedIn ? "Личный список слов из книг и заданий." : "Опубликованные слова, переводы и примеры.")</p></div><nav class="vocabulary-actions" aria-label="Занятия со словами"><a class="button secondary" href="/word-practice">Тренировка слов ↗</a><a class="button secondary" href="/game">Подбор пар ↗</a></nav></div>
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel(signedIn ? "Мои слова" : "Словарь", signedIn ? "Собирайте слова из книг и заданий и возвращайтесь к ним в тренировке." : "Опубликованные слова, переводы и примеры.", "words"))
+    <div class="vocabulary-page-header"><nav class="vocabulary-actions" aria-label="Занятия со словами"><a class="button primary" href="/word-practice">Тренировка слов ↗</a><a class="button secondary" href="/game">Подбор пар ↗</a></nav></div>
     <div id="vocabulary-status" class="vocabulary-status" role="status"></div>
     @if (signedIn)
     {

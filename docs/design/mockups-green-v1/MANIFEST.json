@@ -1,0 +1,65 @@
+[
+  {
+    "file": "01-exercises.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1437720,
+    "sha256": "ecedf3a130c3e46d16a902612334c2b13b3aa20f2f666f52f00fffdd9f66468b"
+  },
+  {
+    "file": "02-dialogues.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 1557481,
+    "sha256": "c82e489e2187c6de28c9fd1ff78dae2827cc977395435532a6a7555d40a8329d"
+  },
+  {
+    "file": "03-vocabulary.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 1696112,
+    "sha256": "1fe7e656d38f1f91b4173d407fa570c274c52072f756a24d657347c6b2212a60"
+  },
+  {
+    "file": "04-books.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 1826237,
+    "sha256": "93722c19a9d6b0b4afd908353cce6cbd2a1802b18095317b14bfb2157fcfbfa8"
+  },
+  {
+    "file": "05-reader.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1510538,
+    "sha256": "edce705de3a5ec4d4e392e865244541deffccbedea0460a88c3df2031e5d28cc"
+  },
+  {
+    "file": "06-account.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1769340,
+    "sha256": "40715c7d9eabde91d588bd2d8ef07ef29ec485256b2d94b7441dab1980913b65"
+  },
+  {
+    "file": "07-editor-library.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1712407,
+    "sha256": "2766b9ddb3029aa29c9beab73296423f9aa80faf04e5cbd9eca152e1995ce0a5"
+  },
+  {
+    "file": "08-editor-forms.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1451643,
+    "sha256": "7fde8c6a6ae8794b3f72028a76ac755a66ff453b50daa1076e1a5c991e395bb8"
+  },
+  {
+    "file": "09-states.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1535257,
+    "sha256": "e4b1b72bc1ecbd99a957f7ef2a5c6d5bde743ab7927be304cb1eb8dd36e69f9d"
+  }
+]

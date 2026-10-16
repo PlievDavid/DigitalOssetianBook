@@ -1,0 +1,40 @@
+@model IronLanguage.Web.Models.EditorFormModel
+<div id="dialogue-builder">
+    <section aria-labelledby="characters-heading">
+        <div class="builder-heading"><h2 id="characters-heading">Персонажи</h2><button type="button" class="button secondary" id="add-character">Добавить персонажа</button></div>
+        <p class="field-help">Добавьте собеседников. Ученик уже доступен при создании реплики.</p>
+        <div id="builder-characters" class="builder-list"></div>
+    </section>
+    <section aria-labelledby="lines-heading">
+        <div class="builder-heading"><h2 id="lines-heading">Диалог</h2><button type="button" class="button secondary" id="add-line">Добавить реплику</button></div>
+        <p class="field-help">Соберите разговор по порядку. Для ученика настройте ответ прямо в реплике.</p>
+        <div id="builder-lines" class="builder-list"></div>
+    </section>
+    <input asp-for="CharactersText" type="hidden" />
+    <input asp-for="LinesText" type="hidden" />
+    <input asp-for="TurnsText" type="hidden" />
+    <span asp-validation-for="LinesText" class="form-error"></span><span asp-validation-for="TurnsText" class="form-error"></span>
+    <noscript><p class="form-error">Для конструктора диалога включите JavaScript.</p></noscript>
+</div>
+<dialog id="character-dialog" class="builder-dialog" aria-labelledby="character-dialog-title">
+    <div class="builder-heading"><h2 id="character-dialog-title">Добавить персонажа</h2><button type="button" data-close aria-label="Закрыть настройки персонажа">×</button></div>
+    <label>Имя персонажа<input id="character-name" data-ossetian maxlength="100" autocomplete="off" /></label>
+    <label>Цвет персонажа<input id="character-color" type="color" value="#203f34" /></label>
+    <p class="form-error" id="character-error" role="alert"></p>
+    <div class="builder-actions"><button type="button" class="button primary" id="save-character">Добавить персонажа</button><button type="button" class="button secondary" data-close>Отмена</button></div>
+</dialog>
+<dialog id="line-dialog" class="builder-dialog" aria-labelledby="line-dialog-title">
+    <div class="builder-heading"><h2 id="line-dialog-title">Добавить реплику</h2><button type="button" data-close aria-label="Закрыть настройки реплики">×</button></div>
+    <label>Кто говорит<select id="line-speaker"></select></label>
+    <label id="line-text-label">Текст реплики<textarea id="line-text" data-ossetian rows="3" maxlength="500"></textarea></label>
+    <div id="student-settings">
+        <label>Как отвечает ученик<select id="line-kind"><option value="choice">Выбирает из вариантов</option><option value="free">Вводит текст</option></select></label>
+        <p class="field-help" id="answer-help"></p>
+        <div id="line-answers" class="builder-list"></div>
+        <button type="button" class="button secondary" id="add-answer">Добавить вариант</button>
+        <label>Показать подсказку после попытки<input id="line-threshold" type="number" min="1" max="2147483647" value="2" /></label>
+        <label class="builder-checkbox"><input id="line-skippable" type="checkbox" /> Разрешить пропустить ответ</label>
+    </div>
+    <p class="form-error" id="line-error" role="alert"></p>
+    <div class="builder-actions"><button type="button" class="button primary" id="save-line">Добавить реплику</button><button type="button" class="button secondary" data-close>Отмена</button></div>
+</dialog>
