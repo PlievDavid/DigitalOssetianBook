@@ -13,6 +13,7 @@
   let session = null;
   let selectedLeft = null;
   let busy = false;
+  let generation = 0;
 
   const button = (label, action, className = "button secondary") => {
     const b = document.createElement("button"); b.type = "button"; b.className = className;
@@ -41,7 +42,9 @@
 
   async function start(id) {
     try {
-      session = await AdamApi(`/matching/${id}/sessions`, { method: "POST" });
+      const next = await AdamApi(`/matching/${id}/sessions`, { method: "POST" });
+      generation++;
+      session = next;
       sessionStorage.setItem("adam.matching.session", session.sessionId);
       list.hidden = true; play.hidden = false;
       render();
@@ -93,11 +96,15 @@
 
   async function check(leftIndex, rightIndex) {
     busy = true;
+    const gen = generation;
+    const sid = session.sessionId;
     try {
-      const response = await AdamApi(`/matching/sessions/${session.sessionId}/check`, {
+      const response = await AdamApi(`/matching/sessions/${sid}/check`, {
         method: "POST",
         body: JSON.stringify({ leftIndex, rightIndex })
       });
+      // Ответ относится к другой сессии — не применяем к текущей доске.
+      if (gen !== generation || !session || session.sessionId !== sid) return;
       const leftTile = session.left.find(t => t.index === leftIndex);
       const rightTile = session.right.find(t => t.index === rightIndex);
       if (response.correct) {
@@ -122,6 +129,7 @@
       renderBoard();
       if (session.finished) { summaryBox.hidden = false; renderSummary(); }
     } catch (error) {
+      if (gen !== generation || !session || session.sessionId !== sid) return;
       result.textContent = error.message;
       if (error.status === 404) {
         sessionStorage.removeItem("adam.matching.session");
@@ -170,6 +178,7 @@
   }
 
   function back() {
+    generation++;
     play.hidden = true; list.hidden = false;
     session = null; selectedLeft = null;
     load();

@@ -46,7 +46,13 @@ public sealed class MatchingService(ICatalogRepository catalog, GuestLearningSto
             var state = entry.Value;
             if (leftIndex < 0 || leftIndex >= state.Lefts.Length || rightIndex < 0 || rightIndex >= state.Rights.Length)
                 throw new ArgumentException("Неверный выбор пары.");
-            if (state.MatchedByLeft[leftIndex] >= 0 || state.RightLocked[rightIndex])
+            // Повтор уже зачтённой пары (сбой сети): возвращаем успех, не меняя состояние.
+            if (state.MatchedByLeft[leftIndex] >= 0)
+            {
+                var repeat = state.MatchedByLeft[leftIndex] == rightIndex;
+                return new MatchingCheck(repeat, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
+            }
+            if (state.RightLocked[rightIndex])
                 return new MatchingCheck(false, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
             var correct = state.RightSource[rightIndex] == leftIndex;
             if (correct)

@@ -68,6 +68,7 @@ public static class MatchingScript
     {
         var pairs = new List<MatchingPair>();
         var leftKeys = new HashSet<string>();
+        var rightKeys = new HashSet<string>();
         var index = 0;
         foreach (var raw in Rows(text))
         {
@@ -86,6 +87,9 @@ public static class MatchingScript
             var key = Normalize(left);
             if (!leftKeys.Add(key))
             { errors.Add($"Пары, строка {index}: левое слово «{left}» повторяется."); continue; }
+            // Одинаковые правые части дали бы скрытую коллизию индексов при проверке.
+            if (!rightKeys.Add(Normalize(right)))
+            { errors.Add($"Пары, строка {index}: правая часть пары «{right}» повторяется."); continue; }
             pairs.Add(new MatchingPair(left, right));
         }
         if (pairs.Count is < 2 or > 10) errors.Add($"Соотнесение: нужно от 2 до 10 пар, сейчас — {pairs.Count}.");
