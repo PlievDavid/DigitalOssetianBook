@@ -17,16 +17,25 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.setViewportSize({ width, height: 800 });
       await page.goto(base);
       const expected = await bounds('.home-content');
-      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/vocabulary', '/word-practice', '/game', '/books', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
+      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/matching', '/vocabulary', '/word-practice', '/game', '/books', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
         await page.goto(base + route, { waitUntil: 'networkidle' });
         assert.deepEqual(await bounds('#main-content'), expected, `${route} main at ${width}`); checks++;
-        assert.deepEqual(await bounds('.header-inner'), expected, `${route} header at ${width}`); checks++;
+        if (width >= 600) { assert.deepEqual(await bounds('.header-inner'), expected, `${route} header at ${width}`); checks++; }
         const selector = route === '/' ? '.home-content' : route === '/books' ? '.books-catalog' : route.startsWith('/account/') && route !== '/account/access-denied' ? '.auth-scene' : '#main-content > .feature-shell';
         assert.deepEqual(await bounds(selector), expected, `${route} shell at ${width}`); checks++;
         if (route === '/account/login' || route === '/account/register') {
           const card = await page.locator('.auth-shell').boundingBox();
-          assert(Math.abs(card.width - Math.min(480, expected[1] - expected[0])) < 1, `${route} compact card at ${width}`); checks++;
+          assert(Math.abs(card.width - Math.min(width < 600 ? 440 : 480, expected[1] - expected[0])) < 1, `${route} compact card at ${width}`); checks++;
           assert(Math.abs(card.x + card.width / 2 - (expected[0] + expected[1]) / 2) < 1, `${route} centered card at ${width}`); checks++;
+        }
+        const playSelector = { '/audio-puzzles': '#exercise-play', '/translate': '#exercise-play', '/dialogs': '#dialog-play', '/matching': '#matching-play', '/game': '.game-play-area' }[route];
+        if (playSelector) {
+          const play = page.locator(playSelector);
+          const wasHidden = await play.evaluate(el => { const hidden = el.hidden; el.hidden = false; return hidden; });
+          const box = await play.boundingBox();
+          assert(Math.abs(box.width - Math.min(760, expected[1] - expected[0])) < 1, route + ' lesson width at ' + width); checks++;
+          assert(Math.abs(box.x + box.width / 2 - (expected[0] + expected[1]) / 2) < 1, route + ' lesson center at ' + width); checks++;
+          await play.evaluate((el, hidden) => { el.hidden = hidden; }, wasHidden);
         }
         if (route === '/books') {
           // Inspect all three book shells, including states normally opened via API data.

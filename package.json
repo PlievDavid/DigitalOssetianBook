@@ -7,7 +7,13 @@
     "test:learning-layout": "node tests/learning-layout-browser.cjs",
     "test:avatar-artwork": "node tests/avatar-artwork.cjs",
     "test:avatar": "node tests/avatar-browser.cjs",
-    "test:editor-audio": "node tests/editor-audio-layout-browser.cjs"
+    "test:editor-audio": "node tests/editor-audio-layout-browser.cjs",
+    "test:game-threads": "node tests/game-threads-browser.cjs",
+    "test:app-containers": "node tests/app-containers-browser.cjs",
+    "test:layout-components": "node tests/layout-components-browser.cjs",
+    "test:home-reading": "node tests/home-reading-browser.cjs",
+    "test:reader-lines": "node tests/reader-lines-browser.cjs",
+    "test:matching-threads": "node tests/matching-threads-browser.cjs"
   },
   "devDependencies": {
     "playwright": "1.64.1"

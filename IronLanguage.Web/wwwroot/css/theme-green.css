@@ -74,6 +74,7 @@ html { scrollbar-gutter: stable; }
 .green-theme .main-nav { border: 0; box-shadow: none; flex: none; }
 .green-theme .nav-inner { height: 44px; padding: 0; gap: var(--space-2); overflow: visible; }
 .green-theme .nav-inner > a,.green-theme .nav-menu-trigger { min-height: var(--theme-touch-size); padding: 12px 18px; border-radius: var(--theme-radius-sm); font-size: 14px; font-weight: 600; }
+.green-theme .nav-inner > a { display: flex; align-items: center; }
 .green-theme .nav-inner .is-current { color: var(--theme-green); background: var(--theme-sage); }
 .green-theme .nav-inner a:hover,.green-theme .nav-menu-trigger:hover { color: var(--theme-green); background: var(--theme-sage); }
 .green-theme .nav-menu-panel { top: 100%; border-color: var(--theme-border); border-radius: var(--theme-radius-sm); box-shadow: var(--theme-menu-shadow); }
@@ -222,6 +223,9 @@ html { scrollbar-gutter: stable; }
 .format-dialogs { background: var(--theme-sage); }
 .format-dialogs .format-icon { background: #dce7d3; color: var(--theme-green); }
 .format-dialogs .round-arrow { color: var(--theme-green); }
+.format-matching { background: #fcf0ef; }
+.format-matching .format-icon { background: #f5d4d0; color: #8a2f24; }
+.format-matching .round-arrow { color: #8a2f24; }
 .home-formats { scroll-margin-top: var(--space-6); }
 .home-reading-card h3 { font: 600 23px/1.2 var(--theme-heading-font); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
 .home-reading-card p { color: var(--theme-muted); line-height: 1.4; margin: 0 0 var(--space-5); max-width: 75%; }
@@ -324,3 +328,6 @@ html { scrollbar-gutter: stable; }
     .editor-page .editor-step-row { grid-template-columns: auto minmax(0, 1fr); }
     .editor-page .editor-step-row .letter-field { grid-column: 1 / -1; min-width: min(190px, 100%); }
 }
+
+.editor-page .editor-choices a[href$="/matching"] { --choice-bg: #edf6f4; --choice-border: #cfe4df; --choice-icon-bg: #cfe8e2; --choice-ink: #23675f; }
+.editor-page .editor-choices a[href$="/matching"] svg { width: 28px; height: 28px; }

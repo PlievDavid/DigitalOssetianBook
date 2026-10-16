@@ -1,0 +1,94 @@
+// Actual Razor page and styles, isolated API fixtures; no material or progress writes.
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const base = process.env.ADAM_TEST_URL;
+assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
+(async () => {
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  try {
+    const page = await browser.newPage();
+    const errors = []; page.on('pageerror', error => errors.push(error.message));
+    let sequence = 0, calls = 0, fail = false, held = null, hold = false;
+    const states = new Map();
+    await page.route('**/api/v1/matching**', async route => {
+      const url = new URL(route.request().url()).pathname;
+      if (url === '/api/v1/matching') return route.fulfill({ json: [{ id: 'fixture', title: 'Проверка соединений' }] });
+      if (url.endsWith('/sessions')) {
+        const id = 'session-' + (++sequence); states.set(id, new Set());
+        return route.fulfill({ json: { sessionId: id, materialId: 'fixture', title: 'Проверка соединений', matched: 0, total: 2, finished: false, words: [], left: [{ index: 0, text: 'Ӕӕ 1', matched: false }, { index: 1, text: 'Ӕӕ 2', matched: false }], right: [{ index: 1, text: 'Тест 2', matched: false }, { index: 2, text: 'Лишний вариант', matched: false }, { index: 0, text: 'Тест 1', matched: false }] } });
+      }
+      if (url.endsWith('/check')) {
+        calls++;
+        const sid = url.split('/').at(-2), { leftIndex, rightIndex } = route.request().postDataJSON();
+        if (hold) { hold = false; await new Promise(resolve => { held = resolve; }); }
+        if (fail) { fail = false; return route.fulfill({ status: 503, json: { error: 'Ошибка тестовой сети' } }); }
+        const solved = states.get(sid), correct = leftIndex === rightIndex;
+        if (correct) solved.add(leftIndex);
+        return route.fulfill({ json: { correct, matched: solved.size, total: 2, finished: solved.size === 2 } });
+      }
+      throw new Error('Unexpected fixture API: ' + url);
+    });
+    const left = i => page.locator('#matching-left [data-index="' + i + '"]');
+    const right = i => page.locator('#matching-right [data-index="' + i + '"]');
+    const start = async () => { await page.goto(base + '/matching'); await page.getByRole('button', { name: 'Начать →' }).click(); await left(0).waitFor(); };
+    const idle = () => page.waitForFunction(() => document.querySelector('#matching-board').getAttribute('aria-busy') === 'false');
+    fs.mkdirSync(path.join(__dirname, '../.run-local/matching-threads'), { recursive: true });
+    for (const width of [320, 360, 600, 768, 1024, 1280, 1920]) {
+      await page.setViewportSize({ width, height: 900 }); await start();
+      assert(await page.locator('.section-symbol svg rect').count() >= 2, 'Matching heading has a card icon');
+      assert((await page.locator('#matching-play').boundingBox()).width <= 760.5);
+      assert.notEqual(await left(0).evaluate(el => getComputedStyle(el).backgroundColor), await right(0).evaluate(el => getComputedStyle(el).backgroundColor));
+      await left(0).focus(); await page.keyboard.press('Enter'); await page.keyboard.press('Escape');
+      assert.equal(await left(0).getAttribute('aria-pressed'), 'false');
+      await left(0).click(); await right(2).click(); await idle();
+      assert.match(await page.locator('#matching-result').innerText(), /Не подходит/);
+      assert.equal(await page.locator('.game-thread-matched').count(), 0);
+      const a = await left(0).boundingBox(), b = await right(0).boundingBox();
+      await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down();
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await page.mouse.up(); await idle();
+      assert.equal(await page.locator('.game-thread-matched').count(), 1);
+      assert(await left(0).isDisabled()); assert(await right(0).isDisabled());
+      assert(await left(1).evaluate(el => el === document.activeElement));
+      await page.keyboard.press('Enter'); await right(1).focus(); await page.keyboard.press('Space'); await idle();
+      assert.equal(await page.locator('.game-thread-matched').count(), 2);
+      assert(await page.locator('#matching-summary').isVisible());
+      await page.locator('.matching-tile').evaluateAll(nodes => nodes.forEach(el => el.style.fontSize = '32px'));
+      await page.waitForTimeout(50);
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'No overflow with 200% tile text');
+      const endpoints = await page.locator('.game-thread-matched').first().evaluate(el => { const p = el.getPointAtLength(0); return [p.x, p.y]; });
+      const expected = await left(0).evaluate(el => { const r = el.getBoundingClientRect(), b = el.closest('#matching-board').getBoundingClientRect(); return [r.right - b.left, r.top + r.height / 2 - b.top]; });
+      assert(endpoints.every((value, i) => Math.abs(value - expected[i]) < 1), 'Threads follow enlarged text');
+      if ([360, 1280].includes(width)) await page.screenshot({ path: path.join(__dirname, '../.run-local/matching-threads/' + width + '.png'), fullPage: true });
+    }
+    // Network retry keeps selection; pending old response never unlocks a new board.
+    await start(); fail = true;
+    await left(0).click(); await right(0).click(); await idle();
+    assert.equal(await left(0).getAttribute('aria-pressed'), 'true');
+    await right(0).click(); await idle(); assert.equal(await page.locator('.game-thread-matched').count(), 1);
+    hold = true; await left(1).click(); await right(1).click();
+    await page.locator('#matching-back-link').click(); await page.getByRole('button', { name: 'Начать →' }).click();
+    await left(0).click(); await right(0).click(); await idle();
+    assert.equal(await page.locator('.game-thread-matched').count(), 1);
+    held(); await page.waitForTimeout(150);
+    assert.equal(await page.locator('.game-thread-matched').count(), 1);
+    assert(await left(1).isEnabled());
+    // Native touch drag and vertical scroll on the same left tile.
+    await page.setViewportSize({ width: 360, height: 900 }); await start();
+    const client = await page.context().newCDPSession(page);
+    let a = await left(0).boundingBox(), b = await right(0).boundingBox();
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: a.x + a.width / 2, y: a.y + a.height / 2 }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: b.x + b.width / 2, y: b.y + b.height / 2 }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await idle();
+    assert.equal(await page.locator('.game-thread-matched').count(), 1);
+    await page.evaluate(() => { document.body.style.minHeight = '2400px'; window.scrollTo(0, 0); });
+    a = await left(1).boundingBox();
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: a.x + a.width / 2, y: a.y + a.height / 2 }] });
+    for (let dy = 15; dy <= 120; dy += 15) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: a.x + a.width / 2, y: a.y + a.height / 2 - dy }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await page.waitForFunction(() => scrollY > 30);
+    assert.equal(await page.locator('.game-thread-active').count(), 0);
+    assert.deepEqual(errors, []);
+    console.log('Matching threads passed: seven widths, card icon, colors, mouse/touch drag, keyboard, Escape, wrong answer, network retry, session race, completion and vertical scrolling.');
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

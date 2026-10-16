@@ -1,0 +1,17 @@
+@model IronLanguage.Web.Models.EditorFormModel
+<div id="matching-builder">
+    <section aria-labelledby="pairs-heading">
+        <div class="builder-heading"><h2 id="pairs-heading">Пары</h2><button type="button" class="button secondary" id="add-pair">Добавить пару</button></div>
+        <p class="field-help">Каждая пара — слово слева и его пара справа. От 2 до 10 пар.</p>
+        <div id="builder-pairs" class="builder-list"></div>
+    </section>
+    <section aria-labelledby="distractors-heading">
+        <div class="builder-heading"><h2 id="distractors-heading">Отвлекающие слова</h2><button type="button" class="button secondary" id="add-distractor">Добавить слово</button></div>
+        <p class="field-help">Необязательно, до 5 слов. Попадут в правую колонку и не будут правильными ответами.</p>
+        <div id="builder-distractors" class="builder-list"></div>
+    </section>
+    <input asp-for="PairsText" type="hidden" />
+    <input asp-for="DistractorsText" type="hidden" />
+    <span asp-validation-for="PairsText" class="form-error"></span><span asp-validation-for="DistractorsText" class="form-error"></span>
+    <noscript><p class="form-error">Для конструктора соотнесения включите JavaScript.</p></noscript>
+</div>

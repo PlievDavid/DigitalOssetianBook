@@ -149,7 +149,11 @@
         status.textContent = AdamAuthenticated ? 'Игра откроется, когда в вашем словаре появятся два слова с разными переводами.' : 'Для игры нужны хотя бы два опубликованных слова с разными переводами.';
         board.replaceChildren(); lines = null; leftButtons.clear(); rightButtons.clear();
       } else { status.textContent = `Соедините ${words.length} ${pairsLabel(words.length)} нитками.`; render(); }
-    } catch (error) { restart.hidden = false; status.textContent = error.message; }
+    } catch (error) {
+      board.replaceChildren(); leftButtons.clear(); rightButtons.clear(); lines = null;
+      words = []; translations = []; findWords.hidden = true;
+      restart.hidden = false; status.textContent = error.message;
+    }
     finally { busy = false; update(); }
   }
   root.addEventListener('keydown', event => {

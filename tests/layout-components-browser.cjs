@@ -7,12 +7,21 @@ const base = process.env.ADAM_TEST_URL;
 assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
 const root = path.resolve(__dirname, '..');
 const layout = fs.readFileSync(path.join(root, 'IronLanguage.Web/Views/Shared/_Layout.cshtml'), 'utf8');
-const slot = layout.match(/<span class="header-streak-slot">.*?<\/a><\/span>/)[0].replace('src="~/', 'src="/');
+// Parse the slot as HTML in the browser so whitespace and nested markup may change.
+const headerStart = layout.indexOf('<header');
+const header = layout.slice(headerStart, layout.indexOf('</header>', headerStart) + '</header>'.length);
 (async () => {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   let checks = 0;
   try {
     const page = await browser.newPage();
+    const slot = await page.evaluate(markup => {
+      const doc = new DOMParser().parseFromString(markup, 'text/html');
+      const slot = doc.querySelector('.header-streak-slot');
+      if (!slot) throw new Error('Missing streak slot in shared layout');
+      slot.querySelectorAll('[src^="~/"]').forEach(el => el.setAttribute('src', el.getAttribute('src').slice(1)));
+      return slot.outerHTML;
+    }, header);
     for (const width of [360, 600, 768, 1024, 1280, 1480, 1920]) {
       await page.setViewportSize({ width, height: 800 });
       for (const route of ['/account/login', '/account/register']) {

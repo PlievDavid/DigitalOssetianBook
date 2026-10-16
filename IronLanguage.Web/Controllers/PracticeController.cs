@@ -20,6 +20,9 @@ public sealed class PracticeController : Controller
     [HttpGet("dialogs")]
     public IActionResult Dialogs() => View();
 
+    [HttpGet("matching")]
+    public IActionResult Matching() => View();
+
     [HttpGet("game")]
     public IActionResult Game() => View();
 
