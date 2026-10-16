@@ -35,6 +35,7 @@
                     <a class="nav-menu-item" href="/audio-puzzles">Аудиопазлы</a>
                     <a class="nav-menu-item" href="/translate">Перевод фраз</a>
                     <a class="nav-menu-item" href="/dialogs">Диалоги</a>
+                    <a class="nav-menu-item" href="/matching">Соотнесение</a>
                 </div>
             </div>
             <div class="nav-menu nav-menu-words nav-menu-section">
@@ -69,7 +70,7 @@
     </header>
     <button class="menu-backdrop" type="button" aria-label="Закрыть меню" tabindex="-1" hidden></button>
     <main id="main-content" tabindex="-1">
-        @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/books", "/vocabulary", "/word-practice", "/game" }.Contains(currentPath))
+        @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/matching", "/books", "/vocabulary", "/word-practice", "/game" }.Contains(currentPath))
         {
             <p class="guest-notice container">Занимайтесь без входа. Прогресс и слова не сохраняются. <a href="/account/login?ReturnUrl=@Uri.EscapeDataString(currentPath)">Войти, чтобы сохранять</a></p>
         }

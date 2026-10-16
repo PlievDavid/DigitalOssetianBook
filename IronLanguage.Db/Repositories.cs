@@ -48,6 +48,8 @@ public interface ICatalogRepository
     Task<Book?> Book(Guid id, CancellationToken ct = default);
     Task<List<Dialogue>> Dialogues(CancellationToken ct = default);
     Task<Dialogue?> Dialogue(Guid id, CancellationToken ct = default);
+    Task<List<Matching>> Matchings(CancellationToken ct = default);
+    Task<Matching?> Matching(Guid id, CancellationToken ct = default);
     Task<List<Exercise>> DraftExercises(CancellationToken ct = default);
     Task<List<Book>> DraftBooks(CancellationToken ct = default);
     Task<List<WordEntry>> DraftWords(CancellationToken ct = default);
@@ -78,6 +80,10 @@ public sealed class EfCatalogRepository(AdamDbContext db) : ICatalogRepository
         db.Dialogues.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
     public Task<Dialogue?> Dialogue(Guid id, CancellationToken ct = default) =>
         db.Dialogues.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
+    public Task<List<Matching>> Matchings(CancellationToken ct = default) =>
+        db.Matchings.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
+    public Task<Matching?> Matching(Guid id, CancellationToken ct = default) =>
+        db.Matchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
     public Task<List<Exercise>> DraftExercises(CancellationToken ct = default) => db.Exercises.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
     public Task<List<Book>> DraftBooks(CancellationToken ct = default) => db.Books.AsNoTracking().Include(x => x.Chapters).Where(x => !x.Published).ToListAsync(ct);
     public Task<List<WordEntry>> DraftWords(CancellationToken ct = default) => db.Words.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);

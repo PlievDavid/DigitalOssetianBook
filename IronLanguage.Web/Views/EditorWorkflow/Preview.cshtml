@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", _ => "Книга" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
@@ -74,6 +74,26 @@
                     </div>
                 }
             }
+        }
+        else if (Model.Matching is not null)
+        {
+            var rightColumn = Model.Matching.Pairs.Select(x => x.Right).Concat(Model.Matching.Distractors).ToArray();
+            <h2>@Model.Matching.Title</h2>
+            <p class="field-help">Ученик соотносит слова слева с парами справа. Порядок перемешивается.</p>
+            <div class="editor-preview-tiles">@foreach (var pair in Model.Matching.Pairs) { <span>@pair.Left</span> }</div>
+            <div class="editor-preview-answer">
+                <strong>Правильные пары:</strong>
+                <ol>@foreach (var pair in Model.Matching.Pairs) { <li>@pair.Left — @pair.Right</li> }</ol>
+                @if (Model.Matching.Distractors.Length > 0)
+                {
+                    <p class="field-help">Отвлекающие слова справа: @string.Join(", ", Model.Matching.Distractors)</p>
+                }
+                @if (Model.Matching.WordIds.Length > 0)
+                {
+                    <p class="field-help">Связанные слова: @string.Join(", ", Model.Matching.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p>
+                }
+            </div>
+            <p class="field-help">Правая колонка (@rightColumn.Length значений) будет перемешана на странице ученика.</p>
         }
         else if (Model.Book is not null)
         {

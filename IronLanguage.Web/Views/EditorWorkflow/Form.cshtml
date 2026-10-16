@@ -2,7 +2,7 @@
 @inject IronLanguage.Db.ICatalogRepository Catalog
 @using System.Text.Json
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", _ => "Книга" };
     ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
     ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
@@ -64,6 +64,12 @@
             @await Html.PartialAsync("_DialogueBuilder", Model)
 
         }
+        else if (Model.Kind == "matching")
+        {
+            <label>Название задания <input asp-for="MatchingTitle" autocomplete="off" required maxlength="200" data-ossetian /><span asp-validation-for="MatchingTitle" class="form-error"></span></label>
+            @await Html.PartialAsync("_MatchingBuilder", Model)
+            <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
+        }
         @if (Model.Kind is "word" or "audio")
         {
             <div class="editor-audio-field"><span class="editor-field-label">Осетинская запись @(Model.Kind == "audio" ? "(обязательно)" : "(необязательно)")</span><label class="editor-file-button" for="editor-audio">Выбрать запись</label><input asp-for="Audio" id="editor-audio" type="file" accept=".mp3,.ogg,.wav,audio/mpeg,audio/ogg,audio/wav" class="editor-file-input" /><span id="editor-file-name" class="field-help">@(Model.ExistingAudioPath is null ? "Файл не выбран" : "Текущая запись сохранена")</span>@if (Model.ExistingAudioPath is null) { <audio id="editor-audio-preview" controls hidden></audio> } else { <audio id="editor-audio-preview" controls src="@Model.ExistingAudioPath"></audio> }<span asp-validation-for="Audio" class="form-error"></span></div>
@@ -74,5 +80,6 @@
 <script id="editor-words-data" type="application/json">@Html.Raw(JsonSerializer.Serialize(words))</script>
 @section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/editor.js" asp-append-version="true" defer></script>
     @if (Model.Kind == "dialogue") { <script src="~/js/dialogue-builder.js" asp-append-version="true" defer></script> }
+    @if (Model.Kind == "matching") { <script src="~/js/matching-builder.js" asp-append-version="true" defer></script> }
 }
 

@@ -34,7 +34,7 @@
     });
   }
 
-  if (kind === 'audio' || kind === 'translation') {
+  if (kind === 'audio' || kind === 'translation' || kind === 'matching') {
     const search = document.getElementById('word-search'), results = document.getElementById('word-results');
     const selectedEl = document.getElementById('selected-words'), hidden = document.getElementById('WordIdsCsv');
     const selected = new Set((hidden.value || '').split(',').filter(Boolean));
