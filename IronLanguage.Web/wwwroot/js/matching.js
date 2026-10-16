@@ -44,6 +44,7 @@
     try {
       const next = await AdamApi(`/matching/${id}/sessions`, { method: "POST" });
       generation++;
+      busy = false;
       session = next;
       sessionStorage.setItem("adam.matching.session", session.sessionId);
       list.hidden = true; play.hidden = false;
@@ -135,7 +136,10 @@
         sessionStorage.removeItem("adam.matching.session");
         back();
       }
-    } finally { busy = false; }
+    } finally {
+      // Завершение старого запроса не должно снимать блокировку новой сессии.
+      if (gen === generation) busy = false;
+    }
   }
 
   function renderBoard() {
@@ -179,6 +183,7 @@
 
   function back() {
     generation++;
+    busy = false;
     play.hidden = true; list.hidden = false;
     session = null; selectedLeft = null;
     load();
