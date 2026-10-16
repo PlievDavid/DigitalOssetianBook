@@ -50,7 +50,7 @@
                 <button class="nav-menu-link nav-menu-trigger @(currentPath.StartsWith("/games") ? "is-current" : "")" type="button" aria-haspopup="true" aria-expanded="false">Игры</button>
                 <div class="nav-menu-panel" aria-label="Игры">
                     <a class="nav-menu-item" href="/games/crosswords">Кроссворды</a>
-                    <a class="nav-menu-item" href="/games/wordle">Вордли</a>
+                    <a class="nav-menu-item" href="/games/wordle">Иронли</a>
                     <span class="nav-menu-item nav-menu-item-placeholder"><span>Переводилка</span><small>В разработке</small></span>
                 </div>
             </div>
@@ -78,7 +78,7 @@
         {
             <nav class="mobile-games-nav" aria-label="Игры">
                 <a href="/games/crosswords" aria-current="@(currentPath.StartsWith("/games/crosswords") ? "page" : null)">Кроссворды</a>
-                <a href="/games/wordle" aria-current="@(currentPath.StartsWith("/games/wordle") ? "page" : null)">Вордли</a>
+                <a href="/games/wordle" aria-current="@(currentPath.StartsWith("/games/wordle") ? "page" : null)">Иронли</a>
             </nav>
         }
         @RenderBody()
