@@ -23,6 +23,11 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         assert.deepEqual(await bounds('.header-inner'), expected, `${route} header at ${width}`); checks++;
         const selector = route === '/' ? '.home-content' : route === '/books' ? '.books-catalog' : route.startsWith('/account/') && route !== '/account/access-denied' ? '.auth-scene' : '#main-content > .feature-shell';
         assert.deepEqual(await bounds(selector), expected, `${route} shell at ${width}`); checks++;
+        if (route === '/account/login' || route === '/account/register') {
+          const card = await page.locator('.auth-shell').boundingBox();
+          assert(Math.abs(card.width - Math.min(480, expected[1] - expected[0])) < 1, `${route} compact card at ${width}`); checks++;
+          assert(Math.abs(card.x + card.width / 2 - (expected[0] + expected[1]) / 2) < 1, `${route} centered card at ${width}`); checks++;
+        }
         if (route === '/books') {
           // Inspect all three book shells, including states normally opened via API data.
           for (const id of ['book-detail', 'book-reader']) {

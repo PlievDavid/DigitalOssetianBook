@@ -1,0 +1,44 @@
+/* The page uses the shared app shell; the playing field fits short word pairs. */
+.green-theme #game-app .game-page-heading { align-items: center; margin: 12px 0 28px; gap: 24px; }
+.green-theme #game-app .game-heading-copy { max-width: 640px; }
+.green-theme #game-app .game-kicker { display: block; margin-bottom: 10px; color: #37634e; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.green-theme #game-app h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.15; }
+.green-theme #game-app .game-page-heading p { color: var(--theme-muted); line-height: 1.6; }
+.green-theme #game-app .game-heading-art { flex: none; width: 132px; height: 92px; margin-right: 12px; }
+.green-theme #game-app .game-play-area { max-width: 760px; margin: 0 auto; padding: 24px 32px; border: 1px solid #e3e6d7; border-radius: 20px; background: #fafaf5; }
+.green-theme #game-app .game-play-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
+.green-theme #game-app #game-status { flex: 1; min-width: 0; margin: 0; color: #435847; font-size: 14px; line-height: 1.6; }
+.green-theme #game-app #game-restart { flex: none; width: auto; min-height: 40px; padding: 8px 14px; font-size: 13px; background: white; }
+.green-theme #game-app .game-language-labels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 88px; max-width: 560px; margin: 0 auto 10px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.green-theme #game-app .game-language-labels span:first-child { color: #316349; }
+.green-theme #game-app .game-language-labels span:last-child { color: #805a22; }
+.green-theme #game-app .game-board { width: 100%; max-width: 560px; margin: 0 auto; column-gap: 88px; }
+.green-theme #game-app .game-board > div { gap: 12px; }
+.green-theme #game-app .game-column .word-tile { min-height: 58px; padding: 13px 16px; border: 1px solid #bdd0ad; border-bottom-width: 3px; border-radius: 12px; background: #eaf2dd; color: #244e39; font-size: 17px; font-weight: 600; line-height: 1.4; transition: background-color .15s, border-color .15s, box-shadow .15s; }
+.green-theme #game-app .game-column-right .word-tile { border-color: #dfcca7; background: #fff0cd; color: #68491c; }
+.green-theme #game-app .game-column .word-tile:hover:not(:disabled) { border-color: #568468; background: #deedc9; box-shadow: 0 3px 10px #244e3910; }
+.green-theme #game-app .game-column-right .word-tile:hover:not(:disabled) { border-color: #aa7e38; background: #ffe8b3; }
+.green-theme #game-app .game-column .word-tile.selected { border-color: #286aab; background: #e4f0ff; color: #184d7b; box-shadow: 0 0 0 3px #286aab18; }
+.green-theme #game-app .game-column .word-tile:disabled { opacity: .7; }
+.green-theme #game-app .game-column .word-tile.matched { opacity: 1; color: #2c6346; background: #dcebdc; border-color: #8eb79a; }
+.green-theme #game-app .game-column .word-tile::after { width: 11px; height: 11px; background: #fafaf5; }
+.green-theme #game-app .game-column .word-tile.matched::after { background: #357348; }
+.green-theme #game-app .game-thread { stroke-width: 3; }
+.green-theme #game-app .game-keyboard-hint { margin: 22px 0 0; padding-top: 16px; border-top: 1px solid #e3e6d7; color: #657061; font-size: 12px; line-height: 1.6; text-align: center; }
+.green-theme #game-app #game-find-words { margin-top: 12px; width: auto; }
+.green-theme #game-app .game-play-area:has(#game-board:empty) .game-language-labels,
+.green-theme #game-app .game-play-area:has(#game-board:empty) .game-keyboard-hint { display: none; }
+@media (max-width: 599px) {
+    .green-theme #game-app .game-page-heading { flex-direction: row; margin-bottom: 20px; }
+    .green-theme #game-app .game-heading-art { display: none; }
+    .green-theme #game-app .game-play-area { padding: 18px 12px; border-radius: 16px; }
+    .green-theme #game-app .game-play-toolbar { align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .green-theme #game-app #game-status { flex-basis: 100%; }
+    .green-theme #game-app .game-board, .green-theme #game-app .game-language-labels { column-gap: 36px; }
+    .green-theme #game-app .game-language-labels { font-size: 10px; letter-spacing: .02em; }
+    .green-theme #game-app .game-column .word-tile { min-height: 56px; padding: 10px 8px; font-size: 15px; }
+    .green-theme #game-app .game-keyboard-hint { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .green-theme #game-app .game-column .word-tile { transition: none; }
+}

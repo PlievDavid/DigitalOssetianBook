@@ -18,4 +18,9 @@
 }
 .green-theme #main-content .home-content { padding-inline: 0; }
 .green-theme #main-content > .guest-notice { width: 100%; max-width: none; margin-inline: 0; }
-.green-theme #main-content > .auth-scene > .auth-shell { width: 100%; max-width: none; }
+
+/* Keep the authenticated header still while progress loads or the count changes. */
+.green-theme .header-streak-slot { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 88px; min-height: 36px; }
+.green-theme .header-streak-slot .header-streak { max-width: 100%; }
+.green-theme .header-streak strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+@media (max-width: 1023px) { .green-theme .header-streak-slot { width: 210px; } }

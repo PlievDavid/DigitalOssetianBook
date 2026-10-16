@@ -12,7 +12,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     async function setup(count = 5, authenticated = false) {
       await page.setContent('<body class="green-theme">' + read('IronLanguage.Web/Views/Practice/Game.cshtml').match(/<section[\s\S]*<\/section>/)[0] + '</body>');
-      for (const name of ['site', 'brand', 'features', 'theme-green', 'sections-green'])
+      for (const name of ['site', 'brand', 'features', 'theme-green', 'sections-green', 'game', 'layout'])
         await page.addStyleTag({ content: read(`IronLanguage.Web/wwwroot/css/${name}.css`) });
       await page.evaluate(({ count, authenticated }) => {
         window.AdamAuthenticated = authenticated;
@@ -36,6 +36,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
     const idle = () => page.waitForFunction(() => document.querySelector('#game-board').getAttribute('aria-busy') === 'false');
     await page.setViewportSize({ width: 1280, height: 900 });
     await setup();
+    assert((await page.locator('.game-play-area').boundingBox()).width <= 760, 'Compact playing field');
+    assert((await left(1).boundingBox()).width <= 240, 'Short words do not fill half the page');
+    assert.notEqual(await left(1).evaluate(el => getComputedStyle(el).backgroundColor), await right(1).evaluate(el => getComputedStyle(el).backgroundColor), 'Language columns have distinct colors');
     await right(1).click(); assert.match(await page.locator('#game-status').innerText(), /Сначала/);
     assert.equal(await page.evaluate(() => calls.length), 1);
     // Selection preserves DOM focus; Escape cancels without a request.
