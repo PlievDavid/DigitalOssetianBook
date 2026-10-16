@@ -144,7 +144,8 @@
   .green-theme .exercise-entry-copy .button { grid-row: auto; grid-column: 1; justify-self: start; margin-top: 10px; }
 }
 @media (max-width: 700px) {
-  .green-theme .feature-shell, .green-theme .books-catalog, .green-theme .book-detail { padding: 20px 18px 40px; }
+  .green-theme .feature-shell { padding: 20px 40px 40px; }
+  .green-theme .books-catalog, .green-theme .book-detail { padding: 20px 18px 40px; }
   .section-heading-banner { padding: 24px 20px; gap: 16px; align-items: start; margin-bottom: 24px; }
   .section-symbol { width: 48px; height: 48px; }
   .section-symbol svg { width: 26px; height: 26px; }
@@ -266,6 +267,7 @@
 .hero-mobile-art { display: none; }
 /* Phones use bottom navigation; the upper menu is available from tablet width. */
 @media (max-width: 599px) {
+  .green-theme .feature-shell { padding-inline: 16px; }
   .green-theme .site-header .mobile-menu-toggle,
   .green-theme .site-header .main-nav,
   .green-theme .site-header .header-actions { display: none; }
