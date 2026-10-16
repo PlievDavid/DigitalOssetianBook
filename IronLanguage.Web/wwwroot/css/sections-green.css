@@ -108,6 +108,12 @@
 .green-theme .book-page.has-aligned-lines #book-literary-text { white-space: normal; }
 .green-theme .book-page .reader-line { display: block; }
 .green-theme .book-page .reader-line-content { display: block; white-space: pre-wrap; min-height: 1lh; }
+@media (max-width: 599px) {
+    .green-theme .reader-columns { gap: 0; }
+    .green-theme .reader-pane { justify-content: center; }
+    .green-theme .reader-translation { display: none; }
+    .green-theme .book-page .reader-text { font-size: 18px; line-height: 1.7; text-align: left; }
+}
 .green-theme .reader-popup { border-color: #cbd7cc; border-radius: 16px; box-shadow: 0 20px 60px #162c2330; }
 .green-theme .reader-popup-header button { min-width: 44px; min-height: 44px; }
 .auth-scene { padding: 52px 24px 72px; background: linear-gradient(90deg, #f8faf7e6, #f8faf7b0), url('../images/green/tsey-sage-watercolor.png') center / cover no-repeat; border-radius: 0 0 20px 20px; }
