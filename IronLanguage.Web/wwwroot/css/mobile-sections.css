@@ -3,6 +3,18 @@
 .mobile-profile-results, .green-theme .profile-links .mobile-profile-results-link { display: none; }
 .green-theme #games:focus { outline: none; }
 @media (max-width: 599px) {
+    .green-theme #main-content > .auth-scene { padding-block: 24px 32px; background: none; border-radius: 0; }
+    .green-theme .feature-shell.narrow.auth-shell { width: 100%; max-width: 440px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+    .green-theme .auth-shell h1 { margin: 0 0 8px; font-size: 30px; text-align: left; }
+    .green-theme .auth-shell > p { margin: 0 0 24px; font-size: 14px; line-height: 1.5; text-align: left; }
+    .green-theme .auth-shell .stack-form { gap: 16px; }
+    .green-theme .auth-shell .stack-form label { gap: 8px; font-size: 14px; }
+    .green-theme .auth-shell .stack-form input { min-height: 50px; padding: 12px; border: 1px solid #b7c7bb; border-radius: 10px; background: white; font-size: 16px; }
+    .green-theme .auth-shell :is(.field-validation-valid, .validation-summary-valid, .form-error:empty) { display: none; }
+    .green-theme .auth-shell .form-error { font-size: 13px; overflow-wrap: anywhere; }
+    .green-theme .auth-shell .form-error ul { margin: 0; padding-left: 20px; }
+    .green-theme .auth-shell .stack-form > .button { min-height: 50px; margin-top: 8px; }
+    .green-theme .auth-shell .auth-switch { margin: 24px 0 0; text-align: center; }
     .green-theme #crosswords-app { padding-top: 24px; }
     .green-theme #crosswords-app .cw-heading { margin-top: 0; }
     .green-theme #crosswords-app .cw-title-row h1 { margin: 0; }

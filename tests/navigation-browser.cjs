@@ -55,8 +55,12 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       const headerBottom = await page.locator('.site-header').evaluate(element => element.getBoundingClientRect().bottom);
       const menuTop = await page.locator('#main-navigation').evaluate(element => element.getBoundingClientRect().top);
       assert(Math.abs(menuTop - headerBottom - 12) < 1, 'Tablet menu has a 12px gap below the actual header.');
-      const headings = await page.locator('.nav-menu-section > .nav-section-link').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
+      const headings = await page.locator('.tablet-nav-title').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
       assert(Math.abs(headings[0] - headings[1]) < 1, 'Mobile section headings share the same top edge.');
+      assert.deepEqual(await page.locator('.tablet-nav-title span').allTextContents(), ['Задания', 'Слова', 'Игры', 'Книги']);
+      assert(await page.locator('.tablet-account-actions a[href="/account/login"]').isVisible());
+      assert(await page.locator('.tablet-account-actions a[href="/account/register"]').isVisible());
+      checks += 3;
       assert(await page.locator('#main-navigation').evaluate(element => element.getBoundingClientRect().bottom <= innerHeight));
       await toggle.focus();
       await page.keyboard.press('Tab');

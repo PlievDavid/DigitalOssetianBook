@@ -2,6 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(`cw-${id}`);
   const api = window.AdamApi;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const drafts = new Map();
   let levels = [], level = null, cells = {}, solved = new Set(), selected = null, activeKey = null, busy = false;
   const key = (w, i) => `${w.row + (w.down ? i : 0)},${w.column + (w.down ? 0 : i)}`;
@@ -9,6 +10,18 @@
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').normalize('NFC');
   const stars = count => count === 0 ? 0 : count === level.words.length ? 3 : count * 2 >= level.words.length ? 2 : 1;
   function message(text) { $('status').textContent = text; }
+  function animate(element, frames, options) {
+    if (!reducedMotion.matches && element?.animate) element.animate(frames, options);
+  }
+  function celebrate(newWords, previousFixed) {
+    const newCells = [...new Set(newWords.flatMap(keys))].filter(k => !previousFixed.has(k));
+    newCells.forEach((k, index) => animate(inputAt(k)?.closest('.cw-cell'),
+      [{ transform: 'scale(1)', backgroundColor: '#edf3e9' }, { transform: 'scale(1.06)', backgroundColor: '#dcebd5' }, { transform: 'scale(1)', backgroundColor: '#edf3e9' }],
+      { duration: 300, delay: Math.min(index, 12) * 25, easing: 'ease-out' }));
+    if (newWords.length) animate($('progress'),
+      [{ transform: 'translateY(0)' }, { transform: `translateY(-${solved.size === level.words.length ? 4 : 2}px)` }, { transform: 'translateY(0)' }],
+      { duration: 340, easing: 'ease-out' });
+  }
   function rating(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
   function remember() {
     if (!level) return;
@@ -67,8 +80,12 @@
     if (first < 0 || answer.length > wordKeys.length - first) { message('В слове недостаточно клеток для вставки.'); paint(); return; }
     const target = wordKeys.slice(first, first + answer.length);
     if (target.some((k, i) => fixed.has(k) && cells[k] !== answer[i])) { message('Проверенные буквы на пересечении менять нельзя.'); paint(); return; }
+    const changed = target.filter((k, i) => !fixed.has(k) && cells[k] !== answer[i]);
     target.forEach((k, i) => cells[k] = answer[i]);
     remember(); paint(); message('');
+    changed.forEach(k => animate(inputAt(k)?.closest('.cw-cell'),
+      [{ transform: 'scale(.94)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }],
+      { duration: 140, easing: 'ease-out' }));
     const next = wordKeys.slice(first + answer.length).find(k => !fixed.has(k));
     focusCell(next || [...target].reverse().find(k => !fixed.has(k)) || start);
   }
@@ -184,13 +201,16 @@
   });
   $('check').addEventListener('click', async () => {
     if (busy) return;
+    const previousFixed = fixedCells();
     lock(true); message('Проверяем ответы…');
     try {
       const result = await api(`/crosswords/${level.id}/${level.version}/check`, { method: 'POST', body: JSON.stringify({ cells }) });
+      const newWords = level.words.filter(word => !solved.has(word.id) && result.solved.some(answer => answer.id === word.id));
       for (const word of result.solved) {
         solved.add(word.id); keys(level.words.find(w => w.id === word.id)).forEach((k, i) => cells[k] = word.answer[i]);
       }
       remember(); paint();
+      celebrate(newWords, previousFixed);
       message(solved.size === level.words.length ? 'Кроссворд решён! Все три звезды ваши.' : `Верно ${solved.size} из ${level.words.length}. Остальные слова можно исправить и проверить ещё раз.`);
     } catch (error) { message(`${error.message} Ответы остались на поле, проверку можно повторить.`); }
     finally { lock(false); if (selected) select(selected); }

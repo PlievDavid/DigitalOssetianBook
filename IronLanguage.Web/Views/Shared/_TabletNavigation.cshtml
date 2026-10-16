@@ -1,0 +1,48 @@
+@inject IronLanguage.Web.Services.AvatarService Avatars
+@{
+    var path = Context.Request.Path.Value?.ToLowerInvariant() ?? "/";
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var groups = new (string Title, string Icon, (string Label, string Url)[] Links)[] {
+        ("Задания", "home", [("Аудиопазлы", "/audio-puzzles"), ("Перевод фраз", "/translate"), ("Диалоги", "/dialogs")]),
+        ("Слова", "words", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
+        ("Игры", "games", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
+        ("Книги", "books", [("Библиотека", "/books")])
+    };
+}
+<div class="tablet-navigation">
+    <div class="tablet-nav-groups">
+        @foreach (var group in groups) {
+            <section class="tablet-nav-group" aria-label="@group.Title">
+                <h2 class="tablet-nav-title">@await Html.PartialAsync("_NavIcon", group.Icon)<span>@group.Title</span></h2>
+                <div class="tablet-nav-links">
+                    @foreach (var link in group.Links) {
+                        <a href="@link.Url" aria-current="@(path == link.Url ? "page" : null)">@link.Label</a>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+    <div class="tablet-nav-account">
+        <div class="tablet-account-identity">
+            <span class="tablet-account-avatar" aria-hidden="true">
+                @if (signedIn) { @await Html.PartialAsync("_Avatar", new AvatarDisplayModel(await Avatars.Current(User), true)) }
+                else { @await Html.PartialAsync("_NavIcon", "profile") }
+            </span>
+            <div>
+                <strong>@(signedIn ? User.Identity!.Name : "Ваш аккаунт")</strong>
+                <small>@(signedIn ? (User.IsInRole("Editor") ? "Редактор материалов" : "Аккаунт") : "Сохраняйте слова и прогресс")</small>
+            </div>
+        </div>
+        <div class="tablet-account-actions">
+            @if (signedIn) {
+                <a href="/profile" aria-current="@(path.StartsWith("/profile") ? "page" : null)">@await Html.PartialAsync("_NavIcon", "profile")Профиль</a>
+                <a href="/progress" aria-current="@(path == "/progress" ? "page" : null)">@await Html.PartialAsync("_NavIcon", "progress")Мои результаты</a>
+                @if (User.IsInRole("Editor")) { <a href="/editor">@await Html.PartialAsync("_NavIcon", "materials")Редактор</a> }
+                <form action="/account/logout" method="post">@Html.AntiForgeryToken()<button type="submit">Выйти</button></form>
+            } else {
+                <a class="button primary" href="/account/login">Войти</a>
+                <a class="button secondary" href="/account/register">Регистрация</a>
+            }
+        </div>
+    </div>
+</div>

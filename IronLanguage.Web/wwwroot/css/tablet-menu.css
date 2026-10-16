@@ -1,0 +1,29 @@
+.tablet-navigation { display: none; }
+@media (min-width: 600px) and (max-width: 1023px) {
+    .green-theme .mobile-is-open .main-nav > .nav-inner { display: none; }
+    .green-theme .mobile-is-open .main-nav { padding: 24px; }
+    .green-theme .tablet-navigation { display: block; }
+    .tablet-nav-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 24px 32px; }
+    .tablet-nav-group { min-width: 0; }
+    .green-theme .tablet-nav-title { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 0 4px 12px; border-bottom: 1px solid #dee4d9; font-size: 18px; line-height: 1.3; color: #173f31; }
+    .tablet-nav-title svg { flex: none; width: 24px; height: 24px; }
+    .tablet-nav-links { display: grid; gap: 2px; }
+    .green-theme .tablet-nav-links a { display: flex; align-items: center; min-height: 44px; padding: 10px 14px; border-left: 3px solid transparent; border-radius: 6px; font-size: 15px; line-height: 1.4; color: #101b34; overflow-wrap: anywhere; }
+    .green-theme .tablet-nav-links a:hover { background: #f3f5ee; }
+    .green-theme .tablet-nav-links a[aria-current="page"] { border-left-color: #286aab; background: #ecf4fc; color: #214d76; }
+    .tablet-nav-account { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #dee4d9; }
+    .tablet-account-identity { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 200px; }
+    .tablet-account-avatar { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 50%; background: #eff2e8; overflow: hidden; color: #173f31; }
+    .tablet-account-avatar > svg { width: 26px; height: 26px; }
+    .tablet-account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .tablet-account-identity > div { display: grid; gap: 4px; min-width: 0; }
+    .tablet-account-identity strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+    .tablet-account-identity small { font-size: 12px; color: #526273; }
+    .tablet-account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+    .green-theme .tablet-account-actions > a, .green-theme .tablet-account-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; line-height: 1.4; color: #173f31; }
+    .tablet-account-actions svg { flex: none; width: 19px; height: 19px; }
+    .green-theme .tablet-account-actions :is(a, button):hover { background: #eff2e8; }
+    .tablet-account-actions form { margin: 0; }
+    .green-theme .tablet-account-actions .button.primary { min-width: 100px; background: #173f31; color: white; }
+    .green-theme .tablet-account-actions .button.secondary { min-width: 130px; border: 1px solid #b7c7bb; background: white; }
+}
