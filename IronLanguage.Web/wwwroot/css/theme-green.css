@@ -253,7 +253,8 @@ html { scrollbar-gutter: stable; }
 .editor-page .editor-choices a > span { background: var(--choice-icon-bg); color: var(--choice-ink); border-radius: 50%; }
 .editor-page .editor-choices small,.editor-page .field-help,.editor-page .editor-item-type { color: var(--theme-muted); }
 .editor-page .editor-choices small { line-height: 1.5; }
-.editor-page .editor-form { padding: 28px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); margin-top: 0; background: white; }
+.editor-page .editor-form { width: 100%; max-width: 860px; padding: 28px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); margin: 0 auto; background: white; }
+.editor-page #editor-form-app[data-kind="word"] .editor-form { max-width: 640px; }
 .editor-page .editor-form > *,.editor-page .editor-chapter > * { min-width: 0; }
 .editor-page .editor-form input,.editor-page .editor-form textarea,.editor-page .editor-form select { min-width: 0; max-width: 100%; }
 .editor-page .editor-form > label,.editor-page .editor-chapter label { color: var(--theme-ink); }

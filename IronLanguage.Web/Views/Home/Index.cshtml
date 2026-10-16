@@ -33,22 +33,22 @@
                 </a>
             </div>
         </section>
-        <section class="home-reading" aria-labelledby="reading-title">
+        <section class="home-reading reading-flow" aria-labelledby="reading-title">
             <h2 id="reading-title">От чтения к тренировке</h2>
             <div class="home-learning-grid">
                 <article class="home-reading-card">
-                    <span class="reading-step">Шаг 1</span>
-                    <h3>Читайте и сохраняйте слова</h3>
-                    <p>Откройте книгу, нажмите на незнакомое слово и узнайте перевод. После входа его можно добавить в свой словарь.</p>
+                    <span class="reading-step"><span class="reading-step-number" aria-hidden="true">01</span> Читайте</span>
+                    <h3>Нашли новое слово?</h3>
+                    <p>Нажмите на него в книге и сохраните перевод в свой словарь после входа.</p>
                     <a class="theme-button theme-button-primary" href="/books">Выбрать книгу <span aria-hidden="true">→</span></a>
                 </article>
                 <aside class="home-words-card" aria-labelledby="words-title">
-                    <img src="~/images/green/book.png" asp-append-version="true" alt="" width="160" height="160" />
-                    <span class="reading-step">Шаг 2</span><h3 id="words-title">Повторяйте в тренировке</h3>
-                    <p>@(User.Identity?.IsAuthenticated == true ? "Проверьте, какие переводы вы запомнили: тренировка использует слова из вашего словаря." : "Войдите, чтобы повторять сохранённые слова. Без входа можно попробовать тренировку с опубликованными словами.")</p>
+                    <span class="reading-step"><span class="reading-step-number" aria-hidden="true">02</span> Закрепляйте</span><h3 id="words-title">Проверьте, что запомнили</h3>
+                    <p>@(User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова в короткой тренировке: посмотрите слово и вспомните перевод." : "Повторяйте свои слова после входа. Или попробуйте тренировку без аккаунта.")</p>
                     <a class="theme-button theme-button-primary" href="/word-practice"><span class="words-action-label">Тренировать слова</span> <span aria-hidden="true">→</span></a>
                 </aside>
             </div>
         </section>
     </div>
 </div>
+@section Styles { <link rel="stylesheet" href="~/css/home-reading.css" asp-append-version="true" /> }
