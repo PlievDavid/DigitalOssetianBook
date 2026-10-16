@@ -17,16 +17,30 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert(await page.locator('.mobile-menu-toggle').isHidden());
       assert(await page.locator('#main-navigation').isHidden());
       assert(await page.locator('.mobile-bottom-nav').isVisible());
-      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Игры', 'Книги', 'Профиль']);
+      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
       assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), 1);
       assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       checks += 5;
+      for (const route of ['/games/crosswords', '/games/wordle']) {
+        const card = page.locator(`#games a[href="${route}"]`);
+        assert.equal(await card.count(), 1);
+        await card.focus(); await page.keyboard.press('Enter');
+        await page.waitForURL(base + route);
+        assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
+        assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
+        const back = page.locator(route.endsWith('wordle') ? '.wl-back' : '.cw-back-to-tasks');
+        assert(await back.isVisible());
+        await back.focus(); await page.keyboard.press('Enter');
+        await page.waitForURL(base + '/#games');
+        assert(await page.locator('#games').isVisible());
+        checks += 5;
+      }
     }
     for (const width of [600, 768, 1023]) {
       await page.setViewportSize({ width, height: 668 });
       await page.goto(base);
-      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Игры', 'Книги', 'Профиль']);
+      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
       assert.equal(await page.locator('#main-navigation a[href="/Home/Privacy"], #main-navigation a[href="/Home/Illustrations"]').count(), 0);
       checks += 2;
       const toggle = page.locator('.mobile-menu-toggle');

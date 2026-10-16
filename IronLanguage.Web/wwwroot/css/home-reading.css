@@ -1,4 +1,8 @@
 /* Shared green theme, watercolor artwork and compact actions. */
+.home-games { scroll-margin-top: 24px; }
+.home-games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-games .ironli-format-icon { font-size: 30px; font-weight: 700; }
+@media (max-width: 359px) { .home-games-grid { grid-template-columns: 1fr; } }
 .green-theme .reading-flow .home-learning-grid { position: relative; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; padding: 28px 32px 28px 228px; border: 1px solid #e2e8da; border-radius: var(--theme-radius-card); background: linear-gradient(110deg, #eff3e7, #fafbf7 65%); overflow: hidden; }
 .green-theme .reading-flow .home-learning-grid::before { content: ""; position: absolute; left: 24px; top: 50%; transform: translateY(-50%); width: 180px; height: 200px; background: url('../images/green/book.png') center / contain no-repeat; }
 .green-theme .reading-flow .home-learning-grid > :is(.home-reading-card, .home-words-card) { position: relative; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }

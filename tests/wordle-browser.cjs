@@ -15,6 +15,8 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     const ready = async target => { await target.goto(`${base}/games/wordle`); await target.waitForFunction(() => document.querySelector('#wl-board').getAttribute('aria-busy') === 'false'); };
     const idle = () => page.waitForFunction(() => document.querySelector('#wl-board').getAttribute('aria-busy') === 'false');
     await ready(page);
+    assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
+    assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
     assert.equal(await page.locator('.wl-cell').count(), 30);
     const initial = await (await page.request.get(`${base}/api/v1/wordle`)).json();
     assert.equal((await page.request.get(`${base}/Data/wordle/words.json`)).status(), 404, 'Answer list is not a public static asset');
@@ -73,7 +75,7 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     // All breakpoints and 200% text retain a centered board and reachable keyboard.
     for (const width of [320, 360, 500, 600, 768, 1024, 1280, 1920]) {
       await page.setViewportSize({ width, height: 1000 });
-      if (width < 600) assert(await page.locator('.mobile-games-nav').isHidden(), 'Focused mobile game has no duplicate navigation');
+      if (width < 600) assert.equal(await page.locator('.mobile-games-nav').count(), 0, 'No separate mobile games navigation');
       for (const scale of [1, 2]) {
         await page.locator('.wl-key').evaluateAll((keys, scale) => keys.forEach(key => key.style.fontSize = `${(key.classList.contains('is-wide') ? 10 : 13) * scale}px`), scale);
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow ${width}/${scale}`);

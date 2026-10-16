@@ -3,6 +3,8 @@
 .wl-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .wl-heading h1 { margin: 0 0 8px; font-size: clamp(28px, 3vw, 38px); }
 .wl-heading > div:first-child { min-width: 0; }
+.wl-title { display: flex; align-items: center; gap: 6px; }
+.wl-back { display: none; }
 .wl-heading p { margin: 0; color: #526454; line-height: 1.5; }
 .wl-heading-actions { display: flex; flex: none; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px; }
 #wl-statistics { white-space: nowrap; }
@@ -48,7 +50,7 @@
 @media (max-width: 599px) {
     html:has(body.wordle-page) { scrollbar-gutter: auto; }
     .green-theme.wordle-page { --wl-cell: clamp(26px, calc((100dvh - 420px) / 6), 56px); }
-    .wordle-page .site-header, .wordle-page .site-footer, .wordle-page .mobile-games-nav,
+    .wordle-page .site-header, .wordle-page .site-footer,
     .wordle-page .wl-heading p, .wordle-page #wl-date, .wordle-page #wl-guest { display: none !important; }
     .wordle-page .site-frame { height: 100dvh; min-height: 0; }
     .green-theme.wordle-page #main-content { flex: 1 1 0; min-height: 0; display: flex; padding-block: 8px; }
@@ -56,6 +58,7 @@
     .wordle-page .wl-shell { display: flex; flex: 1; flex-direction: column; width: 100%; min-height: 0; margin: 0; }
     .wordle-page .wl-heading { flex: none; align-items: center; margin-bottom: 8px; }
     .wordle-page .wl-heading h1 { margin: 0; font-size: 26px; }
+    .wordle-page .wl-back { display: grid; place-items: center; flex: none; width: 32px; min-height: 42px; color: #244e39; font-size: 23px; }
     .wordle-page .wl-game { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: space-between; gap: 6px; min-height: min-content; padding: 8px; }
     .wordle-page .wl-board { flex: none; width: min(100%, calc(5 * var(--wl-cell) + 20px)); max-width: none; gap: 4px; }
     .wordle-page .wl-cell { font-size: clamp(18px, calc(var(--wl-cell) * .55), 30px); }

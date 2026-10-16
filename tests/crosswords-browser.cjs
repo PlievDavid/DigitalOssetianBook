@@ -23,7 +23,7 @@ const url = process.env.ADAM_TEST_URL || 'http://127.0.0.1:58326';
     }
     await ready();
     assert.equal(await page.locator('.nav-menu-words .is-current').count(), 0, 'Games do not activate Words');
-    assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/games/crosswords');
+    assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
     const csrf = await page.locator('#api-antiforgery input').inputValue();
     let response = await page.request.post(`${url}/api/v1/crosswords/1/1/check`, { data: { cells: {} } });
     assert.equal(response.status(), 400, 'CSRF is required for guests');
