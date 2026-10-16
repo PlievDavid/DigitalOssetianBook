@@ -49,6 +49,7 @@
     --theme-shadow: 0 8px 32px #162c2310;
     --theme-menu-shadow: 0 12px 28px #172c2324;
     --theme-frame-width: 1440px;
+    --theme-content-width: 1200px;
     --theme-header-height: 80px;
     --theme-button-height: 52px;
     --theme-touch-size: 44px;
