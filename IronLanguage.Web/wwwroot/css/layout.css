@@ -1,6 +1,9 @@
 /* App-wide page geometry. Loaded after page styles so sections cannot resize it. */
 :root { --page-gutter: 40px; }
-@media (max-width: 599px) { :root { --page-gutter: 16px; } }
+@media (max-width: 599px) {
+    :root { --page-gutter: 16px; }
+    .green-theme .site-header { display: none; }
+}
 
 .green-theme #main-content { padding-inline: var(--page-gutter); }
 .green-theme .site-header .header-inner { padding-inline: var(--page-gutter); }
