@@ -34,6 +34,12 @@
 .green-theme .wl-key { display: grid; place-items: center; flex: 1; min-width: 0; max-width: 48px; min-height: 44px; padding: 4px 1px; border: 1px solid #dce3d3; border-bottom-width: 3px; border-radius: 7px; background: #f0f2ec; color: #244e39; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
 .green-theme .wl-key.is-wide { flex: 1.7; max-width: 72px; font-size: 12px; }
 .wl-key:disabled { cursor: default; }
+.green-theme .wl-key { transition: transform 100ms ease-out; }
+.green-theme .wl-key:active:not(:disabled) { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) {
+    .green-theme .wl-key { transition: none; }
+    .green-theme .wl-key:active:not(:disabled) { transform: none; }
+}
 #wordle-app :is(button,input,a):focus-visible { outline: 3px solid #286aab; outline-offset: 3px; }
 .wl-dialog { width: min(520px, calc(100% - 32px)); max-height: calc(100dvh - 48px); overflow: auto; padding: 24px; border: 1px solid #dce3d3; border-radius: 18px; color: #244e39; background: #fafaf5; }
 .wl-dialog::backdrop { background: #173f3155; }

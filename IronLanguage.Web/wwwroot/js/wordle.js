@@ -3,6 +3,7 @@
   const $ = id => document.getElementById(`wl-${id}`);
   const api = window.AdamApi;
   const input = $('input');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const phoneInput = window.matchMedia('(max-width: 599px) and (pointer: coarse)');
   const syncInputMode = () => { input.inputMode = phoneInput.matches ? 'none' : 'text'; };
   syncInputMode(); phoneInput.addEventListener('change', syncInputMode);
@@ -12,6 +13,34 @@
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').replace(/[^а-яёӕ]/gu, '').slice(0, 5);
   const errorText = error => error.status ? error.message : 'Не удалось связаться с сервером. Попробуйте ещё раз.';
   function message(text) { $('status').textContent = text; }
+  function animate(element, frames, options) {
+    if (!reducedMotion.matches && element?.animate) element.animate(frames, options);
+  }
+  const rowCells = row => [...$('board').children].slice(row * 5, row * 5 + 5);
+  function shakeRow() {
+    rowCells(state.revision).forEach(cell => animate(cell,
+      [{ transform: 'translateX(0)' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(-2px)' }, { transform: 'translateX(0)' }],
+      { duration: 220, easing: 'ease-out' }));
+  }
+  function revealRow(row) {
+    rowCells(row).forEach((cell, index) => {
+      const style = getComputedStyle(cell);
+      const front = { backgroundColor: '#f0f4e9', color: '#244e39', borderColor: '#709578' };
+      const back = { backgroundColor: style.backgroundColor, color: style.color, borderColor: style.borderColor };
+      animate(cell, [
+        { ...front, transform: 'perspective(400px) rotateX(0deg)', offset: 0 },
+        { ...front, transform: 'perspective(400px) rotateX(90deg)', offset: .45 },
+        { ...back, transform: 'perspective(400px) rotateX(90deg)', offset: .55 },
+        { ...back, transform: 'perspective(400px) rotateX(0deg)', offset: 1 }
+      ], { duration: 360, delay: index * 65, easing: 'ease-in-out', fill: 'backwards' });
+      if (state.won) animate(cell,
+        [{ transform: 'translateY(0)' }, { transform: 'translateY(-6px)' }, { transform: 'translateY(0)' }],
+        { duration: 320, delay: 680 + index * 55, easing: 'ease-in-out' });
+    });
+    if (state.finished) animate($('result'),
+      [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'translateY(0)' }],
+      { duration: 240, delay: 620, easing: 'ease-out', fill: 'backwards' });
+  }
   function lock(value) {
     busy = value;
     $('board').setAttribute('aria-busy', String(value));
@@ -19,11 +48,11 @@
     $('keyboard').querySelectorAll('button').forEach(button => button.disabled = value || !state || state.finished);
   }
   function render() {
-    $('board').replaceChildren();
     const ranks = { absent: 1, present: 2, correct: 3 }, letters = {};
     for (let r = 0; r < 6; r++) for (let c = 0; c < 5; c++) {
       const row = state?.rows[r], letter = row ? row.word[c] : state && !state.finished && r === state.revision ? typed[c] || '' : '';
-      const cell = document.createElement('span'); cell.className = 'wl-cell'; cell.textContent = letter.toUpperCase();
+      const cell = $('board').children[r * 5 + c] || document.createElement('span');
+      cell.className = 'wl-cell'; cell.textContent = letter.toUpperCase(); cell.onclick = null;
       let description = `Попытка ${r + 1}, буква ${c + 1}: ${letter || 'пусто'}`;
       if (row) {
         const mark = row.marks[c]; cell.classList.add(`is-${mark}`); description += `, ${markLabels[mark]}`;
@@ -31,9 +60,10 @@
       } else if (state && !state.finished && r === state.revision) {
         cell.classList.add('is-current');
         if (c === Math.min(typed.length, 4)) cell.classList.add('is-cursor');
-        cell.addEventListener('click', () => { if (!busy) input.focus(); });
+        cell.onclick = () => { if (!busy) input.focus(); };
       }
-      cell.setAttribute('aria-label', description); $('board').append(cell);
+      cell.setAttribute('aria-label', description);
+      if (!cell.parentNode) $('board').append(cell);
     }
     for (const button of $('keyboard').querySelectorAll('[data-letter]')) {
       const letter = button.dataset.letter;
@@ -54,11 +84,16 @@
       $('date').dateTime = state.day;
     }
   }
-  function type(letter) {
+  function updateTyped(value) {
     if (busy || !state || state.finished) return;
-    typed = normalize(typed + letter); pending = null; render(); message('');
+    const previousLength = typed.length;
+    typed = normalize(value); pending = null; render(); message('');
+    rowCells(state.revision).slice(previousLength, typed.length).forEach(cell => animate(cell,
+      [{ transform: 'scale(.92)' }, { transform: 'scale(1.04)' }, { transform: 'scale(1)' }],
+      { duration: 140, easing: 'ease-out' }));
   }
-  function backspace() { if (!busy && state && !state.finished) { typed = typed.slice(0, -1); pending = null; render(); message(''); } }
+  function type(letter) { updateTyped(typed + letter); }
+  function backspace() { updateTyped(typed.slice(0, -1)); }
   async function load() {
     lock(true); $('retry').hidden = true;
     try {
@@ -68,16 +103,19 @@
   }
   async function submit() {
     if (busy || !state || state.finished) return;
-    if (typed.length !== 5) { message('Нужно пять букв.'); return; }
+    if (typed.length !== 5) { message('Нужно пять букв.'); shakeRow(); return; }
     const wasInputFocused = document.activeElement === input;
     pending ??= { day: state.day, revision: state.revision, guess: typed };
+    const previousRevision = state.revision;
     lock(true); message('Проверяем…');
     try {
       state = await api('/wordle/guess', { method: 'POST', body: JSON.stringify(pending) });
       typed = ''; pending = null; render(); message('');
+      if (state.revision > previousRevision) revealRow(previousRevision);
       if (state.countedInStreak) document.dispatchEvent(new Event('adam-progress-changed'));
     } catch (error) {
       message(errorText(error));
+      if (error.status === 400 || error.status === 422) shakeRow();
       if (error.status === 409) { await load(); message(error.message); }
     } finally { lock(false); if (wasInputFocused && !state?.finished) input.focus(); }
   }
@@ -92,7 +130,7 @@
     if (i === 2) { addAction('⌫', backspace); container.lastChild.setAttribute('aria-label', 'Удалить букву'); }
     $('keyboard').append(container);
   });
-  input.addEventListener('input', event => { if (!busy && !event.isComposing) { typed = normalize(input.value); pending = null; render(); message(''); } });
+  input.addEventListener('input', event => { if (!event.isComposing) updateTyped(input.value); });
   input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
   document.addEventListener('keydown', event => {
     if (busy || $('stats-dialog').open || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target === input || event.target.closest('input,textarea,select,a')) return;

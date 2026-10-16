@@ -20,6 +20,13 @@
     padding-inline: 0;
 }
 .green-theme #main-content .home-content { padding-inline: 0; }
+.green-theme .home-content { display: grid; gap: 32px; padding-top: 32px; }
+.green-theme .home-content > section { margin-block: 0; }
+.green-theme .home-content > section > h2 { margin-block: 0 16px; }
+@media (max-width: 599px) {
+    .green-theme .home-content { gap: 24px; padding-top: 24px; }
+    .green-theme .home-content > section > h2 { margin-bottom: 12px; }
+}
 .green-theme #main-content > .guest-notice { width: 100%; max-width: none; margin-inline: 0; }
 
 /* Keep the authenticated header still while progress loads or the count changes. */
