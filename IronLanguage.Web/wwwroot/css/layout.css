@@ -1,0 +1,21 @@
+/* App-wide page geometry. Loaded after page styles so sections cannot resize it. */
+:root { --page-gutter: 40px; }
+@media (max-width: 599px) { :root { --page-gutter: 16px; } }
+
+.green-theme #main-content { padding-inline: var(--page-gutter); }
+.green-theme .site-header .header-inner { padding-inline: var(--page-gutter); }
+.green-theme .site-footer { width: 100%; max-width: none; }
+.green-theme .site-footer .footer-inner { margin-inline: var(--page-gutter); padding-inline: 0; }
+
+/* Only page shells are reset; cards, columns and controls keep their own spacing. */
+.green-theme #main-content > :is(.home-shell, .feature-shell, .account-layout, .auth-scene, .book-page),
+.green-theme #main-content > .book-page > :is(.books-catalog, .book-detail, .book-reader) {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-inline: 0;
+    padding-inline: 0;
+}
+.green-theme #main-content .home-content { padding-inline: 0; }
+.green-theme #main-content > .guest-notice { width: 100%; max-width: none; margin-inline: 0; }
+.green-theme #main-content > .auth-scene > .auth-shell { width: 100%; max-width: none; }
