@@ -38,7 +38,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.evaluate(() => document.fonts.ready);
       const geometry = () => page.locator('#wl-board, #wl-keyboard').evaluateAll(elements => elements.map(element => {
         const bounds = element.getBoundingClientRect();
-        return [bounds.x, bounds.y, bounds.width, bounds.height];
+        return [bounds.x + scrollX, bounds.y + scrollY, bounds.width, bounds.height];
       }));
       const before = await geometry();
       assert(await page.locator('#wl-save').isHidden());
@@ -55,13 +55,13 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       assert(await save.isDisabled());
       assert.equal(saved, 2);
       assert.match(await page.locator('#wl-save-status').innerText(), /добавлено/);
-      assert.deepEqual(await geometry(), before, 'Saving or retrying in the result dialog never moves the board or keyboard');
+      assert.deepEqual(await geometry(), before, 'Saving or retrying in the permanent result never moves the board or keyboard');
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       assert(await page.evaluate(() => document.fonts.check('16px "Golos Text"', 'Ӕӕ')));
       await page.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
       await page.screenshot({ path: path.join(output, `wordle-saved-${width}.png`), fullPage: true });
       if (width < 600) assert(await page.evaluate(() => document.querySelector('#wl-keyboard').getBoundingClientRect().bottom < document.querySelector('.mobile-bottom-nav').getBoundingClientRect().top), 'Result actions leave the keyboard above navigation');
-      else assert(await page.locator('#wl-keyboard').evaluate(el => el.getBoundingClientRect().bottom < innerHeight), 'Saved result keeps the desktop keyboard visible');
+      else assert(await page.locator('#wl-result').evaluate(element => element.getBoundingClientRect().bottom <= element.closest('.wl-game').getBoundingClientRect().bottom), 'Saved result remains inside the game');
     }
     assert.deepEqual(errors, []);
     console.log('Wordle vocabulary UI passed: reveal only, keyboard, CSRF header, failure/retry, duplicate lock, mobile/desktop and Ossetian letters. API responses are isolated fixtures.');

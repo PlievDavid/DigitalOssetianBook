@@ -11,7 +11,7 @@
   const markLabels = { correct: 'на своём месте', present: 'есть в другом месте', absent: 'нет в слове' };
   let state = null, busy = true, typed = '', pending = null;
   let savedDay = null, saving = false;
-  let fitFrame = 0, noticeTimer = 0, shareTimer = 0, resultTimer = 0;
+  let noticeTimer = 0, shareTimer = 0;
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').replace(/[^а-яёӕ]/gu, '').slice(0, 5);
   const errorText = error => error.status ? error.message : 'Не удалось связаться с сервером. Попробуйте ещё раз.';
   function message(text, duration = 3000, detail = '') {
@@ -25,24 +25,22 @@
     }
   }
   function fitBoard() {
-    cancelAnimationFrame(fitFrame);
-    fitFrame = requestAnimationFrame(() => {
-      const board = $('board'), game = board.closest('.wl-game'), navigation = document.querySelector('.mobile-bottom-nav');
-      const gameStyle = getComputedStyle(game), boardGap = parseFloat(getComputedStyle(board).rowGap) || 0;
-      const content = [...game.children].filter(element => {
-        const style = getComputedStyle(element);
-        return element !== board && style.display !== 'none' && style.position !== 'absolute';
-      });
-      const occupied = content.reduce((height, element) => height + element.getBoundingClientRect().height, 0)
-        + (parseFloat(gameStyle.rowGap) || 0) * content.length;
-      const bottom = navigation && getComputedStyle(navigation).display !== 'none' ? navigation.getBoundingClientRect().top : innerHeight;
-      const available = bottom - game.getBoundingClientRect().top - occupied - 8
-        - parseFloat(gameStyle.paddingTop) - parseFloat(gameStyle.paddingBottom)
-        - parseFloat(gameStyle.borderTopWidth) - parseFloat(gameStyle.borderBottomWidth);
-      const limit = `${Math.floor(Math.max(126, (available - boardGap * 5) * 5 / 6 + boardGap * 4))}px`;
-      if (game.style.getPropertyValue('--wl-board-limit') !== limit) game.style.setProperty('--wl-board-limit', limit);
-      game.style.setProperty('--wl-notice-top', `${board.offsetTop + board.offsetHeight / 2}px`);
+    const board = $('board'), game = board.closest('.wl-game'), navigation = document.querySelector('.mobile-bottom-nav');
+    const gameStyle = getComputedStyle(game), boardGap = parseFloat(getComputedStyle(board).rowGap) || 0;
+    const content = [...game.children].filter(element => {
+      const style = getComputedStyle(element);
+      return element !== board && style.display !== 'none' && style.position !== 'absolute';
     });
+    const occupied = content.reduce((height, element) => height + element.getBoundingClientRect().height, 0)
+      + (parseFloat(gameStyle.rowGap) || 0) * content.length;
+    const bottom = navigation && getComputedStyle(navigation).display !== 'none' ? navigation.getBoundingClientRect().top : innerHeight;
+    const stageHeight = parseFloat(gameStyle.minHeight) || 0;
+    const available = (stageHeight || bottom - game.getBoundingClientRect().top - scrollY - 8) - occupied
+      - parseFloat(gameStyle.paddingTop) - parseFloat(gameStyle.paddingBottom)
+      - parseFloat(gameStyle.borderTopWidth) - parseFloat(gameStyle.borderBottomWidth);
+    const limit = `${Math.floor(Math.max(126, (available - boardGap * 5) * 5 / 6 + boardGap * 4))}px`;
+    if (game.style.getPropertyValue('--wl-board-limit') !== limit) game.style.setProperty('--wl-board-limit', limit);
+    game.style.setProperty('--wl-notice-top', `${board.offsetTop + board.offsetHeight / 2}px`);
   }
   function animate(element, frames, options) {
     if (!reducedMotion.matches && element?.animate) element.animate(frames, options);
@@ -101,27 +99,22 @@
     }
     input.value = typed;
     input.hidden = !!state?.finished;
-    if (!state?.finished && $('result').open) $('result').close();
     $('result').hidden = !state?.finished;
-    $('heading-action').textContent = state?.finished ? 'Результат' : 'Статистика';
+    $('keyboard').classList.toggle('is-finished', !!state?.finished);
     $('save').hidden = !state?.finished || !window.AdamAuthenticated;
     $('save').disabled = saving || savedDay === state?.day;
     $('save').textContent = savedDay === state?.day ? 'В словаре' : 'В мой словарь';
     if (state?.finished) {
       $('result-title').textContent = state.won ? 'Слово угадано!' : 'Сегодня не получилось';
       $('result-summary').textContent = `Попытки: ${state.revision} из 6`;
-      $('result-symbol').classList.toggle('is-complete', !state.won);
-      $('result-symbol').querySelector('path').setAttribute('d', state.won ? 'm5 12 4 4L19 6' : 'M12 6v6l4 2');
       $('answer').textContent = state.answer.toUpperCase();
       $('translation').textContent = state.russian;
-      $('streak').hidden = !state.countedInStreak;
       $('next').textContent = `Следующее слово — в ${new Date(state.nextDay).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
     }
     if (state) {
       $('date').textContent = new Date(`${state.day}T12:00:00Z`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
       $('date').dateTime = state.day;
     }
-    fitBoard();
   }
   function updateTyped(value) {
     if (busy || !state || state.finished) return;
@@ -134,12 +127,11 @@
   function type(letter) { updateTyped(typed + letter); }
   function backspace() { updateTyped(typed.slice(0, -1)); }
   async function load() {
-    clearTimeout(resultTimer);
     message(''); lock(true); $('retry').hidden = true;
     try {
       state = await api('/wordle'); typed = ''; pending = null; render(); message('');
     } catch (error) { message(errorText(error)); $('retry').hidden = false; }
-    finally { lock(false); }
+    finally { await document.fonts.ready; fitBoard(); lock(false); }
   }
   async function submit() {
     if (busy || !state || state.finished) return;
@@ -153,9 +145,6 @@
       typed = ''; pending = null; render(); message('');
       if (state.revision > previousRevision) {
         revealRow(previousRevision);
-        if (state.finished) resultTimer = setTimeout(() => {
-          if (!$('stats-dialog').open) openResult();
-        }, reducedMotion.matches ? 0 : state.won ? 1300 : 700);
       }
       if (state.countedInStreak) document.dispatchEvent(new Event('adam-progress-changed'));
     } catch (error) {
@@ -180,8 +169,8 @@
   input.addEventListener('input', event => { if (!event.isComposing) updateTyped(input.value); });
   input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !$('stats-dialog').open && !$('result').open && !$('notice').hidden) { message(''); return; }
-    if (busy || $('stats-dialog').open || $('result').open || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target === input || event.target.closest('input,textarea,select,a')) return;
+    if (event.key === 'Escape' && !$('stats-dialog').open && !$('notice').hidden) { message(''); return; }
+    if (busy || $('stats-dialog').open || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target === input || event.target.closest('input,textarea,select,a')) return;
     if (event.key === 'Enter' && (event.target.tagName !== 'BUTTON' || event.target.matches('.wl-key[data-letter]'))) { event.preventDefault(); submit(); }
     else if (event.key === 'Backspace') { event.preventDefault(); backspace(); }
     else if (event.key.length === 1 && /^[а-яёӕæ]$/iu.test(event.key)) { event.preventDefault(); type(event.key); }
@@ -203,12 +192,6 @@
     } catch (error) { $('save-status').textContent = errorText(error); }
     finally { saving = false; render(); }
   });
-  function openResult() {
-    clearTimeout(resultTimer);
-    if (!state?.finished || $('result').open) return;
-    $('result').showModal();
-    animate($('result'), [{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' });
-  }
   async function openStatistics() {
     $('stats-dialog').showModal(); $('stats-content').hidden = true;
     if (!window.AdamAuthenticated) { $('stats-status').textContent = 'Войдите в аккаунт, чтобы сохранять результаты и видеть статистику.'; return; }
@@ -223,13 +206,11 @@
       $('stats-status').textContent = ''; $('stats-content').hidden = false;
     } catch (error) { $('stats-status').textContent = errorText(error); }
   }
-  $('statistics').addEventListener('click', () => state?.finished ? openResult() : openStatistics());
-  $('result-close').addEventListener('click', () => $('result').close());
-  $('result-statistics').addEventListener('click', () => { $('result').close(); openStatistics(); });
+  $('statistics').addEventListener('click', () => openStatistics());
   $('stats-close').addEventListener('click', () => $('stats-dialog').close());
-  for (const dialog of [$('stats-dialog'), $('result')]) {
+  for (const dialog of [$('stats-dialog')]) {
     dialog.addEventListener('close', () => {
-      if (!$('stats-dialog').open && !$('result').open) $('statistics').focus({ preventScroll: true });
+      $('statistics').focus({ preventScroll: true });
     });
     dialog.addEventListener('keydown', event => {
       if (event.key !== 'Tab') return;
@@ -261,5 +242,5 @@
   const checkDay = () => { if (state && !busy && Date.now() >= Date.parse(state.nextDay)) load(); };
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDay(); });
   setInterval(checkDay, 30000);
-  render(); load();
+  render(); fitBoard(); load();
 })();

@@ -41,7 +41,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
     const stable = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const geometry = () => page.evaluate(() => ['wl-board', 'wl-keyboard'].map(id => {
       const rect = document.getElementById(id).getBoundingClientRect();
-      return [rect.x, rect.y, rect.width, rect.height];
+      return [rect.x + scrollX, rect.y + scrollY, rect.width, rect.height];
     }));
     const idle = () => page.waitForFunction(() => document.querySelector('#wl-board').getAttribute('aria-busy') === 'false');
     const checkNotice = async () => {
@@ -136,10 +136,9 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
           assert.equal(await page.locator('#wl-board .is-correct').count(), failure === 'won' ? 5 : 0);
           assert.equal(await page.locator('#wl-translation').innerText(), 'рубашка');
           await page.screenshot({ path: path.join(output, `${failure}-${width}.png`), fullPage: true });
-          await page.locator('#wl-result-close').focus(); await page.keyboard.press('Shift+Tab');
-          assert(await page.locator('#wl-result-statistics').evaluate(element => element === document.activeElement));
-          await page.keyboard.press('Tab');
-          assert(await page.locator('#wl-result-close').evaluate(element => element === document.activeElement));
+          assert.match(await page.locator('#wl-result').innerText(), /Приходите завтра/);
+          assert(await page.locator('#wl-keyboard').isHidden());
+          assert.equal(await page.locator('#wl-result-open').count(), 0);
           await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
             configurable: true, value: { writeText: async () => {} }
           }));
@@ -149,16 +148,13 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
           await page.clock.fastForward(3100);
           assert.equal(await page.locator('#wl-share').innerText(), 'Поделиться');
           await page.keyboard.press('Escape');
-          assert(await page.locator('#wl-result').isHidden());
-          assert(await page.locator('#wl-statistics').evaluate(element => element === document.activeElement));
-          assert.deepEqual(await geometry(), beforeFinish, 'Closing the result does not change board geometry');
-          await page.locator('#wl-statistics').click();
           assert(await page.locator('#wl-result').isVisible());
-          await page.locator('#wl-result-statistics').click();
-          assert(await page.locator('#wl-result').isHidden());
+          assert.deepEqual(await geometry(), beforeFinish, 'Escape does not dismiss the permanent result or move the board');
+          await page.locator('#wl-statistics').click();
           assert(await page.locator('#wl-stats-dialog').isVisible());
           await page.keyboard.press('Escape');
-          await page.locator('#wl-statistics').click(); await page.locator('#wl-result-close').click();
+          assert(await page.locator('#wl-statistics').evaluate(element => element === document.activeElement));
+          assert(await page.locator('#wl-result').isVisible());
           assert.deepEqual(await geometry(), beforeFinish);
         } else {
           assert(await page.locator('#wl-result').isHidden());
@@ -166,6 +162,6 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       }
     }
     assert.deepEqual(errors, []);
-    console.log('Wordle notices/results passed: no warning on accepted guesses, stable board/keyboard before and after win/loss, separate result dialog, focus trap/Escape/reopen/statistics, compact centered errors, 3-second dismissal and ӕ at four viewports.');
+    console.log('Wordle notices/results passed: stable board/keyboard before and after win/loss, permanent result, statistics, copying, compact centered errors, 3-second dismissal and ӕ at four viewports.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

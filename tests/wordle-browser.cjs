@@ -97,7 +97,7 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       for (const scale of [1, 2]) {
         await page.locator('.wl-key').evaluateAll((keys, scale) => keys.forEach(key => key.style.fontSize = `${(key.classList.contains('is-wide') ? 10 : 13) * scale}px`), scale);
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow ${width}/${scale}`);
-        assert((await page.locator('.wl-shell').boundingBox()).width <= 720);
+        assert((await page.locator('.wl-shell').boundingBox()).width <= 840);
       }
     }
     const touch = await browser.newContext({ isMobile: true, hasTouch: true, viewport: { width: 390, height: 844 } });
