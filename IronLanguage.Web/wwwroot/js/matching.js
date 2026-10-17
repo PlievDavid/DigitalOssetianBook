@@ -17,6 +17,7 @@
   const board = $("matching-board"), svg = $("matching-threads");
   const connections = new Map();
   let drag = null, suppressClick = false;
+  const threadColor = index => `var(--game-thread-${session.left.findIndex(tile => tile.index === index) % 10}, #286aab)`;
   function cancelDrag() {
     if (!drag) return;
     const previous = drag; drag = null;
@@ -38,7 +39,7 @@
       const bend = Math.max(20, Math.abs(end.x - start.x) * .45);
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       line.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + bend} ${start.y}, ${end.x - bend} ${end.y}, ${end.x} ${end.y}`);
-      line.style.setProperty('--thread-color', `var(--game-thread-${session.left.findIndex(tile => tile.index === left) % 10}, #286aab)`);
+      line.style.setProperty('--thread-color', threadColor(left));
       line.setAttribute('class', 'game-thread ' + kind); svg.append(line);
     }
     for (const [left, right] of connections) connect(left, point(rightColumn, right, 'left'), 'game-thread-matched');
@@ -224,6 +225,9 @@
     for (const [column, tiles, side] of [[leftColumn, session.left, "left"], [rightColumn, session.right, "right"]]) {
       for (const tile of tiles) {
         const node = column.querySelector('[data-index="' + tile.index + '"]');
+        const source = side === 'left' ? tile.index : [...connections].find(([, target]) => target === tile.index)?.[0];
+        if (source !== undefined) node.style.setProperty('--thread-color', threadColor(source));
+        else node.style.removeProperty('--thread-color');
         node.disabled = busy || tile.matched || session.finished;
         node.classList.toggle("matched", tile.matched);
         node.classList.toggle("is-matched", tile.matched);
