@@ -41,8 +41,10 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
         const back = page.locator(route.endsWith('wordle') ? '.wl-back' : '.cw-back-to-tasks');
         assert(await back.isVisible());
         await back.focus(); await page.keyboard.press('Enter');
-        await page.waitForURL(base + '/#games');
-        assert(await page.locator('#games').isVisible());
+        await page.waitForURL(base + '/games');
+        assert(await page.locator('#games-catalog').isVisible());
+        assert.equal(await page.locator('#games-catalog .format-card').count(), 3);
+        await page.goto(base);
         checks += 6;
       }
     }

@@ -188,6 +188,5 @@
   const checkDay = () => { if (state && !busy && Date.now() >= Date.parse(state.nextDay)) load(); };
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDay(); });
   setInterval(checkDay, 30000);
-  $('guest').hidden = !!window.AdamAuthenticated;
   render(); load();
 })();

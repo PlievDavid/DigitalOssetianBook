@@ -22,7 +22,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.setViewportSize({ width, height: 800 });
       await page.goto(base);
       const commonBounds = await bounds('.home-content');
-      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/matching', '/vocabulary', '/word-practice', '/game', '/games/crosswords', '/games/wordle', '/books', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
+      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/matching', '/vocabulary', '/word-practice', '/game', '/games', '/games/crosswords', '/games/wordle', '/books', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
         await page.goto(base + route, { waitUntil: 'networkidle' });
         const expected = route === '/games/wordle' && width < 600 ? [commonBounds[0], width - commonBounds[0]] : commonBounds;
         assert.deepEqual(await bounds('#main-content'), expected, `${route} main at ${width}`); checks++;

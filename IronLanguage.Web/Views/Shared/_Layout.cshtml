@@ -42,18 +42,19 @@
                 </div>
             </div>
             <div class="nav-menu nav-menu-words nav-menu-section">
-                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath == "/game" ? "is-current" : "")" href="/vocabulary" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false">Слова</a>
+                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") ? "is-current" : "")" href="/vocabulary" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false">Слова</a>
                 <div id="words-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/vocabulary">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Словарь")</a>
                     <a class="nav-menu-item" href="/word-practice">Тренировка слов</a>
-                    <a class="nav-menu-item" href="/game">Подбор пар</a>
                 </div>
             </div>
             <div class="nav-menu nav-menu-games">
-                <button class="nav-menu-link nav-menu-trigger @(currentPath.StartsWith("/games") ? "is-current" : "")" type="button" aria-haspopup="true" aria-expanded="false">Игры</button>
-                <div class="nav-menu-panel" aria-label="Игры">
+                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/games") || currentPath == "/game" ? "is-current" : "")" href="/games" aria-controls="games-menu" aria-haspopup="true" aria-expanded="false">Игры</a>
+                <div id="games-menu" class="nav-menu-panel" aria-label="Игры">
+                    <a class="nav-menu-item" href="/games">Все игры</a>
                     <a class="nav-menu-item" href="/games/crosswords">Кроссворды</a>
                     <a class="nav-menu-item" href="/games/wordle">Пять букв</a>
+                    <a class="nav-menu-item" href="/game">Подбор пар</a>
                     <span class="nav-menu-item nav-menu-item-placeholder"><span>Переводилка</span><small>В разработке</small></span>
                 </div>
             </div>

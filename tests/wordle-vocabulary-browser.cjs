@@ -30,7 +30,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       if (pathname === '/api/v1/wordle/guess') finished = true;
       return route.fulfill({ json: pathname.startsWith('/api/v1/wordle') ? state() : {} });
     });
-    for (const [width, height] of [[320, 568], [360, 800], [1280, 800]]) {
+    for (const [width, height] of [[320, 568], [360, 800], [1024, 600], [1242, 668], [1280, 800]]) {
       finished = false; saved = 0; rejectSave = true;
       await page.setViewportSize({ width, height });
       await page.goto(base + '/games/wordle');
@@ -54,6 +54,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
       await page.screenshot({ path: path.join(output, `wordle-saved-${width}.png`), fullPage: true });
       if (width < 600) assert(await page.evaluate(() => document.querySelector('#wl-keyboard').getBoundingClientRect().bottom < document.querySelector('.mobile-bottom-nav').getBoundingClientRect().top), 'Result actions leave the keyboard above navigation');
+      else assert(await page.locator('#wl-keyboard').evaluate(el => el.getBoundingClientRect().bottom < innerHeight), 'Saved result keeps the desktop keyboard visible');
     }
     assert.deepEqual(errors, []);
     console.log('Wordle vocabulary UI passed: reveal only, keyboard, CSRF header, failure/retry, duplicate lock, mobile/desktop and Ossetian letters. API responses are isolated fixtures.');

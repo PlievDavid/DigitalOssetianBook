@@ -1,0 +1,19 @@
+@{ ViewData["Title"] = "Игры"; }
+<section class="feature-shell game-shell games-catalog" id="games-catalog">
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Игры", "Вспоминайте осетинские слова, находите пары и решайте кроссворды.", "games", "green"))
+    <div class="format-grid">
+        <a class="format-card format-crosswords" href="/games/crosswords">
+            <span class="format-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 4h6v6h12v6H16v12h-6V16H4v-6h6Z"/><path d="M10 10h6v6h-6ZM22 10v6M10 22h6"/></svg></span>
+            <h3>Кроссворды</h3><p>Десять тем для знакомства со словами</p><span class="round-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="format-card format-wordle" href="/games/wordle">
+            <span class="format-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="24" height="24" rx="4"/><path d="M12 4v24M20 4v24M4 12h24M4 20h24"/></svg></span>
+            <h3>Пять букв</h3><p>Осетинское слово дня за шесть попыток</p><span class="round-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="format-card format-pairs" href="/game">
+            <span class="format-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "games")</span>
+            <h3>Подбор пар</h3><p>Соединяйте слова из своего словаря с переводами</p><span class="round-arrow" aria-hidden="true">→</span>
+        </a>
+    </div>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> }
