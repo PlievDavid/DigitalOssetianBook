@@ -50,6 +50,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
     assert.equal(await page.locator('#game-board').getAttribute('aria-busy'), 'true');
     assert(await page.locator('#game-restart').isDisabled());
     await idle(); assert.equal(await page.locator('.game-thread-wrong').count(), 1);
+    assert.equal(await page.locator('.game-thread-wrong').evaluate(element => getComputedStyle(element).stroke), 'rgb(180, 35, 24)', 'Wrong answers keep the red dashed thread');
     assert.equal(await page.locator('.game-thread-matched').count(), 0);
     assert(await left(1).isEnabled()); assert.match(await page.locator('#game-status').innerText(), /Тест 1/);
     // Pointer dragging checks a pair and keeps its thread after release.
@@ -57,8 +58,11 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
     await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down();
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 });
     assert.equal(await page.locator('.game-thread-active').count(), 1);
+    const firstColor = await page.locator('.game-thread-active').evaluate(element => getComputedStyle(element).stroke);
+    assert.notEqual(firstColor, 'rgb(180, 35, 24)', 'Pair colors do not use the error color');
     await page.mouse.up(); await idle();
     assert.equal(await page.locator('.game-thread-matched').count(), 1);
+    assert.equal(await page.locator('.game-thread-matched').evaluate(element => getComputedStyle(element).stroke), firstColor, 'The confirmed pair keeps its dragging color');
     assert(await left(1).isDisabled()); assert(await right(1).isDisabled());
     // Resize and increased text must keep endpoints on the actual buttons.
     for (const width of [320, 360, 600, 768, 1024, 1280, 1920]) {
@@ -70,6 +74,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
         const expected = await left(1).evaluate(el => { const a = el.getBoundingClientRect(), b = el.closest('#game-board').getBoundingClientRect(); return [a.right - b.left, a.top + a.height / 2 - b.top]; });
         const actual = await page.locator('.game-thread-matched').evaluate(el => { const p = el.getPointAtLength(0); return [p.x, p.y]; });
         assert(Math.abs(actual[0] - expected[0]) < 1 && Math.abs(actual[1] - expected[1]) < 1, 'Thread follows word after resize');
+        assert.equal(await page.locator('.game-thread-matched').first().evaluate(element => getComputedStyle(element).stroke), firstColor, 'Resize and enlarged text preserve the color');
       }
     }
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -84,6 +89,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
       await right(id).evaluate(el => el.click()); await idle();
     }
     assert.equal(await page.locator('.game-thread-matched').count(), 5);
+    const colors = await page.locator('.game-thread-matched').evaluateAll(elements => elements.map(element => getComputedStyle(element).stroke));
+    assert.equal(new Set(colors).size, 5, 'All five pairs have different colors regardless of matching order');
+    assert.equal(colors[0], firstColor);
     assert.equal(await page.evaluate(() => calls.filter(x => x.options).length), 7);
     assert.match(await page.locator('#game-status').innerText(), /Все пары/);
     assert(await page.locator('#game-restart').evaluate(el => el === document.activeElement));
@@ -127,6 +135,6 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
     assert.equal(await page.evaluate(() => calls.at(-1).url), '/vocabulary/1/review');
     for (const count of [0, 1]) { await setup(count); assert(await page.locator('#game-find-words').isVisible()); assert.equal(await page.locator('.game-word').count(), 0); }
     assert.deepEqual(errors, []);
-    console.log('Game threads: mouse, touch, keyboard, Escape, wrong answer, retry, request lock, completion, restart, 0/1/2/5 words, guest/account API, seven widths and 200% text passed.');
+    console.log('Game threads: five stable colors, red errors, mouse, touch, keyboard, Escape, retry, request lock, completion, restart, 0/1/2/5 words, guest/account API, seven widths and 200% text passed.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

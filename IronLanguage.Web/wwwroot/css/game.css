@@ -1,6 +1,18 @@
 /* The page uses the shared app shell; the playing field fits short word pairs. */
 .green-theme .game-shell .game-page-heading { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin: 12px 0 24px; gap: 24px; }
 .green-theme .game-shell .game-heading-copy { max-width: 640px; }
+.green-theme :is(#game-app, #matching-app) {
+    --game-thread-0: #286aab;
+    --game-thread-1: #7954a6;
+    --game-thread-2: #287e7b;
+    --game-thread-3: #a67816;
+    --game-thread-4: #657b2e;
+    --game-thread-5: #515da8;
+    --game-thread-6: #8f547c;
+    --game-thread-7: #217e9c;
+    --game-thread-8: #93643d;
+    --game-thread-9: #39754b;
+}
 .green-theme :is(#game-app, #matching-app) .game-kicker { display: block; margin-bottom: 10px; color: #37634e; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
 .green-theme .game-shell h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.15; }
 .green-theme .game-shell .game-page-heading h1 { margin: 0; }
@@ -27,6 +39,7 @@
 .green-theme :is(#game-app, #matching-app) .game-column .word-tile::after { width: 11px; height: 11px; background: #fafaf5; }
 .green-theme :is(#game-app, #matching-app) .game-column .word-tile.matched::after { background: #357348; }
 .green-theme :is(#game-app, #matching-app) .game-thread { stroke-width: 3; }
+.green-theme :is(#game-app, #matching-app) .game-thread:not(.game-thread-wrong) { stroke: var(--thread-color, #286aab); }
 .green-theme :is(#game-app, #matching-app) #game-find-words { margin-top: 12px; width: auto; }
 .green-theme :is(#game-app, #matching-app) .game-play-area:has(#game-board:empty) .game-language-labels { display: none; }
 @media (max-width: 599px) {

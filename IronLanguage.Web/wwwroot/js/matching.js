@@ -38,6 +38,7 @@
       const bend = Math.max(20, Math.abs(end.x - start.x) * .45);
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       line.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + bend} ${start.y}, ${end.x - bend} ${end.y}, ${end.x} ${end.y}`);
+      line.style.setProperty('--thread-color', `var(--game-thread-${session.left.findIndex(tile => tile.index === left) % 10}, #286aab)`);
       line.setAttribute('class', 'game-thread ' + kind); svg.append(line);
     }
     for (const [left, right] of connections) connect(left, point(rightColumn, right, 'left'), 'game-thread-matched');

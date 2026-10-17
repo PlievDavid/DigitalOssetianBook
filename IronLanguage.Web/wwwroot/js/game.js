@@ -44,6 +44,7 @@
       const bend = Math.max(20, Math.abs(end.x - start.x) * .45);
       const path = document.createElementNS(ns, 'path');
       path.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + bend} ${start.y}, ${end.x - bend} ${end.y}, ${end.x} ${end.y}`);
+      path.style.setProperty('--thread-color', `var(--game-thread-${words.findIndex(word => word.wordId === id) % 10}, #286aab)`);
       path.setAttribute('class', `game-thread ${kind}`); lines.append(path);
     }
     for (const [id, target] of matched) connect(id, target, 'game-thread-matched');
