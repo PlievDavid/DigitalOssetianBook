@@ -11,6 +11,12 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     const page = await browser.newPage();
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     let mode = 'choice';
+    // Фикстура отдаёт /media/pictures/1.png — подменяем картинку, чтобы #picture-image загрузился.
+    await page.route('**/media/pictures/**', route => route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+    }));
     await page.route('**/api/v1/pictures**', async route => {
       const url = new URL(route.request().url()).pathname;
       if (url === '/api/v1/pictures') return route.fulfill({ json: [{ id: 'fixture', title: 'Проверка картинки' }] });
@@ -32,10 +38,10 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
         const body = route.request().postDataJSON();
         if (mode === 'choice') {
           const correct = body.optionIndex === 0;
-          return route.fulfill({ json: { correct, correctWord: 'Амбар', finished: true, options: null } });
+          return route.fulfill({ json: { correct, correctWord: 'Амбар', finished: true, options: null, words: [] } });
         }
         const correct = String(body.answer || '').trim().toLowerCase() === 'амбар';
-        return route.fulfill({ json: { correct, correctWord: 'Амбар', finished: true, options: null } });
+        return route.fulfill({ json: { correct, correctWord: 'Амбар', finished: true, options: null, words: [] } });
       }
       throw new Error('Unexpected fixture API: ' + url);
     });

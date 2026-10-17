@@ -68,16 +68,21 @@
   }
 
   async function start(id) {
+    if (busy) return;
+    busy = true;
+    const gen = ++generation;
     try {
       const next = await AdamApi(`/pictures/${id}/sessions`, { method: "POST" });
-      generation++;
+      if (gen !== generation) return;
       busy = false;
       session = next;
       sessionStorage.setItem("adam.picture.session", session.sessionId);
       list.hidden = true; play.hidden = false;
       render();
       status.textContent = "";
-    } catch (error) { status.textContent = error.message; }
+    } catch (error) {
+      if (gen === generation) { busy = false; status.textContent = error.message; }
+    }
   }
 
   function render() {
@@ -150,6 +155,7 @@
       session.answered = true;
       session.correct = response.correct;
       session.correctWord = response.correctWord;
+      session.words = response.words || [];
       showResult(response.correct, response.correctWord, selectedIndex);
     } catch (error) {
       if (gen !== generation || !session || session.sessionId !== sid) return;

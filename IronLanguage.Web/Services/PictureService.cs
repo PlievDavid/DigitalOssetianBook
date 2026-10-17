@@ -6,7 +6,7 @@ namespace IronLanguage.Web.Services;
 public sealed record PictureWord(Guid Id, string Ossetian, string Russian);
 public sealed record PictureSessionState(Guid SessionId, Guid MaterialId, int Version, string Title,
     string PicturePath, string Mode, string[] Options, bool Answered, bool Correct, string? CorrectWord, PictureWord[] Words);
-public sealed record PictureCheckResult(bool Correct, string CorrectWord, bool Finished, string[]? Options);
+public sealed record PictureCheckResult(bool Correct, string CorrectWord, bool Finished, string[]? Options, PictureWord[] Words);
 
 public sealed class PictureService(ICatalogRepository catalog, GuestLearningStore guests)
 {
@@ -41,13 +41,13 @@ public sealed class PictureService(ICatalogRepository catalog, GuestLearningStor
         {
             var state = entry.Value;
             if (state.Answered)
-                return new PictureCheckResult(state.Correct, state.CorrectWord, true, null);
+                return new PictureCheckResult(state.Correct, state.CorrectWord, true, null, await Words(state.WordIds, ct));
             var correct = state.Mode == PictureScript.ChoiceMode
                 ? CheckChoice(state, optionIndex)
                 : CheckFree(state, answer);
             state.Answered = true;
             state.Correct = correct;
-            return new PictureCheckResult(correct, state.CorrectWord, true, null);
+            return new PictureCheckResult(correct, state.CorrectWord, true, null, await Words(state.WordIds, ct));
         }
         finally { entry.Gate.Release(); }
     }
@@ -60,7 +60,8 @@ public sealed class PictureService(ICatalogRepository catalog, GuestLearningStor
         try
         {
             var state = entry.Value;
-            var words = await Words(state.WordIds, ct);
+            // Связанные слова грузим только после ответа, чтобы правильный ответ не утекал в JSON запуска.
+            var words = state.Answered ? await Words(state.WordIds, ct) : [];
             // Варианты скрываются после ответа, чтобы клиент не знал правильный до проверки.
             var options = state.Answered || state.Mode != PictureScript.ChoiceMode ? [] : state.Options;
             return new PictureSessionState(sessionId, state.MaterialId, state.Version, state.Title,

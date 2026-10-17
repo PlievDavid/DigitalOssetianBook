@@ -307,13 +307,20 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 {
                     var savedPath = await SavePicture(model.PictureImage, ct);
                     if (savedPath is null) ModelState.AddModelError(nameof(model.PictureImage), "Файл не является допустимым изображением.");
-                    else path = savedPath;
+                    else
+                    {
+                        // Сохранённый путь остаётся в модели, чтобы после ошибки валидации форма не теряла превью.
+                        path = savedPath;
+                    }
                 }
             }
             var (material, errors) = PictureScript.Validate(model.PictureTitle, path, model.PictureWord, model.PictureMode,
                 model.PictureMode == "choice" ? $"{model.PictureDistractor1}\n{model.PictureDistractor2}" : null);
             foreach (var error in errors) ModelState.AddModelError("", error);
-            if (material is not null) payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
+            model.PicturePath = path;
+            model.ExistingPicturePath = path.Length > 0 ? path : null;
+            if (material is not null && ModelState.IsValid)
+                payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
         }
         else return null;
         return payload;
