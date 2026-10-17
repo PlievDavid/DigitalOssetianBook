@@ -8,7 +8,12 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
   let checks = 0;
   try {
     const page = await browser.newPage();
-    await page.route('**/api/v1/**', route => route.fulfill({ json: route.request().url().endsWith('/catalog') ? { exercises: [], books: [], words: [] } : [] }));
+    await page.route('**/api/v1/**', route => {
+      const pathname = new URL(route.request().url()).pathname;
+      const json = pathname.endsWith('/wordle') ? { day: '2026-10-17', nextDay: '2026-10-18T00:00:00Z', revision: 0, rows: [], won: false, finished: false, answer: null, russian: null, countedInStreak: false }
+        : pathname.endsWith('/catalog') ? { exercises: [], books: [], words: [] } : [];
+      return route.fulfill({ json });
+    });
     const bounds = selector => page.locator(selector).evaluate(el => {
       const r = el.getBoundingClientRect(), css = getComputedStyle(el);
       return [r.left + parseFloat(css.paddingLeft), r.right - parseFloat(css.paddingRight)];
@@ -16,24 +21,26 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
     for (const width of [360, 599, 600, 700, 768, 1024, 1280, 1920]) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto(base);
-      const expected = await bounds('.home-content');
-      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/matching', '/vocabulary', '/word-practice', '/game', '/books', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
+      const commonBounds = await bounds('.home-content');
+      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/matching', '/vocabulary', '/word-practice', '/game', '/games', '/games/crosswords', '/games/wordle', '/books', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
         await page.goto(base + route, { waitUntil: 'networkidle' });
+        const expected = route === '/games/wordle' && width < 600 ? [commonBounds[0], width - commonBounds[0]] : commonBounds;
         assert.deepEqual(await bounds('#main-content'), expected, `${route} main at ${width}`); checks++;
-        assert.deepEqual(await bounds('.header-inner'), expected, `${route} header at ${width}`); checks++;
+        if (width >= 600) { assert.deepEqual(await bounds('.header-inner'), expected, `${route} header at ${width}`); checks++; }
         const selector = route === '/' ? '.home-content' : route === '/books' ? '.books-catalog' : route.startsWith('/account/') && route !== '/account/access-denied' ? '.auth-scene' : '#main-content > .feature-shell';
         assert.deepEqual(await bounds(selector), expected, `${route} shell at ${width}`); checks++;
         if (route === '/account/login' || route === '/account/register') {
           const card = await page.locator('.auth-shell').boundingBox();
-          assert(Math.abs(card.width - Math.min(480, expected[1] - expected[0])) < 1, `${route} compact card at ${width}`); checks++;
+          assert(Math.abs(card.width - Math.min(width < 600 ? 440 : 480, expected[1] - expected[0])) < 1, `${route} compact card at ${width}`); checks++;
           assert(Math.abs(card.x + card.width / 2 - (expected[0] + expected[1]) / 2) < 1, `${route} centered card at ${width}`); checks++;
         }
-        const playSelector = { '/audio-puzzles': '#exercise-play', '/translate': '#exercise-play', '/dialogs': '#dialog-play', '/matching': '#matching-play', '/game': '.game-play-area' }[route];
+        const playSelector = { '/audio-puzzles': '#exercise-play', '/translate': '#exercise-play', '/dialogs': '#dialog-play', '/matching': '#matching-play', '/game': '.game-play-area', '/games/crosswords': '#cw-play', '/games/wordle': '.wl-shell' }[route];
         if (playSelector) {
           const play = page.locator(playSelector);
           const wasHidden = await play.evaluate(el => { const hidden = el.hidden; el.hidden = false; return hidden; });
           const box = await play.boundingBox();
-          assert(Math.abs(box.width - Math.min(760, expected[1] - expected[0])) < 1, route + ' lesson width at ' + width); checks++;
+          const maxWidth = route === '/games/crosswords' ? Infinity : route === '/games/wordle' ? 720 : 760;
+          assert(Math.abs(box.width - Math.min(maxWidth, expected[1] - expected[0])) < 1, route + ' lesson width at ' + width); checks++;
           assert(Math.abs(box.x + box.width / 2 - (expected[0] + expected[1]) / 2) < 1, route + ' lesson center at ' + width); checks++;
           await play.evaluate((el, hidden) => { el.hidden = hidden; }, wasHidden);
         }
@@ -55,7 +62,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.goto(base);
       for (const shell of ['<section class="feature-shell editor-form-shell"></section>', '<section class="feature-shell editor-preview-shell"></section>', '<section class="feature-shell avatar-shell"></section>', '<div class="account-layout"><nav class="account-navigation"></nav><section class="feature-shell profile-shell"></section></div>']) {
         await page.evaluate(html => { document.body.classList.add('editor-page'); document.querySelector('main').innerHTML = html; }, shell);
-        assert.deepEqual(await bounds('#main-content > :first-child'), expected, `Protected shell fixture at ${width}`); checks++;
+        assert.deepEqual(await bounds('#main-content > :first-child'), commonBounds, `Protected shell fixture at ${width}`); checks++;
       }
     }
     await page.goto(base + '/dialogs');

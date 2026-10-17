@@ -3,6 +3,7 @@
     ViewData["PageClass"] = "home-page";
 }
 <div class="home-shell">
+    <header class="mobile-page-intro"><h1>Задания</h1></header>
     <section class="home-hero" aria-labelledby="home-title">
         <div class="hero-copy">
             <div class="hero-mobile-art" aria-hidden="true"><img src="~/images/green/kurt-tag-watercolor.png" asp-append-version="true" width="1086" height="1448" alt="" /></div>
@@ -38,6 +39,19 @@
                 <a class="format-card format-picture" href="/picture">
                     <span class="format-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "picture")</span>
                     <h3>Картинка и слово</h3><p>Подберите слово к картинке</p><span class="round-arrow" aria-hidden="true">→</span>
+                </a>
+            </div>
+        </section>
+        <section id="games" class="home-games" tabindex="-1" aria-labelledby="games-title">
+            <h2 id="games-title"><a href="/games">Игры со словами →</a></h2>
+            <div class="format-grid home-games-grid">
+                <a class="format-card format-crosswords" href="/games/crosswords">
+                    <span class="format-icon crossword-format-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 4h6v6h12v6H16v12h-6V16H4v-6h6Z"/><path d="M10 10h6v6h-6ZM22 10v6M10 22h6"/></svg></span>
+                    <h3>Кроссворды</h3><p>Десять тем для знакомства со словами</p><span class="round-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="format-card format-wordle" href="/games/wordle">
+                    <span class="format-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="24" height="24" rx="4"/><path d="M12 4v24M20 4v24M4 12h24M4 20h24"/></svg></span>
+                    <h3>Пять букв</h3><p>Осетинское слово дня</p><span class="round-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
         </section>

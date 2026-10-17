@@ -1,0 +1,2927 @@
+{
+  "version": 1,
+  "startDate": "2026-10-16",
+  "answers": [
+    {
+      "id": 1,
+      "word": "сӕкӕр",
+      "russian": "сахар",
+      "note": "",
+      "sourceRow": 3253,
+      "sourceColumn": 4
+    },
+    {
+      "id": 2,
+      "word": "хӕрӕг",
+      "russian": "осёл",
+      "note": "зоол.",
+      "sourceRow": 2201,
+      "sourceColumn": 4
+    },
+    {
+      "id": 3,
+      "word": "давӕг",
+      "russian": "вор",
+      "note": "",
+      "sourceRow": 450,
+      "sourceColumn": 4
+    },
+    {
+      "id": 4,
+      "word": "хайад",
+      "russian": "отделение",
+      "note": "",
+      "sourceRow": 2249,
+      "sourceColumn": 4
+    },
+    {
+      "id": 5,
+      "word": "давон",
+      "russian": "черемша",
+      "note": "бот.",
+      "sourceRow": 4049,
+      "sourceColumn": 4
+    },
+    {
+      "id": 6,
+      "word": "боныг",
+      "russian": "дневник",
+      "note": "",
+      "sourceRow": 835,
+      "sourceColumn": 4
+    },
+    {
+      "id": 7,
+      "word": "зӕгӕл",
+      "russian": "гвоздь",
+      "note": "",
+      "sourceRow": 618,
+      "sourceColumn": 4
+    },
+    {
+      "id": 8,
+      "word": "тӕскъ",
+      "russian": "корзина",
+      "note": "",
+      "sourceRow": 1437,
+      "sourceColumn": 4
+    },
+    {
+      "id": 9,
+      "word": "змӕлд",
+      "russian": "движение",
+      "note": "",
+      "sourceRow": 780,
+      "sourceColumn": 4
+    },
+    {
+      "id": 10,
+      "word": "бедра",
+      "russian": "ведро",
+      "note": "",
+      "sourceRow": 273,
+      "sourceColumn": 4
+    },
+    {
+      "id": 11,
+      "word": "ӕдылы",
+      "russian": "глупец",
+      "note": "",
+      "sourceRow": 644,
+      "sourceColumn": 4
+    },
+    {
+      "id": 12,
+      "word": "ӕфсон",
+      "russian": "повод",
+      "note": "",
+      "sourceRow": 2497,
+      "sourceColumn": 4
+    },
+    {
+      "id": 13,
+      "word": "тӕмӕн",
+      "russian": "излучение",
+      "note": "",
+      "sourceRow": 1211,
+      "sourceColumn": 4
+    },
+    {
+      "id": 14,
+      "word": "куырд",
+      "russian": "кузнец",
+      "note": "",
+      "sourceRow": 1520,
+      "sourceColumn": 4
+    },
+    {
+      "id": 15,
+      "word": "зымӕг",
+      "russian": "зима",
+      "note": "",
+      "sourceRow": 1163,
+      "sourceColumn": 4
+    },
+    {
+      "id": 16,
+      "word": "лӕппу",
+      "russian": "мальчик",
+      "note": "",
+      "sourceRow": 1653,
+      "sourceColumn": 4
+    },
+    {
+      "id": 17,
+      "word": "сыкъа",
+      "russian": "рог",
+      "note": "",
+      "sourceRow": 3175,
+      "sourceColumn": 4
+    },
+    {
+      "id": 18,
+      "word": "хъарм",
+      "russian": "тёплый",
+      "note": "",
+      "sourceRow": 3738,
+      "sourceColumn": 4
+    },
+    {
+      "id": 19,
+      "word": "чъизи",
+      "russian": "грязный",
+      "note": "",
+      "sourceRow": 742,
+      "sourceColumn": 4
+    },
+    {
+      "id": 20,
+      "word": "ӕхсыр",
+      "russian": "молоко",
+      "note": "",
+      "sourceRow": 1756,
+      "sourceColumn": 4
+    },
+    {
+      "id": 21,
+      "word": "домӕн",
+      "russian": "требование",
+      "note": "",
+      "sourceRow": 3773,
+      "sourceColumn": 4
+    },
+    {
+      "id": 22,
+      "word": "ӕрвад",
+      "russian": "однофамилец",
+      "note": "",
+      "sourceRow": 2133,
+      "sourceColumn": 4
+    },
+    {
+      "id": 23,
+      "word": "дӕсны",
+      "russian": "искусный",
+      "note": "",
+      "sourceRow": 1249,
+      "sourceColumn": 4
+    },
+    {
+      "id": 24,
+      "word": "асыкк",
+      "russian": "ящик",
+      "note": "",
+      "sourceRow": 4195,
+      "sourceColumn": 4
+    },
+    {
+      "id": 25,
+      "word": "авари",
+      "russian": "авария",
+      "note": "",
+      "sourceRow": 13,
+      "sourceColumn": 4
+    },
+    {
+      "id": 26,
+      "word": "къона",
+      "russian": "очаг",
+      "note": "",
+      "sourceRow": 2316,
+      "sourceColumn": 4
+    },
+    {
+      "id": 27,
+      "word": "фатӕг",
+      "russian": "стрелка",
+      "note": "",
+      "sourceRow": 4295,
+      "sourceColumn": 4
+    },
+    {
+      "id": 28,
+      "word": "бецау",
+      "russian": "бедняга",
+      "note": "",
+      "sourceRow": 4204,
+      "sourceColumn": 4
+    },
+    {
+      "id": 29,
+      "word": "хӕлаф",
+      "russian": "брюки",
+      "note": "тк. мн.",
+      "sourceRow": 222,
+      "sourceColumn": 4
+    },
+    {
+      "id": 30,
+      "word": "уымӕл",
+      "russian": "влажный",
+      "note": "",
+      "sourceRow": 366,
+      "sourceColumn": 4
+    },
+    {
+      "id": 31,
+      "word": "ӕртах",
+      "russian": "капля",
+      "note": "",
+      "sourceRow": 1324,
+      "sourceColumn": 4
+    },
+    {
+      "id": 32,
+      "word": "къадз",
+      "russian": "аист",
+      "note": "зоол.",
+      "sourceRow": 4196,
+      "sourceColumn": 4
+    },
+    {
+      "id": 33,
+      "word": "кӕрон",
+      "russian": "конец",
+      "note": "",
+      "sourceRow": 1420,
+      "sourceColumn": 4
+    },
+    {
+      "id": 34,
+      "word": "цыбыр",
+      "russian": "короткий",
+      "note": "",
+      "sourceRow": 1445,
+      "sourceColumn": 4
+    },
+    {
+      "id": 35,
+      "word": "ӕвзаг",
+      "russian": "язык",
+      "note": "",
+      "sourceRow": 4185,
+      "sourceColumn": 4
+    },
+    {
+      "id": 36,
+      "word": "фидар",
+      "russian": "крепкий",
+      "note": "",
+      "sourceRow": 1479,
+      "sourceColumn": 4
+    },
+    {
+      "id": 37,
+      "word": "тулдз",
+      "russian": "дуб",
+      "note": "бот.",
+      "sourceRow": 908,
+      "sourceColumn": 4
+    },
+    {
+      "id": 38,
+      "word": "сконд",
+      "russian": "решение",
+      "note": "",
+      "sourceRow": 3168,
+      "sourceColumn": 4
+    },
+    {
+      "id": 39,
+      "word": "фӕрӕт",
+      "russian": "топор",
+      "note": "",
+      "sourceRow": 3759,
+      "sourceColumn": 4
+    },
+    {
+      "id": 40,
+      "word": "партӕ",
+      "russian": "парта",
+      "note": "",
+      "sourceRow": 2341,
+      "sourceColumn": 4
+    },
+    {
+      "id": 41,
+      "word": "сӕмӕн",
+      "russian": "ось",
+      "note": "",
+      "sourceRow": 2236,
+      "sourceColumn": 4
+    },
+    {
+      "id": 42,
+      "word": "зӕрдӕ",
+      "russian": "сердце",
+      "note": "",
+      "sourceRow": 3329,
+      "sourceColumn": 4
+    },
+    {
+      "id": 43,
+      "word": "дзылы",
+      "russian": "чиж",
+      "note": "зоол.",
+      "sourceRow": 4070,
+      "sourceColumn": 4
+    },
+    {
+      "id": 44,
+      "word": "адзал",
+      "russian": "рок",
+      "note": "(судьба)",
+      "sourceRow": 4288,
+      "sourceColumn": 4
+    },
+    {
+      "id": 45,
+      "word": "кӕсӕг",
+      "russian": "зритель",
+      "note": "",
+      "sourceRow": 1184,
+      "sourceColumn": 4
+    },
+    {
+      "id": 46,
+      "word": "тыхст",
+      "russian": "беспокойство",
+      "note": "",
+      "sourceRow": 128,
+      "sourceColumn": 4
+    },
+    {
+      "id": 47,
+      "word": "рӕбын",
+      "russian": "подножие",
+      "note": "",
+      "sourceRow": 2541,
+      "sourceColumn": 4
+    },
+    {
+      "id": 48,
+      "word": "фӕдис",
+      "russian": "погоня",
+      "note": "",
+      "sourceRow": 2517,
+      "sourceColumn": 4
+    },
+    {
+      "id": 49,
+      "word": "уарди",
+      "russian": "роза",
+      "note": "",
+      "sourceRow": 3188,
+      "sourceColumn": 4
+    },
+    {
+      "id": 50,
+      "word": "бырӕн",
+      "russian": "каток",
+      "note": "",
+      "sourceRow": 1339,
+      "sourceColumn": 4
+    },
+    {
+      "id": 51,
+      "word": "катай",
+      "russian": "тревога",
+      "note": "",
+      "sourceRow": 3775,
+      "sourceColumn": 4
+    },
+    {
+      "id": 52,
+      "word": "шофыр",
+      "russian": "шофёр",
+      "note": "",
+      "sourceRow": 4130,
+      "sourceColumn": 4
+    },
+    {
+      "id": 53,
+      "word": "айнӕг",
+      "russian": "скала",
+      "note": "",
+      "sourceRow": 3359,
+      "sourceColumn": 4
+    },
+    {
+      "id": 54,
+      "word": "цъити",
+      "russian": "ледник",
+      "note": "",
+      "sourceRow": 1563,
+      "sourceColumn": 4
+    },
+    {
+      "id": 55,
+      "word": "ӕмбал",
+      "russian": "друг",
+      "note": "",
+      "sourceRow": 902,
+      "sourceColumn": 4
+    },
+    {
+      "id": 56,
+      "word": "ӕууӕл",
+      "russian": "признак",
+      "note": "",
+      "sourceRow": 2868,
+      "sourceColumn": 4
+    },
+    {
+      "id": 57,
+      "word": "сасир",
+      "russian": "сито",
+      "note": "",
+      "sourceRow": 4291,
+      "sourceColumn": 4
+    },
+    {
+      "id": 58,
+      "word": "уидаг",
+      "russian": "корень",
+      "note": "",
+      "sourceRow": 1436,
+      "sourceColumn": 4
+    },
+    {
+      "id": 59,
+      "word": "ӕмгар",
+      "russian": "ровесник",
+      "note": "",
+      "sourceRow": 3174,
+      "sourceColumn": 4
+    },
+    {
+      "id": 60,
+      "word": "лӕгӕт",
+      "russian": "пещера",
+      "note": "",
+      "sourceRow": 2421,
+      "sourceColumn": 4
+    },
+    {
+      "id": 61,
+      "word": "рувас",
+      "russian": "лиса",
+      "note": "зоол.",
+      "sourceRow": 1596,
+      "sourceColumn": 4
+    },
+    {
+      "id": 62,
+      "word": "номыр",
+      "russian": "номер",
+      "note": "",
+      "sourceRow": 2023,
+      "sourceColumn": 4
+    },
+    {
+      "id": 63,
+      "word": "цӕдис",
+      "russian": "союз",
+      "note": "(объединение)",
+      "sourceRow": 3532,
+      "sourceColumn": 4
+    },
+    {
+      "id": 64,
+      "word": "уаргъ",
+      "russian": "бремя",
+      "note": "",
+      "sourceRow": 213,
+      "sourceColumn": 4
+    },
+    {
+      "id": 65,
+      "word": "фӕтӕн",
+      "russian": "широкий",
+      "note": "",
+      "sourceRow": 4119,
+      "sourceColumn": 4
+    },
+    {
+      "id": 66,
+      "word": "цъупп",
+      "russian": "верхушка",
+      "note": "",
+      "sourceRow": 304,
+      "sourceColumn": 4
+    },
+    {
+      "id": 67,
+      "word": "тӕраз",
+      "russian": "весы",
+      "note": "тк. мн.",
+      "sourceRow": 316,
+      "sourceColumn": 4
+    },
+    {
+      "id": 68,
+      "word": "уызын",
+      "russian": "ёж",
+      "note": "зоол.",
+      "sourceRow": 948,
+      "sourceColumn": 4
+    },
+    {
+      "id": 69,
+      "word": "ӕхсӕр",
+      "russian": "фундук",
+      "note": "",
+      "sourceRow": 3969,
+      "sourceColumn": 4
+    },
+    {
+      "id": 70,
+      "word": "ӕрмӕг",
+      "russian": "материал",
+      "note": "",
+      "sourceRow": 1667,
+      "sourceColumn": 4
+    },
+    {
+      "id": 71,
+      "word": "хӕдон",
+      "russian": "рубашка",
+      "note": "",
+      "sourceRow": 3200,
+      "sourceColumn": 4
+    },
+    {
+      "id": 72,
+      "word": "аууон",
+      "russian": "тень",
+      "note": "",
+      "sourceRow": 3723,
+      "sourceColumn": 4
+    },
+    {
+      "id": 73,
+      "word": "тырты",
+      "russian": "барбарис",
+      "note": "бот.",
+      "sourceRow": 76,
+      "sourceColumn": 4
+    },
+    {
+      "id": 74,
+      "word": "быдыр",
+      "russian": "поле",
+      "note": "",
+      "sourceRow": 2623,
+      "sourceColumn": 4
+    },
+    {
+      "id": 75,
+      "word": "къофи",
+      "russian": "кофе",
+      "note": "неизм.",
+      "sourceRow": 1462,
+      "sourceColumn": 4
+    },
+    {
+      "id": 76,
+      "word": "цӕгат",
+      "russian": "север",
+      "note": "",
+      "sourceRow": 3305,
+      "sourceColumn": 4
+    },
+    {
+      "id": 77,
+      "word": "кӕсӕн",
+      "russian": "зеркало",
+      "note": "",
+      "sourceRow": 1159,
+      "sourceColumn": 4
+    },
+    {
+      "id": 78,
+      "word": "хӕтӕл",
+      "russian": "ствол",
+      "note": "",
+      "sourceRow": 3612,
+      "sourceColumn": 4
+    },
+    {
+      "id": 79,
+      "word": "картӕ",
+      "russian": "карта",
+      "note": "",
+      "sourceRow": 1333,
+      "sourceColumn": 4
+    },
+    {
+      "id": 80,
+      "word": "ахсӕн",
+      "russian": "желудок",
+      "note": "",
+      "sourceRow": 973,
+      "sourceColumn": 4
+    },
+    {
+      "id": 81,
+      "word": "оргӕн",
+      "russian": "орган",
+      "note": "",
+      "sourceRow": 2184,
+      "sourceColumn": 4
+    },
+    {
+      "id": 82,
+      "word": "дзыпп",
+      "russian": "карман",
+      "note": "",
+      "sourceRow": 1332,
+      "sourceColumn": 4
+    },
+    {
+      "id": 83,
+      "word": "мӕсыг",
+      "russian": "башня",
+      "note": "",
+      "sourceRow": 82,
+      "sourceColumn": 4
+    },
+    {
+      "id": 84,
+      "word": "амонд",
+      "russian": "счастье",
+      "note": "",
+      "sourceRow": 3681,
+      "sourceColumn": 4
+    },
+    {
+      "id": 85,
+      "word": "цирхъ",
+      "russian": "меч",
+      "note": "",
+      "sourceRow": 1703,
+      "sourceColumn": 4
+    },
+    {
+      "id": 86,
+      "word": "ахуыр",
+      "russian": "привычка",
+      "note": "",
+      "sourceRow": 2853,
+      "sourceColumn": 4
+    },
+    {
+      "id": 87,
+      "word": "рацыд",
+      "russian": "выход",
+      "note": "",
+      "sourceRow": 600,
+      "sourceColumn": 4
+    },
+    {
+      "id": 88,
+      "word": "цӕхӕр",
+      "russian": "жар",
+      "note": "",
+      "sourceRow": 958,
+      "sourceColumn": 4
+    },
+    {
+      "id": 89,
+      "word": "нӕмыг",
+      "russian": "зёрнышко",
+      "note": "",
+      "sourceRow": 1162,
+      "sourceColumn": 4
+    },
+    {
+      "id": 90,
+      "word": "уӕхск",
+      "russian": "плечо",
+      "note": "",
+      "sourceRow": 2453,
+      "sourceColumn": 4
+    },
+    {
+      "id": 91,
+      "word": "хохаг",
+      "russian": "горец",
+      "note": "",
+      "sourceRow": 681,
+      "sourceColumn": 4
+    },
+    {
+      "id": 92,
+      "word": "тыргъ",
+      "russian": "коридор",
+      "note": "",
+      "sourceRow": 1438,
+      "sourceColumn": 4
+    },
+    {
+      "id": 93,
+      "word": "сабыр",
+      "russian": "мирный",
+      "note": "",
+      "sourceRow": 1719,
+      "sourceColumn": 4
+    },
+    {
+      "id": 94,
+      "word": "дзуар",
+      "russian": "крест",
+      "note": "рел.",
+      "sourceRow": 1485,
+      "sourceColumn": 4
+    },
+    {
+      "id": 95,
+      "word": "аккаг",
+      "russian": "достойный",
+      "note": "",
+      "sourceRow": 887,
+      "sourceColumn": 4
+    },
+    {
+      "id": 96,
+      "word": "ахаст",
+      "russian": "отношение",
+      "note": "",
+      "sourceRow": 2285,
+      "sourceColumn": 4
+    },
+    {
+      "id": 97,
+      "word": "цагъд",
+      "russian": "игра",
+      "note": "",
+      "sourceRow": 1190,
+      "sourceColumn": 4
+    },
+    {
+      "id": 98,
+      "word": "ӕрфыг",
+      "russian": "бровь",
+      "note": "",
+      "sourceRow": 216,
+      "sourceColumn": 4
+    },
+    {
+      "id": 99,
+      "word": "ӕнтӕф",
+      "russian": "зной",
+      "note": "",
+      "sourceRow": 1177,
+      "sourceColumn": 4
+    },
+    {
+      "id": 100,
+      "word": "хъазт",
+      "russian": "игра",
+      "note": "",
+      "sourceRow": 1189,
+      "sourceColumn": 4
+    },
+    {
+      "id": 101,
+      "word": "хардз",
+      "russian": "расход",
+      "note": "",
+      "sourceRow": 3139,
+      "sourceColumn": 4
+    },
+    {
+      "id": 102,
+      "word": "улӕфт",
+      "russian": "дыхание",
+      "note": "тк. ед.",
+      "sourceRow": 917,
+      "sourceColumn": 4
+    },
+    {
+      "id": 103,
+      "word": "ӕнгӕс",
+      "russian": "похожий",
+      "note": "",
+      "sourceRow": 2788,
+      "sourceColumn": 4
+    },
+    {
+      "id": 104,
+      "word": "куыст",
+      "russian": "работа",
+      "note": "",
+      "sourceRow": 3026,
+      "sourceColumn": 4
+    },
+    {
+      "id": 105,
+      "word": "булкъ",
+      "russian": "редька",
+      "note": "бот.",
+      "sourceRow": 3153,
+      "sourceColumn": 4
+    },
+    {
+      "id": 106,
+      "word": "сахар",
+      "russian": "город",
+      "note": "",
+      "sourceRow": 687,
+      "sourceColumn": 4
+    },
+    {
+      "id": 107,
+      "word": "бынат",
+      "russian": "место",
+      "note": "",
+      "sourceRow": 1692,
+      "sourceColumn": 4
+    },
+    {
+      "id": 108,
+      "word": "мидис",
+      "russian": "содержание",
+      "note": "",
+      "sourceRow": 3481,
+      "sourceColumn": 4
+    },
+    {
+      "id": 109,
+      "word": "роцъо",
+      "russian": "подбородок",
+      "note": "",
+      "sourceRow": 2525,
+      "sourceColumn": 4
+    },
+    {
+      "id": 110,
+      "word": "афтид",
+      "russian": "пустой",
+      "note": "",
+      "sourceRow": 3010,
+      "sourceColumn": 4
+    },
+    {
+      "id": 111,
+      "word": "гобан",
+      "russian": "матрас",
+      "note": "",
+      "sourceRow": 1668,
+      "sourceColumn": 4
+    },
+    {
+      "id": 112,
+      "word": "дойны",
+      "russian": "жажда",
+      "note": "",
+      "sourceRow": 950,
+      "sourceColumn": 4
+    },
+    {
+      "id": 113,
+      "word": "къори",
+      "russian": "шар",
+      "note": "",
+      "sourceRow": 4103,
+      "sourceColumn": 4
+    },
+    {
+      "id": 114,
+      "word": "ӕхцон",
+      "russian": "приятный",
+      "note": "",
+      "sourceRow": 2916,
+      "sourceColumn": 4
+    },
+    {
+      "id": 115,
+      "word": "халон",
+      "russian": "ворона",
+      "note": "",
+      "sourceRow": 452,
+      "sourceColumn": 4
+    },
+    {
+      "id": 116,
+      "word": "къорд",
+      "russian": "группа",
+      "note": "",
+      "sourceRow": 730,
+      "sourceColumn": 4
+    },
+    {
+      "id": 117,
+      "word": "къуым",
+      "russian": "угол",
+      "note": "",
+      "sourceRow": 3838,
+      "sourceColumn": 4
+    },
+    {
+      "id": 118,
+      "word": "скъӕт",
+      "russian": "хлев",
+      "note": "",
+      "sourceRow": 3984,
+      "sourceColumn": 4
+    },
+    {
+      "id": 119,
+      "word": "хихтӕ",
+      "russian": "хвоя",
+      "note": "тк. ед.",
+      "sourceRow": 3980,
+      "sourceColumn": 4
+    },
+    {
+      "id": 120,
+      "word": "чыссӕ",
+      "russian": "кошелёк",
+      "note": "",
+      "sourceRow": 1466,
+      "sourceColumn": 4
+    },
+    {
+      "id": 121,
+      "word": "уадул",
+      "russian": "щека",
+      "note": "",
+      "sourceRow": 4146,
+      "sourceColumn": 4
+    },
+    {
+      "id": 122,
+      "word": "хицӕн",
+      "russian": "отдельный",
+      "note": "",
+      "sourceRow": 2254,
+      "sourceColumn": 4
+    },
+    {
+      "id": 123,
+      "word": "сатӕг",
+      "russian": "прохлада",
+      "note": "",
+      "sourceRow": 2981,
+      "sourceColumn": 4
+    },
+    {
+      "id": 124,
+      "word": "нымад",
+      "russian": "счёт",
+      "note": "",
+      "sourceRow": 3683,
+      "sourceColumn": 4
+    },
+    {
+      "id": 125,
+      "word": "чиныг",
+      "russian": "книга",
+      "note": "",
+      "sourceRow": 1381,
+      "sourceColumn": 4
+    },
+    {
+      "id": 126,
+      "word": "гӕрах",
+      "russian": "выстрел",
+      "note": "",
+      "sourceRow": 585,
+      "sourceColumn": 4
+    },
+    {
+      "id": 127,
+      "word": "тӕгӕр",
+      "russian": "клён",
+      "note": "бот.",
+      "sourceRow": 1373,
+      "sourceColumn": 4
+    },
+    {
+      "id": 128,
+      "word": "авдӕн",
+      "russian": "колыбель",
+      "note": "",
+      "sourceRow": 1410,
+      "sourceColumn": 4
+    },
+    {
+      "id": 129,
+      "word": "гутон",
+      "russian": "плуг",
+      "note": "",
+      "sourceRow": 2465,
+      "sourceColumn": 4
+    },
+    {
+      "id": 130,
+      "word": "дарӕс",
+      "russian": "одежда",
+      "note": "",
+      "sourceRow": 2122,
+      "sourceColumn": 4
+    },
+    {
+      "id": 131,
+      "word": "хатыр",
+      "russian": "прощение",
+      "note": "",
+      "sourceRow": 2991,
+      "sourceColumn": 4
+    },
+    {
+      "id": 132,
+      "word": "цъиах",
+      "russian": "галка",
+      "note": "зоол.",
+      "sourceRow": 615,
+      "sourceColumn": 4
+    },
+    {
+      "id": 133,
+      "word": "нарӕг",
+      "russian": "узкий",
+      "note": "",
+      "sourceRow": 3865,
+      "sourceColumn": 4
+    },
+    {
+      "id": 134,
+      "word": "зачъе",
+      "russian": "борода",
+      "note": "",
+      "sourceRow": 194,
+      "sourceColumn": 4
+    },
+    {
+      "id": 135,
+      "word": "хъама",
+      "russian": "кинжал",
+      "note": "",
+      "sourceRow": 1354,
+      "sourceColumn": 4
+    },
+    {
+      "id": 136,
+      "word": "мӕлхъ",
+      "russian": "павлин",
+      "note": "зоол.",
+      "sourceRow": 2332,
+      "sourceColumn": 4
+    },
+    {
+      "id": 137,
+      "word": "ӕфсад",
+      "russian": "армия",
+      "note": "",
+      "sourceRow": 60,
+      "sourceColumn": 4
+    },
+    {
+      "id": 138,
+      "word": "уидыг",
+      "russian": "ложка",
+      "note": "",
+      "sourceRow": 1608,
+      "sourceColumn": 4
+    },
+    {
+      "id": 139,
+      "word": "цӕвӕг",
+      "russian": "коса",
+      "note": "",
+      "sourceRow": 1451,
+      "sourceColumn": 4
+    },
+    {
+      "id": 140,
+      "word": "лывзӕ",
+      "russian": "рагу",
+      "note": "",
+      "sourceRow": 3041,
+      "sourceColumn": 4
+    },
+    {
+      "id": 141,
+      "word": "быцӕу",
+      "russian": "подпорка",
+      "note": "",
+      "sourceRow": 2549,
+      "sourceColumn": 4
+    },
+    {
+      "id": 142,
+      "word": "кӕрдо",
+      "russian": "груша",
+      "note": "бот.",
+      "sourceRow": 738,
+      "sourceColumn": 4
+    },
+    {
+      "id": 143,
+      "word": "куатӕ",
+      "russian": "передник",
+      "note": "",
+      "sourceRow": 2381,
+      "sourceColumn": 4
+    },
+    {
+      "id": 144,
+      "word": "хицау",
+      "russian": "начальник",
+      "note": "",
+      "sourceRow": 1910,
+      "sourceColumn": 4
+    },
+    {
+      "id": 145,
+      "word": "цатыр",
+      "russian": "палатка",
+      "note": "",
+      "sourceRow": 2335,
+      "sourceColumn": 4
+    },
+    {
+      "id": 146,
+      "word": "афтек",
+      "russian": "аптека",
+      "note": "",
+      "sourceRow": 56,
+      "sourceColumn": 4
+    },
+    {
+      "id": 147,
+      "word": "здӕхт",
+      "russian": "оборот",
+      "note": "",
+      "sourceRow": 2072,
+      "sourceColumn": 4
+    },
+    {
+      "id": 148,
+      "word": "бындз",
+      "russian": "муха",
+      "note": "зоол.",
+      "sourceRow": 4303,
+      "sourceColumn": 4
+    },
+    {
+      "id": 149,
+      "word": "цӕттӕ",
+      "russian": "готовый",
+      "note": "",
+      "sourceRow": 705,
+      "sourceColumn": 4
+    },
+    {
+      "id": 150,
+      "word": "хъавд",
+      "russian": "намерение",
+      "note": "",
+      "sourceRow": 1851,
+      "sourceColumn": 4
+    },
+    {
+      "id": 151,
+      "word": "хӕлар",
+      "russian": "приятель",
+      "note": "",
+      "sourceRow": 2913,
+      "sourceColumn": 4
+    },
+    {
+      "id": 152,
+      "word": "пайда",
+      "russian": "польза",
+      "note": "тк. ед.",
+      "sourceRow": 2655,
+      "sourceColumn": 4
+    },
+    {
+      "id": 153,
+      "word": "уӕрӕх",
+      "russian": "просторный",
+      "note": "",
+      "sourceRow": 2974,
+      "sourceColumn": 4
+    },
+    {
+      "id": 154,
+      "word": "барӕг",
+      "russian": "всадник",
+      "note": "",
+      "sourceRow": 488,
+      "sourceColumn": 4
+    },
+    {
+      "id": 155,
+      "word": "усгур",
+      "russian": "жених",
+      "note": "",
+      "sourceRow": 978,
+      "sourceColumn": 4
+    },
+    {
+      "id": 156,
+      "word": "ӕмбыд",
+      "russian": "гнилой",
+      "note": "",
+      "sourceRow": 655,
+      "sourceColumn": 4
+    },
+    {
+      "id": 157,
+      "word": "цӕрӕг",
+      "russian": "житель",
+      "note": "",
+      "sourceRow": 998,
+      "sourceColumn": 4
+    },
+    {
+      "id": 158,
+      "word": "сурӕт",
+      "russian": "изображение",
+      "note": "",
+      "sourceRow": 1221,
+      "sourceColumn": 4
+    },
+    {
+      "id": 159,
+      "word": "уавӕр",
+      "russian": "обстоятельство",
+      "note": "",
+      "sourceRow": 2086,
+      "sourceColumn": 4
+    },
+    {
+      "id": 160,
+      "word": "фындз",
+      "russian": "нос",
+      "note": "",
+      "sourceRow": 2024,
+      "sourceColumn": 4
+    },
+    {
+      "id": 161,
+      "word": "мӕсты",
+      "russian": "злой",
+      "note": "",
+      "sourceRow": 1166,
+      "sourceColumn": 4
+    },
+    {
+      "id": 162,
+      "word": "горӕт",
+      "russian": "город",
+      "note": "",
+      "sourceRow": 686,
+      "sourceColumn": 4
+    },
+    {
+      "id": 163,
+      "word": "сихор",
+      "russian": "обед",
+      "note": "",
+      "sourceRow": 2044,
+      "sourceColumn": 4
+    },
+    {
+      "id": 164,
+      "word": "згъӕр",
+      "russian": "металл",
+      "note": "",
+      "sourceRow": 1697,
+      "sourceColumn": 4
+    },
+    {
+      "id": 165,
+      "word": "цывзы",
+      "russian": "перец",
+      "note": "",
+      "sourceRow": 2395,
+      "sourceColumn": 4
+    },
+    {
+      "id": 166,
+      "word": "лымӕн",
+      "russian": "приятель",
+      "note": "",
+      "sourceRow": 2912,
+      "sourceColumn": 4
+    },
+    {
+      "id": 167,
+      "word": "фарст",
+      "russian": "вопрос",
+      "note": "",
+      "sourceRow": 449,
+      "sourceColumn": 4
+    },
+    {
+      "id": 168,
+      "word": "карст",
+      "russian": "кусок",
+      "note": "",
+      "sourceRow": 1535,
+      "sourceColumn": 4
+    },
+    {
+      "id": 169,
+      "word": "галиу",
+      "russian": "левый",
+      "note": "",
+      "sourceRow": 1557,
+      "sourceColumn": 4
+    },
+    {
+      "id": 170,
+      "word": "даргъ",
+      "russian": "длинный",
+      "note": "",
+      "sourceRow": 831,
+      "sourceColumn": 4
+    },
+    {
+      "id": 171,
+      "word": "магъз",
+      "russian": "мозг",
+      "note": "",
+      "sourceRow": 1741,
+      "sourceColumn": 4
+    },
+    {
+      "id": 172,
+      "word": "рӕдау",
+      "russian": "щедрый",
+      "note": "",
+      "sourceRow": 4144,
+      "sourceColumn": 4
+    },
+    {
+      "id": 173,
+      "word": "бӕлас",
+      "russian": "дерево",
+      "note": "",
+      "sourceRow": 814,
+      "sourceColumn": 4
+    },
+    {
+      "id": 174,
+      "word": "цъасс",
+      "russian": "расщелина",
+      "note": "",
+      "sourceRow": 4287,
+      "sourceColumn": 4
+    },
+    {
+      "id": 175,
+      "word": "ӕрдуз",
+      "russian": "лужайка",
+      "note": "",
+      "sourceRow": 1620,
+      "sourceColumn": 4
+    },
+    {
+      "id": 176,
+      "word": "адрис",
+      "russian": "адрес",
+      "note": "",
+      "sourceRow": 23,
+      "sourceColumn": 4
+    },
+    {
+      "id": 177,
+      "word": "зонгӕ",
+      "russian": "знакомый",
+      "note": "",
+      "sourceRow": 1170,
+      "sourceColumn": 4
+    },
+    {
+      "id": 178,
+      "word": "наукӕ",
+      "russian": "наука",
+      "note": "",
+      "sourceRow": 1900,
+      "sourceColumn": 4
+    },
+    {
+      "id": 179,
+      "word": "ныхас",
+      "russian": "беседа",
+      "note": "",
+      "sourceRow": 120,
+      "sourceColumn": 4
+    },
+    {
+      "id": 180,
+      "word": "куыдз",
+      "russian": "собака",
+      "note": "зоол.",
+      "sourceRow": 3452,
+      "sourceColumn": 4
+    },
+    {
+      "id": 181,
+      "word": "маргъ",
+      "russian": "птица",
+      "note": "",
+      "sourceRow": 3004,
+      "sourceColumn": 4
+    },
+    {
+      "id": 182,
+      "word": "хъузг",
+      "russian": "скорлупа",
+      "note": "",
+      "sourceRow": 3374,
+      "sourceColumn": 4
+    },
+    {
+      "id": 183,
+      "word": "хыгъд",
+      "russian": "счёт",
+      "note": "тк. ед.",
+      "sourceRow": 3682,
+      "sourceColumn": 4
+    },
+    {
+      "id": 184,
+      "word": "ӕмсӕр",
+      "russian": "равный",
+      "note": "",
+      "sourceRow": 3038,
+      "sourceColumn": 4
+    },
+    {
+      "id": 185,
+      "word": "газет",
+      "russian": "газета",
+      "note": "",
+      "sourceRow": 614,
+      "sourceColumn": 4
+    },
+    {
+      "id": 186,
+      "word": "ӕфсӕн",
+      "russian": "железный",
+      "note": "",
+      "sourceRow": 968,
+      "sourceColumn": 4
+    },
+    {
+      "id": 187,
+      "word": "зокъо",
+      "russian": "гриб",
+      "note": "бот.",
+      "sourceRow": 719,
+      "sourceColumn": 4
+    },
+    {
+      "id": 188,
+      "word": "сахат",
+      "russian": "час",
+      "note": "",
+      "sourceRow": 4039,
+      "sourceColumn": 4
+    },
+    {
+      "id": 189,
+      "word": "ӕнцон",
+      "russian": "лёгкий",
+      "note": "",
+      "sourceRow": 1590,
+      "sourceColumn": 4
+    },
+    {
+      "id": 190,
+      "word": "ӕнгуз",
+      "russian": "орех",
+      "note": "бот.  (грецкий)  ",
+      "sourceRow": 2186,
+      "sourceColumn": 4
+    },
+    {
+      "id": 191,
+      "word": "салам",
+      "russian": "привет",
+      "note": "",
+      "sourceRow": 2851,
+      "sourceColumn": 4
+    },
+    {
+      "id": 192,
+      "word": "зынгӕ",
+      "russian": "видный",
+      "note": "",
+      "sourceRow": 347,
+      "sourceColumn": 4
+    },
+    {
+      "id": 193,
+      "word": "сапон",
+      "russian": "мыло",
+      "note": "",
+      "sourceRow": 1792,
+      "sourceColumn": 4
+    },
+    {
+      "id": 194,
+      "word": "дӕргъ",
+      "russian": "длина",
+      "note": "",
+      "sourceRow": 830,
+      "sourceColumn": 4
+    },
+    {
+      "id": 195,
+      "word": "хуынд",
+      "russian": "приглашение",
+      "note": "",
+      "sourceRow": 2857,
+      "sourceColumn": 4
+    },
+    {
+      "id": 196,
+      "word": "чъири",
+      "russian": "пирог",
+      "note": "",
+      "sourceRow": 2427,
+      "sourceColumn": 4
+    },
+    {
+      "id": 197,
+      "word": "къуту",
+      "russian": "амбар",
+      "note": "",
+      "sourceRow": 38,
+      "sourceColumn": 4
+    },
+    {
+      "id": 198,
+      "word": "сындз",
+      "russian": "колючка",
+      "note": "",
+      "sourceRow": 1414,
+      "sourceColumn": 4
+    },
+    {
+      "id": 199,
+      "word": "заман",
+      "russian": "время",
+      "note": "",
+      "sourceRow": 486,
+      "sourceColumn": 4
+    },
+    {
+      "id": 200,
+      "word": "аудаг",
+      "russian": "заботливый",
+      "note": "",
+      "sourceRow": 1020,
+      "sourceColumn": 4
+    },
+    {
+      "id": 201,
+      "word": "абана",
+      "russian": "баня",
+      "note": "",
+      "sourceRow": 4202,
+      "sourceColumn": 4
+    },
+    {
+      "id": 202,
+      "word": "уасӕг",
+      "russian": "петух",
+      "note": "зоол.",
+      "sourceRow": 2405,
+      "sourceColumn": 4
+    },
+    {
+      "id": 203,
+      "word": "нысан",
+      "russian": "знак",
+      "note": "",
+      "sourceRow": 1168,
+      "sourceColumn": 4
+    },
+    {
+      "id": 204,
+      "word": "тӕхӕг",
+      "russian": "лётчик",
+      "note": "",
+      "sourceRow": 1592,
+      "sourceColumn": 4
+    },
+    {
+      "id": 205,
+      "word": "хыссӕ",
+      "russian": "тесто",
+      "note": "",
+      "sourceRow": 3731,
+      "sourceColumn": 4
+    },
+    {
+      "id": 206,
+      "word": "рахиз",
+      "russian": "правый",
+      "note": "",
+      "sourceRow": 2822,
+      "sourceColumn": 4
+    },
+    {
+      "id": 207,
+      "word": "абетӕ",
+      "russian": "букварь",
+      "note": "",
+      "sourceRow": 232,
+      "sourceColumn": 4
+    },
+    {
+      "id": 208,
+      "word": "рӕнхъ",
+      "russian": "строка",
+      "note": "",
+      "sourceRow": 3651,
+      "sourceColumn": 4
+    },
+    {
+      "id": 209,
+      "word": "кадӕг",
+      "russian": "сказание",
+      "note": "",
+      "sourceRow": 3354,
+      "sourceColumn": 4
+    },
+    {
+      "id": 210,
+      "word": "саргъ",
+      "russian": "седло",
+      "note": "",
+      "sourceRow": 3311,
+      "sourceColumn": 4
+    },
+    {
+      "id": 211,
+      "word": "сӕрак",
+      "russian": "кожа",
+      "note": "",
+      "sourceRow": 1396,
+      "sourceColumn": 4
+    },
+    {
+      "id": 212,
+      "word": "вилкӕ",
+      "russian": "вилка",
+      "note": "",
+      "sourceRow": 348,
+      "sourceColumn": 4
+    },
+    {
+      "id": 213,
+      "word": "аслам",
+      "russian": "дешёвый",
+      "note": "",
+      "sourceRow": 826,
+      "sourceColumn": 4
+    },
+    {
+      "id": 214,
+      "word": "дыргъ",
+      "russian": "фрукт",
+      "note": "",
+      "sourceRow": 3968,
+      "sourceColumn": 4
+    },
+    {
+      "id": 215,
+      "word": "ӕфсир",
+      "russian": "колос",
+      "note": "бот.",
+      "sourceRow": 1409,
+      "sourceColumn": 4
+    },
+    {
+      "id": 216,
+      "word": "нӕлхӕ",
+      "russian": "масло",
+      "note": "",
+      "sourceRow": 1661,
+      "sourceColumn": 4
+    },
+    {
+      "id": 217,
+      "word": "сабат",
+      "russian": "суббота",
+      "note": "",
+      "sourceRow": 3659,
+      "sourceColumn": 4
+    },
+    {
+      "id": 218,
+      "word": "ӕхсӕв",
+      "russian": "ночь",
+      "note": "",
+      "sourceRow": 2029,
+      "sourceColumn": 4
+    },
+    {
+      "id": 219,
+      "word": "хъӕмп",
+      "russian": "солома",
+      "note": "",
+      "sourceRow": 3501,
+      "sourceColumn": 4
+    },
+    {
+      "id": 220,
+      "word": "ӕхсар",
+      "russian": "отвага",
+      "note": "",
+      "sourceRow": 2238,
+      "sourceColumn": 4
+    },
+    {
+      "id": 221,
+      "word": "айдӕн",
+      "russian": "зеркало",
+      "note": "",
+      "sourceRow": 1160,
+      "sourceColumn": 4
+    },
+    {
+      "id": 222,
+      "word": "уынӕр",
+      "russian": "шум",
+      "note": "",
+      "sourceRow": 4135,
+      "sourceColumn": 4
+    },
+    {
+      "id": 223,
+      "word": "хъуыр",
+      "russian": "горло",
+      "note": "",
+      "sourceRow": 683,
+      "sourceColumn": 4
+    },
+    {
+      "id": 224,
+      "word": "аххос",
+      "russian": "вина",
+      "note": "",
+      "sourceRow": 351,
+      "sourceColumn": 4
+    },
+    {
+      "id": 225,
+      "word": "зулкъ",
+      "russian": "червь",
+      "note": "зоол.",
+      "sourceRow": 4047,
+      "sourceColumn": 4
+    },
+    {
+      "id": 226,
+      "word": "зонад",
+      "russian": "наука",
+      "note": "",
+      "sourceRow": 1901,
+      "sourceColumn": 4
+    },
+    {
+      "id": 227,
+      "word": "тӕнӕг",
+      "russian": "жидкий",
+      "note": "",
+      "sourceRow": 993,
+      "sourceColumn": 4
+    },
+    {
+      "id": 228,
+      "word": "зарӕг",
+      "russian": "песня",
+      "note": "",
+      "sourceRow": 2402,
+      "sourceColumn": 4
+    },
+    {
+      "id": 229,
+      "word": "фӕрӕз",
+      "russian": "выход",
+      "note": "",
+      "sourceRow": 603,
+      "sourceColumn": 4
+    },
+    {
+      "id": 230,
+      "word": "кълас",
+      "russian": "класс",
+      "note": "",
+      "sourceRow": 1366,
+      "sourceColumn": 4
+    },
+    {
+      "id": 231,
+      "word": "стъол",
+      "russian": "стол",
+      "note": "",
+      "sourceRow": 3625,
+      "sourceColumn": 4
+    },
+    {
+      "id": 232,
+      "word": "ӕфцӕг",
+      "russian": "перевал",
+      "note": "(горный)",
+      "sourceRow": 2360,
+      "sourceColumn": 4
+    },
+    {
+      "id": 233,
+      "word": "уылӕн",
+      "russian": "волна",
+      "note": "",
+      "sourceRow": 436,
+      "sourceColumn": 4
+    },
+    {
+      "id": 234,
+      "word": "къаба",
+      "russian": "платье",
+      "note": "",
+      "sourceRow": 2443,
+      "sourceColumn": 4
+    },
+    {
+      "id": 235,
+      "word": "минас",
+      "russian": "угощение",
+      "note": "",
+      "sourceRow": 3843,
+      "sourceColumn": 4
+    },
+    {
+      "id": 236,
+      "word": "минут",
+      "russian": "минута",
+      "note": "",
+      "sourceRow": 1714,
+      "sourceColumn": 4
+    },
+    {
+      "id": 237,
+      "word": "ӕндах",
+      "russian": "нитка",
+      "note": "",
+      "sourceRow": 2007,
+      "sourceColumn": 4
+    },
+    {
+      "id": 238,
+      "word": "бӕстӕ",
+      "russian": "страна",
+      "note": "",
+      "sourceRow": 3633,
+      "sourceColumn": 4
+    },
+    {
+      "id": 239,
+      "word": "мисын",
+      "russian": "кефир",
+      "note": "",
+      "sourceRow": 1352,
+      "sourceColumn": 4
+    },
+    {
+      "id": 240,
+      "word": "цупал",
+      "russian": "гроздь",
+      "note": "",
+      "sourceRow": 721,
+      "sourceColumn": 4
+    },
+    {
+      "id": 241,
+      "word": "рӕхыс",
+      "russian": "цепь",
+      "note": "",
+      "sourceRow": 4031,
+      "sourceColumn": 4
+    },
+    {
+      "id": 242,
+      "word": "бабыз",
+      "russian": "утка",
+      "note": "",
+      "sourceRow": 3932,
+      "sourceColumn": 4
+    },
+    {
+      "id": 243,
+      "word": "арӕзт",
+      "russian": "строение",
+      "note": "",
+      "sourceRow": 3644,
+      "sourceColumn": 4
+    },
+    {
+      "id": 244,
+      "word": "фӕтӕг",
+      "russian": "вождь",
+      "note": "",
+      "sourceRow": 404,
+      "sourceColumn": 4
+    },
+    {
+      "id": 245,
+      "word": "ӕртӕх",
+      "russian": "роса",
+      "note": "",
+      "sourceRow": 3191,
+      "sourceColumn": 4
+    },
+    {
+      "id": 246,
+      "word": "уӕраг",
+      "russian": "колено",
+      "note": "анат.",
+      "sourceRow": 1402,
+      "sourceColumn": 4
+    },
+    {
+      "id": 247,
+      "word": "уазал",
+      "russian": "холод",
+      "note": "",
+      "sourceRow": 3996,
+      "sourceColumn": 4
+    },
+    {
+      "id": 248,
+      "word": "рагон",
+      "russian": "древний",
+      "note": "",
+      "sourceRow": 899,
+      "sourceColumn": 4
+    },
+    {
+      "id": 249,
+      "word": "чырӕг",
+      "russian": "ячейка",
+      "note": "",
+      "sourceRow": 4193,
+      "sourceColumn": 4
+    },
+    {
+      "id": 250,
+      "word": "фадат",
+      "russian": "обстоятельство",
+      "note": "",
+      "sourceRow": 2085,
+      "sourceColumn": 4
+    },
+    {
+      "id": 251,
+      "word": "артаг",
+      "russian": "топливо",
+      "note": "",
+      "sourceRow": 3757,
+      "sourceColumn": 4
+    },
+    {
+      "id": 252,
+      "word": "чындз",
+      "russian": "кукла",
+      "note": "",
+      "sourceRow": 1523,
+      "sourceColumn": 4
+    },
+    {
+      "id": 253,
+      "word": "синаг",
+      "russian": "верёвка",
+      "note": "",
+      "sourceRow": 289,
+      "sourceColumn": 4
+    },
+    {
+      "id": 254,
+      "word": "ӕрдын",
+      "russian": "лук",
+      "note": "(оружие)",
+      "sourceRow": 1622,
+      "sourceColumn": 4
+    },
+    {
+      "id": 255,
+      "word": "чысыл",
+      "russian": "маленький",
+      "note": "",
+      "sourceRow": 1647,
+      "sourceColumn": 4
+    },
+    {
+      "id": 256,
+      "word": "тӕваг",
+      "russian": "влияние",
+      "note": "",
+      "sourceRow": 369,
+      "sourceColumn": 4
+    },
+    {
+      "id": 257,
+      "word": "дзырд",
+      "russian": "слово",
+      "note": "",
+      "sourceRow": 3401,
+      "sourceColumn": 4
+    },
+    {
+      "id": 258,
+      "word": "ваннӕ",
+      "russian": "ванна",
+      "note": "",
+      "sourceRow": 252,
+      "sourceColumn": 4
+    },
+    {
+      "id": 259,
+      "word": "гӕрӕн",
+      "russian": "ограда",
+      "note": "",
+      "sourceRow": 2119,
+      "sourceColumn": 4
+    },
+    {
+      "id": 260,
+      "word": "сагой",
+      "russian": "вилы",
+      "note": "тк. мн.",
+      "sourceRow": 349,
+      "sourceColumn": 4
+    },
+    {
+      "id": 261,
+      "word": "егъау",
+      "russian": "большой",
+      "note": "",
+      "sourceRow": 192,
+      "sourceColumn": 4
+    },
+    {
+      "id": 262,
+      "word": "ӕнцой",
+      "russian": "покой",
+      "note": "",
+      "sourceRow": 2611,
+      "sourceColumn": 4
+    },
+    {
+      "id": 263,
+      "word": "хызын",
+      "russian": "портфель",
+      "note": "",
+      "sourceRow": 2705,
+      "sourceColumn": 4
+    },
+    {
+      "id": 264,
+      "word": "халас",
+      "russian": "иней",
+      "note": "тк. ед.",
+      "sourceRow": 1241,
+      "sourceColumn": 4
+    },
+    {
+      "id": 265,
+      "word": "кӕсаг",
+      "russian": "рыба",
+      "note": "",
+      "sourceRow": 3220,
+      "sourceColumn": 4
+    },
+    {
+      "id": 266,
+      "word": "гогыз",
+      "russian": "индюк",
+      "note": "",
+      "sourceRow": 1240,
+      "sourceColumn": 4
+    },
+    {
+      "id": 267,
+      "word": "дурын",
+      "russian": "каменный",
+      "note": "",
+      "sourceRow": 1317,
+      "sourceColumn": 4
+    },
+    {
+      "id": 268,
+      "word": "ауӕдз",
+      "russian": "борозда",
+      "note": "",
+      "sourceRow": 196,
+      "sourceColumn": 4
+    },
+    {
+      "id": 269,
+      "word": "сычъи",
+      "russian": "серна",
+      "note": "зоол.",
+      "sourceRow": 3333,
+      "sourceColumn": 4
+    },
+    {
+      "id": 270,
+      "word": "уӕйыг",
+      "russian": "великан",
+      "note": "",
+      "sourceRow": 283,
+      "sourceColumn": 4
+    },
+    {
+      "id": 271,
+      "word": "хъаст",
+      "russian": "жалоба",
+      "note": "",
+      "sourceRow": 955,
+      "sourceColumn": 4
+    },
+    {
+      "id": 272,
+      "word": "хъару",
+      "russian": "мощь",
+      "note": "",
+      "sourceRow": 1769,
+      "sourceColumn": 4
+    },
+    {
+      "id": 273,
+      "word": "куывд",
+      "russian": "молитва",
+      "note": "",
+      "sourceRow": 1749,
+      "sourceColumn": 4
+    },
+    {
+      "id": 274,
+      "word": "сыхаг",
+      "russian": "сосед",
+      "note": "",
+      "sourceRow": 3521,
+      "sourceColumn": 4
+    },
+    {
+      "id": 275,
+      "word": "фидыд",
+      "russian": "примирение",
+      "note": "",
+      "sourceRow": 2889,
+      "sourceColumn": 4
+    },
+    {
+      "id": 276,
+      "word": "исбон",
+      "russian": "имущество",
+      "note": "",
+      "sourceRow": 1231,
+      "sourceColumn": 4
+    },
+    {
+      "id": 277,
+      "word": "пурти",
+      "russian": "мяч",
+      "note": "",
+      "sourceRow": 1806,
+      "sourceColumn": 4
+    },
+    {
+      "id": 278,
+      "word": "ӕрзӕт",
+      "russian": "руда",
+      "note": "",
+      "sourceRow": 3205,
+      "sourceColumn": 4
+    },
+    {
+      "id": 279,
+      "word": "афӕдз",
+      "russian": "год",
+      "note": "(один год)",
+      "sourceRow": 662,
+      "sourceColumn": 4
+    },
+    {
+      "id": 280,
+      "word": "ӕхгӕд",
+      "russian": "закрытый",
+      "note": "",
+      "sourceRow": 1068,
+      "sourceColumn": 4
+    },
+    {
+      "id": 281,
+      "word": "бӕлон",
+      "russian": "голубь",
+      "note": "зоол.",
+      "sourceRow": 4254,
+      "sourceColumn": 4
+    },
+    {
+      "id": 282,
+      "word": "мӕнӕу",
+      "russian": "пшеница",
+      "note": "",
+      "sourceRow": 3018,
+      "sourceColumn": 4
+    },
+    {
+      "id": 283,
+      "word": "фысым",
+      "russian": "хозяин",
+      "note": "",
+      "sourceRow": 3993,
+      "sourceColumn": 4
+    },
+    {
+      "id": 284,
+      "word": "лӕгъз",
+      "russian": "гладкий",
+      "note": "",
+      "sourceRow": 635,
+      "sourceColumn": 4
+    },
+    {
+      "id": 285,
+      "word": "ӕвзар",
+      "russian": "росток",
+      "note": "",
+      "sourceRow": 3196,
+      "sourceColumn": 4
+    },
+    {
+      "id": 286,
+      "word": "уисой",
+      "russian": "метла",
+      "note": "",
+      "sourceRow": 1702,
+      "sourceColumn": 4
+    },
+    {
+      "id": 287,
+      "word": "рӕдыд",
+      "russian": "ошибка",
+      "note": "",
+      "sourceRow": 2330,
+      "sourceColumn": 4
+    },
+    {
+      "id": 288,
+      "word": "курӕг",
+      "russian": "проситель",
+      "note": "",
+      "sourceRow": 2964,
+      "sourceColumn": 4
+    },
+    {
+      "id": 289,
+      "word": "аивад",
+      "russian": "искусство",
+      "note": "",
+      "sourceRow": 1251,
+      "sourceColumn": 4
+    },
+    {
+      "id": 290,
+      "word": "цыргъ",
+      "russian": "острый",
+      "note": "",
+      "sourceRow": 2229,
+      "sourceColumn": 4
+    },
+    {
+      "id": 291,
+      "word": "пӕлӕз",
+      "russian": "плащ",
+      "note": "",
+      "sourceRow": 2446,
+      "sourceColumn": 4
+    },
+    {
+      "id": 292,
+      "word": "зӕрин",
+      "russian": "золотой",
+      "note": "",
+      "sourceRow": 1181,
+      "sourceColumn": 4
+    },
+    {
+      "id": 293,
+      "word": "дымгӕ",
+      "russian": "ветер",
+      "note": "",
+      "sourceRow": 321,
+      "sourceColumn": 4
+    },
+    {
+      "id": 294,
+      "word": "нымӕт",
+      "russian": "бурка",
+      "note": "",
+      "sourceRow": 4237,
+      "sourceColumn": 4
+    },
+    {
+      "id": 295,
+      "word": "ӕддаг",
+      "russian": "внешний",
+      "note": "",
+      "sourceRow": 378,
+      "sourceColumn": 4
+    },
+    {
+      "id": 296,
+      "word": "бырон",
+      "russian": "мусор",
+      "note": "тк. ед.",
+      "sourceRow": 1786,
+      "sourceColumn": 4
+    },
+    {
+      "id": 297,
+      "word": "идейӕ",
+      "russian": "идея",
+      "note": "",
+      "sourceRow": 1195,
+      "sourceColumn": 4
+    },
+    {
+      "id": 298,
+      "word": "гауыз",
+      "russian": "ковёр",
+      "note": "",
+      "sourceRow": 1386,
+      "sourceColumn": 4
+    },
+    {
+      "id": 299,
+      "word": "базыр",
+      "russian": "крыло",
+      "note": "",
+      "sourceRow": 1505,
+      "sourceColumn": 4
+    },
+    {
+      "id": 300,
+      "word": "лауыз",
+      "russian": "блин",
+      "note": "",
+      "sourceRow": 166,
+      "sourceColumn": 4
+    }
+  ],
+  "allowed": [
+    "абана",
+    "абетӕ",
+    "абоны",
+    "авари",
+    "авдӕн",
+    "адзал",
+    "адрис",
+    "аивад",
+    "аивын",
+    "айдӕн",
+    "айнӕг",
+    "айсын",
+    "аккаг",
+    "алкӕд",
+    "аллах",
+    "амонд",
+    "ардӕм",
+    "артаг",
+    "арфмӕ",
+    "арӕзт",
+    "аслам",
+    "астӕу",
+    "асыкк",
+    "асӕст",
+    "аудаг",
+    "аудын",
+    "аууон",
+    "ауӕдз",
+    "афтек",
+    "афтид",
+    "афӕдз",
+    "ахаст",
+    "ахсын",
+    "ахсӕн",
+    "ахуыр",
+    "аххос",
+    "бабыз",
+    "бадын",
+    "базыр",
+    "барын",
+    "барӕг",
+    "барӕй",
+    "бедра",
+    "бецау",
+    "библи",
+    "бийын",
+    "боныг",
+    "бонӕй",
+    "булкъ",
+    "быдыр",
+    "былон",
+    "бынат",
+    "бындз",
+    "бынмӕ",
+    "бынӕй",
+    "бырон",
+    "бырын",
+    "бырӕн",
+    "быцӕу",
+    "бӕзгӕ",
+    "бӕлас",
+    "бӕлон",
+    "бӕсты",
+    "бӕстӕ",
+    "ваннӕ",
+    "вилкӕ",
+    "газет",
+    "галиу",
+    "гауыз",
+    "гобан",
+    "гогыз",
+    "горӕт",
+    "гутон",
+    "гыцци",
+    "гӕмӕх",
+    "гӕнах",
+    "гӕнӕн",
+    "гӕрах",
+    "гӕрӕн",
+    "гӕсгӕ",
+    "давон",
+    "давын",
+    "давӕг",
+    "даргъ",
+    "дарын",
+    "дарӕс",
+    "дасын",
+    "дауын",
+    "дзуар",
+    "дзылы",
+    "дзыпп",
+    "дзырд",
+    "дойны",
+    "домын",
+    "домӕн",
+    "дурын",
+    "дывӕр",
+    "дымгӕ",
+    "дымын",
+    "дыргъ",
+    "дыууӕ",
+    "дӕргъ",
+    "дӕсны",
+    "егъау",
+    "зайын",
+    "заман",
+    "зарын",
+    "зарӕг",
+    "зачъе",
+    "згъӕр",
+    "здӕхт",
+    "зилын",
+    "змӕлд",
+    "змӕст",
+    "зноны",
+    "зокъо",
+    "зонад",
+    "зонгӕ",
+    "зонын",
+    "зулкъ",
+    "зулмӕ",
+    "зылын",
+    "зымӕг",
+    "зынгӕ",
+    "зынын",
+    "зӕгӕл",
+    "зӕлын",
+    "зӕрдӕ",
+    "зӕрин",
+    "ивылд",
+    "идейӕ",
+    "изӕры",
+    "ингӕн",
+    "ирдӕй",
+    "исбон",
+    "искуы",
+    "искӕд",
+    "искӕм",
+    "иттӕг",
+    "иугӕр",
+    "иунӕг",
+    "кадӕг",
+    "калын",
+    "карст",
+    "картӕ",
+    "катай",
+    "кафын",
+    "куатӕ",
+    "кувын",
+    "кукла",
+    "курын",
+    "курӕг",
+    "кусаг",
+    "кусын",
+    "кусӕг",
+    "кусӕн",
+    "куывд",
+    "куыдз",
+    "куырд",
+    "куырм",
+    "куыст",
+    "къаба",
+    "къадз",
+    "кълас",
+    "къона",
+    "къорд",
+    "къори",
+    "къофи",
+    "къуту",
+    "къуым",
+    "кӕдӕм",
+    "кӕлын",
+    "кӕнын",
+    "кӕрдо",
+    "кӕрон",
+    "кӕсаг",
+    "кӕсын",
+    "кӕсӕг",
+    "кӕсӕн",
+    "кӕуаг",
+    "кӕуын",
+    "кӕцӕй",
+    "ламаз",
+    "ласын",
+    "лауыз",
+    "лывзӕ",
+    "лымӕн",
+    "лӕвар",
+    "лӕгъз",
+    "лӕгӕт",
+    "лӕппу",
+    "магъз",
+    "маргъ",
+    "марын",
+    "марӕг",
+    "мидис",
+    "мидӕг",
+    "минас",
+    "минут",
+    "мисын",
+    "молло",
+    "мысын",
+    "мысыр",
+    "мӕлхъ",
+    "мӕлын",
+    "мӕлӕт",
+    "мӕнӕу",
+    "мӕсты",
+    "мӕсыг",
+    "найын",
+    "намаз",
+    "нарӕг",
+    "наукӕ",
+    "науӕд",
+    "никуы",
+    "ниуын",
+    "ницал",
+    "ницас",
+    "ногӕй",
+    "номыр",
+    "нудӕс",
+    "нымад",
+    "нымӕт",
+    "нымӕц",
+    "нырма",
+    "нысан",
+    "ныхас",
+    "нӕдӕр",
+    "нӕлхӕ",
+    "нӕмыг",
+    "нӕмын",
+    "нӕрын",
+    "оргӕн",
+    "пайда",
+    "партӕ",
+    "пурти",
+    "пӕлӕз",
+    "рагон",
+    "рагӕй",
+    "раджы",
+    "радон",
+    "размӕ",
+    "разӕй",
+    "рахиз",
+    "рацыд",
+    "рогӕй",
+    "ромаг",
+    "роцъо",
+    "рувас",
+    "рӕбын",
+    "рӕдау",
+    "рӕдыд",
+    "рӕзын",
+    "рӕйын",
+    "рӕнхъ",
+    "рӕсуг",
+    "рӕсыд",
+    "рӕхыс",
+    "сабат",
+    "сабыр",
+    "сагой",
+    "сайын",
+    "салам",
+    "сапон",
+    "саргъ",
+    "сасир",
+    "сатӕг",
+    "сафын",
+    "сахар",
+    "сахат",
+    "сидын",
+    "синаг",
+    "сисын",
+    "сихор",
+    "сконд",
+    "скъӕт",
+    "сомих",
+    "ставд",
+    "стъол",
+    "суанг",
+    "сурын",
+    "сурӕт",
+    "сусӕг",
+    "суткӕ",
+    "сыкъа",
+    "сымах",
+    "сындз",
+    "сыхаг",
+    "сычъи",
+    "сӕкӕр",
+    "сӕлын",
+    "сӕмӕн",
+    "сӕрак",
+    "сӕрӕн",
+    "сӕфын",
+    "тавын",
+    "тагъд",
+    "тайын",
+    "тарст",
+    "тасын",
+    "тауын",
+    "тилын",
+    "тонын",
+    "тулдз",
+    "тулын",
+    "тыргъ",
+    "тырты",
+    "тыхми",
+    "тыхст",
+    "тӕваг",
+    "тӕгӕр",
+    "тӕмӕн",
+    "тӕнӕг",
+    "тӕраз",
+    "тӕрын",
+    "тӕскъ",
+    "тӕхын",
+    "тӕхӕг",
+    "уавӕр",
+    "уадул",
+    "уазал",
+    "уазӕг",
+    "уайын",
+    "уаргъ",
+    "уарди",
+    "уарын",
+    "уасын",
+    "уасӕг",
+    "уафын",
+    "уацар",
+    "уацау",
+    "уидаг",
+    "уидыг",
+    "уисой",
+    "улӕфт",
+    "усгур",
+    "уыдон",
+    "уызын",
+    "уыйас",
+    "уылӕн",
+    "уымӕл",
+    "уымӕн",
+    "уынын",
+    "уынӕр",
+    "уӕвгӕ",
+    "уӕвын",
+    "уӕгъд",
+    "уӕдмӕ",
+    "уӕйыг",
+    "уӕныг",
+    "уӕраг",
+    "уӕртӕ",
+    "уӕрӕх",
+    "уӕхск",
+    "фадат",
+    "фадын",
+    "фарст",
+    "фасын",
+    "фатӕг",
+    "фауын",
+    "фенын",
+    "фидар",
+    "фидыд",
+    "фидын",
+    "фидӕн",
+    "фондз",
+    "франц",
+    "фындз",
+    "фынӕй",
+    "фысым",
+    "фыцын",
+    "фӕдис",
+    "фӕнды",
+    "фӕрцы",
+    "фӕрӕз",
+    "фӕрӕт",
+    "фӕсте",
+    "фӕстӕ",
+    "фӕтӕг",
+    "фӕтӕн",
+    "фӕуын",
+    "хайад",
+    "халас",
+    "халон",
+    "халын",
+    "хардз",
+    "хатын",
+    "хатыр",
+    "хауын",
+    "хауӕн",
+    "хибар",
+    "хизын",
+    "хихтӕ",
+    "хицау",
+    "хицӕн",
+    "хойын",
+    "хонын",
+    "хохаг",
+    "худаг",
+    "худын",
+    "худӕг",
+    "хуылф",
+    "хуынд",
+    "хъавд",
+    "хъазт",
+    "хъама",
+    "хъарм",
+    "хъару",
+    "хъаст",
+    "хъуаг",
+    "хъузг",
+    "хъуыр",
+    "хъызт",
+    "хъӕмп",
+    "хъӕуы",
+    "хыгъд",
+    "хызын",
+    "хырыз",
+    "хыссӕ",
+    "хӕдон",
+    "хӕзна",
+    "хӕлар",
+    "хӕлаф",
+    "хӕлын",
+    "хӕлӕг",
+    "хӕрын",
+    "хӕрӕг",
+    "хӕтын",
+    "хӕтӕл",
+    "хӕцын",
+    "цавӕр",
+    "цагъд",
+    "цалӕм",
+    "цатыр",
+    "цирхъ",
+    "цупал",
+    "цъасс",
+    "цъиах",
+    "цъити",
+    "цъупп",
+    "цыбыр",
+    "цывзы",
+    "цыдӕр",
+    "цыллӕ",
+    "цымын",
+    "цыргъ",
+    "цӕвын",
+    "цӕвӕг",
+    "цӕгат",
+    "цӕдис",
+    "цӕмӕй",
+    "цӕмӕн",
+    "цӕрын",
+    "цӕрӕг",
+    "цӕттӕ",
+    "цӕуын",
+    "цӕхӕр",
+    "чидӕр",
+    "чиныг",
+    "чъизи",
+    "чъири",
+    "чындз",
+    "чырӕг",
+    "чыссӕ",
+    "чысыл",
+    "шофыр",
+    "ӕваст",
+    "ӕвзаг",
+    "ӕвзар",
+    "ӕвзӕр",
+    "ӕддаг",
+    "ӕдзух",
+    "ӕдылы",
+    "ӕмбал",
+    "ӕмбис",
+    "ӕмбыд",
+    "ӕмгар",
+    "ӕмиас",
+    "ӕмсӕр",
+    "ӕнгом",
+    "ӕнгуз",
+    "ӕнгӕс",
+    "ӕндах",
+    "ӕндӕр",
+    "ӕнтӕф",
+    "ӕнцад",
+    "ӕнцой",
+    "ӕнцон",
+    "ӕппын",
+    "ӕппӕт",
+    "ӕрвад",
+    "ӕргом",
+    "ӕрдуз",
+    "ӕрдын",
+    "ӕрдӕг",
+    "ӕрзӕт",
+    "ӕрмӕг",
+    "ӕртах",
+    "ӕртӕх",
+    "ӕрфыг",
+    "ӕрхуы",
+    "ӕссон",
+    "ӕууӕл",
+    "ӕфсад",
+    "ӕфсир",
+    "ӕфсон",
+    "ӕфсӕн",
+    "ӕфцӕг",
+    "ӕхгӕд",
+    "ӕхсад",
+    "ӕхсар",
+    "ӕхсын",
+    "ӕхсыр",
+    "ӕхсӕв",
+    "ӕхсӕг",
+    "ӕхсӕз",
+    "ӕхсӕн",
+    "ӕхсӕр",
+    "ӕхцон"
+  ]
+}

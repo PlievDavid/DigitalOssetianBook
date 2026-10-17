@@ -1,32 +1,49 @@
 /* The page uses the shared app shell; the playing field fits short word pairs. */
-.green-theme :is(#game-app, #matching-app) .game-page-heading { align-items: center; margin: 12px 0 28px; gap: 24px; }
-.green-theme :is(#game-app, #matching-app) .game-heading-copy { max-width: 640px; }
+.green-theme .game-shell .game-page-heading { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin: 12px 0 24px; gap: 24px; }
+.green-theme .game-shell .game-heading-copy { max-width: 640px; }
+.green-theme :is(#game-app, #matching-app) {
+    --game-thread-0: #286aab;
+    --game-thread-1: #7954a6;
+    --game-thread-2: #287e7b;
+    --game-thread-3: #a67816;
+    --game-thread-4: #657b2e;
+    --game-thread-5: #515da8;
+    --game-thread-6: #8f547c;
+    --game-thread-7: #217e9c;
+    --game-thread-8: #93643d;
+    --game-thread-9: #39754b;
+}
 .green-theme :is(#game-app, #matching-app) .game-kicker { display: block; margin-bottom: 10px; color: #37634e; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
-.green-theme :is(#game-app, #matching-app) h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.15; }
-.green-theme :is(#game-app, #matching-app) .game-page-heading p { color: var(--theme-muted); line-height: 1.6; }
+.green-theme .game-shell h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.15; }
+.green-theme .game-shell .game-page-heading h1 { margin: 0; }
+.games-catalog .format-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 24px; }
+.green-theme .game-shell .game-page-heading p { color: var(--theme-muted); line-height: 1.6; }
 .green-theme :is(#game-app, #matching-app) .game-heading-art { flex: none; width: 132px; height: 92px; margin-right: 12px; }
-.green-theme :is(#game-app, #matching-app) .game-play-area { max-width: 760px; margin: 0 auto; padding: 24px 32px; border: 1px solid #e3e6d7; border-radius: 20px; background: #fafaf5; }
+.green-theme .game-shell .game-play-area { padding: 24px 32px; border: 1px solid #e3e6d7; border-radius: 20px; background: #fafaf5; }
+.green-theme :is(#game-app, #matching-app) .game-play-area { max-width: 760px; margin: 0 auto; }
 .green-theme :is(#game-app, #matching-app) .game-play-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
 .green-theme :is(#game-app, #matching-app) #game-status { flex: 1; min-width: 0; margin: 0; color: #435847; font-size: 14px; line-height: 1.6; }
 .green-theme :is(#game-app, #matching-app) #game-restart { flex: none; width: auto; min-height: 40px; padding: 8px 14px; font-size: 13px; background: white; }
 .green-theme :is(#game-app, #matching-app) .game-language-labels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 88px; max-width: 560px; margin: 0 auto 10px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.green-theme :is(#game-app, #matching-app) .game-language-labels span:first-child { color: #316349; }
+.green-theme :is(#game-app, #matching-app) .game-language-labels span:first-child { color: #42647d; }
 .green-theme :is(#game-app, #matching-app) .game-language-labels span:last-child { color: #805a22; }
 .green-theme :is(#game-app, #matching-app) .game-board { width: 100%; max-width: 560px; margin: 0 auto; column-gap: 88px; }
 .green-theme :is(#game-app, #matching-app) .game-board > div { gap: 12px; }
-.green-theme :is(#game-app, #matching-app) .game-column .word-tile { min-height: 58px; padding: 13px 16px; border: 1px solid #bdd0ad; border-bottom-width: 3px; border-radius: 12px; background: #eaf2dd; color: #244e39; font-size: 17px; font-weight: 600; line-height: 1.4; transition: background-color .15s, border-color .15s, box-shadow .15s; }
+.green-theme :is(#game-app, #matching-app) .game-column .word-tile { min-height: 58px; padding: 13px 16px; border: 1px solid #bdcddd; border-bottom-width: 3px; border-radius: 12px; background: #edf3f8; color: #294b64; font-size: 17px; font-weight: 600; line-height: 1.4; transition: background-color .15s, border-color .15s, box-shadow .15s; }
 .green-theme :is(#game-app, #matching-app) .game-column-right .word-tile { border-color: #dfcca7; background: #fff0cd; color: #68491c; }
-.green-theme :is(#game-app, #matching-app) .game-column .word-tile:hover:not(:disabled) { border-color: #568468; background: #deedc9; box-shadow: 0 3px 10px #244e3910; }
+.green-theme :is(#game-app, #matching-app) .game-column .word-tile:hover:not(:disabled) { border-color: #799ab3; background: #e1ecf5; box-shadow: 0 3px 10px #294b6410; }
 .green-theme :is(#game-app, #matching-app) .game-column-right .word-tile:hover:not(:disabled) { border-color: #aa7e38; background: #ffe8b3; }
 .green-theme :is(#game-app, #matching-app) .game-column .word-tile.selected { border-color: #286aab; background: #e4f0ff; color: #184d7b; box-shadow: 0 0 0 3px #286aab18; }
 .green-theme :is(#game-app, #matching-app) .game-column .word-tile:disabled { opacity: .7; }
 .green-theme :is(#game-app, #matching-app) .game-column .word-tile.matched { opacity: 1; color: #2c6346; background: #dcebdc; border-color: #8eb79a; }
-.green-theme :is(#game-app, #matching-app) .game-column .word-tile::after { width: 11px; height: 11px; background: #fafaf5; }
-.green-theme :is(#game-app, #matching-app) .game-column .word-tile.matched::after { background: #357348; }
+.green-theme :is(#game-app, #matching-app) .game-column .word-tile::after { width: 11px; height: 11px; border-color: var(--thread-color, currentColor); background: #fafaf5; }
+.green-theme :is(#game-app, #matching-app) .game-column .word-tile.matched::after { border-color: var(--thread-color, #357348); background: var(--thread-color, #357348); }
 .green-theme :is(#game-app, #matching-app) .game-thread { stroke-width: 3; }
+.green-theme :is(#game-app, #matching-app) .game-thread:not(.game-thread-wrong) { stroke: var(--thread-color, #286aab); }
 .green-theme :is(#game-app, #matching-app) #game-find-words { margin-top: 12px; width: auto; }
 .green-theme :is(#game-app, #matching-app) .game-play-area:has(#game-board:empty) .game-language-labels { display: none; }
 @media (max-width: 599px) {
+    .games-catalog .format-grid { grid-template-columns: 1fr; }
     .green-theme :is(#game-app, #matching-app) .game-page-heading { flex-direction: row; margin-bottom: 20px; }
     .green-theme :is(#game-app, #matching-app) .game-heading-art { display: none; }
     .green-theme :is(#game-app, #matching-app) .game-play-area { padding: 18px 12px; border-radius: 16px; }

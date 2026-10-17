@@ -22,7 +22,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
     const book = await open();
     const original = book.chapters[0].tokens.map(token => token.text).join('');
     assert(book.literaryTranslation && original.split('\n').length === book.literaryTranslation.split('\n').length);
-    for (const width of [360, 600, 768, 1024, 1280, 1480, 1920]) {
+    for (const width of [320, 360, 498, 600, 768, 1024, 1280, 1480, 1920]) {
       await page.setViewportSize({ width, height: 800 });
       for (const size of [null, '40px']) {
         const style = size ? await page.addStyleTag({ content: `.green-theme .book-page .reader-text {font-size:${size}}` }) : null;
@@ -30,6 +30,15 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         assert.equal(await page.locator('#book-text').textContent(), original, 'Original text/spacing changed');
         assert.equal(await page.locator('#book-literary-text').textContent(), book.literaryTranslation, 'Translation changed');
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow at ${width}`);
+        assert.equal(await page.locator('#book-literary').isVisible(), width >= 600, `Translation visibility at ${width}`);
+        if (width < 600) {
+          const centers = await page.evaluate(() => {
+            const text = document.getElementById('book-text').getBoundingClientRect();
+            const pane = document.getElementById('book-text').parentElement.getBoundingClientRect();
+            return [text.left + text.width / 2, pane.left + pane.width / 2];
+          });
+          assert(Math.abs(centers[0] - centers[1]) < 1, `Original block not centered at ${width}`);
+        }
         if (width > 700) {
           const geometry = await page.evaluate(() => {
             const boxes = id => [...document.querySelectorAll(`#${id} > .reader-line`)].map(el => { const r = el.getBoundingClientRect(); return [r.top, r.height]; });
@@ -75,6 +84,6 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.unroute('**/api/v1/books/*');
     }
     assert.deepEqual(errors, []);
-    console.log('Reader lines: seven widths, text 40px, exact whitespace, aligned rows, keyboard popup and translation fallbacks passed. No database writes.');
+    console.log('Reader lines: nine widths, centered mobile original without literary translation, text 40px, exact whitespace, aligned rows, keyboard popup and translation fallbacks passed. No database writes.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

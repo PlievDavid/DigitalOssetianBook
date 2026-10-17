@@ -1,7 +1,7 @@
 @{ var signedIn = User.Identity?.IsAuthenticated == true; ViewData["Title"] = signedIn ? "Мои слова" : "Словарь"; }
 <section class="feature-shell vocabulary-shell" id="vocabulary-app">
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel(signedIn ? "Мои слова" : "Словарь", signedIn ? "Собирайте слова из книг и заданий и возвращайтесь к ним в тренировке." : "Опубликованные слова, переводы и примеры.", "words"))
-    <div class="vocabulary-page-header"><nav class="vocabulary-actions" aria-label="Занятия со словами"><a class="button primary" href="/word-practice">Тренировка слов ↗</a><a class="button secondary" href="/game">Подбор пар ↗</a></nav></div>
+    <div class="vocabulary-page-header"><nav class="vocabulary-actions" aria-label="Занятия со словами"><a class="button primary" href="/word-practice"><span class="word-mode-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "translate")</span><strong>Тренировка слов <span aria-hidden="true">↗</span></strong><small class="word-mode-description">Введите перевод</small></a><a class="button secondary" href="/game"><span class="word-mode-icon" aria-hidden="true"><svg viewBox="0 0 48 32" fill="none"><circle cx="6" cy="24" r="5" fill="currentColor"/><circle cx="42" cy="8" r="5" fill="currentColor"/><path d="M11 24C30 24 18 8 37 8" stroke="currentColor" stroke-width="2"/></svg></span><strong>Подбор пар <span aria-hidden="true">↗</span></strong><small class="word-mode-description">Соедините слова</small></a></nav></div>
     <div id="vocabulary-status" class="vocabulary-status" role="status"></div>
     @if (signedIn)
     {
