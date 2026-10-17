@@ -22,10 +22,10 @@
 .wl-input-label { display: none; }
 .green-theme #wordle-app .wl-input { position: absolute; top: 24px; left: 50%; width: 1px; height: 1px; min-height: 0; margin: 0; padding: 0; border: 0; opacity: 0; font-size: 16px; }
 .wl-game:has(.wl-input:focus-visible) .wl-cell.is-cursor { outline: 2px solid #286aab; outline-offset: 2px; }
-.wl-notice { position: absolute; z-index: 10; top: var(--wl-notice-top, 50%); left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; width: 190px; max-width: calc(100% - 24px); padding: 10px; border: 1px solid #e9b45c; border-radius: 10px; background: #fff7e7; color: #603713; box-shadow: 0 4px 14px #6037131a; pointer-events: none; }
-.wl-notice-icon { flex: none; width: 20px; height: 20px; color: #ba740c; }
+.wl-notice { position: absolute; z-index: 10; top: var(--wl-notice-top, 50%); left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; width: 190px; max-width: calc(100% - 24px); padding: 12px 10px; border: 1px solid #eedbb8; border-radius: 12px; background: #fffaf0; color: #603713; box-shadow: 0 6px 20px #5d43151a; pointer-events: none; }
+.wl-notice-icon { flex: none; width: 24px; height: 24px; padding: 3px; border-radius: 7px; background: #fff0d3; color: #a66a12; }
 .wl-status { min-width: 0; margin: 0; color: inherit; font-size: 13px; font-weight: 600; line-height: 1.35; text-align: left; overflow-wrap: anywhere; }
-.wl-notice-detail { display: block; margin-top: 3px; color: #865527; font-size: 11px; font-weight: 400; }
+.wl-notice-detail { display: block; margin-top: 4px; color: #795b39; font-size: 11px; font-weight: 400; line-height: 1.5; }
 .wl-status:empty { display: none; }
 .wl-result { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; margin: 18px 0; color: #244e39; }
 .wl-result strong { flex-basis: 100%; font-size: 17px; }

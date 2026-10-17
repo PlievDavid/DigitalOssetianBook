@@ -46,7 +46,9 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '../IronLanguage.We
         await page.evaluate(() => { window.motionCalls = []; });
         await page.locator('#wl-input').press('Enter'); await idle();
         assert.equal(await page.locator('#wl-board .is-correct').count(), 5);
+        assert(await page.locator('#wl-notice').isHidden());
         calls = await page.evaluate(() => motionCalls);
+        assert.equal(calls.filter(call => call.target === 'wl-notice').length, 0, 'Victory never animates a warning.');
         if (reducedMotion === 'reduce') assert.equal(calls.length, 0, 'Reduced motion skips all game effects.');
         else {
           const flips = calls.filter(call => call.options.duration === 360);

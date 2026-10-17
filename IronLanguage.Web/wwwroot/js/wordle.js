@@ -11,7 +11,7 @@
   const markLabels = { correct: 'на своём месте', present: 'есть в другом месте', absent: 'нет в слове' };
   let state = null, busy = true, typed = '', pending = null;
   let savedDay = null, saving = false;
-  let fitFrame = 0, noticeTimer = 0;
+  let fitFrame = 0, noticeTimer = 0, shareTimer = 0;
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').replace(/[^а-яёӕ]/gu, '').slice(0, 5);
   const errorText = error => error.status ? error.message : 'Не удалось связаться с сервером. Попробуйте ещё раз.';
   function message(text, duration = 3000, detail = '') {
@@ -19,7 +19,10 @@
     $('notice-title').textContent = text;
     $('notice-detail').textContent = detail; $('notice-detail').hidden = !detail;
     $('notice').hidden = !text;
-    if (text && duration) noticeTimer = setTimeout(() => message(''), duration);
+    if (text) {
+      animate($('notice'), [{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
+      if (duration) noticeTimer = setTimeout(() => message(''), duration);
+    }
   }
   function fitBoard() {
     cancelAnimationFrame(fitFrame);
@@ -127,7 +130,7 @@
   function type(letter) { updateTyped(typed + letter); }
   function backspace() { updateTyped(typed.slice(0, -1)); }
   async function load() {
-    lock(true); $('retry').hidden = true;
+    message(''); lock(true); $('retry').hidden = true;
     try {
       state = await api('/wordle'); typed = ''; pending = null; render(); message('');
     } catch (error) { message(errorText(error)); $('retry').hidden = false; }
@@ -139,7 +142,7 @@
     const wasInputFocused = document.activeElement === input;
     pending ??= { day: state.day, revision: state.revision, guess: typed };
     const previousRevision = state.revision;
-    lock(true); message('Проверяем…', 0);
+    message(''); lock(true);
     try {
       state = await api('/wordle/guess', { method: 'POST', body: JSON.stringify(pending) });
       typed = ''; pending = null; render(); message('');
@@ -215,11 +218,19 @@
   $('stats-dialog').addEventListener('click', event => { if (event.target === $('stats-dialog')) { const r = event.target.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) event.target.close(); } });
   $('share').addEventListener('click', async () => {
     if (!state?.finished) return;
+    clearTimeout(shareTimer);
+    message('');
     const marks = { correct: '🟩', present: '🟨', absent: '⬜' };
     const link = new URL('/games/wordle', window.location.origin).href;
     const text = `Адам · Пять букв ${state.day} ${state.won ? state.revision : 'X'}/6\n${state.rows.map(row => row.marks.map(mark => marks[mark]).join('')).join('\n')}\n\n${link}`;
-    try { await navigator.clipboard.writeText(text); message('Результат скопирован.'); }
-    catch { message('Не удалось скопировать результат. Разрешите доступ к буферу обмена.'); }
+    try {
+      await navigator.clipboard.writeText(text);
+      $('share').textContent = 'Скопировано';
+      shareTimer = setTimeout(() => { $('share').textContent = 'Поделиться'; }, 3000);
+    } catch {
+      $('share').textContent = 'Поделиться';
+      message('Не удалось скопировать', 3000, 'Разрешите доступ к буферу обмена');
+    }
   });
   // Date checks use the server's next-day timestamp. A resumed tab refreshes before another guess.
   const checkDay = () => { if (state && !busy && Date.now() >= Date.parse(state.nextDay)) load(); };

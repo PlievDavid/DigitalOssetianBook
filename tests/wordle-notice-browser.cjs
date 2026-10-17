@@ -9,6 +9,13 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
   try {
     const page = await browser.newPage({ reducedMotion: 'reduce' });
     await page.clock.install({ time: new Date('2026-10-17T12:00:00Z') });
+    await page.addInitScript(() => {
+      window.noticeAppearances = [];
+      new MutationObserver(() => {
+        const notice = document.querySelector('#wl-notice');
+        if (notice && !notice.hidden) window.noticeAppearances.push(notice.textContent.trim());
+      }).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     const output = path.resolve(__dirname, '../.run-local/wordle-notices');
@@ -19,6 +26,14 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
     let failure = 400, requestReady, releaseRequest;
     await page.route('**/api/v1/wordle/guess', async route => {
       await new Promise(resolve => { releaseRequest = resolve; requestReady(); });
+      if (failure === 'accepted' || failure === 'won') {
+        const won = failure === 'won';
+        return route.fulfill({ json: {
+          day: '2026-10-17', nextDay: '2026-10-18T00:00:00Z', revision: 1,
+          rows: [{ word: 'хӕдон', marks: Array(5).fill(won ? 'correct' : 'absent') }],
+          won, finished: won, answer: won ? 'хӕдон' : null, russian: won ? 'рубашка' : null, countedInStreak: false
+        } });
+      }
       if (failure === 'network') return route.abort('failed');
       return route.fulfill({ status: failure, json: { error: failure === 400 ? 'Этого слова нет в нашем словаре. Попытка не потрачена.' : failure === 409 ? 'Игра изменилась в другой вкладке. Загружаем актуальные попытки.' : 'Не удалось проверить слово. Попробуйте ещё раз.' } });
     });
@@ -43,6 +58,8 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.setViewportSize({ width, height });
       await page.goto(base + '/games/wordle'); await idle();
       await page.evaluate(() => document.fonts.ready); await stable();
+      assert(await page.locator('#wl-notice').isHidden(), 'Opening the game does not show a warning');
+      assert.deepEqual(await page.evaluate(() => window.noticeAppearances), []);
       const before = await geometry();
       await page.locator('#wl-input').press('Enter');
       assert(await page.locator('#wl-notice').isVisible());
@@ -65,9 +82,9 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         const typed = await geometry();
         const ready = new Promise(resolve => { requestReady = resolve; });
         await page.locator('#wl-input').press('Enter'); await ready;
-        assert.match(await page.locator('#wl-status').innerText(), /Проверяем/);
+        assert(await page.locator('#wl-notice').isHidden());
         await page.clock.fastForward(4000);
-        assert(await page.locator('#wl-notice').isVisible(), 'Pending status remains until the response');
+        assert(await page.locator('#wl-notice').isHidden(), 'Pending requests do not show a warning');
         assert.deepEqual(await geometry(), typed, `Pending request does not move the game at ${width}`);
         releaseRequest(); await idle(); await stable();
         assert(await page.locator('#wl-notice').isVisible());
@@ -98,8 +115,34 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         assert(key.height >= 34);
         assert((await page.locator('#wl-keyboard').boundingBox()).width > 420);
       }
+      for (failure of ['accepted', 'won']) {
+        await page.goto(base + '/games/wordle'); await idle(); await stable();
+        await page.locator('#wl-input').fill('хӕдон');
+        const ready = new Promise(resolve => { requestReady = resolve; });
+        await page.locator('#wl-input').press('Enter'); await ready;
+        assert(await page.locator('#wl-notice').isHidden());
+        assert(await page.locator('#wl-input').isDisabled());
+        await page.clock.fastForward(4000);
+        assert(await page.locator('#wl-notice').isHidden());
+        releaseRequest(); await idle(); await stable();
+        assert(await page.locator('#wl-notice').isHidden());
+        assert.deepEqual(await page.evaluate(() => window.noticeAppearances), [], `${failure} never flashes a warning at ${width}`);
+        assert.equal(await page.locator('#wl-result').isVisible(), failure === 'won');
+        if (failure === 'won') {
+          assert.equal(await page.locator('#wl-board .is-correct').count(), 5);
+          await page.screenshot({ path: path.join(output, `won-${width}.png`), fullPage: true });
+          await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+            configurable: true, value: { writeText: async () => {} }
+          }));
+          await page.locator('#wl-share').click();
+          assert.equal(await page.locator('#wl-share').innerText(), 'Скопировано');
+          assert.deepEqual(await page.evaluate(() => window.noticeAppearances), []);
+          await page.clock.fastForward(3100);
+          assert.equal(await page.locator('#wl-share').innerText(), 'Поделиться');
+        }
+      }
     }
     assert.deepEqual(errors, []);
-    console.log('Wordle notices passed: compact notice centered on board after resize, short/unknown word, pending request, server/network/conflict errors, unchanged board and keyboard geometry, 3-second dismissal and timer reset, Escape, focus, continued ӕ input and larger desktop keys at four viewports.');
+    console.log('Wordle notices passed: no warning on opening, pending requests, accepted guesses or victory; compact centered errors, stable board/keyboard, 3-second dismissal and timer reset, Escape, focus and ӕ at four viewports.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

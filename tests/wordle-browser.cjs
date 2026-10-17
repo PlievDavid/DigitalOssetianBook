@@ -46,6 +46,7 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert.equal((await (await page.request.get(`${base}/api/v1/wordle`)).json()).revision, 0);
     await page.locator('#wl-input').fill(wrong[0]); await page.locator('#wl-input').press('Enter'); await idle();
     assert.equal(await page.locator('.wl-cell.is-absent,.wl-cell.is-correct,.wl-cell.is-present').count(), 5);
+    assert(await page.locator('#wl-notice').isHidden(), 'Accepted guesses do not show a warning');
     await ready(page); assert.equal((await (await page.request.get(`${base}/api/v1/wordle`)).json()).revision, 1, 'Guest reload resumes bounded server session');
     // A failed request retains the draft, and rapid retries cannot consume two attempts.
     await page.locator('#wl-input').fill(answer.toUpperCase().replaceAll('Ӕ', 'Æ'));
@@ -57,6 +58,7 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert.equal(requests, 1); assert(await page.locator('#wl-result').isVisible());
     assert.equal(await page.locator('.wl-cell.is-correct').count() >= 5, true);
     assert.match(await page.locator('#wl-result-title').innerText(), /^Верно!$/);
+    assert(await page.locator('#wl-notice').isHidden(), 'Victory does not show a warning');
     assert(await page.locator('#wl-input').isHidden());
     const complete = await (await page.request.get(`${base}/api/v1/wordle`)).json();
     assert.equal(complete.revision, 2); assert.equal(complete.won, true); assert.equal(complete.countedInStreak, false);
@@ -65,6 +67,8 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       configurable: true, value: { writeText: async text => { window.sharedResult = text; } }
     }));
     await page.locator('#wl-share').click();
+    assert.equal(await page.locator('#wl-share').innerText(), 'Скопировано');
+    assert(await page.locator('#wl-notice').isHidden(), 'Successful copying does not show a warning');
     const shared = await page.evaluate(() => window.sharedResult);
     assert(shared.startsWith(`Адам · Пять букв ${complete.day} 2/6\n`));
     assert(shared.endsWith(`\n\n${new URL('/games/wordle', base).href}`), 'Share includes the current platform link without query parameters.');
