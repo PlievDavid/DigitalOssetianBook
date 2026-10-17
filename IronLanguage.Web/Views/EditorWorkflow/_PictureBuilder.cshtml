@@ -1,0 +1,48 @@
+@model IronLanguage.Web.Models.EditorFormModel
+<section id="picture-editor" data-mode="@Model.PictureMode">
+    <label>Режим ответа
+        <select asp-for="PictureMode" id="picture-mode">
+            <option value="choice">Варианты ответа (3 кнопки)</option>
+            <option value="free">Ввод слова</option>
+        </select>
+        <span class="field-help">Ученик либо выбирает слово из трёх вариантов, либо печатает его сам.</span>
+    </label>
+    <label>Картинка
+        <span class="field-help">PNG, JPEG или WebP до 5 МБ.</span>
+        <input asp-for="PictureImage" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" />
+        <span asp-validation-for="PictureImage" class="form-error"></span>
+    </label>
+    @if (Model.ExistingPicturePath is not null)
+    {
+        <img src="@Model.ExistingPicturePath" alt="Текущая картинка" style="width: 120px; height: 120px; object-fit: cover" />
+    }
+    <input asp-for="PicturePath" type="hidden" />
+    <label>Правильное слово
+        <input asp-for="PictureWord" autocomplete="off" required maxlength="200" data-ossetian />
+        <span asp-validation-for="PictureWord" class="form-error"></span>
+    </label>
+    <div id="picture-distractors-block">
+        <span class="editor-field-label">Отвлекающие слова</span>
+        <p class="field-help">Ровно два слова. Порядок вариантов сайт перемешивает. Не нужны в режиме ввода.</p>
+        <label>Отвлекающее слово 1 <input asp-for="PictureDistractor1" maxlength="200" data-ossetian /><span asp-validation-for="PictureDistractor1" class="form-error"></span></label>
+        <label>Отвлекающее слово 2 <input asp-for="PictureDistractor2" maxlength="200" data-ossetian /><span asp-validation-for="PictureDistractor2" class="form-error"></span></label>
+    </div>
+    <p class="form-error" id="picture-mode-hint" hidden>В режиме ввода слова отвлекающие слова не нужны.</p>
+</section>
+<script>
+  (() => {
+    const root = document.getElementById('picture-editor');
+    if (!root) return;
+    const mode = root.querySelector('#picture-mode');
+    const block = root.querySelector('#picture-distractors-block');
+    const hint = root.querySelector('#picture-mode-hint');
+    const sync = () => {
+      const free = mode.value === 'free';
+      block.hidden = free;
+      hint.hidden = !free;
+      root.dataset.mode = mode.value;
+    };
+    mode.addEventListener('change', sync);
+    sync();
+  })();
+</script>

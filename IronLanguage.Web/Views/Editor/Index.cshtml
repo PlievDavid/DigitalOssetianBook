@@ -13,9 +13,10 @@
         <a href="/editor/new/book"><span aria-hidden="true">▤</span><strong>Книга</strong><small>Главы и словарные подсказки</small></a>
         <a href="/editor/new/dialogue"><span aria-hidden="true">⇄</span><strong>Диалог</strong><small>Сценарий, реплики и ходы ученика</small></a>
         <a href="/editor/new/matching"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "matching")</span><strong>Соотнесение</strong><small>Пары «слово — его пара» и отвлекающие слова</small></a>
+        <a href="/editor/new/picture"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "picture")</span><strong>Картинка и слово</strong><small>Картинки и осетинские слова к ним</small></a>
     </div>
 
-    <div class="editor-library-header"><h2>Материалы</h2><div class="editor-library-controls"><div class="editor-tabs" role="tablist" aria-label="Состояние материала"><button type="button" class="is-active" data-editor-tab="drafts" role="tab" aria-selected="true">Черновики</button><button type="button" data-editor-tab="published" role="tab" aria-selected="false">Опубликовано</button><button type="button" data-editor-tab="archived" role="tab" aria-selected="false">Архив</button></div><label class="editor-filter"><span>Тип</span><select id="editor-kind-filter" aria-label="Тип материала"><option value="all">Все материалы</option><option value="word">Слова</option><option value="audio">Аудиопазлы</option><option value="translation">Переводы</option><option value="book">Книги</option><option value="dialogue">Диалоги</option><option value="matching">Соотнесения</option></select></label></div></div>
+    <div class="editor-library-header"><h2>Материалы</h2><div class="editor-library-controls"><div class="editor-tabs" role="tablist" aria-label="Состояние материала"><button type="button" class="is-active" data-editor-tab="drafts" role="tab" aria-selected="true">Черновики</button><button type="button" data-editor-tab="published" role="tab" aria-selected="false">Опубликовано</button><button type="button" data-editor-tab="archived" role="tab" aria-selected="false">Архив</button></div><label class="editor-filter"><span>Тип</span><select id="editor-kind-filter" aria-label="Тип материала"><option value="all">Все материалы</option><option value="word">Слова</option><option value="audio">Аудиопазлы</option><option value="translation">Переводы</option><option value="book">Книги</option><option value="dialogue">Диалоги</option><option value="matching">Соотнесения</option><option value="picture">Картинки и слова</option></select></label></div></div>
     <div id="editor-drafts" class="editor-items" role="tabpanel">
         @foreach (var item in Model.Items.Where(x => !x.Published))
         {
@@ -44,5 +45,5 @@
 </section>
 @section Scripts { <script src="~/js/editor.js" asp-append-version="true" defer></script> }
 @functions {
-    private static string TypeName(string kind) => kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод", "book" => "Книга", "dialogue" => "Диалог", "matching" => "Соотнесение", _ => kind };
+    private static string TypeName(string kind) => kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод", "book" => "Книга", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => kind };
 }

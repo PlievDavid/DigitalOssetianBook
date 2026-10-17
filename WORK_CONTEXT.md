@@ -1,6 +1,20 @@
 # Контекст работы над «Адам»
 
-Актуально на 16 октября 2026 года. Это сводка для продолжения разработки; инструкции по запуску находятся в [README.md](README.md).
+Актуально на 17 октября 2026 года. Это сводка для продолжения разработки; инструкции по запуску находятся в [README.md](README.md).
+
+## Вид задания «Картинка и слово» (issue №33)
+
+Ветка `feat/picture-exercise` от актуального `dev`. Kind `picture`: одно задание редактора — одна картинка + один вопрос. Редактор при создании выбирает режим `choice` (правильный + 2 отвлекающих, сервер перемешивает) или `free` (ввод слова, нормализация как в matching). Board/нитки matching выкинуты. Обратный режим «слово → картинка», `WordEntry.PicturePath`, очки/БД-прогресс — вне скоупа. Прогресс гостя — только в `GuestLearningStore`.
+
+**Данные и API.** Сущность `PictureMatching` (клон `Matching`), миграция `20261017120000_AddPictureMatchingMaterials`. Payload `PictureMaterial(Title, PicturePath, Word, Mode, Distractors, WordIds)` в `EditorRepository`; репозиторий каталога `Pictures()`/`Picture(id)`. `PictureService` + `PictureApiController` (`api/v1/pictures*`): `Start`/`Check(optionIndex|answer)`/`Board`, варианты скрываются после ответа, идемпотентный повтор через `entry.Gate`, `GuestLearningStore` с теми же TTL/лимитами, что и matching.
+
+**Редактор.** Kind `picture` в `Kinds`, `BuildPayload`/`FromPayload`/`CleanOssetianText`, `SavePicture` (clone `SaveCover`, magic-bytes, `/media/pictures/`), `PublishedLinksValid`. `_PictureBuilder.cshtml`: select режима, file input `PictureImage` + hidden `PicturePath` + превью, поле `PictureWord`, два поля `PictureDistractor1/2` (скрываются в `free`). `PictureScript.Validate(title, path, word, mode, distractorsText)`: `choice` требует ровно 2 дистрактора без коллизий/латиницы, `free` запрещает дистракторы; `ValidPicturePath` отклоняет `..`, `?`, `#`. `picture-builder.js` удалён.
+
+**Страница ученика.** `/picture`, `Picture.cshtml`, `picture.js` в стиле аудиопазла: список карточек → play (картинка + 3 кнопки или input + «Проверить»), busy+generation, sessionStorage `adam.picture.session`, «В мой словарь», «Пройти заново»/«К списку». `picture.css` amber. Карточка на главной `.format-picture`, пункт меню, guest notice, `_NavIcon` case `picture`. Браузерный тест `tests/picture-threads-browser.cjs` (fixture API, без сервера).
+
+**Проверки.** `dotnet build` без ошибок; `node --check` picture.js; локальные xUnit `PictureScriptTests` и `PictureServiceTests` (новый API, все зелёные; `FakeCatalog` дополнен `Picture`/`Pictures`/`Word`). `DbProbeTests` flaky на живой БД — не связан с picture. Playwright в этой среде недоступен, браузерный тест локально не запускался.
+
+**Ограничения окружения.** Нет `.run-local/connection.ps1` → сайт/БД не запускались; сохранение/публикация через БД и визуальная проверка не выполнены. Коммит и push — после явного «да» пользователя. Out of scope зафиксированы в issue #33.
 
 ## Общий контейнер и размеры содержимого
 

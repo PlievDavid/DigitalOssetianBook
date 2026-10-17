@@ -225,6 +225,9 @@ html { scrollbar-gutter: stable; }
 .format-matching { background: #fcf0ef; }
 .format-matching .format-icon { background: #f5d4d0; color: #8a2f24; }
 .format-matching .round-arrow { color: #8a2f24; }
+.format-picture { background: #fdf6e9; }
+.format-picture .format-icon { background: #f3e2b9; color: #8a6d1f; }
+.format-picture .round-arrow { color: #8a6d1f; }
 .home-formats { scroll-margin-top: var(--space-6); }
 .home-reading-card h3 { font: 600 23px/1.2 var(--theme-heading-font); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
 .home-reading-card p { color: var(--theme-muted); line-height: 1.4; margin: 0 0 var(--space-5); max-width: 75%; }
@@ -330,3 +333,5 @@ html { scrollbar-gutter: stable; }
 
 .editor-page .editor-choices a[href$="/matching"] { --choice-bg: #edf6f4; --choice-border: #cfe4df; --choice-icon-bg: #cfe8e2; --choice-ink: #23675f; }
 .editor-page .editor-choices a[href$="/matching"] svg { width: 28px; height: 28px; }
+.editor-page .editor-choices a[href$="/picture"] { --choice-bg: #fdf6e9; --choice-border: #e8d9b0; --choice-icon-bg: #f3e2b9; --choice-ink: #8a6d1f; }
+.editor-page .editor-choices a[href$="/picture"] svg { width: 28px; height: 28px; }
