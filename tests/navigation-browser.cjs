@@ -43,7 +43,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
         await back.focus(); await page.keyboard.press('Enter');
         await page.waitForURL(base + '/games');
         assert(await page.locator('#games-catalog').isVisible());
-        assert.equal(await page.locator('#games-catalog .format-card').count(), 3);
+        assert.equal(await page.locator('#games-catalog .format-card').count(), 2);
+        assert.equal(await page.locator('#games-catalog a[href="/game"]').count(), 0);
         await page.goto(base);
         checks += 6;
       }
@@ -68,6 +69,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       const headings = await page.locator('.tablet-nav-title').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
       assert(Math.abs(headings[0] - headings[1]) < 1, 'Mobile section headings share the same top edge.');
       assert.deepEqual(await page.locator('.tablet-nav-title span').allTextContents(), ['Задания', 'Слова', 'Игры', 'Книги']);
+      assert.equal(await page.locator('.tablet-nav-group[aria-label="Игры"] a[href="/game"], .tablet-nav-group[aria-label="Игры"] a[href="/games"]').count(), 0);
+      assert.equal(await page.locator('.tablet-nav-group[aria-label="Слова"] a[href="/game"]').count(), 1);
       assert(await page.locator('.tablet-account-actions a[href="/account/login"]').isVisible());
       assert(await page.locator('.tablet-account-actions a[href="/account/register"]').isVisible());
       checks += 3;
@@ -95,6 +98,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(base);
     assert(await page.locator('.site-header').isVisible());
+    assert.equal(await page.locator('#practice-menu a[href="/"], #games-menu a[href="/games"], #games-menu a[href="/game"]').count(), 0);
+    assert.equal(await page.locator('#words-menu a[href="/game"]').count(), 1);
     for (const width of [1024, 1110, 1280, 1920]) {
       await page.setViewportSize({ width, height: 900 });
       await page.evaluate(() => document.fonts.ready);

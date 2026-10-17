@@ -5,10 +5,7 @@
 .green-theme :is(#game-app, #matching-app) .game-kicker { display: block; margin-bottom: 10px; color: #37634e; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
 .green-theme .game-shell h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.15; }
 .green-theme .game-shell .game-page-heading h1 { margin: 0; }
-.games-catalog .format-grid { margin-top: 24px; }
-.format-pairs { background: var(--theme-sage); }
-.format-pairs .format-icon { background: #dce7d3; color: var(--theme-green); }
-.format-pairs .round-arrow { color: var(--theme-green); }
+.games-catalog .format-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 24px; }
 .green-theme .game-shell .game-page-heading p { color: var(--theme-muted); line-height: 1.6; }
 .green-theme :is(#game-app, #matching-app) .game-heading-art { flex: none; width: 132px; height: 92px; margin-right: 12px; }
 .green-theme .game-shell .game-play-area { padding: 24px 32px; border: 1px solid #e3e6d7; border-radius: 20px; background: #fafaf5; }
@@ -34,6 +31,7 @@
 .green-theme :is(#game-app, #matching-app) #game-find-words { margin-top: 12px; width: auto; }
 .green-theme :is(#game-app, #matching-app) .game-play-area:has(#game-board:empty) .game-language-labels { display: none; }
 @media (max-width: 599px) {
+    .games-catalog .format-grid { grid-template-columns: 1fr; }
     .green-theme :is(#game-app, #matching-app) .game-page-heading { flex-direction: row; margin-bottom: 20px; }
     .green-theme :is(#game-app, #matching-app) .game-heading-art { display: none; }
     .green-theme :is(#game-app, #matching-app) .game-play-area { padding: 18px 12px; border-radius: 16px; }

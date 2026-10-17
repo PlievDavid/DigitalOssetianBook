@@ -4,8 +4,8 @@
     var signedIn = User.Identity?.IsAuthenticated == true;
     var groups = new (string Title, string Icon, (string Label, string Url)[] Links)[] {
         ("Задания", "home", [("Аудиопазлы", "/audio-puzzles"), ("Перевод фраз", "/translate"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching")]),
-        ("Слова", "words", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice")]),
-        ("Игры", "games", [("Все игры", "/games"), ("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle"), ("Подбор пар", "/game")]),
+        ("Слова", "words", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
+        ("Игры", "games", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
         ("Книги", "books", [("Библиотека", "/books")])
     };
 }
