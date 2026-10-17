@@ -11,7 +11,7 @@
   const markLabels = { correct: 'на своём месте', present: 'есть в другом месте', absent: 'нет в слове' };
   let state = null, busy = true, typed = '', pending = null;
   let savedDay = null, saving = false;
-  let noticeTimer = 0, shareTimer = 0;
+  let noticeTimer = 0, shareTimer = 0, resultTimer = 0;
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').replace(/[^а-яёӕ]/gu, '').slice(0, 5);
   const errorText = error => error.status ? error.message : 'Не удалось связаться с сервером. Попробуйте ещё раз.';
   function message(text, duration = 3000, detail = '') {
@@ -99,14 +99,16 @@
     }
     input.value = typed;
     input.hidden = !!state?.finished;
+    if (!state?.finished && $('result').open) $('result').close();
     $('result').hidden = !state?.finished;
-    $('keyboard').classList.toggle('is-finished', !!state?.finished);
     $('save').hidden = !state?.finished || !window.AdamAuthenticated;
     $('save').disabled = saving || savedDay === state?.day;
     $('save').textContent = savedDay === state?.day ? 'В словаре' : 'В мой словарь';
     if (state?.finished) {
       $('result-title').textContent = state.won ? 'Слово угадано!' : 'Сегодня не получилось';
       $('result-summary').textContent = `Попытки: ${state.revision} из 6`;
+      $('result-symbol').classList.toggle('is-complete', !state.won);
+      $('result-symbol').querySelector('path').setAttribute('d', state.won ? 'm5 12 4 4L19 6' : 'M12 6v6l4 2');
       $('answer').textContent = state.answer.toUpperCase();
       $('translation').textContent = state.russian;
       $('next').textContent = `Следующее слово — в ${new Date(state.nextDay).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
@@ -127,11 +129,12 @@
   function type(letter) { updateTyped(typed + letter); }
   function backspace() { updateTyped(typed.slice(0, -1)); }
   async function load() {
+    clearTimeout(resultTimer);
     message(''); lock(true); $('retry').hidden = true;
     try {
       state = await api('/wordle'); typed = ''; pending = null; render(); message('');
     } catch (error) { message(errorText(error)); $('retry').hidden = false; }
-    finally { await document.fonts.ready; fitBoard(); lock(false); }
+    finally { await document.fonts.ready; fitBoard(); lock(false); openResult(); }
   }
   async function submit() {
     if (busy || !state || state.finished) return;
@@ -146,6 +149,7 @@
       if (state.revision > previousRevision) {
         revealRow(previousRevision);
       }
+      if (state.finished) resultTimer = setTimeout(openResult, reducedMotion.matches ? 0 : state.won ? 1300 : 700);
       if (state.countedInStreak) document.dispatchEvent(new Event('adam-progress-changed'));
     } catch (error) {
       if (error.status === 400 && error.message === 'Этого слова нет в нашем словаре. Попытка не потрачена.')
@@ -169,8 +173,8 @@
   input.addEventListener('input', event => { if (!event.isComposing) updateTyped(input.value); });
   input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !$('stats-dialog').open && !$('notice').hidden) { message(''); return; }
-    if (busy || $('stats-dialog').open || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target === input || event.target.closest('input,textarea,select,a')) return;
+    if (event.key === 'Escape' && !$('stats-dialog').open && !$('result').open && !$('notice').hidden) { message(''); return; }
+    if (busy || $('stats-dialog').open || $('result').open || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target === input || event.target.closest('input,textarea,select,a')) return;
     if (event.key === 'Enter' && (event.target.tagName !== 'BUTTON' || event.target.matches('.wl-key[data-letter]'))) { event.preventDefault(); submit(); }
     else if (event.key === 'Backspace') { event.preventDefault(); backspace(); }
     else if (event.key.length === 1 && /^[а-яёӕæ]$/iu.test(event.key)) { event.preventDefault(); type(event.key); }
@@ -192,6 +196,10 @@
     } catch (error) { $('save-status').textContent = errorText(error); }
     finally { saving = false; render(); }
   });
+  function openResult() {
+    if (!state?.finished || $('result').open || $('stats-dialog').open) return;
+    $('result').showModal();
+  }
   async function openStatistics() {
     $('stats-dialog').showModal(); $('stats-content').hidden = true;
     if (!window.AdamAuthenticated) { $('stats-status').textContent = 'Войдите в аккаунт, чтобы сохранять результаты и видеть статистику.'; return; }
@@ -207,10 +215,12 @@
     } catch (error) { $('stats-status').textContent = errorText(error); }
   }
   $('statistics').addEventListener('click', () => openStatistics());
+  $('result-close').addEventListener('click', () => $('result').close());
+  $('result-statistics').addEventListener('click', () => { $('result').close(); openStatistics(); });
   $('stats-close').addEventListener('click', () => $('stats-dialog').close());
-  for (const dialog of [$('stats-dialog')]) {
+  for (const dialog of [$('stats-dialog'), $('result')]) {
     dialog.addEventListener('close', () => {
-      $('statistics').focus({ preventScroll: true });
+      if (!$('stats-dialog').open && !$('result').open) $('statistics').focus({ preventScroll: true });
     });
     dialog.addEventListener('keydown', event => {
       if (event.key !== 'Tab') return;

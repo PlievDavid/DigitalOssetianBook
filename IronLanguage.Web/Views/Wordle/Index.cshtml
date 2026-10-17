@@ -17,17 +17,21 @@
             <button id="wl-retry" class="button secondary" hidden>Повторить загрузку</button>
             <div class="wl-play-footer">
                 <div id="wl-keyboard" class="wl-keyboard" role="group" aria-label="Осетинская клавиатура"></div>
-                <section id="wl-result" class="wl-result" aria-labelledby="wl-result-title" hidden>
-                    <div class="wl-result-heading"><h2 id="wl-result-title"></h2><p id="wl-result-summary" class="wl-result-summary"></p></div>
-                    <div class="wl-result-word"><strong id="wl-answer"></strong><span id="wl-translation"></span></div>
-                    <div class="wl-result-actions"><button id="wl-save" class="button primary" hidden>В мой словарь</button><button id="wl-share" class="button secondary">Поделиться</button></div>
-                    <p class="wl-result-next"><strong>Приходите завтра</strong><span id="wl-next"></span></p>
-                    <p id="wl-save-status" class="wl-result-feedback" role="status" aria-live="polite"></p>
-                    <p id="wl-share-status" class="wl-result-feedback" role="status" aria-live="polite"></p>
-                </section>
             </div>
         </div>
     </div>
+    <dialog id="wl-result" class="wl-dialog wl-result" aria-labelledby="wl-result-title" hidden>
+        <button id="wl-result-close" class="wl-result-close" type="button" aria-label="Закрыть результат"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+        <span id="wl-result-symbol" class="wl-result-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6" /></svg></span>
+        <h2 id="wl-result-title"></h2>
+        <p id="wl-result-summary" class="wl-result-summary"></p>
+        <div class="wl-result-word"><strong id="wl-answer"></strong><span id="wl-translation"></span></div>
+        <div class="wl-result-actions"><button id="wl-save" class="button primary" hidden>В мой словарь</button><button id="wl-share" class="button secondary">Поделиться</button></div>
+        <p id="wl-save-status" class="wl-result-feedback" role="status" aria-live="polite"></p>
+        <p id="wl-share-status" class="wl-result-feedback" role="status" aria-live="polite"></p>
+        <p class="wl-result-next"><strong>Приходите завтра</strong><span id="wl-next"></span></p>
+        <button id="wl-result-statistics" class="wl-result-statistics" type="button">Моя статистика</button>
+    </dialog>
     <dialog id="wl-stats-dialog" class="wl-dialog" aria-labelledby="wl-stats-title">
         <div class="wl-dialog-heading"><h2 id="wl-stats-title">Статистика</h2><button id="wl-stats-close" class="button secondary" aria-label="Закрыть статистику">×</button></div>
         <p id="wl-stats-status" role="status"></p>

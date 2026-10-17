@@ -12,7 +12,6 @@
 #wl-date { color: #526454; font-size: 14px; white-space: nowrap; }
 .wl-game { position: relative; text-align: center; }
 .wl-play-footer { position: relative; display: flex; flex: none; align-items: center; justify-content: center; width: 100%; height: 196px; }
-.wl-keyboard.is-finished { visibility: hidden; }
 .wl-board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: min(100%, 320px); margin: auto; container-type: inline-size; }
 .wl-cell { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid #bdcdb7; border-bottom-width: 3px; border-radius: 7px; background: white; color: #244e39; font-weight: 700; font-size: clamp(23px, 5vw, 32px); line-height: 1; }
 .wl-cell.is-current { border-color: #709578; background: #f0f4e9; }
@@ -28,19 +27,27 @@
 .wl-status { min-width: 0; margin: 0; color: inherit; font-size: 13px; font-weight: 600; line-height: 1.35; text-align: left; overflow-wrap: anywhere; }
 .wl-notice-detail { display: block; margin-top: 4px; color: #795b39; font-size: 11px; font-weight: 400; line-height: 1.5; }
 .wl-status:empty { display: none; }
-.wl-result { position: absolute; inset: 0; width: min(100%, 500px); margin-inline: auto; padding: 8px 12px; overflow: auto; border-radius: 14px; background: var(--theme-sage); text-align: center; }
-.wl-result-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 12px; }
-#wordle-app .wl-result h2 { margin: 0; font-family: inherit; font-size: 20px; font-weight: 600; line-height: 1.3; }
-.wl-result-summary { margin: 0; color: var(--theme-muted); font-size: 13px; line-height: 1.5; }
-.wl-result-word { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 10px; margin: 8px 0 12px; }
-.wl-result-word strong { color: var(--theme-green); font-size: 22px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
-#wl-translation { color: var(--theme-ink); font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; }
-.wl-result-actions { display: flex; justify-content: center; gap: 8px; }
-#wordle-app .wl-result-actions .button { min-width: 0; min-height: 44px; padding: 8px 12px; font-family: inherit; font-size: 14px; }
-.wl-result-feedback { margin: 8px 0 0; color: var(--theme-muted); font-size: 13px; line-height: 1.4; }
+.wl-dialog.wl-result { width: min(420px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 32px; border-radius: 20px; background: white; font-family: var(--theme-font); text-align: center; }
+.wl-result[open] { display: block; }
+#wordle-app .wl-result h2 { margin: 0 0 6px; font-family: inherit; font-size: 26px; font-weight: 600; line-height: 1.2; }
+.wl-result-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 36px; height: 36px; padding: 8px; border: 0; border-radius: 10px; background: transparent; color: var(--theme-muted); cursor: pointer; }
+.wl-result-close:hover { background: var(--theme-sage); }
+.wl-result-close svg { width: 20px; height: 20px; }
+.wl-result-symbol { display: grid; place-items: center; width: 36px; height: 36px; margin: 0 auto 12px; border-radius: 50%; background: #e4efde; color: #39754b; }
+.wl-result-symbol svg { width: 22px; height: 22px; }
+.wl-result-symbol.is-complete { background: var(--theme-sand); color: #805a22; }
+.wl-result-summary { margin: 0; color: var(--theme-muted); font-size: 14px; line-height: 1.5; }
+.wl-result-word { display: flex; flex-direction: column; gap: 8px; margin: 20px 0; padding: 16px; border-radius: 14px; background: var(--theme-sage); }
+.wl-result-word strong { color: var(--theme-green); font-size: 32px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+#wl-translation { color: var(--theme-ink); font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+.wl-result-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#wordle-app .wl-result-actions .button { min-width: 0; min-height: 44px; padding: 10px 8px; font-family: inherit; font-size: 14px; }
+#wl-save[hidden] + #wl-share { grid-column: 1 / -1; }
+.wl-result-feedback { margin: 12px 0 0; color: var(--theme-muted); font-size: 14px; line-height: 1.5; }
 .wl-result-feedback:empty { display: none; }
-.wl-result-next { margin: 10px 0 0; color: var(--theme-muted); font-size: 13px; line-height: 1.5; }
-.wl-result-next strong { display: block; color: var(--theme-green); font-size: 14px; font-weight: 600; }
+.wl-result-next { margin: 16px 0 8px; color: var(--theme-muted); font-size: 14px; line-height: 1.5; }
+.wl-result-next strong { display: block; color: var(--theme-green); font-weight: 600; }
+.wl-result-statistics { min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--theme-green); font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .wl-keyboard { display: flex; flex-direction: column; gap: 6px; margin-top: 20px; padding-top: 16px; }
 .wl-key-row { display: flex; justify-content: center; gap: 5px; }
 .green-theme .wl-key { display: grid; place-items: center; flex: 1; min-width: 0; max-width: 48px; min-height: 44px; padding: 4px 1px; border: 1px solid #dce3d3; border-bottom-width: 3px; border-radius: 7px; background: #f0f2ec; color: #244e39; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
@@ -106,4 +113,5 @@
     .wordle-page .wl-cell { font-size: clamp(18px, 11cqw, 39px); }
     .wordle-page .wl-keyboard { flex: none; width: 100%; gap: 4px; margin: 0; padding-top: 8px; }
     .wordle-page .wl-key { min-height: 42px; }
+    .wordle-page .wl-result { padding: 24px; }
 }

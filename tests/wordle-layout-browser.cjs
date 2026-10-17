@@ -28,6 +28,16 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         await page.goto(base + '/games/wordle');
         await page.waitForFunction(() => document.querySelector('#wl-board').getAttribute('aria-busy') === 'false');
         await page.evaluate(() => document.fonts.ready);
+        assert.equal(await page.locator('#wl-result-open').count(), 0);
+        if (mode !== 'active') {
+          await page.locator('#wl-result').waitFor({ state: 'visible' });
+          assert(await page.locator('#wl-result').evaluate(element => element.matches('dialog:modal')));
+          assert.match(await page.locator('#wl-result').innerText(), /Приходите завтра/);
+          const bounds = await page.locator('#wl-result').boundingBox();
+          assert(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= width && bounds.y + bounds.height <= height);
+          if ([1242, 1280, 920, 360].includes(width) && mode === 'won') await page.screenshot({ path: path.join(output, `${width}-won-modal.png`) });
+          await page.keyboard.press('Escape');
+        }
         assert(await page.locator('.wl-back').isVisible(), `Back visible at ${width}/${mode}`);
         assert.equal(await page.locator('.wl-back').getAttribute('href'), '/games');
         assert.equal(await page.locator('#wordle-app').evaluate(el => getComputedStyle(el).paddingTop), width < 600 ? '0px' : expectedPadding);
@@ -51,17 +61,8 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         assert(geometry.keyboard[0] >= 0 && geometry.keyboard[1] < geometry.bottom, `Keyboard visible ${width}/${mode}`);
         assert(geometry.keyboard[0] >= geometry.board[1], `Keyboard below board ${width}/${mode}`);
         assert.equal(await page.locator('#wl-guest').count(), 0);
-        assert.equal(await page.locator('#wl-result-open').count(), 0);
-        assert.equal(await page.locator('#wl-result').isVisible(), mode !== 'active');
-        assert.equal(await page.locator('#wl-keyboard').isVisible(), mode === 'active');
-        if (mode !== 'active') {
-          const panelBounds = await page.locator('#wl-result').boundingBox(), fieldBounds = await page.locator('.wl-game').boundingBox();
-          assert(panelBounds.x >= fieldBounds.x && panelBounds.x + panelBounds.width <= fieldBounds.x + fieldBounds.width);
-          assert(panelBounds.y >= geometry.board[1] && panelBounds.y + panelBounds.height <= fieldBounds.y + fieldBounds.height);
-          assert.match(await page.locator('#wl-result').innerText(), /Приходите завтра/);
-          await page.keyboard.press('Escape');
-          assert(await page.locator('#wl-result').isVisible());
-        }
+        assert(await page.locator('#wl-result').isHidden());
+        assert(await page.locator('#wl-keyboard').isVisible());
         if (mode === 'active') {
           await page.locator('[data-letter="ӕ"]').click();
           assert.equal(await page.locator('#wl-input').inputValue(), 'ӕ');
@@ -75,6 +76,6 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
     await page.locator('.wl-back').focus(); await page.keyboard.press('Enter');
     await page.waitForURL(base + '/games');
     assert.deepEqual(errors, []);
-    console.log(`${checks} Wordle layout checks passed: larger desktop field, permanent in-game result instead of keyboard, no result button/divider, eleven viewports, shared back/footer, keyboard and ӕ.`);
+    console.log(`${checks} Wordle layout checks passed: automatic modal result after returning, no result button/divider, eleven viewports, large stable field, shared back/footer, keyboard and ӕ.`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

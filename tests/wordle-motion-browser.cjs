@@ -56,11 +56,14 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '../IronLanguage.We
           assert.deepEqual(flips.map(call => call.options.delay), [0, 65, 130, 195, 260]);
           assert(flips.every(call => call.frames.some(frame => frame.transform?.includes('rotateX(90deg)'))));
           assert.equal(calls.filter(call => call.options.duration === 320).length, 5, 'Victory wave follows the reveal.');
-          assert.equal(calls.filter(call => call.target === 'wl-result').length, 0, 'The result is a permanent panel, not a popup.');
+          assert.equal(calls.filter(call => call.target === 'wl-result').length, 0, 'Opening the modal does not add a separate animation.');
         }
         await page.reload(); await idle();
-        assert(await page.locator('#wl-result').isVisible(), 'The completed result remains visible after reload.');
+        await page.locator('#wl-result').waitFor({ state: 'visible' });
+        assert(await page.locator('#wl-result').evaluate(element => element.matches('dialog:modal')), 'Reload opens the finished result automatically.');
         assert.match(await page.locator('#wl-result').innerText(), /Приходите завтра/);
+        await page.locator('#wl-result-close').click();
+        assert(await page.locator('#wl-result').isHidden());
         assert.equal(await page.evaluate(() => motionCalls.length), 0, 'Reload does not replay celebrations.');
         assert.equal(await page.locator('#wl-board .is-correct').count(), 5);
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

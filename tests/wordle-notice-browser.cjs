@@ -137,8 +137,13 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
           assert.equal(await page.locator('#wl-translation').innerText(), 'рубашка');
           await page.screenshot({ path: path.join(output, `${failure}-${width}.png`), fullPage: true });
           assert.match(await page.locator('#wl-result').innerText(), /Приходите завтра/);
-          assert(await page.locator('#wl-keyboard').isHidden());
+          assert(await page.locator('#wl-result').evaluate(element => element.matches('dialog:modal')));
+          assert(await page.locator('#wl-keyboard').isVisible());
           assert.equal(await page.locator('#wl-result-open').count(), 0);
+          await page.locator('#wl-result-close').focus(); await page.keyboard.press('Shift+Tab');
+          assert(await page.locator('#wl-result-statistics').evaluate(element => element === document.activeElement));
+          await page.keyboard.press('Tab');
+          assert(await page.locator('#wl-result-close').evaluate(element => element === document.activeElement));
           await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
             configurable: true, value: { writeText: async () => {} }
           }));
@@ -147,14 +152,15 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
           assert.deepEqual(await page.evaluate(() => window.noticeAppearances), []);
           await page.clock.fastForward(3100);
           assert.equal(await page.locator('#wl-share').innerText(), 'Поделиться');
-          await page.keyboard.press('Escape');
           assert(await page.locator('#wl-result').isVisible());
-          assert.deepEqual(await geometry(), beforeFinish, 'Escape does not dismiss the permanent result or move the board');
-          await page.locator('#wl-statistics').click();
+          assert.deepEqual(await geometry(), beforeFinish, 'The modal does not resize the board or keyboard');
+          await page.locator('#wl-result-statistics').click();
+          assert(await page.locator('#wl-result').isHidden());
           assert(await page.locator('#wl-stats-dialog').isVisible());
           await page.keyboard.press('Escape');
-          assert(await page.locator('#wl-statistics').evaluate(element => element === document.activeElement));
-          assert(await page.locator('#wl-result').isVisible());
+          await page.locator('#wl-stats-dialog').waitFor({ state: 'hidden' });
+          await page.waitForFunction(() => document.querySelector('#wl-statistics') === document.activeElement);
+          assert(await page.locator('#wl-result').isHidden());
           assert.deepEqual(await geometry(), beforeFinish);
         } else {
           assert(await page.locator('#wl-result').isHidden());
@@ -162,6 +168,6 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       }
     }
     assert.deepEqual(errors, []);
-    console.log('Wordle notices/results passed: stable board/keyboard before and after win/loss, permanent result, statistics, copying, compact centered errors, 3-second dismissal and ӕ at four viewports.');
+    console.log('Wordle notices/results passed: stable board/keyboard before and after win/loss, automatic persistent modal, focus trap/statistics/copying, compact centered errors, 3-second dismissal and ӕ at four viewports.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });
