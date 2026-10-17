@@ -11,9 +11,36 @@
   const markLabels = { correct: 'на своём месте', present: 'есть в другом месте', absent: 'нет в слове' };
   let state = null, busy = true, typed = '', pending = null;
   let savedDay = null, saving = false;
+  let fitFrame = 0, noticeTimer = 0;
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').replace(/[^а-яёӕ]/gu, '').slice(0, 5);
   const errorText = error => error.status ? error.message : 'Не удалось связаться с сервером. Попробуйте ещё раз.';
-  function message(text) { $('status').textContent = text; }
+  function message(text, duration = 3000, detail = '') {
+    clearTimeout(noticeTimer);
+    $('notice-title').textContent = text;
+    $('notice-detail').textContent = detail; $('notice-detail').hidden = !detail;
+    $('notice').hidden = !text;
+    if (text && duration) noticeTimer = setTimeout(() => message(''), duration);
+  }
+  function fitBoard() {
+    cancelAnimationFrame(fitFrame);
+    fitFrame = requestAnimationFrame(() => {
+      const board = $('board'), game = board.closest('.wl-game'), navigation = document.querySelector('.mobile-bottom-nav');
+      const gameStyle = getComputedStyle(game), boardGap = parseFloat(getComputedStyle(board).rowGap) || 0;
+      const content = [...game.children].filter(element => {
+        const style = getComputedStyle(element);
+        return element !== board && style.display !== 'none' && style.position !== 'absolute';
+      });
+      const occupied = content.reduce((height, element) => height + element.getBoundingClientRect().height, 0)
+        + (parseFloat(gameStyle.rowGap) || 0) * content.length;
+      const bottom = navigation && getComputedStyle(navigation).display !== 'none' ? navigation.getBoundingClientRect().top : innerHeight;
+      const available = bottom - game.getBoundingClientRect().top - occupied - 8
+        - parseFloat(gameStyle.paddingTop) - parseFloat(gameStyle.paddingBottom)
+        - parseFloat(gameStyle.borderTopWidth) - parseFloat(gameStyle.borderBottomWidth);
+      const limit = `${Math.floor(Math.max(126, (available - boardGap * 5) * 5 / 6 + boardGap * 4))}px`;
+      if (game.style.getPropertyValue('--wl-board-limit') !== limit) game.style.setProperty('--wl-board-limit', limit);
+      game.style.setProperty('--wl-notice-top', `${board.offsetTop + board.offsetHeight / 2}px`);
+    });
+  }
   function animate(element, frames, options) {
     if (!reducedMotion.matches && element?.animate) element.animate(frames, options);
   }
@@ -87,6 +114,7 @@
       $('date').textContent = new Date(`${state.day}T12:00:00Z`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
       $('date').dateTime = state.day;
     }
+    fitBoard();
   }
   function updateTyped(value) {
     if (busy || !state || state.finished) return;
@@ -111,14 +139,16 @@
     const wasInputFocused = document.activeElement === input;
     pending ??= { day: state.day, revision: state.revision, guess: typed };
     const previousRevision = state.revision;
-    lock(true); message('Проверяем…');
+    lock(true); message('Проверяем…', 0);
     try {
       state = await api('/wordle/guess', { method: 'POST', body: JSON.stringify(pending) });
       typed = ''; pending = null; render(); message('');
       if (state.revision > previousRevision) revealRow(previousRevision);
       if (state.countedInStreak) document.dispatchEvent(new Event('adam-progress-changed'));
     } catch (error) {
-      message(errorText(error));
+      if (error.status === 400 && error.message === 'Этого слова нет в нашем словаре. Попытка не потрачена.')
+        message('Нет такого слова', 3000, 'Попытка не потрачена');
+      else message(errorText(error));
       if (error.status === 400 || error.status === 422) shakeRow();
       if (error.status === 409) { await load(); message(error.message); }
     } finally { lock(false); if (wasInputFocused && !state?.finished) input.focus(); }
@@ -137,12 +167,19 @@
   input.addEventListener('input', event => { if (!event.isComposing) updateTyped(input.value); });
   input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
   document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !$('stats-dialog').open && !$('notice').hidden) { message(''); return; }
     if (busy || $('stats-dialog').open || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target === input || event.target.closest('input,textarea,select,a')) return;
     if (event.key === 'Enter' && (event.target.tagName !== 'BUTTON' || event.target.matches('.wl-key[data-letter]'))) { event.preventDefault(); submit(); }
     else if (event.key === 'Backspace') { event.preventDefault(); backspace(); }
     else if (event.key.length === 1 && /^[а-яёӕæ]$/iu.test(event.key)) { event.preventDefault(); type(event.key); }
   });
   $('retry').addEventListener('click', load);
+  const boardResize = new ResizeObserver(fitBoard);
+  for (const element of [$('keyboard'), $('result'), document.querySelector('.wl-heading'), document.querySelector('.site-header')])
+    if (element) boardResize.observe(element);
+  window.addEventListener('resize', fitBoard);
+  window.visualViewport?.addEventListener('resize', fitBoard);
+  document.fonts.ready.then(fitBoard);
   $('save').addEventListener('click', async () => {
     if (saving || !state?.finished || !window.AdamAuthenticated || savedDay === state.day) return;
     const day = state.day;

@@ -42,7 +42,7 @@ assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert(await page.locator('#wl-statistics').evaluate(el => el === document.activeElement));
     // Unknown words don't use a guess; keyboard letters are normalized including Latin æ.
     await page.locator('#wl-input').fill('ааааа'); await page.locator('#wl-input').press('Enter'); await idle();
-    assert.match(await page.locator('#wl-status').innerText(), /нет в нашем словаре/);
+    assert.match(await page.locator('#wl-status').innerText(), /Нет такого слова/);
     assert.equal((await (await page.request.get(`${base}/api/v1/wordle`)).json()).revision, 0);
     await page.locator('#wl-input').fill(wrong[0]); await page.locator('#wl-input').press('Enter'); await idle();
     assert.equal(await page.locator('.wl-cell.is-absent,.wl-cell.is-correct,.wl-cell.is-present').count(), 5);
