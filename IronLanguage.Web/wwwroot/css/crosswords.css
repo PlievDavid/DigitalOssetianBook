@@ -1,5 +1,4 @@
 .green-theme #crosswords-app { max-width: 1120px; }
-.cw-title-row { display: flex; align-items: center; gap: 8px; }
 #crosswords-app [hidden] { display: none !important; }
 .cw-card-top { display: block; color: #37634e; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
 .cw-note { color: #526454; line-height: 1.6; }

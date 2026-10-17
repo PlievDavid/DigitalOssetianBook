@@ -4,6 +4,7 @@
   "scripts": {
     "test:dialogue-builder": "node tests/dialogue-builder-browser.cjs",
     "test:navigation": "node tests/navigation-browser.cjs",
+    "test:games-navigation": "node tests/games-navigation-browser.cjs",
     "test:wordle-vocabulary": "node tests/wordle-vocabulary-browser.cjs",
     "test:wordle-layout": "node tests/wordle-layout-browser.cjs",
     "test:wordle-notice": "node tests/wordle-notice-browser.cjs",

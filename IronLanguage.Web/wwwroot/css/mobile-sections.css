@@ -17,8 +17,6 @@
     .green-theme .auth-shell .auth-switch { margin: 24px 0 0; text-align: center; }
     .green-theme #crosswords-app { padding-top: 24px; }
     .green-theme #crosswords-app .cw-heading { margin-top: 0; }
-    .green-theme #crosswords-app .cw-title-row h1 { margin: 0; }
-    .green-theme #crosswords-app .cw-back-to-tasks { min-width: 32px; min-height: 44px; padding: 0; justify-content: center; }
     .green-theme { background: #fafbf7; }
     .green-theme .site-frame { background: #fafbf7; }
     .green-theme #main-content { min-width: 0; }

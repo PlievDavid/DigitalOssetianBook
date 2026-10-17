@@ -45,6 +45,7 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '../IronLanguage.We
         await page.locator('#wl-input').fill(answer);
         await page.evaluate(() => { window.motionCalls = []; });
         await page.locator('#wl-input').press('Enter'); await idle();
+        await page.locator('#wl-result').waitFor({ state: 'visible' });
         assert.equal(await page.locator('#wl-board .is-correct').count(), 5);
         assert(await page.locator('#wl-notice').isHidden());
         calls = await page.evaluate(() => motionCalls);
@@ -58,6 +59,7 @@ const data = JSON.parse(fs.readFileSync(path.join(__dirname, '../IronLanguage.We
           assert.equal(calls.filter(call => call.target === 'wl-result').length, 1);
         }
         await page.reload(); await idle();
+        assert(await page.locator('#wl-result').isHidden(), 'Reload does not reopen the result dialog.');
         assert.equal(await page.evaluate(() => motionCalls.length), 0, 'Reload does not replay celebrations.');
         assert.equal(await page.locator('#wl-board .is-correct').count(), 5);
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
