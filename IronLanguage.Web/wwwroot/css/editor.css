@@ -26,7 +26,7 @@
 .editor-form-shell, .editor-preview-shell { max-width: 768px; }
 .editor-form-shell h1, .editor-preview-shell h1 { margin-top: 25px; }
 .editor-form { display: grid; gap: 23px; margin-top: 28px; }
-.editor-form > label, .editor-chapter label { display: grid; gap: 8px; color: #21314c; font-size: 15px; font-weight: 600; }
+.editor-form > label, .editor-chapter label, .editor-form .editor-field { display: grid; gap: 8px; color: #21314c; font-size: 15px; font-weight: 600; }
 .editor-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), .editor-form textarea, .editor-form select, .editor-word-chooser input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #bcc9db; border-radius: 8px; background: white; color: #17233c; font: inherit; font-weight: 400; }
 .editor-form textarea { resize: vertical; line-height: 1.5; }
 .editor-form input:focus, .editor-form textarea:focus, .editor-form select:focus, .editor-word-chooser input:focus { outline: 2px solid #425fcd; outline-offset: 1px; }
@@ -44,7 +44,14 @@
 .editor-word-results button:hover { background: #f1f5ff; }
 .editor-selected-words { display: flex; flex-wrap: wrap; gap: 8px; }
 .editor-word-chip { padding: 8px 11px; border: 1px solid #c9d6f0; border-radius: 20px; background: #eef3ff; color: #294997; font-size: 13px; }
-.editor-audio-field { display: grid; justify-items: start; gap: 10px; }
+:is(.editor-audio-field, .editor-image-field) { display: grid; justify-items: start; gap: 10px; }
+.editor-picture-fields { display: grid; gap: inherit; min-width: 0; }
+.editor-picture-distractors { display: grid; gap: 12px; min-width: 0; }
+.editor-picture-distractors .editor-field-label { margin: 0; font-size: 15px; }
+.editor-image-upload { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; }
+.editor-image-upload .field-help { min-width: 0; overflow-wrap: anywhere; }
+.editor-image-preview { display: block; width: 100%; max-width: 320px; height: 180px; object-fit: contain; border: 1px solid #cbd7d2; border-radius: 8px; background: white; }
+.editor-picture-fields [hidden] { display: none !important; }
 .editor-file-button { display: inline-flex; align-items: center; min-height: 43px; padding: 9px 15px; border: 1px solid #9eafd3; border-radius: 8px; color: #3154b5; font-weight: 600; cursor: pointer; }
 .editor-file-button:hover { background: #f1f5ff; }
 .editor-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }

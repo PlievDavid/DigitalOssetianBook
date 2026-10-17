@@ -270,13 +270,13 @@ html { scrollbar-gutter: stable; }
 .editor-page #editor-form-app[data-kind="word"] .editor-form { max-width: 640px; }
 .editor-page .editor-form > *,.editor-page .editor-chapter > * { min-width: 0; }
 .editor-page .editor-form input,.editor-page .editor-form textarea,.editor-page .editor-form select { min-width: 0; max-width: 100%; }
-.editor-page .editor-form > label,.editor-page .editor-chapter label { color: var(--theme-ink); }
+.editor-page .editor-form > label,.editor-page .editor-chapter label,.editor-page .editor-form .editor-field { color: var(--theme-ink); }
 .editor-page .editor-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),.editor-page .editor-form textarea,.editor-page .editor-form select { border-color: #cbd7d2; border-radius: var(--theme-radius-sm); color: var(--theme-ink); }
 .editor-page .editor-form input:focus,.editor-page .editor-form textarea:focus,.editor-page .editor-form select:focus { outline-color: var(--theme-focus); }
 .editor-page .editor-step-row { grid-template-columns: auto minmax(110px, 1fr) repeat(2, minmax(190px, 1.3fr)); padding: 12px; background: var(--theme-sage); border-radius: var(--theme-radius-sm); }
-.editor-page .editor-audio-field { padding: 20px; border-radius: var(--theme-radius-sm); background: var(--theme-blue); }
+.editor-page :is(.editor-audio-field, .editor-image-field) { padding: 20px; border-radius: var(--theme-radius-sm); background: var(--theme-blue); }
 .editor-page .editor-file-button { background: white; border-color: #aabfcf; color: #28598d; }
-.editor-page .editor-audio-field:has(.editor-file-input:focus-visible) .editor-file-button { outline: 3px solid var(--theme-focus); outline-offset: 3px; }
+.editor-page :is(.editor-audio-field, .editor-image-field):has(.editor-file-input:focus-visible) .editor-file-button { outline: 3px solid var(--theme-focus); outline-offset: 3px; }
 .editor-page .editor-word-chip { background: var(--theme-sage); border-color: #cbd7d2; color: var(--theme-green); }
 .editor-page .editor-word-results button:hover { background: var(--theme-sage); }
 .editor-page .primary { background: var(--theme-green); color: white; }
