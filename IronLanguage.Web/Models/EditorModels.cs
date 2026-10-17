@@ -33,6 +33,14 @@ public sealed class EditorFormModel
     public string TurnsText { get; set; } = "";
     public string MatchingTitle { get; set; } = "";
     public string PairsText { get; set; } = "";
+    public string PictureTitle { get; set; } = "";
+    public string PicturePath { get; set; } = "";
+    public string? ExistingPicturePath { get; set; }
+    public IFormFile? PictureImage { get; set; }
+    public string PictureWord { get; set; } = "";
+    public string PictureMode { get; set; } = "choice";
+    public string PictureDistractor1 { get; set; } = "";
+    public string PictureDistractor2 { get; set; } = "";
     public string? ExistingAudioPath { get; set; }
     public IFormFile? Audio { get; set; }
 
@@ -80,6 +88,18 @@ public sealed class EditorFormModel
             model.DistractorsText = string.Join('\n', p.Distractors);
             model.WordIdsCsv = string.Join(',', p.WordIds);
         }
+        else if (kind == "picture")
+        {
+            var p = JsonSerializer.Deserialize<PictureMaterial>(json, options)!;
+            model.PictureTitle = p.Title;
+            model.PicturePath = p.PicturePath;
+            model.ExistingPicturePath = p.PicturePath;
+            model.PictureWord = p.Word;
+            model.PictureMode = p.Mode;
+            model.PictureDistractor1 = p.Distractors.ElementAtOrDefault(0) ?? "";
+            model.PictureDistractor2 = p.Distractors.ElementAtOrDefault(1) ?? "";
+            model.WordIdsCsv = string.Join(',', p.WordIds);
+        }
         return model;
     }
 }
@@ -100,6 +120,7 @@ public sealed class EditorPreviewModel
     public BookMaterial? Book { get; init; }
     public DialogueMaterial? Dialogue { get; init; }
     public MatchingMaterial? Matching { get; init; }
+    public PictureMaterial? Picture { get; init; }
     public List<ContentRevision> History { get; init; } = [];
     public Dictionary<Guid, WordEntry> Words { get; init; } = [];
 }

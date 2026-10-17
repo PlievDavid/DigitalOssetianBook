@@ -25,7 +25,8 @@ builder.Services.AddScoped<LearningService>();
 builder.Services.AddSingleton<GuestLearningStore>();
     builder.Services.AddScoped<DialogueService>();
     builder.Services.AddScoped<MatchingService>();
-builder.Services.AddScoped<DictionaryService>();
+    builder.Services.AddScoped<PictureService>();
+    builder.Services.AddScoped<DictionaryService>();
 builder.Services.AddScoped<DialogueSeedService>();
 builder.Services.AddScoped<ExerciseSeedService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>

@@ -500,6 +500,34 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("Matchings");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.PictureMatching", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Archived")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Published")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ScriptJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PictureMatchings");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.ReadingPosition", b =>
                 {
                     b.Property<Guid>("UserId")

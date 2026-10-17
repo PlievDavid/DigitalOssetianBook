@@ -11,7 +11,7 @@ namespace IronLanguage.Web.Controllers;
 public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly string[] Kinds = ["word", "audio", "translation", "book", "dialogue", "matching"];
+    private static readonly string[] Kinds = ["word", "audio", "translation", "book", "dialogue", "matching", "picture"];
 
     [HttpGet("new/{kind}")]
     public IActionResult New(string kind) => Kinds.Contains(kind) ? View("Form", new EditorFormModel { Kind = kind }) : NotFound();
@@ -143,6 +143,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             Book = kind == "book" ? JsonSerializer.Deserialize<BookMaterial>(payload, JsonOptions) : null,
             Dialogue = kind == "dialogue" ? JsonSerializer.Deserialize<DialogueMaterial>(payload, JsonOptions) : null,
             Matching = kind == "matching" ? JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions) : null,
+            Picture = kind == "picture" ? JsonSerializer.Deserialize<PictureMaterial>(payload, JsonOptions) : null,
             History = await editor.History(kind, id, ct), Words = words
         };
     }
@@ -156,6 +157,8 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.AlternativesText ??= ""; model.DistractorsText ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
         model.DialogueTitle ??= ""; model.Dialect ??= ""; model.CharactersText ??= ""; model.LinesText ??= ""; model.TurnsText ??= "";
         model.MatchingTitle ??= ""; model.PairsText ??= "";
+        model.PictureTitle ??= ""; model.PicturePath ??= ""; model.PictureWord ??= ""; model.PictureMode ??= "";
+        model.PictureDistractor1 ??= ""; model.PictureDistractor2 ??= "";
         var kind = model.Kind;
         CleanOssetianText(kind, model);
         var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
@@ -287,6 +290,31 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             foreach (var error in errors) ModelState.AddModelError("", error);
             if (material is not null) payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
         }
+        else if (kind == "picture")
+        {
+            var wordIds = new List<Guid>();
+            foreach (var value in model.WordIdsCsv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!Guid.TryParse(value, out var id) || !publishedWords.Contains(id)) ModelState.AddModelError(nameof(model.WordIdsCsv), "Выберите опубликованные слова из списка.");
+                else wordIds.Add(id);
+            }
+            var path = (model.PicturePath ?? "").Trim();
+            if (model.PictureImage is { Length: > 0 })
+            {
+                if (model.PictureImage.Length > 5_000_000 || Path.GetExtension(model.PictureImage.FileName).ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp"))
+                    ModelState.AddModelError(nameof(model.PictureImage), "Картинка: PNG, JPEG или WebP до 5 МБ.");
+                else
+                {
+                    var savedPath = await SavePicture(model.PictureImage, ct);
+                    if (savedPath is null) ModelState.AddModelError(nameof(model.PictureImage), "Файл не является допустимым изображением.");
+                    else path = savedPath;
+                }
+            }
+            var (material, errors) = PictureScript.Validate(model.PictureTitle, path, model.PictureWord, model.PictureMode,
+                model.PictureMode == "choice" ? $"{model.PictureDistractor1}\n{model.PictureDistractor2}" : null);
+            foreach (var error in errors) ModelState.AddModelError("", error);
+            if (material is not null) payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
+        }
         else return null;
         return payload;
     }
@@ -319,6 +347,13 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             model.PairsText = OssetianText.FixAe(model.PairsText);
             model.DistractorsText = OssetianText.FixAe(model.DistractorsText);
         }
+        else if (kind == "picture")
+        {
+            model.PictureTitle = OssetianText.FixAe(model.PictureTitle);
+            model.PictureWord = OssetianText.FixAe(model.PictureWord);
+            model.PictureDistractor1 = OssetianText.FixAe(model.PictureDistractor1);
+            model.PictureDistractor2 = OssetianText.FixAe(model.PictureDistractor2);
+        }
     }
 
     private static string? AudioPath(string kind, string payload)
@@ -333,6 +368,29 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
 
     private static string? CoverPath(string kind, string payload) => kind == "book"
         ? JsonSerializer.Deserialize<BookMaterial>(payload, JsonOptions)?.CoverImagePath : null;
+
+    private async Task<string?> SavePicture(IFormFile file, CancellationToken ct)
+    {
+        await using var input = file.OpenReadStream();
+        await using var buffer = new MemoryStream();
+        await input.CopyToAsync(buffer, ct);
+        var bytes = buffer.ToArray();
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var valid = extension switch
+        {
+            ".png" => bytes.Length >= 8 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
+            ".jpg" or ".jpeg" => bytes.Length >= 3 && bytes[0] == 255 && bytes[1] == 216 && bytes[2] == 255,
+            ".webp" => bytes.Length >= 12 && System.Text.Encoding.ASCII.GetString(bytes, 0, 4) == "RIFF"
+                && System.Text.Encoding.ASCII.GetString(bytes, 8, 4) == "WEBP",
+            _ => false
+        };
+        if (!valid) return null;
+        var folder = Path.Combine(environment.WebRootPath, "media", "pictures");
+        Directory.CreateDirectory(folder);
+        var name = Guid.NewGuid().ToString("N") + extension;
+        await System.IO.File.WriteAllBytesAsync(Path.Combine(folder, name), bytes, ct);
+        return "/media/pictures/" + name;
+    }
 
     private async Task<string?> SaveCover(IFormFile cover, CancellationToken ct)
     {
@@ -362,6 +420,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         "audio" or "translation" => (JsonSerializer.Deserialize<ExerciseMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         "book" => (JsonSerializer.Deserialize<BookMaterial>(payload, JsonOptions)?.Chapters ?? []).SelectMany(x => x.Tokens).All(x => x.WordId is null || words.Contains(x.WordId.Value)),
         "matching" => (JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
+        "picture" => (JsonSerializer.Deserialize<PictureMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         _ => true
     };
 

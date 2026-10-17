@@ -23,6 +23,9 @@ public sealed class PracticeController : Controller
     [HttpGet("matching")]
     public IActionResult Matching() => View();
 
+    [HttpGet("picture")]
+    public IActionResult Picture() => View();
+
     [HttpGet("game")]
     public IActionResult Game() => View();
 
