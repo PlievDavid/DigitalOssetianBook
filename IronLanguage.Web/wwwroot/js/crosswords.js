@@ -201,7 +201,7 @@
       cells = { ...draft?.cells }; solved = new Set(draft?.solved || []);
       for (const word of level.words) if (word.solved) { solved.add(word.id); keys(word).forEach((k, i) => cells[k] = word.answer[i]); }
       busy = false; render(); $('levels').hidden = true; $('play').hidden = false;
-      message('Переведите подсказки на осетинский. Проверяйте ответы, когда будете готовы.'); $('title').focus();
+      message('Впишите осетинские слова по русским подсказкам. Нажмите «Проверить», когда будете готовы.'); $('title').focus();
     } catch (error) { message(error.message); }
     finally { busy = false; $('levels').setAttribute('aria-busy', 'false'); }
   }

@@ -102,6 +102,7 @@ dotnet ef database update --project IronLanguage.Db --startup-project IronLangua
 Для работающего локального сайта задайте `$env:ADAM_TEST_URL = 'http://127.0.0.1:ПОРТ'`:
 
 - `npm run test:navigation` — телефон, планшет, компьютер, фокус и Escape.
+- `npm run test:wordle-vocabulary` — кнопка добавления раскрытого ответа в словарь, ошибка и повтор, клавиатура, телефон и компьютер; API подменён, запись в БД не выполняется. Настоящее сохранение проверяет `dotnet run --project tests/WordleChecks -- --database` с импортированным словарём и `ADAM_TEST_URL` после загрузки `.run-local/connection.ps1`.
 - `npm run test:learning-layout` — карточки диалогов, гостевой запуск и компактные слова; прогресс в БД не записывается.
 
 Для аватара задайте `AVATAR_TEST_URL` на локальный сайт. `npm run test:avatar-artwork` проверяет отрисовку без записи в БД. `npm run test:avatar` создаёт временные аккаунты: запускайте на подготовленной проверочной базе, учитывая этот побочный эффект.

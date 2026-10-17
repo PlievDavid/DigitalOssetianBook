@@ -14,6 +14,9 @@ public sealed class CrosswordCatalog
         var json = File.ReadAllText(Path.Combine(environment.ContentRootPath, "Data", "crosswords", "levels.json"));
         levels = JsonSerializer.Deserialize<CrosswordLevel[]>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))
             ?? throw new InvalidOperationException("Не удалось прочитать кроссворды.");
+        var duplicate = levels.GroupBy(level => (level.Id, level.Version)).FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
+            throw new InvalidOperationException($"В levels.json повторяется кроссворд с ID {duplicate.Key.Id} и версией {duplicate.Key.Version}.");
     }
     public IEnumerable<CrosswordLevel> Current => levels.GroupBy(x => x.Id).Select(g => g.MaxBy(x => x.Version)!);
     public CrosswordLevel? Find(int id, int version) => levels.SingleOrDefault(x => x.Id == id && x.Version == version);

@@ -4,6 +4,7 @@
   "scripts": {
     "test:dialogue-builder": "node tests/dialogue-builder-browser.cjs",
     "test:navigation": "node tests/navigation-browser.cjs",
+    "test:wordle-vocabulary": "node tests/wordle-vocabulary-browser.cjs",
     "test:learning-layout": "node tests/learning-layout-browser.cjs",
     "test:avatar-artwork": "node tests/avatar-artwork.cjs",
     "test:avatar": "node tests/avatar-browser.cjs",

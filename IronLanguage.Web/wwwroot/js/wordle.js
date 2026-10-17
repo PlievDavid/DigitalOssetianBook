@@ -10,6 +10,7 @@
   const keyboard = ['йцукенгшщзхъ', 'фывапролджэ', 'ӕячсмитьбю'];
   const markLabels = { correct: 'на своём месте', present: 'есть в другом месте', absent: 'нет в слове' };
   let state = null, busy = true, typed = '', pending = null;
+  let savedDay = null, saving = false;
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').replace(/[^а-яёӕ]/gu, '').slice(0, 5);
   const errorText = error => error.status ? error.message : 'Не удалось связаться с сервером. Попробуйте ещё раз.';
   function message(text) { $('status').textContent = text; }
@@ -74,6 +75,9 @@
     input.value = typed;
     input.hidden = !!state?.finished;
     $('result').hidden = !state?.finished;
+    $('save').hidden = !state?.finished || !window.AdamAuthenticated;
+    $('save').disabled = saving || savedDay === state?.day;
+    $('save').textContent = savedDay === state?.day ? 'В словаре' : 'В мой словарь';
     if (state?.finished) {
       $('result-title').textContent = state.won ? state.countedInStreak ? 'Верно! День в серии засчитан' : 'Верно!' : 'Сегодня не получилось';
       $('answer').textContent = `${state.answer.toUpperCase()} — ${state.russian}`;
@@ -139,6 +143,16 @@
     else if (event.key.length === 1 && /^[а-яёӕæ]$/iu.test(event.key)) { event.preventDefault(); type(event.key); }
   });
   $('retry').addEventListener('click', load);
+  $('save').addEventListener('click', async () => {
+    if (saving || !state?.finished || !window.AdamAuthenticated || savedDay === state.day) return;
+    const day = state.day;
+    saving = true; $('save').disabled = true; $('save-status').textContent = 'Сохраняем…';
+    try {
+      await api('/wordle/vocabulary', { method: 'POST', body: JSON.stringify({ day }) });
+      savedDay = day; $('save-status').textContent = 'Слово добавлено в ваш словарь.';
+    } catch (error) { $('save-status').textContent = errorText(error); }
+    finally { saving = false; render(); }
+  });
   $('statistics').addEventListener('click', async () => {
     $('stats-dialog').showModal(); $('stats-content').hidden = true;
     if (!window.AdamAuthenticated) { $('stats-status').textContent = 'Войдите в аккаунт, чтобы сохранять результаты и видеть статистику.'; return; }

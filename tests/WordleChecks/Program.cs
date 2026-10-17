@@ -66,10 +66,23 @@ clock.Now = clock.Now.AddDays(-1);
 var uid = Guid.NewGuid();
 await service.Open(uid, Guid.Empty, default);
 Check(memory.Calls == 1 && memory.Games.Count == 0, "Authenticated GET does not write");
+Check(await service.AnswerForVocabulary(uid, day, default) is null, "Unplayed game cannot supply a vocabulary answer");
 state = await service.Guess(uid, Guid.Empty, day, 0, answer, default);
 Check(state.Won && state.CountedInStreak && memory.Saves == 1, "Authenticated win");
 await service.Guess(uid, Guid.Empty, day, 0, answer, default);
 Check(memory.Saves == 1, "Winning retry does not save twice");
+var vocabularyAnswer = await service.AnswerForVocabulary(uid, day, default);
+Check(vocabularyAnswer?.Word == answer && vocabularyAnswer.SourceRow > 2 && vocabularyAnswer.SourceColumn == 4, "Completed answer retains dictionary provenance");
+Check(await service.AnswerForVocabulary(Guid.NewGuid(), day, default) is null, "Another account cannot save the winner's answer");
+Check(await service.AnswerForVocabulary(uid, day.AddDays(1), default) is null, "A different day cannot save an unrevealed answer");
+var unfinishedUser = Guid.NewGuid();
+await service.Guess(unfinishedUser, Guid.Empty, day, 0, wrong[0], default);
+Check(await service.AnswerForVocabulary(unfinishedUser, day, default) is null, "Unfinished game cannot supply a vocabulary answer");
+for (var guessIndex = 1; guessIndex < 6; guessIndex++) await service.Guess(unfinishedUser, Guid.Empty, day, guessIndex, wrong[guessIndex], default);
+Check((await service.AnswerForVocabulary(unfinishedUser, day, default))?.Word == answer, "Lost game can save the revealed answer");
+clock.Now = clock.Now.AddDays(1);
+Check((await service.AnswerForVocabulary(uid, day, default))?.Word == answer, "Saving an already revealed answer survives UTC rollover");
+clock.Now = clock.Now.AddDays(-1);
 Console.WriteLine("Wordle rules passed: 300 sources, 300-day schedule, repeated letters, six attempts, normalization, retries, conflicts, guests, user isolation and UTC rollover.");
 
 if (args.Contains("--database"))
@@ -85,6 +98,7 @@ if (args.Contains("--database"))
     accounts[0].PasswordHash = new PasswordHasher<UserAccount>().HashPassword(accounts[0], password);
     var ids = accounts.Select(x => x.Id).ToArray();
     var today = DateOnly.FromDateTime(DateTime.UtcNow);
+    Guid? createdDictionaryWord = null;
     try
     {
         db.Users.AddRange(accounts); await db.SaveChangesAsync();
@@ -146,11 +160,38 @@ if (args.Contains("--database"))
             request.Headers.Add("RequestVerificationToken", csrf);
             Check((await client.SendAsync(request)).IsSuccessStatusCode, "HTTP winning retry");
             Check(JsonDocument.Parse(await client.GetStringAsync("/api/v1/wordle/statistics")).RootElement.GetProperty("won").GetInt32() == 1, "HTTP private statistics");
+            var answerSource = catalog.ForDay(today);
+            var sourceRepository = new EfDictionarySourceRepository(db);
+            Check(await sourceRepository.FindSense(answerSource.SourceRow, answerSource.SourceColumn, "несуществующее", default) is null, "Source lookup rejects mismatched spelling");
+            var senseId = await sourceRepository.FindSense(answerSource.SourceRow, answerSource.SourceColumn, DictionaryService.Key(answerSource.Word), default);
+            Check(senseId is not null, "Prepared database contains the answer's exact dictionary source");
+            var existingWord = await db.Words.AsNoTracking().SingleOrDefaultAsync(word => word.DictionarySenseId == senseId);
+            var wordId = await new DictionaryService(db).EnsureSavedWord(senseId!.Value, default);
+            Check(wordId is not null, "Dictionary source supplies a saved word");
+            if (existingWord is null) createdDictionaryWord = wordId;
+            var saveBody = JsonSerializer.Serialize(new { day = today });
+            Check((await client.PostAsync("/api/v1/wordle/vocabulary", new StringContent(saveBody, Encoding.UTF8, "application/json"))).StatusCode == HttpStatusCode.BadRequest, "Saving answer requires CSRF");
+            for (var repeat = 0; repeat < 2; repeat++)
+            {
+                using var saveRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/wordle/vocabulary") { Content = new StringContent(saveBody, Encoding.UTF8, "application/json") };
+                saveRequest.Headers.Add("RequestVerificationToken", csrf);
+                Check((await client.SendAsync(saveRequest)).IsSuccessStatusCode, "HTTP answer saved, including retry");
+            }
+            Check(await db.SavedWords.CountAsync(word => word.UserId == ids[0] && word.WordId == wordId) == 1, "Answer save is idempotent");
+            Check(!await db.SavedWords.AnyAsync(word => word.UserId == ids[1]), "Saving answer does not write to another account");
+            var vocabulary = JsonDocument.Parse(await client.GetStringAsync("/api/v1/vocabulary"));
+            Check(vocabulary.RootElement.EnumerateArray().Any(word => word.GetProperty("wordId").GetGuid() == wordId), "Saved answer appears in personal vocabulary");
+            using var unfinishedSave = new HttpRequestMessage(HttpMethod.Post, "/api/v1/wordle/vocabulary") { Content = new StringContent(JsonSerializer.Serialize(new { day = today.AddDays(1) }), Encoding.UTF8, "application/json") };
+            unfinishedSave.Headers.Add("RequestVerificationToken", csrf);
+            Check((await client.SendAsync(unfinishedSave)).StatusCode == HttpStatusCode.BadRequest, "Unplayed day cannot save a word through HTTP");
         }
         Console.WriteLine("PostgreSQL/HTTP passed: migration, no GET writes, account isolation, resume, concurrent win, zero points, shared streak, badges, statistics, auth and CSRF.");
     }
     finally
     {
+        await db.SavedWords.Where(word => ids.Contains(word.UserId)).ExecuteDeleteAsync();
+        if (createdDictionaryWord is Guid createdWord)
+            await db.Words.Where(word => word.Id == createdWord && !db.SavedWords.Any(saved => saved.WordId == word.Id)).ExecuteDeleteAsync();
         await db.ExerciseRewards.Where(x => ids.Contains(x.UserId)).ExecuteDeleteAsync();
         await db.Attempts.Where(x => ids.Contains(x.UserId)).ExecuteDeleteAsync();
         await db.Achievements.Where(x => ids.Contains(x.UserId)).ExecuteDeleteAsync();

@@ -27,6 +27,31 @@ foreach (var level in source.RootElement.EnumerateArray()) foreach (var word in 
     Require(DictionaryService.Key(row[0].Split(',')[0]) == word.GetProperty("clue").GetString()!.ToLowerInvariant().Replace(" (грецкий)", ""), "Clue provenance");
 }
 Require(catalog.Current.Count() == 10, "Ten levels");
+var fixtureRoot = Path.Combine(Path.GetTempPath(), $"adam-crossword-catalog-{Guid.NewGuid():N}");
+var fixtureData = Path.Combine(fixtureRoot, "Data", "crosswords");
+Directory.CreateDirectory(fixtureData);
+try
+{
+    var level = catalog.Current.First();
+    var fixturePath = Path.Combine(fixtureData, "levels.json");
+    var fixtureEnvironment = new TestEnvironment { ContentRootPath = fixtureRoot };
+    File.WriteAllText(fixturePath, JsonSerializer.Serialize(new[] { level, level }));
+    try
+    {
+        _ = new CrosswordCatalog(fixtureEnvironment);
+        throw new Exception("Duplicate level/version must fail while loading the catalog");
+    }
+    catch (InvalidOperationException error)
+    {
+        Require(error.Message.Contains("levels.json") && error.Message.Contains($"ID {level.Id}") && error.Message.Contains($"версией {level.Version}"), "Duplicate error identifies the source, ID and version");
+    }
+    var nextVersion = level with { Version = level.Version + 1 };
+    File.WriteAllText(fixturePath, JsonSerializer.Serialize(new[] { level, nextVersion }));
+    var versionedCatalog = new CrosswordCatalog(fixtureEnvironment);
+    Require(versionedCatalog.Current.Single().Version == nextVersion.Version, "Different versions are valid and the latest is current");
+    Require(versionedCatalog.Find(level.Id, level.Version) is not null, "Older versions remain available");
+}
+finally { Directory.Delete(fixtureRoot, true); }
 foreach (var level in catalog.Current)
 {
     var grid = new Dictionary<string, string?>();

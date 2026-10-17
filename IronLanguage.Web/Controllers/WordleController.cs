@@ -1,3 +1,4 @@
+using IronLanguage.Db;
 using IronLanguage.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -5,9 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 public sealed record WordleInput(DateOnly Day, int Revision, string? Guess);
+public sealed record WordleSaveInput(DateOnly Day);
 
 [AutoValidateAntiforgeryToken]
-public sealed class WordleController(WordleService service, GuestLearningStore guests) : Controller
+public sealed class WordleController(WordleService service, GuestLearningStore guests, DictionaryService dictionary, IDictionarySourceRepository dictionarySource, IProgressRepository progress) : Controller
 {
     private Guid GuestOwner() => User.UserId() is null ? guests.Owner(HttpContext) : Guid.Empty;
     [HttpGet("games/wordle")]
@@ -29,4 +31,17 @@ public sealed class WordleController(WordleService service, GuestLearningStore g
     }
     [Authorize, HttpGet("api/v1/wordle/statistics"), ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Statistics(CancellationToken ct) => Ok(await service.Statistics(User.UserId()!.Value, ct));
+
+    [Authorize, HttpPost("api/v1/wordle/vocabulary"), RequestSizeLimit(1024)]
+    public async Task<IActionResult> SaveAnswer([FromBody] WordleSaveInput? input, CancellationToken ct)
+    {
+        if (!ModelState.IsValid || input is null) return BadRequest(new { error = "Передайте дату игры." });
+        var userId = User.UserId()!.Value;
+        var word = await service.AnswerForVocabulary(userId, input.Day, ct);
+        if (word is null) return BadRequest(new { error = "Добавить слово можно после завершения своей игры." });
+        var senseId = await dictionarySource.FindSense(word.SourceRow, word.SourceColumn, DictionaryService.Key(word.Word), ct);
+        var wordId = senseId is Guid sense ? await dictionary.EnsureSavedWord(sense, ct) : null;
+        return wordId is Guid id && await progress.AddWord(userId, id, ct)
+            ? Ok() : NotFound(new { error = "Слово пока недоступно в словаре. Попробуйте позже." });
+    }
 }

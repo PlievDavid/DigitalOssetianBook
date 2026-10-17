@@ -3,7 +3,7 @@ using IronLanguage.Db;
 
 namespace IronLanguage.Web.Services;
 
-public sealed record WordleWord(int Id, string Word, string Russian);
+public sealed record WordleWord(int Id, string Word, string Russian, int SourceRow = 0, int SourceColumn = 0);
 public sealed record WordleData(int Version, DateOnly StartDate, WordleWord[] Answers, string[] Allowed);
 public sealed record WordleRow(string Word, string[] Marks);
 public sealed record WordleState(DateOnly Day, DateTimeOffset NextDay, int Revision, WordleRow[] Rows, bool Won, bool Finished, string? Answer, string? Russian, bool CountedInStreak);
@@ -120,5 +120,13 @@ public sealed class WordleService(WordleCatalog catalog, IWordleRepository repos
         var streak = LearningService.Summarize(await progress.Activities(userId, ct), []).Streak;
         return new { played = games.Length, won = wins.Length, winRate = games.Length == 0 ? 0 : (int)Math.Round(100d * wins.Length / games.Length), streak,
             distribution = Enumerable.Range(1, 6).Select(i => wins.Count(x => x.Revision == i)).ToArray() };
+    }
+
+    public async Task<WordleWord?> AnswerForVocabulary(Guid userId, DateOnly day, CancellationToken ct)
+    {
+        var game = await repository.Find(userId, day, ct);
+        if (game is null || !game.Won && game.Revision < 6) return null;
+        var word = catalog.ForDay(day);
+        return word.Word == game.ExpectedWord ? word : null;
     }
 }

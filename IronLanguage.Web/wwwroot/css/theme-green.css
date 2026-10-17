@@ -223,6 +223,12 @@ html { scrollbar-gutter: stable; }
 .format-dialogs { background: var(--theme-sage); }
 .format-dialogs .format-icon { background: #dce7d3; color: var(--theme-green); }
 .format-dialogs .round-arrow { color: var(--theme-green); }
+.format-crosswords { background: var(--theme-sage); }
+.format-crosswords .format-icon { background: #dce7d3; color: var(--theme-green); }
+.format-crosswords .round-arrow { color: var(--theme-green); }
+.format-wordle { background: var(--theme-sand); }
+.format-wordle .format-icon { background: var(--theme-sand-icon); color: #704110; }
+.format-wordle .round-arrow { color: #784314; }
 .format-matching { background: #fcf0ef; }
 .format-matching .format-icon { background: #f5d4d0; color: #8a2f24; }
 .format-matching .round-arrow { color: #8a2f24; }

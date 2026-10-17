@@ -23,19 +23,27 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       checks += 6;
+      for (const [route, activeHref, currentPage] of [['/audio-puzzles', '/', false], ['/translate', '/', false], ['/dialogs', '/', false], ['/matching', '/', false], ['/vocabulary', '/vocabulary', true], ['/word-practice', '/vocabulary', false], ['/game', '/vocabulary', false], ['/books', '/books', true], ['/account/login', '/profile', false]]) {
+        await page.goto(base + route);
+        assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), activeHref);
+        assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), currentPage ? 1 : 0);
+        checks += 2;
+      }
+      await page.goto(base);
       for (const route of ['/games/crosswords', '/games/wordle']) {
         const card = page.locator(`#games a[href="${route}"]`);
         assert.equal(await card.count(), 1);
         await card.focus(); await page.keyboard.press('Enter');
         await page.waitForURL(base + route);
         assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Книги', 'Профиль']);
-        assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
+        assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
+        assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), 0);
         const back = page.locator(route.endsWith('wordle') ? '.wl-back' : '.cw-back-to-tasks');
         assert(await back.isVisible());
         await back.focus(); await page.keyboard.press('Enter');
         await page.waitForURL(base + '/#games');
         assert(await page.locator('#games').isVisible());
-        checks += 5;
+        checks += 6;
       }
     }
     for (const width of [600, 768, 1023]) {

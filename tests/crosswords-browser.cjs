@@ -29,7 +29,8 @@ const url = process.env.ADAM_TEST_URL || 'http://127.0.0.1:58326';
     }
     await ready();
     assert.equal(await page.locator('.nav-menu-words .is-current').count(), 0, 'Games do not activate Words');
-    assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
+    assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
+    assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), 0);
     const csrf = await page.locator('#api-antiforgery input').inputValue();
     let response = await page.request.post(`${url}/api/v1/crosswords/1/1/check`, { data: { cells: {} } });
     assert.equal(response.status(), 400, 'CSRF is required for guests');
@@ -45,6 +46,9 @@ const url = process.env.ADAM_TEST_URL || 'http://127.0.0.1:58326';
     await page.screenshot({ path: path.join(output, 'catalog-desktop.png'), fullPage: true });
     // Any level is available, including the last one.
     await page.locator('.cw-card').last().click(); await page.locator('#cw-play').waitFor({ state: 'visible' });
+    const inputStyle = await page.locator('.cw-cell-input').first().evaluate(el => ({ caret: getComputedStyle(el).caretColor, selection: getComputedStyle(el, '::selection').backgroundColor }));
+    assert.equal(inputStyle.caret, 'rgba(0, 0, 0, 0)');
+    assert.equal(inputStyle.selection, 'rgba(0, 0, 0, 0)');
     assert.match(await page.locator('#cw-title').innerText(), /10\./);
     await page.locator('#cw-back').click();
     await page.locator('.cw-card').first().focus(); await page.keyboard.press('Enter');
