@@ -9,13 +9,18 @@
 #cw-status { min-height: 24px; margin: 20px 0; line-height: 1.6; color: #435847; }
 #cw-status:empty { display: none; }
 .cw-levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.green-theme .cw-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; padding: 24px; border: 1px solid #dce3d3; border-bottom-width: 3px; border-radius: 16px; text-align: left; background: #fafaf5; color: #244e39; cursor: pointer; }
+.green-theme .cw-card { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: 8px; min-width: 0; min-height: 210px; padding: 20px; border: 1px solid #dce5da; border-bottom-width: 3px; border-radius: 16px; text-align: left; background: #f3f7f2; color: #244e39; cursor: pointer; }
+.cw-card-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; overflow-wrap: anywhere; }
+.cw-card:not(.has-art) .cw-card-copy { grid-column: 1 / -1; }
+.cw-card-art { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; pointer-events: none; }
 .cw-card strong { font-size: 21px; overflow-wrap: anywhere; }
 .cw-card-count { color: #526454; font-size: 14px; }
+.cw-card .cw-stars { max-width: 100%; margin-top: 8px; }
+.cw-card .cw-star { min-width: 0; height: auto; aspect-ratio: 1; }
 .cw-stars { display: inline-flex; flex: none; align-items: center; gap: 4px; color: #af7b24; font-size: 27px; }
 .cw-star { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .cw-star.is-earned { fill: currentColor; }
-.cw-card:hover { background: #eaf2dd; border-color: #8ba57d; }
+.green-theme .cw-card:hover { background: #eaf2e6; border-color: #8ba57d; }
 .green-theme #crosswords-app .cw-play { padding: 24px; }
 .cw-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
 #cw-progress { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; color: #805a22; font-weight: 600; }
@@ -47,5 +52,4 @@
 #crosswords-app button:disabled { cursor: default; opacity: .7; }
 #crosswords-app .button { width: auto; min-height: 42px; font-size: 14px; }
 @media (max-width: 850px) { .cw-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cw-workspace { grid-template-columns: 1fr; gap: 24px; } }
-@media (max-width: 599px) { .cw-heading-art { display: none; } .cw-levels { gap: 12px; } .green-theme .cw-card { padding: 16px 12px; } .cw-card strong { font-size: 18px; } .cw-card-top { font-size: 9px; letter-spacing: .06em; } .green-theme #crosswords-app .cw-play { padding: 16px 10px; } .cw-stars { font-size: 24px; } }
-@media (max-width: 359px) { .cw-levels { grid-template-columns: 1fr; } }
+@media (max-width: 599px) { .cw-heading-art { display: none; } .cw-levels { grid-template-columns: 1fr; gap: 12px; } .green-theme .cw-card { min-height: 190px; padding: 18px; } .cw-card strong { font-size: 21px; } .cw-card-top { font-size: 10px; letter-spacing: .06em; } .green-theme #crosswords-app .cw-play { padding: 16px 10px; } .cw-stars { font-size: 24px; } }

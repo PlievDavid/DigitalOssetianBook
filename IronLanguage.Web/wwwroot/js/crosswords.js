@@ -4,6 +4,10 @@
   const api = window.AdamApi;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const drafts = new Map();
+  const cardArt = new Map([
+    [1, 'family'], [2, 'home'], [3, 'nature'], [4, 'weather'], [5, 'table'],
+    [6, 'garden'], [7, 'pets'], [8, 'wildlife'], [9, 'person'], [10, 'clothing']
+  ]);
   let levels = [], level = null, cells = {}, solved = new Set(), selected = null, activeKey = null, busy = false;
   const key = (w, i) => `${w.row + (w.down ? i : 0)},${w.column + (w.down ? 0 : i)}`;
   const keys = w => Array.from({ length: w.length }, (_, i) => key(w, i));
@@ -45,12 +49,31 @@
     $('levels').replaceChildren();
     for (const item of levels) {
       const button = document.createElement('button');
+      button.type = 'button';
       button.className = 'cw-card';
-      button.innerHTML = '<span class="cw-card-top"></span><strong></strong><span class="cw-card-count"></span>';
+      button.innerHTML = '<span class="cw-card-copy"><span class="cw-card-top"></span><strong></strong><span class="cw-card-count"></span></span>';
       button.querySelector('.cw-card-top').textContent = `КРОССВОРД ${String(item.id).padStart(2, '0')}`;
       button.querySelector('strong').textContent = item.title;
       button.querySelector('.cw-card-count').textContent = `${item.solved} из ${item.total} слов`;
-      button.append(rating(item.stars));
+      button.querySelector('.cw-card-copy').append(rating(item.stars));
+      const artwork = cardArt.get(item.id);
+      if (artwork) {
+        const image = document.createElement('img');
+        image.className = 'cw-card-art';
+        image.alt = '';
+        image.setAttribute('aria-hidden', 'true');
+        image.width = 256;
+        image.height = 256;
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        image.addEventListener('error', () => {
+          image.remove();
+          button.classList.remove('has-art');
+        }, { once: true });
+        image.src = `/images/crosswords/${artwork}-v1.png`;
+        button.classList.add('has-art');
+        button.append(image);
+      }
       button.addEventListener('click', () => open(item));
       $('levels').append(button);
     }
