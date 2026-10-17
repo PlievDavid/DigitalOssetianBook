@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
@@ -94,6 +94,31 @@
                 }
             </div>
             <p class="field-help">Правая колонка (@rightColumn.Length значений) будет перемешана на странице ученика.</p>
+        }
+        else if (Model.Picture is not null)
+        {
+            <h2>@Model.Picture.Title</h2>
+            <p class="field-help">@(Model.Picture.Mode == "choice" ? "Ученик видит картинку и выбирает слово из трёх вариантов." : "Ученик видит картинку и вводит осетинское слово.")</p>
+            @if (Model.Picture.PicturePath is not null) { <img src="@Model.Picture.PicturePath" alt="Картинка задания" style="width: 160px; height: 160px; object-fit: cover" /> }
+            <div class="editor-preview-answer">
+                @if (Model.Picture.Mode == "choice")
+                {
+                    <p><strong>Варианты (порядок перемешивается):</strong></p>
+                    <ul>
+                        <li>@Model.Picture.Word — правильный</li>
+                        @foreach (var distractor in Model.Picture.Distractors) { <li>@distractor — отвлекающий</li> }
+                    </ul>
+                }
+                else
+                {
+                    <p><strong>Правильный ответ:</strong> @Model.Picture.Word</p>
+                    <p class="field-help">Сравнение без учёта регистра, лишних пробелов; æ→ӕ, кавычки снимаются краями.</p>
+                }
+                @if (Model.Picture.WordIds.Length > 0)
+                {
+                    <p class="field-help">Связанные слова: @string.Join(", ", Model.Picture.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p>
+                }
+            </div>
         }
         else if (Model.Book is not null)
         {

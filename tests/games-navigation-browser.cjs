@@ -57,6 +57,15 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await overflow();
       await page.goto(base);
       assert.equal(await page.locator('#games a[href="/word-practice"]').count(), 0);
+      assert.equal(await page.locator('#practice-formats a[href="/picture"]').count(), 1);
+      await page.goto(base + '/picture');
+      assert.equal(await page.locator('#practice-menu a[href="/picture"]').count(), 1);
+      assert.equal(await page.locator('.tablet-nav-group[aria-label="Задания"] a[href="/picture"]').count(), 1);
+      assert(await page.locator('[aria-controls="practice-menu"]').evaluate(element => element.classList.contains('is-current')));
+      if (width < 600) {
+        assert.equal(await page.locator('.mobile-bottom-nav a').count(), 4);
+        assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
+      }
       await page.goto(base + '/games');
       await page.addStyleTag({ content: 'body { font-size: 200%; }' }); await overflow();
     }

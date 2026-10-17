@@ -23,7 +23,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       checks += 6;
-      for (const [route, activeHref, currentPage] of [['/audio-puzzles', '/', false], ['/translate', '/', false], ['/dialogs', '/', false], ['/matching', '/', false], ['/vocabulary', '/vocabulary', true], ['/word-practice', '/vocabulary', false], ['/game', '/vocabulary', false], ['/books', '/books', true], ['/account/login', '/profile', false]]) {
+      for (const [route, activeHref, currentPage] of [['/audio-puzzles', '/', false], ['/translate', '/', false], ['/dialogs', '/', false], ['/matching', '/', false], ['/picture', '/', false], ['/vocabulary', '/vocabulary', true], ['/word-practice', '/vocabulary', false], ['/game', '/vocabulary', false], ['/books', '/books', true], ['/account/login', '/profile', false]]) {
         await page.goto(base + route);
         assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), activeHref);
         assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), currentPage ? 1 : 0);

@@ -4,6 +4,8 @@
 
 ## Подготовка PR в dev
 
+PR №51 согласован с `origin/dev` eb7064a после добавления «Картинка и слово» в PR №57. В конфликтах сохранены сервисы обеих игр, словаря и задания с картинкой, а также оба раздела контекста. Последняя модель миграции `AddPictureMatchingMaterials` включает ранее добавленные таблицы игр; снимок EF сохраняет все три сущности. Новое задание доступно в настольном и планшетном меню «Задания» и корректно выделяет этот раздел на телефоне, где по-прежнему четыре пункта. Изменения интерфейса игр, модальное окно результата и практика слов в разделе «Слова» сохранены.
+
 Ветка игр согласована с origin/dev 267832c после PR №48/49: сохранены соотнесение, обработка ошибок и прокрутка подбора пар, пакетное выравнивание читалки. Соотнесение добавлено в планшетное меню и активирует «Задания» на телефоне. В моделях двух миграций игр учтена предшествующая AddMatchingMaterials; снимок EF согласован. Неиспользуемые отклонённые акварели исключены из итогового изменения. Проверены сборка, EF, правила/БД/HTTP обеих игр, навигация (119), контейнеры (692), компоненты (93), читалка, игры и соотнесение; временные данные проверок удалены.
 
 ## Пять букв
@@ -57,6 +59,19 @@
 В кроссвордах добавлены отклик ввода, мягкое выделение новых решённых клеток после ответа сервера и реакция звёзд на завершение. Проверенные пересечения не анимируются повторно, при открытии сохранённой сетки и повторной проверке эффекты не воспроизводятся; учитывается prefers-reduced-motion. tests/crosswords-motion-browser.cjs проверяет эти сценарии без записи гостевого прогресса в БД.
 
 Интервалы главной задаёт layout.css: между основными секциями 32 px, на телефоне 24 px; от заголовков до карточек 16/12 px. Общий grid-gap исключает разные складывающиеся отступы блоков упражнений, игр и чтения.
+## Вид задания «Картинка и слово» (issue №33)
+
+Ветка `feat/picture-exercise` от актуального `dev`. Kind `picture`: одно задание редактора — одна картинка + один вопрос. Редактор при создании выбирает режим `choice` (правильный + 2 отвлекающих, сервер перемешивает) или `free` (ввод слова, нормализация как в matching). Board/нитки matching выкинуты. Обратный режим «слово → картинка», `WordEntry.PicturePath`, очки/БД-прогресс — вне скоупа. Прогресс гостя — только в `GuestLearningStore`.
+
+**Данные и API.** Сущность `PictureMatching` (клон `Matching`), миграция `20261017120000_AddPictureMatchingMaterials`. Payload `PictureMaterial(Title, PicturePath, Word, Mode, Distractors, WordIds)` в `EditorRepository`; репозиторий каталога `Pictures()`/`Picture(id)`. `PictureService` + `PictureApiController` (`api/v1/pictures*`): `Start`/`Check(optionIndex|answer)`/`Board`, варианты скрываются после ответа, идемпотентный повтор через `entry.Gate`, `GuestLearningStore` с теми же TTL/лимитами, что и matching.
+
+**Редактор.** Kind `picture` в `Kinds`, `BuildPayload`/`FromPayload`/`CleanOssetianText`, `SavePicture` (clone `SaveCover`, magic-bytes, `/media/pictures/`), `PublishedLinksValid`. `_PictureBuilder.cshtml`: select режима, file input `PictureImage` + hidden `PicturePath` + превью, поле `PictureWord`, два поля `PictureDistractor1/2` (скрываются в `free`). `PictureScript.Validate(title, path, word, mode, distractorsText)`: `choice` требует ровно 2 дистрактора без коллизий/латиницы, `free` запрещает дистракторы; `ValidPicturePath` отклоняет `..`, `?`, `#`. `picture-builder.js` удалён.
+
+**Страница ученика.** `/picture`, `Picture.cshtml`, `picture.js` в стиле аудиопазла: список карточек → play (картинка + 3 кнопки или input + «Проверить»), busy+generation, sessionStorage `adam.picture.session`, «В мой словарь», «Пройти заново»/«К списку». `picture.css` amber. Карточка на главной `.format-picture`, пункт меню, guest notice, `_NavIcon` case `picture`. Браузерный тест `tests/picture-threads-browser.cjs` (fixture API, без сервера).
+
+**Проверки.** `dotnet build` без ошибок; `node --check` picture.js; локальные xUnit `PictureScriptTests` и `PictureServiceTests` (новый API, все зелёные; `FakeCatalog` дополнен `Picture`/`Pictures`/`Word`). `DbProbeTests` flaky на живой БД — не связан с picture. Playwright в этой среде недоступен, браузерный тест локально не запускался.
+
+**Ограничения окружения.** Нет `.run-local/connection.ps1` → сайт/БД не запускались; сохранение/публикация через БД и визуальная проверка не выполнены. Коммит и push — после явного «да» пользователя. Out of scope зафиксированы в issue #33.
 
 ## Общий контейнер и размеры содержимого
 

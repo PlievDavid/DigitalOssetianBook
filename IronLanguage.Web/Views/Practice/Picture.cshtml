@@ -1,0 +1,30 @@
+@{ ViewData["Title"] = "Картинка и слово"; }
+<section class="feature-shell picture-page" id="picture-app">
+    <a class="back-link" href="/">← К заданиям</a>
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Картинка и слово", "Посмотрите на картинку и ответьте: выберите слово или введите его.", "picture", "amber"))
+    <div id="picture-status" role="status"></div>
+    <div id="picture-list" class="exercise-list"></div>
+    <div id="picture-play" class="game-play-area" hidden>
+        <div class="dialog-play-head">
+            <a id="picture-back-link" class="back-link" href="/picture">← К списку</a>
+        </div>
+        <h2 id="picture-title"></h2>
+        <p id="picture-instructions" class="field-help"></p>
+        <figure id="picture-figure" class="picture-figure">
+            <img id="picture-image" alt="" />
+            <figcaption id="picture-image-error" class="picture-image-error" hidden>Не удалось загрузить картинку.</figcaption>
+        </figure>
+        <div id="picture-options" class="picture-options" role="group" aria-label="Варианты ответа"></div>
+        <form id="picture-free-form" class="picture-free-form" hidden>
+            <label for="picture-answer">Осетинское слово</label>
+            <input id="picture-answer" type="text" autocomplete="off" maxlength="200" data-ossetian enterkeyhint="go" />
+            <button id="picture-submit" class="button primary" type="submit">Проверить ответ</button>
+        </form>
+        <p id="picture-answer-word" class="picture-answer-word" hidden></p>
+        <p id="picture-result" class="exercise-feedback" role="status" hidden></p>
+        <div id="picture-words" class="feature-grid"></div>
+    </div>
+</section>
+@section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/picture.js" asp-append-version="true" defer></script> }
+
+@section Styles { <link rel="stylesheet" href="~/css/picture.css" asp-append-version="true" /> }

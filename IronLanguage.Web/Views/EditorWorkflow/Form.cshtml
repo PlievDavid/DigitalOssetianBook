@@ -2,7 +2,7 @@
 @inject IronLanguage.Db.ICatalogRepository Catalog
 @using System.Text.Json
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
     ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
     ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
@@ -68,6 +68,12 @@
         {
             <label>Название задания <input asp-for="MatchingTitle" autocomplete="off" required maxlength="200" data-ossetian /><span asp-validation-for="MatchingTitle" class="form-error"></span></label>
             @await Html.PartialAsync("_MatchingBuilder", Model)
+            <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
+        }
+        else if (Model.Kind == "picture")
+        {
+            <label>Название задания <input asp-for="PictureTitle" autocomplete="off" required maxlength="200" data-ossetian /><span asp-validation-for="PictureTitle" class="form-error"></span></label>
+            @await Html.PartialAsync("_PictureBuilder", Model)
             <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
         }
         @if (Model.Kind is "word" or "audio")

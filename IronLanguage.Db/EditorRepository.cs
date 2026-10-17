@@ -14,8 +14,9 @@ public sealed record DialogueCharacter(string Id, string Name, string Color);
 public sealed record DialogueLine(int Number, string CharacterId, string Text, string? AudioPath = null);
 public sealed record DialogueTurn(int LineNumber, string Kind, string[] References, string[] Options, int HintThreshold, bool Skippable);
 public sealed record DialogueMaterial(string Title, string Dialect, int Level, DialogueCharacter[] Characters, DialogueLine[] Lines, DialogueTurn[] Turns);
-public sealed record MatchingPair(string Left, string Right);
-public sealed record MatchingMaterial(string Title, MatchingPair[] Pairs, string[] Distractors, Guid[] WordIds);
+    public sealed record MatchingPair(string Left, string Right);
+    public sealed record MatchingMaterial(string Title, MatchingPair[] Pairs, string[] Distractors, Guid[] WordIds);
+    public sealed record PictureMaterial(string Title, string PicturePath, string Word, string Mode, string[] Distractors, Guid[] WordIds);
 public sealed record EditorItem(string Kind, Guid Id, string Title, bool Published, int Version, Guid? PendingRevisionId, bool Archived);
 public sealed record EditorMaterial(string Kind, Guid Id, bool Published, int Version, string PayloadJson);
 
@@ -47,6 +48,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         var books = await db.Books.AsNoTracking().ToListAsync(ct);
         var dialogues = await db.Dialogues.AsNoTracking().ToListAsync(ct);
         var matchings = await db.Matchings.AsNoTracking().ToListAsync(ct);
+        var pictures = await db.PictureMatchings.AsNoTracking().ToListAsync(ct);
         var pending = await db.ContentRevisions.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
         Guid? Pending(string kind, Guid id) => pending.FirstOrDefault(x => x.Kind == kind && x.ContentId == id)?.Id;
         return words.Select(x => new EditorItem("word", x.Id, x.Ossetian, x.Published, x.Version, Pending("word", x.Id), x.Archived))
@@ -54,6 +56,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             .Concat(books.Select(x => new EditorItem("book", x.Id, x.Title, x.Published, x.Version, Pending("book", x.Id), x.Archived)))
             .Concat(dialogues.Select(x => new EditorItem("dialogue", x.Id, x.Title, x.Published, x.Version, Pending("dialogue", x.Id), x.Archived)))
             .Concat(matchings.Select(x => new EditorItem("matching", x.Id, x.Title, x.Published, x.Version, Pending("matching", x.Id), x.Archived)))
+            .Concat(pictures.Select(x => new EditorItem("picture", x.Id, x.Title, x.Published, x.Version, Pending("picture", x.Id), x.Archived)))
             .OrderBy(x => x.Title).ToList();
     }
 
@@ -83,6 +86,11 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var matching = await db.Matchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
             return matching is null ? null : new(kind, id, matching.Published, matching.Version, Capture(matching));
+        }
+        if (kind == "picture")
+        {
+            var picture = await db.PictureMatchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+            return picture is null ? null : new(kind, id, picture.Published, picture.Version, Capture(picture));
         }
         return null;
     }
@@ -125,6 +133,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var matching = new Matching { Title = p.Title, ScriptJson = payloadJson };
             db.Matchings.Add(matching); await db.SaveChangesAsync(ct); return matching.Id;
         }
+        if (kind == "picture")
+        {
+            var p = Parse<PictureMaterial>(payloadJson);
+            var picture = new PictureMatching { Title = p.Title, ScriptJson = payloadJson };
+            db.PictureMatchings.Add(picture); await db.SaveChangesAsync(ct); return picture.Id;
+        }
         throw new ArgumentException("Unknown material kind", nameof(kind));
     }
 
@@ -160,6 +174,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (matching is null) return false;
             Apply(matching, Parse<MatchingMaterial>(payloadJson));
         }
+        else if (kind == "picture")
+        {
+            var picture = await db.PictureMatchings.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (picture is null) return false;
+            Apply(picture, Parse<PictureMaterial>(payloadJson));
+        }
         else return false;
         await db.SaveChangesAsync(ct); return true;
     }
@@ -173,6 +193,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         else if (kind == "book") (await db.Books.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "dialogue") (await db.Dialogues.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "matching") (await db.Matchings.SingleAsync(x => x.Id == id, ct)).Published = true;
+        else if (kind == "picture") (await db.PictureMatchings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else (await db.Exercises.SingleAsync(x => x.Id == id, ct)).Published = true;
         db.ContentRevisions.Add(new ContentRevision { Kind = kind, ContentId = id, Version = 1, BaseVersion = 0,
             PayloadJson = material.PayloadJson, Published = true, EditorId = editorId, PublishedAt = DateTimeOffset.UtcNow });
@@ -256,6 +277,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (matching is null) return false;
             Apply(matching, Parse<MatchingMaterial>(revision.PayloadJson)); matching.Version++;
         }
+        else if (revision.Kind == "picture")
+        {
+            var picture = await db.PictureMatchings.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            if (picture is null) return false;
+            Apply(picture, Parse<PictureMaterial>(revision.PayloadJson)); picture.Version++;
+        }
         else return false;
         revision.Published = true; revision.PublishedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return true;
@@ -294,6 +321,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (matching is null) return false;
             db.Matchings.Remove(matching);
         }
+        else if (kind == "picture")
+        {
+            var picture = await db.PictureMatchings.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (picture is null) return false;
+            db.PictureMatchings.Remove(picture);
+        }
         else return false;
         await db.ContentRevisions.Where(x => x.Kind == kind && x.ContentId == id && !x.Published).ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);
@@ -326,6 +359,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
         if (kind == "matching")
             return await db.Matchings.Where(x => x.Id == id && x.Published && x.Archived != archived)
+                .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
+        if (kind == "picture")
+            return await db.PictureMatchings.Where(x => x.Id == id && x.Published && x.Archived != archived)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
         return false;
     }
@@ -361,6 +397,16 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         return JsonSerializer.Serialize(p with { Title = x.Title }, JsonOptions);
     }
     private void Apply(Matching x, MatchingMaterial p)
+    {
+        x.Title = p.Title;
+        x.ScriptJson = JsonSerializer.Serialize(p, JsonOptions);
+    }
+    private static string Capture(PictureMatching x)
+    {
+        var p = Parse<PictureMaterial>(x.ScriptJson);
+        return JsonSerializer.Serialize(p with { Title = x.Title }, JsonOptions);
+    }
+    private void Apply(PictureMatching x, PictureMaterial p)
     {
         x.Title = p.Title;
         x.ScriptJson = JsonSerializer.Serialize(p, JsonOptions);
