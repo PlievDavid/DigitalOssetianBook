@@ -15,6 +15,7 @@
     return result;
   };
   const pairsLabel = count => count % 10 === 1 && count % 100 !== 11 ? 'пару' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'пары' : 'пар';
+  const threadColor = id => `var(--game-thread-${words.findIndex(word => word.wordId === id) % 10}, #286aab)`;
   function update() {
     board.setAttribute('aria-busy', String(busy)); restart.disabled = busy;
     for (const [id, button] of leftButtons) {
@@ -24,7 +25,10 @@
       button.setAttribute('aria-pressed', String(chosen === id));
     }
     for (const [id, button] of rightButtons) {
-      const done = [...matched.values()].includes(id);
+      const source = [...matched].find(([, target]) => target === id)?.[0];
+      const done = source !== undefined;
+      if (done) button.style.setProperty('--thread-color', threadColor(source));
+      else button.style.removeProperty('--thread-color');
       button.disabled = busy || done; button.classList.toggle('matched', done);
     }
     draw();
@@ -44,6 +48,7 @@
       const bend = Math.max(20, Math.abs(end.x - start.x) * .45);
       const path = document.createElementNS(ns, 'path');
       path.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + bend} ${start.y}, ${end.x - bend} ${end.y}, ${end.x} ${end.y}`);
+      path.style.setProperty('--thread-color', threadColor(id));
       path.setAttribute('class', `game-thread ${kind}`); lines.append(path);
     }
     for (const [id, target] of matched) connect(id, target, 'game-thread-matched');
@@ -98,6 +103,7 @@
     for (const word of words) {
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'word-tile game-word'; button.textContent = word.ossetian;
+      button.style.setProperty('--thread-color', threadColor(word.wordId));
       button.setAttribute('aria-describedby', 'game-instructions'); leftButtons.set(word.wordId, button);
       button.onclick = () => { if (!suppressClick) select(word.wordId); };
       button.onpointerdown = event => {

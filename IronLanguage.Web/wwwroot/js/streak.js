@@ -1,7 +1,7 @@
 (() => {
   const badge = document.getElementById('header-streak');
   if (!badge) return;
-  AdamApi('/progress').then(progress => {
+  const refresh = () => AdamApi('/progress').then(progress => {
     if (!Number.isInteger(progress.streak) || progress.streak < 1) return;
     document.getElementById('header-streak-value').textContent = progress.streak;
     const lastTwo = progress.streak % 100;
@@ -11,4 +11,6 @@
     badge.setAttribute('aria-label', `Серия занятий: ${progress.streak} ${day} подряд`);
     badge.hidden = false;
   }).catch(() => {});
+  refresh();
+  document.addEventListener('adam-progress-changed', refresh);
 })();

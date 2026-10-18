@@ -1,48 +1,33 @@
 @model IronLanguage.Web.Models.EditorFormModel
-<section id="picture-editor" data-mode="@Model.PictureMode">
-    <label>Режим ответа
+<section id="picture-editor" class="editor-picture-fields" data-mode="@Model.PictureMode">
+    <label class="editor-field">Режим ответа
         <select asp-for="PictureMode" id="picture-mode">
             <option value="choice">Варианты ответа (3 кнопки)</option>
             <option value="free">Ввод слова</option>
         </select>
         <span class="field-help">Ученик либо выбирает слово из трёх вариантов, либо печатает его сам.</span>
     </label>
-    <label>Картинка
-        <span class="field-help">PNG, JPEG или WebP до 5 МБ.</span>
-        <input asp-for="PictureImage" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" />
+    <div class="editor-image-field">
+        <span class="editor-field-label">Картинка</span>
+        <p id="picture-file-help" class="field-help">PNG, JPEG или WebP до 5 МБ.</p>
+        <div class="editor-image-upload">
+            <label class="editor-file-button" for="picture-image">Выбрать картинку</label>
+            <input asp-for="PictureImage" id="picture-image" class="editor-file-input" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" aria-describedby="picture-file-help picture-file-name" />
+            <span id="picture-file-name" class="field-help">@(Model.ExistingPicturePath is null ? "Файл не выбран" : "Текущая картинка сохранена")</span>
+        </div>
+        <img id="picture-image-preview" class="editor-image-preview" src="@Model.ExistingPicturePath" alt="Предпросмотр картинки" hidden="@(Model.ExistingPicturePath is null)" />
         <span asp-validation-for="PictureImage" class="form-error"></span>
-    </label>
-    @if (Model.ExistingPicturePath is not null)
-    {
-        <img src="@Model.ExistingPicturePath" alt="Текущая картинка" style="width: 120px; height: 120px; object-fit: cover" />
-    }
+    </div>
     <input asp-for="PicturePath" type="hidden" />
-    <label>Правильное слово
+    <label class="editor-field">Правильное слово
         <input asp-for="PictureWord" autocomplete="off" required maxlength="200" data-ossetian />
         <span asp-validation-for="PictureWord" class="form-error"></span>
     </label>
-    <div id="picture-distractors-block">
-        <span class="editor-field-label">Отвлекающие слова</span>
+    <section id="picture-distractors-block" class="editor-picture-distractors" aria-labelledby="picture-distractors-title">
+        <h2 id="picture-distractors-title" class="editor-field-label">Отвлекающие слова</h2>
         <p class="field-help">Ровно два слова. Порядок вариантов сайт перемешивает. Не нужны в режиме ввода.</p>
-        <label>Отвлекающее слово 1 <input asp-for="PictureDistractor1" maxlength="200" data-ossetian /><span asp-validation-for="PictureDistractor1" class="form-error"></span></label>
-        <label>Отвлекающее слово 2 <input asp-for="PictureDistractor2" maxlength="200" data-ossetian /><span asp-validation-for="PictureDistractor2" class="form-error"></span></label>
-    </div>
-    <p class="form-error" id="picture-mode-hint" hidden>В режиме ввода слова отвлекающие слова не нужны.</p>
+        <label class="editor-field">Отвлекающее слово 1 <input asp-for="PictureDistractor1" maxlength="200" data-ossetian /><span asp-validation-for="PictureDistractor1" class="form-error"></span></label>
+        <label class="editor-field">Отвлекающее слово 2 <input asp-for="PictureDistractor2" maxlength="200" data-ossetian /><span asp-validation-for="PictureDistractor2" class="form-error"></span></label>
+    </section>
+    <p class="field-help" id="picture-mode-hint" hidden>В режиме ввода слова отвлекающие слова не нужны.</p>
 </section>
-<script>
-  (() => {
-    const root = document.getElementById('picture-editor');
-    if (!root) return;
-    const mode = root.querySelector('#picture-mode');
-    const block = root.querySelector('#picture-distractors-block');
-    const hint = root.querySelector('#picture-mode-hint');
-    const sync = () => {
-      const free = mode.value === 'free';
-      block.hidden = free;
-      hint.hidden = !free;
-      root.dataset.mode = mode.value;
-    };
-    mode.addEventListener('change', sync);
-    sync();
-  })();
-</script>

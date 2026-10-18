@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="~/css/sections-green.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
     <link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mobile-sections.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tablet-menu.css" asp-append-version="true" />
 </head>
 <body class="green-theme @ViewData["PageClass"]" data-authenticated="@(User.Identity?.IsAuthenticated == true ? "true" : "false")">
     <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -30,9 +32,8 @@
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
             <div class="nav-menu nav-menu-section">
-                <a class="nav-section-link nav-menu-trigger @(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" href="/" aria-controls="practice-menu" aria-haspopup="true" aria-expanded="false">Задания</a>
+                <a class="nav-section-link nav-menu-trigger @(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") || currentPath.StartsWith("/matching") || currentPath.StartsWith("/picture") ? "is-current" : "")" href="/" aria-controls="practice-menu" aria-haspopup="true" aria-expanded="false">Задания</a>
                 <div id="practice-menu" class="nav-menu-panel">
-                    <a class="nav-menu-item" href="/">Все задания</a>
                     <a class="nav-menu-item" href="/audio-puzzles">Аудиопазлы</a>
                     <a class="nav-menu-item" href="/translate">Перевод фраз</a>
                     <a class="nav-menu-item" href="/dialogs">Диалоги</a>
@@ -41,7 +42,7 @@
                 </div>
             </div>
             <div class="nav-menu nav-menu-words nav-menu-section">
-                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" href="/vocabulary" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false">Слова</a>
+                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath == "/game" ? "is-current" : "")" href="/vocabulary" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false">Слова</a>
                 <div id="words-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/vocabulary">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Словарь")</a>
                     <a class="nav-menu-item" href="/word-practice">Тренировка слов</a>
@@ -49,10 +50,10 @@
                 </div>
             </div>
             <div class="nav-menu nav-menu-games">
-                <button class="nav-menu-link nav-menu-trigger @(currentPath.StartsWith("/games") ? "is-current" : "")" type="button" aria-haspopup="true" aria-expanded="false">Игры</button>
-                <div class="nav-menu-panel" aria-label="Игры">
-                    <span class="nav-menu-item nav-menu-item-placeholder"><span>Кроссворды</span><small>В разработке</small></span>
-                    <span class="nav-menu-item nav-menu-item-placeholder"><span>Вордли</span><small>В разработке</small></span>
+                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/games") ? "is-current" : "")" href="/games" aria-controls="games-menu" aria-haspopup="true" aria-expanded="false">Игры</a>
+                <div id="games-menu" class="nav-menu-panel" aria-label="Игры">
+                    <a class="nav-menu-item" href="/games/crosswords">Кроссворды</a>
+                    <a class="nav-menu-item" href="/games/wordle">Пять букв</a>
                     <span class="nav-menu-item nav-menu-item-placeholder"><span>Переводилка</span><small>В разработке</small></span>
                 </div>
             </div>
@@ -60,7 +61,7 @@
             @if (User.Identity?.IsAuthenticated != true) {
                 <div class="mobile-account-links"><a class="button primary" href="/account/login">Войти</a><a href="/account/register">Создать аккаунт</a></div>
             }
-        </div></nav>
+        </div>@await Html.PartialAsync("_TabletNavigation")</nav>
             <div class="header-actions">
                 @if (User.Identity?.IsAuthenticated == true) {
                     <span class="header-streak-slot"><a id="header-streak" class="header-streak" href="/progress" aria-label="Серия занятий" hidden><img class="header-streak-icon" src="~/images/streak-flame.svg" asp-append-version="true" width="20" height="24" alt="" /><strong id="header-streak-value"></strong><span id="header-streak-label" class="header-streak-label">дней подряд</span></a></span>
@@ -72,9 +73,9 @@
     </header>
     <button class="menu-backdrop" type="button" aria-label="Закрыть меню" tabindex="-1" hidden></button>
     <main id="main-content" tabindex="-1">
-        @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/matching", "/picture", "/books", "/vocabulary", "/word-practice", "/game" }.Contains(currentPath))
+        @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/matching", "/picture", "/books", "/vocabulary", "/word-practice", "/game", "/games", "/games/crosswords", "/games/wordle" }.Contains(currentPath))
         {
-            <p class="guest-notice container">Занимайтесь без входа. Прогресс и слова не сохраняются. <a href="/account/login?ReturnUrl=@Uri.EscapeDataString(currentPath)">Войти, чтобы сохранять</a></p>
+            <p class="guest-notice container">@(currentPath.StartsWith("/games") ? "Без входа результаты не сохраняются." : "Занимайтесь без входа. Прогресс и слова не сохраняются.") <a href="/account/login?ReturnUrl=@Uri.EscapeDataString(currentPath)">Войти, чтобы сохранять</a></p>
         }
         @RenderBody()
     </main>
@@ -87,10 +88,10 @@
         </div>
     </footer>
     <nav class="mobile-bottom-nav" aria-label="Основные разделы">
-        <a class="@(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "is-current" : "")" aria-current="@(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") ? "page" : null)" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Задания</span></a>
-        <a class="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath.StartsWith("/game") ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
-        <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/books") ? "page" : null)" href="/books">@await Html.PartialAsync("_NavIcon", "books")<span>Книги</span></a>
-        <a class="@(currentPath.StartsWith("/profile") || currentPath.StartsWith("/account") || currentPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(currentPath.StartsWith("/profile") || currentPath.StartsWith("/account") || currentPath.StartsWith("/progress") ? "page" : null)" href="/profile">@await Html.PartialAsync("_NavIcon", "profile")<span>Профиль</span></a>
+        <a class="@(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") || currentPath.StartsWith("/matching") || currentPath.StartsWith("/picture") || currentPath.StartsWith("/games") ? "is-current" : "")" aria-current="@(currentPath == "/" ? "page" : null)" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Задания</span></a>
+        <a class="@(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath == "/game" ? "is-current" : "")" aria-current="@(currentPath == "/vocabulary" ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
+        <a class="@(currentPath.StartsWith("/books") ? "is-current" : "")" aria-current="@(currentPath == "/books" ? "page" : null)" href="/books">@await Html.PartialAsync("_NavIcon", "books")<span>Книги</span></a>
+        <a class="@(currentPath.StartsWith("/profile") || currentPath.StartsWith("/account") || currentPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(currentPath == "/profile" ? "page" : null)" href="/profile">@await Html.PartialAsync("_NavIcon", "profile")<span>Профиль</span></a>
     </nav>
     </div>
     <script src="~/js/nav.js" asp-append-version="true" defer></script>

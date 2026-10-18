@@ -40,6 +40,17 @@ public sealed class GuestLearningStore : IDisposable
     public Entry<T>? Find<T>(Guid owner, Guid id) where T : class =>
         cache.TryGetValue((typeof(T), owner, id), out Entry<T>? entry) ? entry : null;
 
+    public Entry<T> GetOrAdd<T>(Guid owner, Guid id, Func<T> create) where T : class
+    {
+        lock (capacityGate)
+        {
+            var existing = Find<T>(owner, id);
+            if (existing is not null) return existing;
+            Add(owner, id, create());
+            return Find<T>(owner, id) ?? throw new GuestCapacityException();
+        }
+    }
+
     public sealed class Entry<T>(T value) where T : class
     {
         public T Value { get; } = value;

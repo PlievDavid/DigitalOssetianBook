@@ -157,6 +157,25 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("ContentRevisions");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LevelId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WordId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "LevelId", "Version", "WordId");
+
+                    b.ToTable("CrosswordSolvedWords");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.DailyActivity", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -653,6 +672,40 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("Words");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.WordleGame", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ExpectedWord")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<string>("GuessesJson")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Russian")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<bool>("Won")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("UserId", "Day");
+
+                    b.ToTable("WordleGames");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.BookChapter", b =>
                 {
                     b.HasOne("IronLanguage.Db.Book", "Book")
@@ -662,6 +715,15 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.DictionaryForm", b =>
@@ -684,6 +746,15 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Word");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordleGame", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Book", b =>

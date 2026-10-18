@@ -12,7 +12,7 @@
 <section class="feature-shell editor-form-shell" id="editor-form-app" data-kind="@Model.Kind">
     <header class="editor-page-heading">
         <a class="back-link" href="/editor">← К материалам</a>
-        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind == "book" ? "книгу" : title.ToLowerInvariant())</h1>
+        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "книгу", "picture" => "задание «Картинка и слово»", _ => title.ToLowerInvariant() })</h1>
         <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
     </header>
     <form method="post" action="@action" enctype="multipart/form-data" class="editor-form">

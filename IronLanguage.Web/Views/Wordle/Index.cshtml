@@ -1,0 +1,45 @@
+@{ ViewData["Title"] = "Пять букв"; ViewData["PageClass"] = "wordle-page"; }
+<section class="feature-shell game-shell" id="wordle-app">
+    <a class="back-link wl-back" href="/games">← К играм</a>
+    <div class="wl-heading game-page-heading">
+        <div class="game-heading-copy"><h1>Пять букв</h1><p>Одно слово в день. Шесть попыток.</p></div>
+        <div class="wl-heading-actions"><button id="wl-statistics" class="button secondary" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V12h4v8M10 20V4h4v16M16 20V8h4v12" /></svg><span id="wl-heading-action">Статистика</span></button><time id="wl-date"></time></div>
+    </div>
+    <div class="wl-shell">
+        <div class="wl-game game-play-area">
+            <div id="wl-board" class="wl-board" role="group" aria-label="Шесть попыток по пять букв"></div>
+            <label class="wl-input-label" for="wl-input">Ваше слово</label>
+            <input id="wl-input" class="wl-input" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Слово из пяти букв" aria-describedby="wl-status" disabled />
+            <div id="wl-notice" class="wl-notice" hidden>
+                <svg class="wl-notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10.3 4.1 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.1a2 2 0 0 0-3.4 0Z" /><path d="M12 9v5m0 3v.5" stroke-linecap="round" /></svg>
+                <p id="wl-status" class="wl-status" role="status" aria-live="polite" aria-atomic="true"><span id="wl-notice-title"></span><span id="wl-notice-detail" class="wl-notice-detail" hidden></span></p>
+            </div>
+            <button id="wl-retry" class="button secondary" hidden>Повторить загрузку</button>
+            <div class="wl-play-footer">
+                <div id="wl-keyboard" class="wl-keyboard" role="group" aria-label="Осетинская клавиатура"></div>
+            </div>
+        </div>
+    </div>
+    <dialog id="wl-result" class="wl-dialog wl-result" aria-labelledby="wl-result-title" hidden>
+        <button id="wl-result-close" class="wl-result-close" type="button" aria-label="Закрыть результат"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+        <span id="wl-result-symbol" class="wl-result-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6" /></svg></span>
+        <h2 id="wl-result-title"></h2>
+        <p id="wl-result-summary" class="wl-result-summary"></p>
+        <div class="wl-result-word"><strong id="wl-answer"></strong><span id="wl-translation"></span></div>
+        <div class="wl-result-actions"><button id="wl-save" class="button primary" hidden>В мой словарь</button><button id="wl-share" class="button secondary">Поделиться</button></div>
+        <p id="wl-save-status" class="wl-result-feedback" role="status" aria-live="polite"></p>
+        <p id="wl-share-status" class="wl-result-feedback" role="status" aria-live="polite"></p>
+        <p class="wl-result-next"><strong>Приходите завтра</strong><span id="wl-next"></span></p>
+        <button id="wl-result-statistics" class="wl-result-statistics" type="button">Моя статистика</button>
+    </dialog>
+    <dialog id="wl-stats-dialog" class="wl-dialog" aria-labelledby="wl-stats-title">
+        <div class="wl-dialog-heading"><h2 id="wl-stats-title">Статистика</h2><button id="wl-stats-close" class="button secondary" aria-label="Закрыть статистику">×</button></div>
+        <p id="wl-stats-status" role="status"></p>
+        <div id="wl-stats-content" hidden>
+            <div id="wl-stats-metrics" class="wl-stats-metrics"></div>
+            <h3>Попытки до победы</h3><div id="wl-distribution" class="wl-distribution"></div>
+        </div>
+    </dialog>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/wordle.css" asp-append-version="true" /> }
+@section Scripts { <script src="~/js/wordle.js" asp-append-version="true" defer></script> }

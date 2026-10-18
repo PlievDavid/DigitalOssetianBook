@@ -34,6 +34,33 @@
     });
   }
 
+  if (kind === 'picture') {
+    const section = document.getElementById('picture-editor');
+    const mode = document.getElementById('picture-mode');
+    const updateMode = () => {
+      const free = mode.value === 'free';
+      document.getElementById('picture-distractors-block').hidden = free;
+      document.getElementById('picture-mode-hint').hidden = !free;
+      section.dataset.mode = mode.value;
+    };
+    mode.addEventListener('change', updateMode); updateMode();
+    const imageInput = document.getElementById('picture-image');
+    const imagePreview = document.getElementById('picture-image-preview');
+    const existingImage = imagePreview.getAttribute('src');
+    let imageUrl = null;
+    imageInput.addEventListener('change', () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+      const image = imageInput.files[0];
+      imageUrl = image ? URL.createObjectURL(image) : null;
+      document.getElementById('picture-file-name').textContent = image
+        ? `${image.name} · ${(image.size / 1024 / 1024).toFixed(1)} МБ`
+        : existingImage ? 'Текущая картинка сохранена' : 'Файл не выбран';
+      if (imageUrl || existingImage) imagePreview.src = imageUrl || existingImage;
+      else imagePreview.removeAttribute('src');
+      imagePreview.hidden = !imageUrl && !existingImage;
+    });
+  }
+
   if (kind === 'audio' || kind === 'translation' || kind === 'matching' || kind === 'picture') {
     const search = document.getElementById('word-search'), results = document.getElementById('word-results');
     const selectedEl = document.getElementById('selected-words'), hidden = document.getElementById('WordIdsCsv');
