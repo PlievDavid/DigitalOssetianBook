@@ -1,0 +1,86 @@
+{
+  "generatedWith": "Встроенный image_gen",
+  "status": "Готовы 7 обложек. Генерация остановлена после ошибки доступа HTTP 403. Остальные изображения не создавались.",
+  "assets": [
+    {
+      "file": "schoolboy-cover-v1.png",
+      "kind": "cover",
+      "sourceFile": "exec-1124ee46-9bf5-48e5-8a1e-9057aa5cb3cc.png",
+      "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
+    },
+    {
+      "file": "mischief-cover-v1.png",
+      "kind": "cover",
+      "sourceFile": "exec-2a50b4ca-c57a-421f-8ee7-84de45e324ad.png",
+      "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
+    },
+    {
+      "file": "testament-cover-v1.png",
+      "kind": "cover",
+      "sourceFile": "exec-8d20eccf-e72e-4e49-8637-a50fcab69216.png",
+      "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
+    },
+    {
+      "file": "reflection-cover-v1.png",
+      "kind": "cover",
+      "sourceFile": "exec-de55b113-a7c2-47fc-a3bf-841cfd67309c.png",
+      "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
+    },
+    {
+      "file": "hope-cover-v1.png",
+      "kind": "cover",
+      "sourceFile": "exec-7a42576d-1bb2-4e86-b992-f3a2176ffc53.png",
+      "prompt": "Use case: illustration-story. Asset type: square catalog cover vignette for the Russian-language Ossetian learning platform Adam. Input images are STYLE REFERENCES ONLY, not edit targets. Match their friendly softly rounded, dimensional hand-painted storybook rendering, warm natural colors, gentle shading, forest/sage greens, cream, terracotta and soft blue. This is one standalone illustration, not a website, not a book mockup, no typography or lettering or logos. Subject: A close-up of one adult hand gently sowing a few seeds into rich brown soil, three tiny seedlings, green leaves framing the vignette. Symbol of patient hope. No face or portrait. Composition: single clear centered vignette with generous transparent edge margins; genuine transparent background; subtle pale cream decorative shape and leaves behind the main subject, matching the references. Square 1024x1024. Constraints: no portrait resembling Kosta Khetagurov, no recognizable real person, no physical book cover or spine, no text, no watermarks. Maintain visual consistency with reference illustrations, but depict only the requested scene."
+    },
+    {
+      "file": "wish-cover-v1.png",
+      "kind": "cover",
+      "sourceFile": "exec-4c4203c2-3f6a-4991-94b7-6ceafa5e2ae2.png",
+      "prompt": "Use case: illustration-story. Asset type: square catalog cover vignette for the Russian-language Ossetian learning platform Adam. Input images are STYLE REFERENCES ONLY, not edit targets. Match their friendly softly rounded, dimensional hand-painted storybook rendering, warm natural colors, gentle shading, forest/sage greens, cream, terracotta and soft blue. This is one standalone illustration, not a website, not a book mockup, no typography or lettering or logos. Subject: A loving Ossetian mother in a simple cream headscarf and muted terracotta dress embracing her small brown-haired son, gentle contented expressions, green leaves and a few wheat ears framing the vignette. Composition: single clear centered vignette with generous transparent edge margins; genuine transparent background; subtle pale cream decorative shape and leaves behind the main subject, matching the references. Square 1024x1024. Constraints: no portrait resembling Kosta Khetagurov, no recognizable real person, no physical book cover or spine, no text, no watermarks. Maintain visual consistency with reference illustrations, but depict only the requested scene."
+    },
+    {
+      "file": "farewell-cover-v1.png",
+      "kind": "cover",
+      "sourceFile": "exec-b0f49f4a-ad6e-439d-bb52-2194aa050fc7.png",
+      "prompt": "Use case: illustration-story. Asset type: square catalog cover vignette for the Russian-language Ossetian learning platform Adam. Input images are STYLE REFERENCES ONLY, not edit targets. Match their friendly softly rounded, dimensional hand-painted storybook rendering, warm natural colors, gentle shading, forest/sage greens, cream, terracotta and soft blue. This is one standalone illustration, not a website, not a book mockup, no typography or lettering or logos. Subject: A tied blue-grey cloth travelling bundle and a simple wooden walking staff beside a rounded stone, mountain path, distant blue Caucasus mountains and green leaves. No people, no portrait. Composition: single clear centered vignette with generous transparent edge margins; genuine transparent background; subtle pale cream decorative shape and leaves behind the main subject, matching the references. Square 1024x1024. Constraints: no portrait resembling Kosta Khetagurov, no recognizable real person, no physical book cover or spine, no text, no watermarks. Maintain visual consistency with reference illustrations, but depict only the requested scene."
+    }
+  ],
+  "pending": [
+    {
+      "file": "orphans-mother-cover-v1.png",
+      "subject": "A mother in a dark mourning headscarf holding her youngest child with four other children close around her, five children in total. Tender protective gesture, quiet sorrow, simple late-19th-century clothes, a hint of clay pot and plain stone wall. No exaggerated tears or smiles."
+    },
+    {
+      "file": "schoolboy-interior-v1.png",
+      "subject": "A brown-haired Ossetian schoolboy sitting at a simple wooden school desk, carefully learning to write in an open notebook. Simple light shirt, wooden benches, sunlight through a school window and Caucasus foothills beyond. Wide story scene, not a bust portrait, no school backpack close-up. Notebook marks must be indistinct, no legible text."
+    },
+    {
+      "file": "mischief-interior-v1.png",
+      "subject": "A small brown-haired boy half awake under a simple quilt in a warm modest room, with a piece of bread on a wooden stool beside his bed. A dreamy illustrated vignette outside the window contains a fox, a hare, a small kite bird and an eagle in the sky. Gentle playful story scene, not scary, animals anatomically recognizable. No text."
+    },
+    {
+      "file": "testament-interior-v1.png",
+      "subject": "A modest writing desk by an open window, plain unlettered sheets of paper, dark ink bottle and pale feather quill; outside, a small Caucasus mountain settlement and a distant field. Thoughtful quiet atmosphere, warm morning light. Wide interior scene distinctly different from the isolated cover icon. No people or portraits, no legible writing."
+    },
+    {
+      "file": "reflection-interior-v1.png",
+      "subject": "A quiet empty traditional village gathering place under a large tree, simple stone seats facing each other, blue Caucasus mountains and an open narrow path beyond. Thoughtful restrained atmosphere, afternoon green and warm pale light. Wide story scene, no people or portraits, no battle, no weapons, no religious symbols."
+    },
+    {
+      "file": "hope-interior-v1.png",
+      "subject": "A broad cultivated field in a Caucasus valley, a simple wooden plough drawn by two oxen, a small farmer seen from behind in plain historical clothing, seedlings in the foreground and warm light over distant mountains. Wide hopeful landscape. Farmer is small and anonymous, absolutely no recognizable author portrait."
+    },
+    {
+      "file": "wish-interior-v1.png",
+      "subject": "A warm modest Ossetian family home opening onto a green garden, a mother hugging her young child while another family member brings a basket from a sunlit field, spring flowers by the doorstep and soft blue mountains far away. Quiet ordinary family happiness, plain historical clothes. Wide narrative composition, different from the cover bust."
+    },
+    {
+      "file": "farewell-interior-v1.png",
+      "subject": "An empty winding path leaving a small Caucasus mountain village at dusk, a simple wooden walking staff and cloth bundle resting by a low stone wall in the foreground, a warm lit window far behind, distant cool blue mountain ridges. Poignant gentle farewell, no person or author portrait, no graves, no frightening elements. Wide narrative landscape."
+    },
+    {
+      "file": "orphans-mother-interior-v1.png",
+      "subject": "Inside a poor late-19th-century Ossetian mountain dwelling on a snowy evening: a mother in a dark headscarf tends a small cauldron over the hearth, exactly five young children in worn simple clothes sit close together nearby waiting for food. A snowy mountain night visible through a small window. Sensitive dignified quiet sadness, not cheerful, no graphic misery, no text. Wide story illustration."
+    }
+  ]
+}
