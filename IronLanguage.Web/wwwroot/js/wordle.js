@@ -10,7 +10,7 @@
   const keyboard = ['йцукенгшщзхъ', 'фывапролджэ', 'ӕячсмитьбю'];
   const markLabels = { correct: 'на своём месте', present: 'есть в другом месте', absent: 'нет в слове' };
   let state = null, busy = true, typed = '', pending = null;
-  let savedDay = null, saving = false;
+  let savedDay = null, saving = false, loading = null;
   let noticeTimer = 0, shareTimer = 0, resultTimer = 0;
   const normalize = text => text.toLowerCase().replace(/æ/g, 'ӕ').replace(/\u0301/g, '').replace(/[^а-яёӕ]/gu, '').slice(0, 5);
   const errorText = error => error.status ? error.message : 'Не удалось связаться с сервером. Попробуйте ещё раз.';
@@ -128,13 +128,21 @@
   }
   function type(letter) { updateTyped(typed + letter); }
   function backspace() { updateTyped(typed.slice(0, -1)); }
-  async function load() {
-    clearTimeout(resultTimer);
-    message(''); lock(true); $('retry').hidden = true;
-    try {
-      state = await api('/wordle'); typed = ''; pending = null; render(); message('');
-    } catch (error) { message(errorText(error)); $('retry').hidden = false; }
-    finally { await document.fonts.ready; fitBoard(); lock(false); openResult(); }
+  function load() {
+    // All refresh triggers share one request, including conflict recovery.
+    if (loading) return loading;
+    loading = (async () => {
+      clearTimeout(resultTimer);
+      message(''); lock(true); $('retry').hidden = true;
+      try {
+        state = await api('/wordle'); typed = ''; pending = null; render(); message('');
+      } catch (error) { message(errorText(error)); $('retry').hidden = false; }
+      finally {
+        await document.fonts.ready;
+        fitBoard(); lock(false); openResult(); loading = null;
+      }
+    })();
+    return loading;
   }
   async function submit() {
     if (busy || !state || state.finished) return;
@@ -142,7 +150,7 @@
     const wasInputFocused = document.activeElement === input;
     pending ??= { day: state.day, revision: state.revision, guess: typed };
     const previousRevision = state.revision;
-    message(''); lock(true);
+    message(''); lock(true); $('retry').hidden = true;
     try {
       state = await api('/wordle/guess', { method: 'POST', body: JSON.stringify(pending) });
       typed = ''; pending = null; render(); message('');

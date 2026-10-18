@@ -1,7 +1,7 @@
 /* Compact phone sections; tablet and desktop retain their existing layouts. */
 .mobile-page-intro, .word-mode-icon, .word-mode-description, .mobile-profile-title,
 .mobile-profile-results, .green-theme .profile-links .mobile-profile-results-link { display: none; }
-.green-theme #games:focus { outline: none; }
+.green-theme #games:focus-visible { outline: 3px solid #286aab; outline-offset: 4px; }
 @media (max-width: 599px) {
     .green-theme #main-content > .auth-scene { padding-block: 24px 32px; background: none; border-radius: 0; }
     .green-theme .feature-shell.narrow.auth-shell { width: 100%; max-width: 440px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }

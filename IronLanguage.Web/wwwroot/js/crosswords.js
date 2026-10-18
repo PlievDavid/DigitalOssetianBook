@@ -70,7 +70,7 @@
           image.remove();
           button.classList.remove('has-art');
         }, { once: true });
-        image.src = `/images/crosswords/${artwork}-v1.png`;
+        image.src = `/images/crosswords/${artwork}-v1.webp`;
         button.classList.add('has-art');
         button.append(image);
       }
@@ -261,6 +261,5 @@
     catch (error) { message(error.message); $('retry').hidden = false; }
   }
   $('retry').addEventListener('click', load);
-  $('guest').hidden = !!window.AdamAuthenticated;
   load();
 })();

@@ -73,9 +73,9 @@
     </header>
     <button class="menu-backdrop" type="button" aria-label="Закрыть меню" tabindex="-1" hidden></button>
     <main id="main-content" tabindex="-1">
-        @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/matching", "/picture", "/books", "/vocabulary", "/word-practice", "/game" }.Contains(currentPath))
+        @if (User.Identity?.IsAuthenticated != true && new[] { "/audio-puzzles", "/translate", "/dialogs", "/matching", "/picture", "/books", "/vocabulary", "/word-practice", "/game", "/games", "/games/crosswords", "/games/wordle" }.Contains(currentPath))
         {
-            <p class="guest-notice container">Занимайтесь без входа. Прогресс и слова не сохраняются. <a href="/account/login?ReturnUrl=@Uri.EscapeDataString(currentPath)">Войти, чтобы сохранять</a></p>
+            <p class="guest-notice container">@(currentPath.StartsWith("/games") ? "Без входа результаты не сохраняются." : "Занимайтесь без входа. Прогресс и слова не сохраняются.") <a href="/account/login?ReturnUrl=@Uri.EscapeDataString(currentPath)">Войти, чтобы сохранять</a></p>
         }
         @RenderBody()
     </main>

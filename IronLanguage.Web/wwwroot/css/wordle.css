@@ -102,8 +102,10 @@
     .wordle-page .site-header, .wordle-page .site-footer,
     .wordle-page .wl-heading p, .wordle-page #wl-date { display: none !important; }
     .wordle-page .site-frame { height: 100dvh; min-height: 0; }
-    .green-theme.wordle-page #main-content { flex: 1 1 0; min-height: 0; display: flex; padding-block: 8px; }
+    .green-theme.wordle-page #main-content { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; padding-block: 8px; }
+    .green-theme.wordle-page .guest-notice { flex: none; margin-block: 0 8px; padding: 6px 12px; font-size: 12px; line-height: 1.5; }
     .green-theme.wordle-page #main-content > #wordle-app { display: flex; flex: 1; flex-direction: column; min-height: 0; padding-block: 0; }
+    .wordle-page .wl-play-footer { height: auto; }
     .wordle-page .wl-shell { display: flex; flex: 1; flex-direction: column; width: 100%; min-height: 0; margin: 0; }
     .green-theme.wordle-page .wl-heading { flex: none; align-items: center; gap: 12px; margin: 0 0 8px; }
     .wordle-page .wl-heading h1 { margin: 0; font-size: 26px; }

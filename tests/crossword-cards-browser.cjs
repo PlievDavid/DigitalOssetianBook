@@ -31,7 +31,7 @@ const artwork = ['family', 'home', 'nature', 'weather', 'table', 'garden', 'pets
         const image = card.locator('img');
         await card.scrollIntoViewIfNeeded();
         await image.evaluate(image => image.decode());
-        assert.equal(await image.getAttribute('src'), `/images/crosswords/${artwork[levels[index].id - 1]}-v1.png`);
+        assert.equal(await image.getAttribute('src'), `/images/crosswords/${artwork[levels[index].id - 1]}-v1.webp`);
         assert.equal(await image.getAttribute('alt'), '');
         assert.equal(await image.getAttribute('aria-hidden'), 'true');
         assert.equal(await card.locator('strong').innerText(), levels[index].title);
@@ -70,7 +70,7 @@ const artwork = ['family', 'home', 'nature', 'weather', 'table', 'garden', 'pets
     await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     await page.locator('#cw-play').waitFor({ state: 'visible' });
     assert.match(await page.locator('#cw-title').innerText(), /^10\./);
-    await page.route('**/images/crosswords/family-v1.png', route => route.fulfill({ status: 404, body: '' }));
+    await page.route('**/images/crosswords/family-v1.webp', route => route.fulfill({ status: 404, body: '' }));
     await ready();
     await page.waitForFunction(() => !document.querySelector('.cw-card').classList.contains('has-art'));
     assert.equal(await page.locator('.cw-card').first().locator('img').count(), 0);
