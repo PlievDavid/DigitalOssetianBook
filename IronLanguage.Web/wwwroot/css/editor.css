@@ -144,3 +144,9 @@
   .builder-line .builder-heading { align-items: start; }
   .builder-character > .builder-actions { margin-left: 0; width: 100%; }
 }
+.editor-reading-art { display: grid; gap: 16px; min-width: 0; }
+.editor-reading-art h2, .editor-reading-art p { margin: 0; }
+.editor-reading-illustration { display: grid; gap: 12px; padding: 18px; margin-bottom: 16px; border: 1px solid #dce5d7; border-radius: 14px; background: #f5f7f0; }
+.editor-reading-illustration img, .editor-interior-preview { display: block; width: 100%; max-width: 640px; max-height: 320px; object-fit: contain; border-radius: 12px; margin: 12px 0; }
+.editor-reading-art [hidden] { display: none; }
+.editor-reading-preview-line { min-height: 1.65em; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }

@@ -13,6 +13,12 @@ public sealed class EditorFormModel
     public string Russian { get; set; } = "";
     public string Example { get; set; } = "";
     public string LiteraryTranslation { get; set; } = "";
+    public bool TranslationReviewed { get; set; }
+    public string IllustrationsJson { get; set; } = "[]";
+    public IFormFile? InteriorImage { get; set; }
+    public Guid? IllustrationChapterId { get; set; }
+    public int IllustrationAfterLine { get; set; }
+    public string IllustrationDescription { get; set; } = "";
     public string Authors { get; set; } = "";
     public string Difficulty { get; set; } = "";
     public string? ExistingCoverImagePath { get; set; }
@@ -76,6 +82,8 @@ public sealed class EditorFormModel
             var p = JsonSerializer.Deserialize<BookMaterial>(json, options)!;
             model.Russian = p.Title; model.Example = p.Description;
             model.LiteraryTranslation = p.LiteraryTranslation;
+            model.TranslationReviewed = p.TranslationReviewed;
+            model.IllustrationsJson = JsonSerializer.Serialize(p.Illustrations ?? [], options);
             model.Authors = p.Authors; model.Difficulty = p.Difficulty; model.ExistingCoverImagePath = p.CoverImagePath;
             model.ChaptersJson = JsonSerializer.Serialize(p.Chapters, options);
         }

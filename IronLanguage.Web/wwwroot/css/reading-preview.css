@@ -1,6 +1,7 @@
 .reading-preview { color: #101b34; --reading-font-size: 20px; }
 .reading-preview [hidden] { display: none !important; }
 .reading-library-heading { margin: 38px 0 20px; }
+#reading-app .reading-library-heading { margin-top: 0; }
 .reading-library-heading h1 { margin: 0 0 8px; font-size: clamp(28px, 3.3vw, 42px); line-height: 1.2; }
 .reading-library-heading p, .reading-story-heading p { margin: 0; color: #526273; }
 .reading-library-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 20px; color: #526273; }
@@ -13,7 +14,7 @@
 .reading-preview .reading-card span { margin-top: 6px; color: #526273; font-size: 14px; }
 .reading-preview :is(button, a, summary, .reading-word):focus-visible { outline: 3px solid #286aab; outline-offset: 4px; }
 .reading-story { width: min(100%, 980px); margin: 0 auto; }
-.reading-preview .reading-back { border: 0; background: none; padding: 0; color: #173f31; font: inherit; cursor: pointer; }
+.reading-preview .reading-back { display: inline-block; min-height: 44px; border: 0; background: none; padding: 12px 0; color: #173f31; font: inherit; cursor: pointer; }
 .reading-story-heading { margin: 26px 0; }
 .reading-story-heading h1 { margin: 0 0 8px; font-size: clamp(30px, 4vw, 44px); line-height: 1.2; }
 .reading-story-heading h1:focus { outline: none; }
@@ -31,12 +32,12 @@
 .reading-flow .reading-word { display: inline; margin: 0; padding: 0; border: 0; border-radius: 3px; cursor: pointer; }
 .reading-flow .reading-word:hover, .reading-flow .reading-word.is-current { background: #e5eddf; color: #173f31; }
 .reading-line-translation.needs-review { background: #fcf5e9; border-radius: 5px; }
-.reading-illustration { margin: 32px 0; }
+.reading-illustration { width: min(100%, 760px); margin: 32px auto; }
 .reading-illustration.is-pending { display: grid; place-content: center; min-height: 220px; padding: 24px; border: 1px dashed #c7d6c0; border-radius: 16px; background: #f7f8f2; color: #526273; text-align: center; font-size: 15px; }
 .reading-illustration.is-pending figcaption { font-weight: 600; color: #173f31; }
 .reading-illustration.is-pending p { max-width: 520px; margin: 10px 0 0; line-height: 1.5; }
 .reading-preview .reading-cover-pending { display: grid; place-items: center; width: 100%; aspect-ratio: 1; padding: 20px; margin: 0 0 10px; color: #526273; text-align: center; font-size: 14px; }
-.reading-illustration img { display: block; width: 100%; height: auto; max-height: 460px; object-fit: contain; border-radius: 16px; background: #f7f7ef; }
+.reading-illustration img { display: block; width: 100%; height: auto; border-radius: 16px; }
 .reading-preview[data-language="os"] :is(.reading-line-translation, .reading-column-headings span:last-child),
 .reading-preview[data-language="ru"] :is(.reading-line-original, .reading-column-headings span:first-child) { display: none; }
 .reading-preview[data-language="os"] :is(.reading-line-pair, .reading-column-headings),
@@ -50,6 +51,18 @@
 .reading-preview .reading-word-panel button { display: grid; place-items: center; min-width: 40px; min-height: 40px; padding: 0; background: transparent; border: 0; color: #173f31; font-size: 26px; cursor: pointer; }
 .reading-word-panel p { color: #526273; margin: 12px 0 0; }
 .reading-status:empty { display: none; }
+.reading-chapters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.reading-chapters button { border: 1px solid #dce5d7; border-radius: 8px; padding: 8px 12px; background: #f2f6f0; color: #173f31; font: inherit; cursor: pointer; }
+.reading-chapters button[aria-current="true"] { background: #173f31; color: #fff; }
+.reading-word-meanings { display: grid !important; gap: 18px; margin-top: 16px; }
+.reading-word-meanings section { min-width: 0; }
+.reading-word-meanings audio { display: block; max-width: 100%; margin-top: 12px; }
+.reading-preview .reading-word-meanings .button { display: inline-flex; margin-top: 12px; padding: 8px 12px; font-size: 14px; border: 1px solid #c7d6c0; border-radius: 8px; }
+.reading-line-original > .reading-line-original { min-height: 1.65em; }
+@media (min-width: 701px) {
+  .reading-preview .reading-language { display: none; }
+  .reading-toolbar { justify-content: flex-end; }
+}
 @media (max-width: 1023px) {
   .reading-library-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 }
@@ -63,7 +76,7 @@
   .reading-toolbar { gap: 10px; }
   .reading-preview :is(.reading-language, .reading-text-size) button { padding-inline: 9px; font-size: 13px; }
   .reading-line-pair, .reading-column-headings { column-gap: 20px; }
-  .reading-illustration { margin: 24px 0; }
+  .reading-illustration { margin: 24px auto; }
   .reading-word-panel { right: 16px; bottom: 94px; }
 }
 @media (prefers-reduced-motion: reduce) {

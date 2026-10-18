@@ -1,0 +1,42 @@
+@{ ViewData["Title"] = "Чтение"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/reading-preview.css" asp-append-version="true" />
+}
+<section class="feature-shell reading-preview" id="reading-app">
+    <div id="reading-library">
+        <header class="reading-library-heading">
+            <h1>Чтение на осетинском</h1>
+            <p>Небольшие произведения с иллюстрациями и словарными подсказками.</p>
+        </header>
+        <div class="reading-library-meta"><span id="reading-count"></span></div>
+        <div class="reading-library-grid" id="reading-library-grid"></div>
+    </div>
+    <article class="reading-story" id="reading-story" hidden aria-labelledby="reading-title">
+        <button class="reading-back" id="reading-back" type="button">← К чтению</button>
+        <header class="reading-story-heading">
+            <h1 id="reading-title" tabindex="-1"></h1>
+            <p id="reading-authors"></p>
+        </header>
+        <nav id="reading-chapters" class="reading-chapters" aria-label="Части произведения" hidden></nav>
+        <div class="reading-toolbar">
+            <div class="reading-language" role="group" aria-label="Язык чтения">
+                <button type="button" data-reading-language="both">Оригинал и перевод</button>
+                <button type="button" data-reading-language="os">Осетинский</button>
+                <button type="button" data-reading-language="ru">Перевод</button>
+            </div>
+            <div class="reading-text-size" role="group" aria-label="Размер текста">
+                <button type="button" id="reading-smaller" aria-label="Уменьшить текст">А−</button>
+                <button type="button" id="reading-larger" aria-label="Увеличить текст">А+</button>
+            </div>
+        </div>
+        <p class="reading-draft-notice" id="reading-draft-notice" hidden>Черновой перевод · виден только редактору до проверки.</p>
+        <div class="reading-column-headings" aria-hidden="true"><span>Осетинский оригинал</span><span>Перевод</span></div>
+        <div class="reading-flow" id="reading-flow"></div>
+    </article>
+    <aside class="reading-word-panel" id="reading-word-panel" hidden aria-label="Словарная подсказка">
+        <div><strong id="reading-word-title"></strong><button type="button" id="reading-word-close" aria-label="Закрыть подсказку">×</button></div>
+        <div id="reading-word-definition" class="reading-word-meanings"></div>
+    </aside>
+    <p class="reading-status" id="reading-status" role="status" aria-live="polite"></p>
+</section>
+@section Scripts { <script src="~/js/reading.js" asp-append-version="true" defer></script> }

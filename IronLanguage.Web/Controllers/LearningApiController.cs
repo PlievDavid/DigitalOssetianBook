@@ -120,6 +120,7 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     public async Task<IActionResult> Books(CancellationToken ct) => Ok((await catalog.Books(ct)).Select(x =>
         new { x.Id, x.Title, x.Authors, x.Difficulty, x.Description, x.CoverImagePath }));
 
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpGet("books/{id:guid}")]
     public async Task<IActionResult> Book(Guid id, CancellationToken ct)
     {
@@ -130,7 +131,9 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
         var senseIds = chapters.SelectMany(x => x.tokens).SelectMany(x => x.Matches ?? []).Select(x => x.SenseId).Distinct().ToArray();
         var meanings = await dictionary.Meanings(senseIds, ct);
         return Ok(new { book.Id, book.Title, book.Authors, book.Difficulty, book.Description, book.CoverImagePath,
-            book.LiteraryTranslation, chapters, dictionary = meanings });
+            literaryTranslation = book.TranslationReviewed ? book.LiteraryTranslation : User.IsInRole("Editor") ? book.DraftTranslation : "",
+            book.TranslationReviewed, illustrations = JsonSerializer.Deserialize<ReadingIllustration[]>(book.IllustrationsJson, BookJsonOptions) ?? [],
+            chapters, dictionary = meanings });
     }
 
     [Authorize, HttpGet("books/{id:guid}/position")]

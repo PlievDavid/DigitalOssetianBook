@@ -72,6 +72,9 @@ public sealed class Book
     public string Description { get; set; } = "";
     public string? CoverImagePath { get; set; }
     public string LiteraryTranslation { get; set; } = "";
+    public bool TranslationReviewed { get; set; } = true;
+    public string DraftTranslation { get; set; } = "";
+    public string IllustrationsJson { get; set; } = "[]";
     public bool Published { get; set; }
     public bool Archived { get; set; }
     public int Version { get; set; } = 1;

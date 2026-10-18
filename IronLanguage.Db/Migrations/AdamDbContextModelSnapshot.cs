@@ -62,6 +62,14 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("IllustrationsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DraftTranslation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("LiteraryTranslation")
                         .IsRequired()
                         .HasColumnType("text");
@@ -77,6 +85,9 @@ namespace IronLanguage.Db.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.Property<bool>("TranslationReviewed")
+                        .HasColumnType("boolean");
 
                     b.ToTable("Books");
                 });

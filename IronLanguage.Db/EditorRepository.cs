@@ -6,11 +6,13 @@ namespace IronLanguage.Db;
 public sealed record DictionaryMatch(Guid SenseId, bool Approximate);
 public sealed record MaterialToken(string Text, Guid? WordId, DictionaryMatch[]? Matches = null);
 public sealed record MaterialChapter(Guid Id, int Number, string Title, MaterialToken[] Tokens);
+public sealed record ReadingIllustration(Guid ChapterId, int AfterLine, string ImagePath, string Description);
 public sealed record WordMaterial(string Ossetian, string Russian, string Example, string? AudioPath);
 public sealed record ExerciseMaterial(string Kind, string RussianPrompt, string OssetianAnswer, string[] Tokens, string[] Alternatives, string Explanation, Guid[] WordIds, string? AudioPath, string[][]? Distractors = null);
 public sealed record ListeningMaterial(string Question, string[] Options, int CorrectOption, string Transcript, string Explanation, string? AudioPath);
 public sealed record BookMaterial(string Title, string Description, MaterialChapter[] Chapters, string LiteraryTranslation = "",
-    string Authors = "", string Difficulty = "", string? CoverImagePath = null);
+    string Authors = "", string Difficulty = "", string? CoverImagePath = null,
+    ReadingIllustration[]? Illustrations = null, bool TranslationReviewed = true);
 public sealed record DialogueCharacter(string Id, string Name, string Color);
 public sealed record DialogueLine(int Number, string CharacterId, string Text, string? AudioPath = null);
 public sealed record DialogueTurn(int LineNumber, string Kind, string[] References, string[] Options, int HintThreshold, bool Skippable);
@@ -124,7 +126,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var p = Parse<BookMaterial>(payloadJson);
             var book = new Book { Title = p.Title, Authors = p.Authors, Difficulty = p.Difficulty,
-                Description = p.Description, CoverImagePath = p.CoverImagePath, LiteraryTranslation = p.LiteraryTranslation };
+                Description = p.Description, CoverImagePath = p.CoverImagePath,
+                LiteraryTranslation = p.TranslationReviewed ? p.LiteraryTranslation : "", DraftTranslation = p.TranslationReviewed ? "" : p.LiteraryTranslation,
+                TranslationReviewed = p.TranslationReviewed, IllustrationsJson = JsonSerializer.Serialize(p.Illustrations ?? [], JsonOptions) };
             book.Chapters = p.Chapters.Select(x => new BookChapter { Id = x.Id == Guid.Empty ? Guid.NewGuid() : x.Id,
                 Number = x.Number, Title = x.Title, TokensJson = JsonSerializer.Serialize(x.Tokens) }).ToList();
             db.Books.Add(book); await db.SaveChangesAsync(ct); return book.Id;
@@ -396,7 +400,8 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             Parse<string[][]>(x.DistractorsJson)), JsonOptions);
     private static string Capture(Book x) => JsonSerializer.Serialize(new BookMaterial(x.Title, x.Description, x.Chapters.OrderBy(c => c.Number)
         .Select(c => new MaterialChapter(c.Id, c.Number, c.Title, Parse<MaterialToken[]>(c.TokensJson))).ToArray(),
-        x.LiteraryTranslation, x.Authors, x.Difficulty, x.CoverImagePath), JsonOptions);
+        x.TranslationReviewed ? x.LiteraryTranslation : x.DraftTranslation, x.Authors, x.Difficulty, x.CoverImagePath,
+        Parse<ReadingIllustration[]>(x.IllustrationsJson), x.TranslationReviewed), JsonOptions);
     private static void Apply(WordEntry x, WordMaterial p) { x.Ossetian = p.Ossetian; x.Russian = p.Russian; x.Example = p.Example; x.AudioPath = p.AudioPath; }
     private static void Apply(Exercise x, ExerciseMaterial p)
     {
@@ -442,7 +447,11 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
     private void Apply(Book x, BookMaterial p)
     {
         x.Title = p.Title; x.Authors = p.Authors; x.Difficulty = p.Difficulty;
-        x.Description = p.Description; x.CoverImagePath = p.CoverImagePath; x.LiteraryTranslation = p.LiteraryTranslation;
+        x.Description = p.Description; x.CoverImagePath = p.CoverImagePath;
+        x.LiteraryTranslation = p.TranslationReviewed ? p.LiteraryTranslation : "";
+        x.DraftTranslation = p.TranslationReviewed ? "" : p.LiteraryTranslation;
+        x.TranslationReviewed = p.TranslationReviewed;
+        x.IllustrationsJson = JsonSerializer.Serialize(p.Illustrations ?? [], JsonOptions);
         var wanted = p.Chapters.Select(c => c.Id).ToHashSet();
         foreach (var old in x.Chapters.Where(c => !wanted.Contains(c.Id)).ToList()) { db.Chapters.Remove(old); x.Chapters.Remove(old); }
         foreach (var chapter in p.Chapters)

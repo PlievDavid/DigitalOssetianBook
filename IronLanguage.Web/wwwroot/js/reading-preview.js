@@ -112,7 +112,6 @@
     element('reading-title').textContent = draft.title;
     element('reading-ossetian-title').textContent = draft.ossetianTitle;
     element('reading-review-notes').textContent = draft.reviewNotes;
-    element('reading-source').href = draft.sourceUrl;
     root.querySelector('.reading-review').open = false;
     flow.replaceChildren();
     const original = draft.original.split('\n');
@@ -133,6 +132,7 @@
     if (draft.illustrationAfterLine === original.length) flow.append(illustration(draft));
     element('reading-library').hidden = true;
     element('reading-story').hidden = false;
+    setLanguage(narrow.matches ? language : 'both');
     history.replaceState(null, '', '#' + draft.slug);
     window.scrollTo(0, 0);
     element('reading-title').focus({ preventScroll: true });
@@ -189,7 +189,7 @@
     if (event.key === 'Escape' && !panel.hidden) closeWord(true);
   });
   narrow.addEventListener('change', event => {
-    if (event.matches && language === 'both') setLanguage('os');
+    setLanguage(event.matches ? 'os' : 'both');
   });
   setLanguage(language);
   const initial = drafts.find(draft => '#' + draft.slug === location.hash);
