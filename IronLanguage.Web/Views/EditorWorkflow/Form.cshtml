@@ -2,7 +2,7 @@
 @inject IronLanguage.Db.ICatalogRepository Catalog
 @using System.Text.Json
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
     ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
     ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
@@ -42,6 +42,14 @@
             <label>Пояснение после ответа <textarea asp-for="Explanation" rows="3"></textarea></label>
             <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
         }
+        else if (Model.Kind == "listening")
+        {
+            <label>Вопрос к записи <span class="field-help">Например: «О чём говорит собеседник?» Текст может быть на русском или осетинском.</span><input asp-for="RussianPrompt" autocomplete="off" required maxlength="500" /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
+            <label>Четыре варианта ответа <span class="field-help">По одному варианту на строке. Порядок сохранится таким, как вы его укажете.</span><textarea asp-for="ListeningOptionsText" rows="5" required data-ossetian></textarea><span asp-validation-for="ListeningOptionsText" class="form-error"></span></label>
+            <label>Правильный вариант <span class="field-help">Выберите номер строки с верным ответом.</span><select asp-for="CorrectOption"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select><span asp-validation-for="CorrectOption" class="form-error"></span></label>
+            <label>Текст записи <span class="field-help">Необязательно. Ученик увидит его только после ответа — для разбора.</span><textarea asp-for="Transcript" rows="6" maxlength="5000" data-ossetian></textarea><span asp-validation-for="Transcript" class="form-error"></span></label>
+            <label>Пояснение после ответа <span class="field-help">Необязательно.</span><textarea asp-for="Explanation" rows="3" maxlength="1000"></textarea><span asp-validation-for="Explanation" class="form-error"></span></label>
+        }
         else if (Model.Kind == "book")
         {
             <label>Название книги <input asp-for="Russian" required /><span asp-validation-for="Russian" class="form-error"></span></label>
@@ -76,9 +84,10 @@
             @await Html.PartialAsync("_PictureBuilder", Model)
             <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
         }
-        @if (Model.Kind is "word" or "audio")
+        @if (Model.Kind is "word" or "audio" or "listening")
         {
-            <div class="editor-audio-field"><span class="editor-field-label">Осетинская запись @(Model.Kind == "audio" ? "(обязательно)" : "(необязательно)")</span><label class="editor-file-button" for="editor-audio">Выбрать запись</label><input asp-for="Audio" id="editor-audio" type="file" accept=".mp3,.ogg,.wav,audio/mpeg,audio/ogg,audio/wav" class="editor-file-input" /><span id="editor-file-name" class="field-help">@(Model.ExistingAudioPath is null ? "Файл не выбран" : "Текущая запись сохранена")</span>@if (Model.ExistingAudioPath is null) { <audio id="editor-audio-preview" controls hidden></audio> } else { <audio id="editor-audio-preview" controls src="@Model.ExistingAudioPath"></audio> }<span asp-validation-for="Audio" class="form-error"></span></div>
+            var audioRequired = Model.Kind is "audio" or "listening";
+            <div class="editor-audio-field"><span class="editor-field-label">Осетинская запись @(audioRequired ? "(обязательно)" : "(необязательно)")</span><label class="editor-file-button" for="editor-audio">Выбрать запись</label><input asp-for="Audio" id="editor-audio" type="file" accept=".mp3,.ogg,.wav,audio/mpeg,audio/ogg,audio/wav" class="editor-file-input" /><span id="editor-file-name" class="field-help">@(Model.ExistingAudioPath is null ? "Файл не выбран" : "Текущая запись сохранена")</span>@if (Model.ExistingAudioPath is null) { <audio id="editor-audio-preview" controls hidden></audio> } else { <audio id="editor-audio-preview" controls src="@Model.ExistingAudioPath"></audio> }<span asp-validation-for="Audio" class="form-error"></span></div>
         }
         <div class="editor-form-actions"><button class="button primary" type="submit">Сохранить черновик</button><a class="button secondary" href="/editor">Отмена</a></div>
     </form>
