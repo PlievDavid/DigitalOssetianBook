@@ -22,7 +22,8 @@
     "test:matching-threads": "node tests/matching-threads-browser.cjs",
     "test:matching-builder": "node tests/matching-builder-browser.cjs",
     "test:picture-threads": "node tests/picture-threads-browser.cjs",
-    "test:picture-editor": "node tests/picture-editor-browser.cjs"
+    "test:picture-editor": "node tests/picture-editor-browser.cjs",
+    "test:grammar-threads": "node tests/grammar-threads-browser.cjs"
   },
   "devDependencies": {
     "playwright": "1.64.1"

@@ -192,6 +192,16 @@ public sealed class PictureMatching
     public int Version { get; set; } = 1;
 }
 
+public sealed class Grammar
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = "";
+    public string ScriptJson { get; set; } = "{}";
+    public bool Published { get; set; }
+    public bool Archived { get; set; }
+    public int Version { get; set; } = 1;
+}
+
 public sealed class DialogueSession
 {
     public Guid Id { get; set; } = Guid.NewGuid();

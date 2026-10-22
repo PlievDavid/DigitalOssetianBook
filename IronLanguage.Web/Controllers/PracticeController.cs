@@ -26,6 +26,9 @@ public sealed class PracticeController : Controller
     [HttpGet("picture")]
     public IActionResult Picture() => View();
 
+    [HttpGet("grammar")]
+    public IActionResult Grammar() => View();
+
     [HttpGet("game")]
     public IActionResult Game() => View();
 

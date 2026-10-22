@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", _ => "Книга" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
@@ -117,6 +117,27 @@
                 @if (Model.Picture.WordIds.Length > 0)
                 {
                     <p class="field-help">Связанные слова: @string.Join(", ", Model.Picture.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p>
+                }
+            </div>
+        }
+        else if (Model.Grammar is not null)
+        {
+            <h2>@Model.Grammar.Title</h2>
+            <p class="field-help">Ученик видит предложение с пропуском и выбирает форму слова из четырёх вариантов. После первой ошибки показывается подсказка; после верного ответа или второй ошибки — правильная форма.</p>
+            <p class="editor-preview-sentence">@Model.Grammar.Prompt</p>
+            <div class="editor-preview-answer">
+                <p><strong>Варианты (порядок перемешивается):</strong></p>
+                <ul>
+                    <li>@Model.Grammar.Correct — правильный</li>
+                    @foreach (var distractor in Model.Grammar.Distractors) { <li>@distractor — отвлекающий</li> }
+                </ul>
+                @if (!string.IsNullOrWhiteSpace(Model.Grammar.Rule))
+                {
+                    <p><strong>Подсказка:</strong> @Model.Grammar.Rule</p>
+                }
+                @if (Model.Grammar.WordIds.Length > 0)
+                {
+                    <p class="field-help">Связанные слова: @string.Join(", ", Model.Grammar.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p>
                 }
             </div>
         }

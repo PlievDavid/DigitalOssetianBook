@@ -1,0 +1,29 @@
+@model IronLanguage.Web.Models.EditorFormModel
+<section id="grammar-editor" class="editor-grammar-fields">
+    <label class="editor-field">Метка пропуска
+        <input asp-for="GrammarBlank" maxlength="10" required autocomplete="off" />
+        <span class="field-help">Строка, которая заменяет слово в предложении, например «___».</span>
+        <span asp-validation-for="GrammarBlank" class="form-error"></span>
+    </label>
+    <label class="editor-field">Предложение с пропуском
+        <textarea asp-for="GrammarPrompt" rows="3" maxlength="300" required data-ossetian></textarea>
+        <span class="field-help">Вставьте метку пропуска ровно один раз в том месте, где должно стоять слово.</span>
+        <span asp-validation-for="GrammarPrompt" class="form-error"></span>
+    </label>
+    <label class="editor-field">Правильная форма слова
+        <input asp-for="GrammarCorrect" autocomplete="off" required maxlength="200" data-ossetian />
+        <span asp-validation-for="GrammarCorrect" class="form-error"></span>
+    </label>
+    <section class="editor-grammar-distractors" aria-labelledby="grammar-distractors-title">
+        <h2 id="grammar-distractors-title" class="editor-field-label">Отвлекающие формы</h2>
+        <p class="field-help">Ровно три формы с другими окончаниями. Порядок вариантов сайт перемешивает.</p>
+        <label class="editor-field">Отвлекающая форма 1 <input asp-for="GrammarDistractor1" maxlength="200" data-ossetian /><span asp-validation-for="GrammarDistractor1" class="form-error"></span></label>
+        <label class="editor-field">Отвлекающая форма 2 <input asp-for="GrammarDistractor2" maxlength="200" data-ossetian /><span asp-validation-for="GrammarDistractor2" class="form-error"></span></label>
+        <label class="editor-field">Отвлекающая форма 3 <input asp-for="GrammarDistractor3" maxlength="200" data-ossetian /><span asp-validation-for="GrammarDistractor3" class="form-error"></span></label>
+    </section>
+    <label class="editor-field">Подсказка
+        <textarea asp-for="GrammarRule" rows="2" maxlength="300"></textarea>
+        <span class="field-help">Необязательно. Показывается ученику после первой ошибки и после финала, например «винительный падеж, мягкое -у после г».</span>
+        <span asp-validation-for="GrammarRule" class="form-error"></span>
+    </label>
+</section>
