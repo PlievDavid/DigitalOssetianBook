@@ -61,6 +61,25 @@
     });
   }
 
+  const coverInput = document.getElementById('editor-cover');
+  if (coverInput) {
+    const coverLabel = document.getElementById('editor-cover-name');
+    const coverPreview = document.getElementById('editor-cover-preview');
+    const existingCover = coverPreview.getAttribute('src');
+    let coverUrl = null;
+    coverInput.addEventListener('change', () => {
+      if (coverUrl) URL.revokeObjectURL(coverUrl);
+      const cover = coverInput.files[0];
+      coverUrl = cover ? URL.createObjectURL(cover) : null;
+      coverLabel.textContent = cover
+        ? `${cover.name} · ${(cover.size / 1024 / 1024).toFixed(1)} МБ`
+        : existingCover ? 'Текущая обложка сохранена' : 'Файл не выбран';
+      if (coverUrl || existingCover) coverPreview.src = coverUrl || existingCover;
+      else coverPreview.removeAttribute('src');
+      coverPreview.hidden = !coverUrl && !existingCover;
+    });
+  }
+
   if (kind === 'audio' || kind === 'translation' || kind === 'matching' || kind === 'picture') {
     const search = document.getElementById('word-search'), results = document.getElementById('word-results');
     const selectedEl = document.getElementById('selected-words'), hidden = document.getElementById('WordIdsCsv');
