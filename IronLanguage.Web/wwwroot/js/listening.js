@@ -25,6 +25,7 @@
     try {
       const exercises = await AdamApi("/listening");
       list.replaceChildren();
+      list.hidden = exercises.length === 0;
       for (const item of exercises) {
         const entry = document.createElement("article"); entry.className = "exercise-entry listening-entry";
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
