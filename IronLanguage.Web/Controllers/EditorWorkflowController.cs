@@ -11,7 +11,7 @@ namespace IronLanguage.Web.Controllers;
 public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly string[] Kinds = ["word", "audio", "translation", "book", "dialogue", "matching", "picture"];
+    private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "book", "dialogue", "matching", "picture"];
 
     [HttpGet("new/{kind}")]
     public IActionResult New(string kind) => Kinds.Contains(kind) ? View("Form", new EditorFormModel { Kind = kind }) : NotFound();
@@ -140,6 +140,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             Kind = kind, ContentId = id, RevisionId = revisionId, Version = version, Published = published, Historical = historical,
             Word = kind == "word" ? JsonSerializer.Deserialize<WordMaterial>(payload, JsonOptions) : null,
             Exercise = kind is "audio" or "translation" ? JsonSerializer.Deserialize<ExerciseMaterial>(payload, JsonOptions) : null,
+            Listening = kind == "listening" ? JsonSerializer.Deserialize<ListeningMaterial>(payload, JsonOptions) : null,
             Book = kind == "book" ? JsonSerializer.Deserialize<BookMaterial>(payload, JsonOptions) : null,
             Dialogue = kind == "dialogue" ? JsonSerializer.Deserialize<DialogueMaterial>(payload, JsonOptions) : null,
             Matching = kind == "matching" ? JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions) : null,
@@ -154,7 +155,8 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.Ossetian ??= ""; model.Russian ??= ""; model.Example ??= ""; model.LiteraryTranslation ??= "";
         model.Authors ??= ""; model.Difficulty ??= "";
         model.RussianPrompt ??= ""; model.OssetianAnswer ??= ""; model.TokensText ??= "";
-        model.AlternativesText ??= ""; model.DistractorsText ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
+        model.AlternativesText ??= ""; model.DistractorsText ??= ""; model.ListeningOptionsText ??= "";
+        model.Transcript ??= ""; model.Explanation ??= ""; model.WordIdsCsv ??= ""; model.ChaptersJson ??= "[]";
         model.DialogueTitle ??= ""; model.Dialect ??= ""; model.CharactersText ??= ""; model.LinesText ??= ""; model.TurnsText ??= "";
         model.MatchingTitle ??= ""; model.PairsText ??= "";
         model.PictureTitle ??= ""; model.PicturePath ??= ""; model.PictureWord ??= ""; model.PictureMode ??= "";
@@ -235,6 +237,27 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 var audio = kind == "audio" ? model.Audio is { Length: > 0 } ? await SaveAudio(model.Audio, ct) : originalAudioPath : null;
                 payload = JsonSerializer.Serialize(new ExerciseMaterial(kind, model.RussianPrompt.Trim(), ossetianAnswer.Trim(), tokens,
                     alternatives, model.Explanation.Trim(), wordIds.Distinct().ToArray(), audio, distractors), JsonOptions);
+            }
+        }
+        else if (kind == "listening")
+        {
+            var options = model.ListeningOptionsText.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (string.IsNullOrWhiteSpace(model.RussianPrompt)) ModelState.AddModelError(nameof(model.RussianPrompt), "Укажите вопрос к записи.");
+            if (model.RussianPrompt.Length > 500) ModelState.AddModelError(nameof(model.RussianPrompt), "Вопрос должен быть короче 500 символов.");
+            if (options.Length != 4) ModelState.AddModelError(nameof(model.ListeningOptionsText), "Добавьте ровно четыре варианта ответа, каждый с новой строки.");
+            if (options.Any(x => x.Length > 300)) ModelState.AddModelError(nameof(model.ListeningOptionsText), "Каждый вариант должен быть короче 300 символов.");
+            if (options.Length == 4 && options.Select(LearningService.Normalize).Distinct().Count() != 4)
+                ModelState.AddModelError(nameof(model.ListeningOptionsText), "Варианты ответа не должны повторяться.");
+            if (model.CorrectOption is < 1 or > 4) ModelState.AddModelError(nameof(model.CorrectOption), "Выберите правильный вариант от 1 до 4.");
+            if (model.Transcript.Length > 5000) ModelState.AddModelError(nameof(model.Transcript), "Текст записи должен быть короче 5000 символов.");
+            if (model.Explanation.Length > 1000) ModelState.AddModelError(nameof(model.Explanation), "Пояснение должно быть короче 1000 символов.");
+            if (model.Audio is not { Length: > 0 } && string.IsNullOrEmpty(originalAudioPath))
+                ModelState.AddModelError(nameof(model.Audio), "Для аудирования нужна запись.");
+            if (ModelState.IsValid)
+            {
+                var audio = model.Audio is { Length: > 0 } ? await SaveAudio(model.Audio, ct) : originalAudioPath;
+                payload = JsonSerializer.Serialize(new ListeningMaterial(model.RussianPrompt.Trim(), options,
+                    model.CorrectOption - 1, model.Transcript.Trim(), model.Explanation.Trim(), audio), JsonOptions);
             }
         }
         else if (kind == "book")
@@ -369,6 +392,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         {
             "word" => JsonSerializer.Deserialize<WordMaterial>(payload, JsonOptions)?.AudioPath,
             "audio" => JsonSerializer.Deserialize<ExerciseMaterial>(payload, JsonOptions)?.AudioPath,
+            "listening" => JsonSerializer.Deserialize<ListeningMaterial>(payload, JsonOptions)?.AudioPath,
             _ => null
         };
     }

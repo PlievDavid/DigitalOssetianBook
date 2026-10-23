@@ -8,6 +8,7 @@ public sealed record MaterialToken(string Text, Guid? WordId, DictionaryMatch[]?
 public sealed record MaterialChapter(Guid Id, int Number, string Title, MaterialToken[] Tokens);
 public sealed record WordMaterial(string Ossetian, string Russian, string Example, string? AudioPath);
 public sealed record ExerciseMaterial(string Kind, string RussianPrompt, string OssetianAnswer, string[] Tokens, string[] Alternatives, string Explanation, Guid[] WordIds, string? AudioPath, string[][]? Distractors = null);
+public sealed record ListeningMaterial(string Question, string[] Options, int CorrectOption, string Transcript, string Explanation, string? AudioPath);
 public sealed record BookMaterial(string Title, string Description, MaterialChapter[] Chapters, string LiteraryTranslation = "",
     string Authors = "", string Difficulty = "", string? CoverImagePath = null);
 public sealed record DialogueCharacter(string Id, string Name, string Color);
@@ -67,7 +68,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var word = await db.Words.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
             return word is null ? null : new(kind, id, word.Published, word.Version, Capture(word));
         }
-        if (kind is "audio" or "translation")
+        if (kind is "audio" or "translation" or "listening")
         {
             var exercise = await db.Exercises.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Kind == kind, ct);
             return exercise is null ? null : new(kind, id, exercise.Published, exercise.Version, Capture(exercise));
@@ -110,6 +111,13 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
                 TokensJson = JsonSerializer.Serialize(p.Tokens), AlternativesJson = JsonSerializer.Serialize(p.Alternatives),
                 DistractorsJson = JsonSerializer.Serialize(p.Distractors ?? []),
                 WordIdsJson = JsonSerializer.Serialize(p.WordIds), Explanation = p.Explanation, AudioPath = p.AudioPath };
+            db.Exercises.Add(exercise); await db.SaveChangesAsync(ct); return exercise.Id;
+        }
+        if (kind == "listening")
+        {
+            var p = Parse<ListeningMaterial>(payloadJson);
+            var exercise = new Exercise { Kind = kind, RussianPrompt = p.Question, OptionsJson = JsonSerializer.Serialize(p.Options),
+                CorrectOption = p.CorrectOption, Transcript = p.Transcript, Explanation = p.Explanation, AudioPath = p.AudioPath };
             db.Exercises.Add(exercise); await db.SaveChangesAsync(ct); return exercise.Id;
         }
         if (kind == "book")
@@ -155,6 +163,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var exercise = await db.Exercises.SingleOrDefaultAsync(x => x.Id == id && x.Kind == kind && !x.Published, ct);
             if (exercise is null) return false;
             Apply(exercise, Parse<ExerciseMaterial>(payloadJson));
+        }
+        else if (kind == "listening")
+        {
+            var exercise = await db.Exercises.SingleOrDefaultAsync(x => x.Id == id && x.Kind == kind && !x.Published, ct);
+            if (exercise is null) return false;
+            ApplyListening(exercise, Parse<ListeningMaterial>(payloadJson));
         }
         else if (kind == "book")
         {
@@ -249,6 +263,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (exercise is null) return false;
             Apply(exercise, Parse<ExerciseMaterial>(revision.PayloadJson)); exercise.Version++;
         }
+        else if (revision.Kind == "listening")
+        {
+            var exercise = await db.Exercises.SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Kind == revision.Kind && x.Published && x.Version == revision.BaseVersion, ct);
+            if (exercise is null) return false;
+            ApplyListening(exercise, Parse<ListeningMaterial>(revision.PayloadJson)); exercise.Version++;
+        }
         else if (revision.Kind == "book")
         {
             var book = await db.Books.Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
@@ -297,7 +317,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (word is null) return false;
             db.Words.Remove(word);
         }
-        else if (kind is "audio" or "translation")
+        else if (kind is "audio" or "translation" or "listening")
         {
             var exercise = await db.Exercises.SingleOrDefaultAsync(x => x.Id == id && x.Kind == kind && !x.Published, ct);
             if (exercise is null) return false;
@@ -348,7 +368,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         if (kind == "word")
             return await db.Words.Where(x => x.Id == id && x.Published && x.DictionarySenseId == null && x.Archived != archived)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
-        if (kind is "audio" or "translation")
+        if (kind is "audio" or "translation" or "listening")
             return await db.Exercises.Where(x => x.Id == id && x.Kind == kind && x.Published && x.Archived != archived)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
         if (kind == "book")
@@ -368,9 +388,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
 
     private static T Parse<T>(string json) => JsonSerializer.Deserialize<T>(json, JsonOptions) ?? throw new ArgumentException("Invalid material payload");
     private static string Capture(WordEntry x) => JsonSerializer.Serialize(new WordMaterial(x.Ossetian, x.Russian, x.Example, x.AudioPath), JsonOptions);
-    private static string Capture(Exercise x) => JsonSerializer.Serialize(new ExerciseMaterial(x.Kind, x.RussianPrompt, x.OssetianAnswer,
-        Parse<string[]>(x.TokensJson), Parse<string[]>(x.AlternativesJson), x.Explanation, Parse<Guid[]>(x.WordIdsJson), x.AudioPath,
-        Parse<string[][]>(x.DistractorsJson)), JsonOptions);
+    private static string Capture(Exercise x) => x.Kind == "listening"
+        ? JsonSerializer.Serialize(new ListeningMaterial(x.RussianPrompt, Parse<string[]>(x.OptionsJson), x.CorrectOption,
+            x.Transcript, x.Explanation, x.AudioPath), JsonOptions)
+        : JsonSerializer.Serialize(new ExerciseMaterial(x.Kind, x.RussianPrompt, x.OssetianAnswer,
+            Parse<string[]>(x.TokensJson), Parse<string[]>(x.AlternativesJson), x.Explanation, Parse<Guid[]>(x.WordIdsJson), x.AudioPath,
+            Parse<string[][]>(x.DistractorsJson)), JsonOptions);
     private static string Capture(Book x) => JsonSerializer.Serialize(new BookMaterial(x.Title, x.Description, x.Chapters.OrderBy(c => c.Number)
         .Select(c => new MaterialChapter(c.Id, c.Number, c.Title, Parse<MaterialToken[]>(c.TokensJson))).ToArray(),
         x.LiteraryTranslation, x.Authors, x.Difficulty, x.CoverImagePath), JsonOptions);
@@ -380,6 +403,11 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         x.RussianPrompt = p.RussianPrompt; x.OssetianAnswer = p.OssetianAnswer; x.Explanation = p.Explanation; x.AudioPath = p.AudioPath;
         x.TokensJson = JsonSerializer.Serialize(p.Tokens); x.AlternativesJson = JsonSerializer.Serialize(p.Alternatives); x.WordIdsJson = JsonSerializer.Serialize(p.WordIds);
         x.DistractorsJson = JsonSerializer.Serialize(p.Distractors ?? []);
+    }
+    private static void ApplyListening(Exercise x, ListeningMaterial p)
+    {
+        x.RussianPrompt = p.Question; x.OptionsJson = JsonSerializer.Serialize(p.Options); x.CorrectOption = p.CorrectOption;
+        x.Transcript = p.Transcript; x.Explanation = p.Explanation; x.AudioPath = p.AudioPath;
     }
     private static string Capture(Dialogue x)
     {

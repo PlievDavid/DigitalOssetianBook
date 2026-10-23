@@ -46,12 +46,15 @@ public sealed class DictionaryForm
 public sealed class Exercise
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Kind { get; set; } = ""; // audio or translation
+    public string Kind { get; set; } = ""; // audio, translation or listening
     public string RussianPrompt { get; set; } = "";
     public string OssetianAnswer { get; set; } = "";
     public string AlternativesJson { get; set; } = "[]";
     public string TokensJson { get; set; } = "[]";
     public string DistractorsJson { get; set; } = "[]"; // по два отвлекающих слова на каждый шаг (звуковой пазл)
+    public string OptionsJson { get; set; } = "[]"; // варианты ответа для аудирования
+    public int CorrectOption { get; set; } // индекс верного варианта (с нуля)
+    public string Transcript { get; set; } = "";
     public string WordIdsJson { get; set; } = "[]";
     public string Explanation { get; set; } = "";
     public string? AudioPath { get; set; }
@@ -105,6 +108,9 @@ public sealed class ExerciseAttempt
     public string AlternativesJson { get; set; } = "[]";
     public string TokensJson { get; set; } = "[]";
     public string DistractorsJson { get; set; } = "[]";
+    public string OptionsJson { get; set; } = "[]";
+    public int CorrectOption { get; set; }
+    public string Transcript { get; set; } = "";
     public string WordIdsJson { get; set; } = "[]";
     public string RussianPrompt { get; set; } = "";
     public string Explanation { get; set; } = "";

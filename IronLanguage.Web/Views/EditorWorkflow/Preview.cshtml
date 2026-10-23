@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
@@ -18,6 +18,21 @@
             <h2>@Model.Word.Ossetian</h2><p class="editor-preview-translation">@Model.Word.Russian</p>
             @if (!string.IsNullOrWhiteSpace(Model.Word.Example)) { <p>@Model.Word.Example</p> }
             @if (Model.Word.AudioPath is not null) { <audio controls src="@Model.Word.AudioPath"></audio> }
+        }
+        else if (Model.Listening is not null)
+        {
+            <h2>@Model.Listening.Question</h2>
+            @if (Model.Listening.AudioPath is not null) { <audio controls src="@Model.Listening.AudioPath"></audio> }
+            <ol class="editor-preview-steps">
+                @for (var i = 0; i < Model.Listening.Options.Length; i++)
+                {
+                    var option = Model.Listening.Options[i];
+                    <li><strong>@option</strong>@(i == Model.Listening.CorrectOption ? " — верный ответ" : "")</li>
+                }
+            </ol>
+            <div class="editor-preview-answer"><strong>Правильный ответ:</strong> @Model.Listening.Options.ElementAtOrDefault(Model.Listening.CorrectOption)</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Listening.Transcript)) { <details open><summary>Текст записи</summary><p style="white-space: pre-wrap">@Model.Listening.Transcript</p></details> }
+            @if (!string.IsNullOrWhiteSpace(Model.Listening.Explanation)) { <p>@Model.Listening.Explanation</p> }
         }
         else if (Model.Exercise is not null)
         {

@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Аудирование";
+}
+<section class="feature-shell" id="listening-app">
+    <a class="back-link" href="/">← К заданиям</a>
+    <h1>Аудирование</h1>
+    <p>Прослушайте запись и выберите один верный ответ.</p>
+    <div id="listening-status" role="status" aria-live="polite"></div>
+    <div id="listening-list" class="exercise-list" hidden></div>
+    <div id="listening-play" class="exercise-play" hidden>
+        <div class="exercise-play-body">
+            <a id="listening-back" class="back-link" href="/listening">← К аудированию</a>
+            <h2 id="listening-question"></h2>
+            <audio id="listening-audio" controls preload="metadata" aria-label="Запись для аудирования"></audio>
+            <p id="listening-audio-error" class="form-error" hidden>Запись недоступна. Попробуйте открыть задание ещё раз.</p>
+            <p class="field-help">Запись можно прослушивать сколько угодно раз. Выберите ответ после начала воспроизведения.</p>
+            <div id="listening-options" class="listening-options" role="group" aria-label="Варианты ответа"></div>
+            <div id="listening-result" role="status" aria-live="polite"></div>
+            <section id="listening-transcript-block" class="listening-transcript" hidden>
+                <h3>Текст записи</h3>
+                <p id="listening-transcript"></p>
+            </section>
+            <p id="listening-explanation" class="listening-explanation" hidden></p>
+        </div>
+    </div>
+</section>
+@section Scripts { <script src="~/js/listening.js" asp-append-version="true" defer></script> }
