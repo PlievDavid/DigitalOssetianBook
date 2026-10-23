@@ -22,6 +22,7 @@
 
   async function load() {
     status.textContent = "Загрузка…";
+    list.replaceChildren();
     try {
       const exercises = await AdamApi("/listening");
       list.replaceChildren();
@@ -54,16 +55,17 @@
       audio.pause(); audio.hidden = false;
       if (card.audioPath) {
         audio.src = card.audioPath; audio.load();
+        audioReady = true;
         audio.play().catch(() => {});
       } else {
         audio.removeAttribute("src"); audio.hidden = true;
         audioError.hidden = false;
+        audioReady = false;
       }
       renderOptions();
     } catch (error) { status.textContent = error.message; }
     finally {
       checking = false;
-      if (card && !play.hidden) renderOptions();
     }
   }
 
@@ -119,10 +121,23 @@
   function back() {
     audio.pause(); audio.removeAttribute("src"); audio.load(); audioReady = false;
     play.hidden = true; list.hidden = false; card = null; attemptId = null;
+    chosenIndex = null; answer = null; submitted = false; checking = false;
+    result.textContent = ""; result.className = "";
+    transcriptBlock.hidden = true; transcript.textContent = ""; explanation.hidden = true; explanation.textContent = "";
+    options.replaceChildren();
     load();
   }
 
+  audio.addEventListener("loadedmetadata", () => {
+    if (!card) return;
+    if (!audioReady) { audioReady = true; audioError.hidden = true; renderOptions(); }
+  });
   audio.addEventListener("canplay", () => {
+    if (!card) return;
+    audioReady = true; audioError.hidden = true;
+    renderOptions();
+  });
+  audio.addEventListener("canplaythrough", () => {
     if (!card) return;
     audioReady = true; audioError.hidden = true;
     renderOptions();
@@ -132,7 +147,12 @@
     audioReady = false; audioError.hidden = false;
     renderOptions();
   });
-  audio.addEventListener("emptied", () => { audioReady = false; });
+  // «emptied» приходит и при смене src в start(), поэтому состояние сбрасываем только вне задания.
+  audio.addEventListener("emptied", () => {
+    if (card) return;
+    audioReady = false;
+    renderOptions();
+  });
   $("listening-back").addEventListener("click", event => { event.preventDefault(); back(); });
   load();
 })();
