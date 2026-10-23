@@ -1,0 +1,176 @@
+/* Grammar exercise: sentence with a blank + four form choices. */
+.section-tone-lilac { background: #f3eef8; }
+.section-tone-lilac .section-symbol { background: #e4d4f0; color: #5b3a8c; }
+.green-theme #grammar-status { color: var(--theme-muted); line-height: 1.6; margin: 18px 0; }
+.green-theme #grammar-app .exercise-entry-icon { background: #e4d4f0; color: #5b3a8c; }
+
+.green-theme #grammar-play {
+    width: 100%;
+    max-width: var(--lesson-width);
+    margin-inline: auto;
+    padding: 24px 32px;
+    border: 1px solid #e3e6d7;
+    border-radius: 20px;
+    background: #fafaf5;
+}
+.green-theme #grammar-app .dialog-play-head { gap: 12px; flex-wrap: wrap; }
+.green-theme #grammar-app #grammar-title { font-size: 22px; margin: 22px 0 10px; }
+.green-theme #grammar-app #grammar-instructions { margin-bottom: 8px; line-height: 1.6; }
+
+.green-theme #grammar-app .grammar-sentence {
+    margin: 16px 0 0;
+    padding: 18px 20px;
+    border: 1px solid #e0d4ee;
+    border-radius: 14px;
+    background: #fff;
+    color: var(--theme-ink);
+    font-size: 20px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.green-theme #grammar-app .grammar-word {
+    color: inherit;
+    border-radius: 2px;
+    cursor: pointer;
+}
+.green-theme #grammar-app .grammar-word:hover { background: #fff1be; }
+.green-theme #grammar-app .grammar-word.grammar-word-current { background: #fff0b4; }
+.green-theme #grammar-app .grammar-word:focus-visible { outline: 2px solid #5b3a8c; outline-offset: 2px; }
+.green-theme #grammar-app .grammar-inserted {
+    padding: 0 4px;
+    border-radius: 4px;
+    background: #e4d4f0;
+    color: #4a2d73;
+    font-weight: 650;
+}
+.green-theme #grammar-app.grammar-page .reader-popup {
+    position: fixed;
+    z-index: 40;
+    right: clamp(18px, 5vw, 90px);
+    bottom: 24px;
+    display: grid;
+    gap: 0;
+    justify-items: stretch;
+    width: min(420px, calc(100vw - 36px));
+    max-height: min(65vh, 610px);
+    overflow: auto;
+    margin: 0;
+    padding: 0 20px 12px;
+    border: 1px solid #d8cbe6;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 20px 60px #2a184540;
+}
+.green-theme #grammar-app.grammar-page .reader-meaning {
+    display: grid;
+    gap: 8px;
+    padding: 15px 0;
+    border-top: 0;
+    border-bottom: 1px solid #edf0f2;
+}
+.green-theme #grammar-app.grammar-page .reader-meaning .book-text-button {
+    width: fit-content;
+    font-size: 14px;
+}
+
+.green-theme #grammar-app .grammar-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 24px 0 8px;
+}
+.green-theme #grammar-app .grammar-options .grammar-option {
+    min-height: 52px;
+    padding: 12px 16px;
+    border: 1px solid #d4c0e8;
+    border-bottom-width: 3px;
+    border-radius: 12px;
+    background: #f7f1fc;
+    color: #4a2d73;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+    transition: background-color .15s, border-color .15s, box-shadow .15s;
+    overflow-wrap: anywhere;
+}
+.green-theme #grammar-app .grammar-options .grammar-option:hover:not(:disabled) {
+    border-color: #8e5fb8;
+    background: #efe4f8;
+    box-shadow: 0 3px 10px #5b3a8c14;
+}
+.green-theme #grammar-app .grammar-options .grammar-option:focus-visible {
+    outline: 3px solid #5b3a8c;
+    outline-offset: 3px;
+}
+.green-theme #grammar-app .grammar-options .grammar-option:disabled {
+    opacity: .75;
+    cursor: default;
+}
+.green-theme #grammar-app .grammar-options .grammar-option.is-correct {
+    opacity: 1;
+    border-color: #8eb79a;
+    background: #dcebdc;
+    color: #2c6346;
+}
+.green-theme #grammar-app .grammar-options .grammar-option.is-wrong {
+    opacity: .75;
+    border-color: #e0a99f;
+    background: #fdecea;
+    color: #8a2f24;
+}
+.green-theme #grammar-app .grammar-options .grammar-option.shake {
+    animation: exercise-shake .25s ease 2;
+}
+
+.green-theme #grammar-app .grammar-rule {
+    margin: 16px 0 0;
+    padding: 12px 16px;
+    border-left: 3px solid #8e5fb8;
+    border-radius: 0 10px 10px 0;
+    background: #f3eef8;
+    color: #4a2d73;
+    font-size: 15px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+.green-theme #grammar-app .grammar-rule:empty,
+.green-theme #grammar-app .grammar-rule[hidden] { display: none; }
+
+.green-theme #grammar-app #grammar-result {
+    min-height: 0;
+    margin: 18px 0 0;
+}
+.green-theme #grammar-app #grammar-result:empty { display: none; }
+.green-theme #grammar-app #grammar-result .grammar-result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+}
+.green-theme #grammar-app #grammar-result .grammar-result-actions .button {
+    margin: 0;
+}
+
+.green-theme #grammar-app #grammar-words:empty { display: none; }
+.green-theme #grammar-app #grammar-words { margin-top: 28px; }
+.green-theme #grammar-app #grammar-words h2 { font-size: 18px; margin: 0 0 12px; }
+
+@media (max-width: 599px) {
+    .green-theme #grammar-play { padding: 18px 12px; border-radius: 16px; }
+    .green-theme #grammar-app #grammar-title { margin: 16px 0 8px; font-size: 20px; }
+    .green-theme #grammar-app .grammar-sentence { font-size: 18px; padding: 14px 14px; }
+    .green-theme #grammar-app .grammar-options { grid-template-columns: 1fr; gap: 10px; }
+    .green-theme #grammar-app .grammar-options .grammar-option { font-size: 16px; }
+    .green-theme #grammar-app.grammar-page .reader-popup {
+        right: 12px;
+        bottom: calc(var(--theme-bottom-height, 0px) + 12px + env(safe-area-inset-bottom));
+        width: calc(100vw - 24px);
+        max-height: 55dvh;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .green-theme #grammar-app .grammar-options .grammar-option { transition: none; }
+    .green-theme #grammar-app .grammar-options .grammar-option.shake { animation: none; }
+}
