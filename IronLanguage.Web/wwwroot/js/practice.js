@@ -149,7 +149,7 @@
       result.textContent = audioFlow
         ? (answer.correct ? `Верно! ${answer.explanation || ""}`.trim() : `Пока неверно. Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`)
         : `${answer.correct ? "Верно!" : "Пока неверно."} Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`;
-      result.append(button(audioFlow ? "К аудиопазлам" : "К переводу фраз", back));
+      result.append(button(audioFlow ? "К аудиопазлам" : "К заданию «Собери фразу»", back));
       const words = $("exercise-words"); words.replaceChildren();
       for (const word of card.words) {
         const el = document.createElement("div"); el.className = "feature-card";
