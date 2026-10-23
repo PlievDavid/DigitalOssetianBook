@@ -122,8 +122,11 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
 
     private static string[] ParseOptions(string json) => JsonSerializer.Deserialize<string[]>(json, JsonOptions) ?? [];
 
+    // Проверяем и снимок: редактор уже запрещает повторы, но битые данные не должны давать неоднозначный ответ.
     private static bool IsValidOptions(string[] options) =>
-        options.Length == 4 && options.All(x => !string.IsNullOrWhiteSpace(x));
+        options.Length == 4
+        && options.All(x => !string.IsNullOrWhiteSpace(x))
+        && options.Select(LearningService.Normalize).Distinct().Count() == 4;
 
     private static void ValidateIndex(int optionIndex, int length)
     {
