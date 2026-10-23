@@ -3,7 +3,7 @@
     var path = Context.Request.Path.Value?.ToLowerInvariant() ?? "/";
     var signedIn = User.Identity?.IsAuthenticated == true;
     var groups = new (string Title, string Icon, (string Label, string Url)[] Links)[] {
-        ("Задания", "home", [("Аудиопазлы", "/audio-puzzles"), ("Перевод фраз", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture")]),
+        ("Задания", "home", [("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture")]),
         ("Слова", "words", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
         ("Игры", "games", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
         ("Книги", "books", [("Библиотека", "/books")])
