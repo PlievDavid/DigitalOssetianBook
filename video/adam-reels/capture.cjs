@@ -16,6 +16,7 @@ await snap('audio-prompt','#exercise-prompt');await snap('audio0','#exercise-ste
 for(let i=0;i<Math.min(3,card.tokens.length);i++){await page.locator('#exercise-options button').filter({hasText:new RegExp('^'+card.tokens[i]+'$')}).click();await snap('audio'+(i+1),'#exercise-steps');}
 layout.audioTokens=card.tokens.slice(0,3);
 await page.goto(base+'/games/crosswords');await page.locator('.cw-card').first().click();await page.locator('#cw-play').waitFor({state:'visible'});
+await page.addStyleTag({content:'.green-theme .cw-cell.is-selected {background:white;border-color:#bdd0ad}.cw-cell:focus-within {outline:none}.green-theme .cw-cell.is-selected.is-solved {background:#edf3e9;border-color:#b9cdb5}'});
 await snap('crossword0','#cw-grid');
 await page.locator('.cw-cell-input[data-key="0,4"]').click();
 for(const [i,c] of [...'фырт'].entries()){await page.keyboard.insertText(c);await snap('crossword'+(i+1),'#cw-grid');}
@@ -27,7 +28,9 @@ const data=await page.evaluate(()=>window.AdamApi('/wordle'));layout.wordleDate=
 const wordData=JSON.parse(fs.readFileSync(path.resolve(root,'../../IronLanguage.Web/Data/wordle/words.json'),'utf8').replace(/^\uFEFF/,''));
 const date=layout.wordleDate||new Date().toISOString().slice(0,10);const index=Math.floor((Date.parse(date+'T00:00:00Z')-Date.parse(wordData.startDate+'T00:00:00Z'))/86400000)%wordData.answers.length;
 const answer=wordData.answers[index].word;layout.wordleAnswer=answer;
-await page.locator('#wl-input').fill(answer);await snap('wordle1','#wl-board');await page.locator('#wl-input').press('Enter');
+await page.locator('#wl-input').fill(answer);await snap('wordle1','#wl-board');
+for(let i=0;i<5;i++)await page.locator('#wl-board > *').nth(i).screenshot({path:path.join(pub,'typed-letter'+i+'.png')});
+await page.locator('#wl-input').press('Enter');
 await page.locator('#wl-result').waitFor({state:'visible'});await page.locator('#wl-result-close').click();await snap('wordle2','#wl-board');
 for(let i=0;i<5;i++){await page.locator('#wl-board > *').nth(i).screenshot({path:path.join(pub,'letter'+i+'.png')})}
 await page.goto(base+'/games/crosswords');await page.locator('.cw-card').first().waitFor();await snap('catalog','#cw-levels');

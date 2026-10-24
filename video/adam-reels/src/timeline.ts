@@ -1,7 +1,7 @@
 export const FPS=30;
 export const TOTAL=930;
 export const SHOTS=[
- {id:'intro',label:'Буква и название',from:0,duration:150},
+ {id:'intro',label:'Осетинский становится ближе',from:0,duration:150},
  {id:'audio',label:'Аудиопазл: выбор слов',from:150,duration:120},
  {id:'crossword',label:'Кроссворд: ввод и проверка',from:270,duration:150},
  {id:'wordle',label:'Пять букв: раскрытие ответа',from:420,duration:195},
@@ -11,14 +11,11 @@ export const SHOTS=[
 export const CAPTIONS=[
  {from:3,to:76,text:'Хочешь учить осетинский?'},
  {from:89,to:142,text:'Начни с Адама.'},
- {from:156,to:187,text:'Слушай фразы'},
- {from:189,to:255,text:'и собирай ответы\nв аудиопазлах.'},
+ {from:156,to:255,text:'Слушай фразы и собирай\nответы в аудиопазлах.'},
  {from:273,to:326,text:'Вспоминай знакомые слова'},
- {from:328,to:350,text:'и находи новые'},
- {from:351,to:407,text:'в тематических\nкроссвордах.'},
+ {from:328,to:407,text:'и находи новые\nв тематических кроссвордах.'},
  {from:423,to:471,text:'Любишь играть?'},
- {from:490,to:543,text:'Попробуй угадать слово дня'},
- {from:544,to:602,text:'в игре «Пять букв».'},
+ {from:490,to:602,text:'Попробуй угадать слово дня\nв игре «Пять букв».'},
  {from:626,to:680,text:'Выбирай, что нравится,'},
  {from:683,to:743,text:'и занимайся в своём темпе.'},
  {from:763,to:794,text:'Адам.'},
