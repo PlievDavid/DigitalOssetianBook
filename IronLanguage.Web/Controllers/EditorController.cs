@@ -72,13 +72,22 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
     {
         if (!confirmReviewed) return BadRequest("Подтвердите проверку материала и прав на публикацию.");
         if (kind == "exercise") kind = (await catalog.Exercise(id, true, ct))?.Kind ?? kind;
-        if (kind is "audio" or "translation")
+        if (kind is "audio" or "translation" or "listening")
         {
             var exercise = await catalog.Exercise(id, true, ct);
-            if (exercise is null || (exercise.Kind == "audio" && string.IsNullOrEmpty(exercise.AudioPath))) return BadRequest();
-            var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
-            if ((JsonSerializer.Deserialize<Guid[]>(exercise.WordIdsJson) ?? []).Any(x => !publishedWords.Contains(x)))
-                return BadRequest("Сначала опубликуйте связанные слова.");
+            if (exercise is null || (kind is "audio" or "listening" && string.IsNullOrEmpty(exercise.AudioPath))) return BadRequest();
+            if (kind == "listening")
+            {
+                var options = JsonSerializer.Deserialize<string[]>(exercise.OptionsJson) ?? [];
+                if (options.Length != 4 || options.Any(string.IsNullOrWhiteSpace) || exercise.CorrectOption is < 0 or > 3)
+                    return BadRequest("Проверьте вопрос, четыре варианта ответа и правильный вариант.");
+            }
+            if (kind is "audio" or "translation")
+            {
+                var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
+                if ((JsonSerializer.Deserialize<Guid[]>(exercise.WordIdsJson) ?? []).Any(x => !publishedWords.Contains(x)))
+                    return BadRequest("Сначала опубликуйте связанные слова.");
+            }
         }
         else if (kind == "book")
         {

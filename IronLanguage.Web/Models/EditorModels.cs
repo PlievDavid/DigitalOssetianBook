@@ -22,6 +22,9 @@ public sealed class EditorFormModel
     public string TokensText { get; set; } = "";
     public string AlternativesText { get; set; } = "";
     public string DistractorsText { get; set; } = "";
+    public string ListeningOptionsText { get; set; } = "";
+    public int CorrectOption { get; set; } = 1;
+    public string Transcript { get; set; } = "";
     public string Explanation { get; set; } = "";
     public string WordIdsCsv { get; set; } = "";
     public string ChaptersJson { get; set; } = "[]";
@@ -68,6 +71,13 @@ public sealed class EditorFormModel
             model.TokensText = string.Join('\n', p.Tokens); model.AlternativesText = string.Join('\n', p.Alternatives);
             model.DistractorsText = string.Join('\n', (p.Distractors ?? []).Select(d => string.Join(" | ", d)));
             model.Explanation = p.Explanation; model.WordIdsCsv = string.Join(',', p.WordIds); model.ExistingAudioPath = p.AudioPath;
+        }
+        else if (kind == "listening")
+        {
+            var p = JsonSerializer.Deserialize<ListeningMaterial>(json, options)!;
+            model.RussianPrompt = p.Question; model.ListeningOptionsText = string.Join('\n', p.Options);
+            model.CorrectOption = p.CorrectOption + 1; model.Transcript = p.Transcript;
+            model.Explanation = p.Explanation; model.ExistingAudioPath = p.AudioPath;
         }
         else if (kind == "book")
         {
@@ -138,6 +148,7 @@ public sealed class EditorPreviewModel
     public string? Error { get; set; }
     public WordMaterial? Word { get; init; }
     public ExerciseMaterial? Exercise { get; init; }
+    public ListeningMaterial? Listening { get; init; }
     public BookMaterial? Book { get; init; }
     public DialogueMaterial? Dialogue { get; init; }
     public MatchingMaterial? Matching { get; init; }

@@ -16,7 +16,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
     public async Task<(ExerciseCard Card, ExerciseAttempt? Attempt)?> Start(Guid? userId, Guid exerciseId, CancellationToken ct)
     {
         var exercise = await catalog.Exercise(exerciseId, ct: ct);
-        if (exercise is null) return null;
+        if (exercise is null || exercise.Kind is not ("audio" or "translation")) return null;
         ExerciseAttempt? attempt = null;
         if (userId is Guid id)
         {
@@ -92,7 +92,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
     public async Task<(ExerciseCard Card, ExerciseAttempt Attempt)?> StartGuest(Guid owner, Guid exerciseId, CancellationToken ct)
     {
         var exercise = await catalog.Exercise(exerciseId, ct: ct);
-        if (exercise is null) return null;
+        if (exercise is null || exercise.Kind is not ("audio" or "translation")) return null;
         var attempt = new ExerciseAttempt
         {
             ExerciseId = exerciseId, ExerciseVersion = exercise.Version,

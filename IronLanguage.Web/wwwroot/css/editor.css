@@ -44,7 +44,7 @@
 .editor-word-results button:hover { background: #f1f5ff; }
 .editor-selected-words { display: flex; flex-wrap: wrap; gap: 8px; }
 .editor-word-chip { padding: 8px 11px; border: 1px solid #c9d6f0; border-radius: 20px; background: #eef3ff; color: #294997; font-size: 13px; }
-:is(.editor-audio-field, .editor-image-field) { display: grid; justify-items: start; gap: 10px; }
+:is(.editor-audio-field, .editor-image-field, .editor-file-field) { display: grid; justify-items: start; gap: 10px; }
 .editor-picture-fields { display: grid; gap: inherit; min-width: 0; }
 .editor-picture-distractors { display: grid; gap: 12px; min-width: 0; }
 .editor-picture-distractors .editor-field-label { margin: 0; font-size: 15px; }
@@ -57,6 +57,8 @@
 .editor-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .editor-file-input:focus-visible + .field-help { outline: 2px solid #425fcd; }
 .editor-audio-field audio { max-width: 100%; }
+.editor-cover-preview { width: 120px; height: 160px; object-fit: cover; border: 1px solid #dfe5ee; border-radius: 10px; }
+.editor-file-input:focus-visible ~ .editor-cover-preview { outline: 2px solid #425fcd; }
 .editor-form-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 8px; }
 .editor-book-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .editor-book-heading h2 { margin: 0; }

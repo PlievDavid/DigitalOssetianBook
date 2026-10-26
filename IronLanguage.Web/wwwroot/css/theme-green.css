@@ -238,6 +238,9 @@ html { scrollbar-gutter: stable; }
 .format-grammar { background: #f3eef8; }
 .format-grammar .format-icon { background: #e4d4f0; color: #5b3a8c; }
 .format-grammar .round-arrow { color: #5b3a8c; }
+.format-listening { background: #eef7f3; }
+.format-listening .format-icon { background: #cfe9dd; color: #1f6b52; }
+.format-listening .round-arrow { color: #1f6b52; }
 .home-formats { scroll-margin-top: var(--space-6); }
 .home-reading-card h3 { font: 600 23px/1.2 var(--theme-heading-font); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
 .home-reading-card p { color: var(--theme-muted); line-height: 1.4; margin: 0 0 var(--space-5); max-width: 75%; }

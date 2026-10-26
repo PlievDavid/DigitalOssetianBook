@@ -28,6 +28,8 @@ public sealed class PracticeController : Controller
 
     [HttpGet("grammar")]
     public IActionResult Grammar() => View();
+    [HttpGet("listening")]
+    public IActionResult Listening() => View();
 
     [HttpGet("game")]
     public IActionResult Game() => View();

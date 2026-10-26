@@ -367,6 +367,9 @@ namespace IronLanguage.Db.Migrations
                     b.Property<string>("AudioPath")
                         .HasColumnType("text");
 
+                    b.Property<int>("CorrectOption")
+                        .HasColumnType("integer");
+
                     b.Property<string>("DistractorsJson")
                         .IsRequired()
                         .HasColumnType("text");
@@ -376,6 +379,10 @@ namespace IronLanguage.Db.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OptionsJson")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -391,6 +398,10 @@ namespace IronLanguage.Db.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("TokensJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Transcript")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -425,6 +436,9 @@ namespace IronLanguage.Db.Migrations
                     b.Property<bool?>("Correct")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("CorrectOption")
+                        .HasColumnType("integer");
+
                     b.Property<string>("DistractorsJson")
                         .IsRequired()
                         .HasColumnType("text");
@@ -447,6 +461,10 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("OptionsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("RussianPrompt")
                         .IsRequired()
                         .HasColumnType("text");
@@ -458,6 +476,10 @@ namespace IronLanguage.Db.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("TokensJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Transcript")
                         .IsRequired()
                         .HasColumnType("text");
 
