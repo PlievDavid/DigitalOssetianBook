@@ -206,7 +206,9 @@
       session.showRule = response.showRule;
       session.rule = response.rule;
       session.correctForm = response.correctForm;
-      session.words = response.words || session.words || [];
+      // Пустой массив от сервера не должен затирать уже загруженные слова.
+      if (Array.isArray(response.words) && response.words.length) session.words = response.words;
+      else session.words = session.words || [];
       session.sentence = response.sentence || session.sentence || [];
       rememberDictionary(response);
       if (response.finished) {

@@ -47,14 +47,14 @@ public sealed class GrammarService(ICatalogRepository catalog, GuestLearningStor
         {
             var state = entry.Value;
             if (state.Answered)
-                return FinishedResult(state);
+                return await FinishedResult(state, ct);
             var correct = CheckChoice(state, optionIndex);
             state.Attempts++;
             if (correct || state.Attempts >= MaxAttempts)
             {
                 state.Answered = true;
                 state.Correct = correct;
-                return FinishedResult(state);
+                return await FinishedResult(state, ct);
             }
             // Первая ошибка: подсказка, правильная форма скрыта, варианты остаются.
             return new GrammarCheckResult(false, false, null, state.Rule.Length > 0, state.Rule,
@@ -84,9 +84,11 @@ public sealed class GrammarService(ICatalogRepository catalog, GuestLearningStor
         finally { entry.Gate.Release(); }
     }
 
-    private static GrammarCheckResult FinishedResult(GrammarState state) =>
+    // Связанные слова нужны и в финальном ответе: клиент рендерит их из check.
+    private async Task<GrammarCheckResult> FinishedResult(GrammarState state, CancellationToken ct) =>
         new(state.Correct, true, state.CorrectForm, state.Rule.Length > 0, state.Rule,
-            state.Attempts, [], Sentence(state, state.Answered ? state.CorrectForm : null), []);
+            state.Attempts, await Words(state.WordIds, ct),
+            Sentence(state, state.Answered ? state.CorrectForm : null), []);
 
     private static bool CheckChoice(GrammarState state, int? optionIndex)
     {
