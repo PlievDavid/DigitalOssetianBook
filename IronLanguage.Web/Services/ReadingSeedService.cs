@@ -37,6 +37,21 @@ public sealed partial class ReadingSeedService(DictionaryService dictionary, IRe
         return await repository.ReplaceLibrary(prepared.ToArray(), editor.Id, ct);
     }
 
+    public async Task<ReadingPublicationResult> PublishSeeds(CancellationToken ct)
+    {
+        var items = ReadingPublicationSeeds.Read(Path.Combine(environment.ContentRootPath, "Data", "reading"));
+        var editor = await accounts.FirstEditor(ct) ?? throw new InvalidOperationException("В базе нет редактора.");
+        var prepared = new List<ReadingPublicationItem>();
+        foreach (var item in items)
+        {
+            foreach (var illustration in item.Material.Illustrations ?? [])
+                if (!File.Exists(Path.Combine(environment.WebRootPath, illustration.ImagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))))
+                    throw new InvalidDataException("Перед публикацией сидов нужно подготовить внутренние рисунки.");
+            prepared.Add(item with { Material = await dictionary.Prepare(item.Material, ct) });
+        }
+        return await repository.PublishSeeds(prepared.ToArray(), editor.Id, ct);
+    }
+
     [GeneratedRegex(@"\s+|[\p{L}\p{M}\p{N}]+(?:[-ʼ’][\p{L}\p{M}\p{N}]+)*|[^\s\p{L}\p{M}\p{N}]+", RegexOptions.CultureInvariant)]
     private static partial Regex Tokens();
 }

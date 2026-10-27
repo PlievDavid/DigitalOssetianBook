@@ -33,9 +33,11 @@
 .green-theme .cw-cell { position: relative; aspect-ratio: 1; min-width: 0; border: 1px solid #bdd0ad; border-bottom-width: 3px; border-radius: 5px; background: white; color: #244e39; }
 .cw-cell small { position: absolute; top: 2px; left: 3px; font-size: 9px; line-height: 1; pointer-events: none; }
 .green-theme .cw-cell-input { display: block; width: 100%; height: 100%; min-width: 0; padding: 7px 0 0; border: 0; border-radius: 4px; background: transparent; color: inherit; font-family: inherit; font-size: clamp(16px, 2vw, 23px); font-weight: 600; text-align: center; text-transform: uppercase; caret-color: transparent; }
-.cw-cell:focus-within { outline: 2px solid #376b52; outline-offset: 1px; }
-.green-theme #crosswords-app .cw-cell-input:focus-visible { outline: none; }
+.green-theme #crosswords-app .cw-cell:focus-within { outline: none; box-shadow: inset 0 0 0 2px #477559; border-color: #477559; }
+.green-theme #crosswords-app .cw-cell-input:is(:focus, :focus-visible) { outline: none; box-shadow: none; }
+.cw-grid, .cw-cell-input { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .cw-cell-input::selection { background: transparent; color: inherit; }
+.cw-letter-exit { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 7px; pointer-events: none; font: inherit; font-size: clamp(16px, 2vw, 23px); font-weight: 600; color: inherit; }
 .green-theme .cw-cell.is-selected { background: #fff0cd; border-color: #b89b61; }
 .green-theme .cw-cell.is-solved { background: #edf3e9; border-color: #b9cdb5; border-bottom-width: 1px; }
 .green-theme .cw-cell.is-selected.is-solved { border-color: #709578; }

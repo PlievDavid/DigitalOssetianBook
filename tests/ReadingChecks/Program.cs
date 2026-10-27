@@ -11,6 +11,7 @@ using System.Security.Claims;
 
 var path = Path.Combine(Directory.GetCurrentDirectory(), "IronLanguage.Web", "Data", "reading", "drafts.json");
 var drafts = ReadingDraftCatalog.Read(path);
+var publishedSeeds = ReadingPublicationSeeds.Read(Path.GetDirectoryName(path)!);
 var checks = 0;
 void Check(bool condition, string message)
 {
@@ -19,6 +20,11 @@ void Check(bool condition, string message)
 }
 
 Check(drafts.Length == 8, "Ожидались восемь произведений.");
+Check(publishedSeeds.Length == 3 && publishedSeeds.All(seed => seed.Material.TranslationReviewed), "Нужны три публичных сида.");
+Check(publishedSeeds.Single(seed => seed.Material.Title == "Школьник").Material.Chapters[0].Translation.Split('\n')[1] == "— Сын Тола.",
+    "В переводе изменено имя Тола.");
+var testamentTranslation = publishedSeeds.Single(seed => seed.Material.Title == "Завещание").Material.Chapters[0].Translation;
+Check(testamentTranslation.Contains("словно плачущей") && testamentTranslation.Contains("поминальной песни"), "Не сохранены уточнения перевода Завещания.");
 var authorization = Attribute.GetCustomAttribute(typeof(ReadingPreviewController), typeof(AuthorizeAttribute)) as AuthorizeAttribute;
 Check(authorization?.Roles == "Editor", "Непроверенные переводы должны быть доступны только редактору.");
 var cache = Attribute.GetCustomAttribute(typeof(ReadingPreviewController), typeof(ResponseCacheAttribute)) as ResponseCacheAttribute;
@@ -92,7 +98,7 @@ if (args.Contains("--database"))
     Check(!db.Database.HasPendingModelChanges(), "Снимок модели не согласован.");
     var expectedIds = drafts.Select(draft => ReadingSeedService.Build(draft).Id).ToArray();
     var books = await db.Books.AsNoTracking().Include(book => book.Chapters).Where(book => expectedIds.Contains(book.Id)).ToListAsync();
-    Check(books.Count == 8 && books.All(book => book.Published && !book.TranslationReviewed), "Исходная подборка или статус проверки перевода изменились.");
+    Check(books.Count == 8 && books.All(book => book.Published), "Исходная подборка потеряна.");
     var selectedSlugs = new[] { "schoolboy", "mischief", "testament" };
     var selectedIds = drafts.Where(draft => selectedSlugs.Contains(draft.Slug)).Select(draft => ReadingSeedService.Build(draft).Id).ToHashSet();
     var catalog = new EfCatalogRepository(db);
@@ -100,6 +106,7 @@ if (args.Contains("--database"))
     Check(visibleBooks.Count == 3 && selectedIds.SetEquals(visibleBooks.Select(book => book.Id)),
         "В каталоге должны остаться только Школьник, Шалун и Завещание.");
     Check(books.All(book => book.Archived == !selectedIds.Contains(book.Id)), "Отложенные произведения должны оставаться в архиве.");
+    Check(books.All(book => book.TranslationReviewed == selectedIds.Contains(book.Id)), "Только три выбранных перевода должны быть доступны читателям.");
     foreach (var draft in drafts)
     {
         var imported = ReadingSeedService.Build(draft);
@@ -110,7 +117,9 @@ if (args.Contains("--database"))
             "Сокращение каталога изменило ID главы или текст произведения.");
         if (!selectedIds.Contains(stored.Id)) Check(await catalog.Book(stored.Id) is null, "Архивный текст доступен через публичный каталог.");
     }
-    Check(books.All(book => book.LiteraryTranslation == "" && book.DraftTranslation.Length > 0), "Черновой перевод попал в опубликованное поле.");
+    Check(books.Where(book => !selectedIds.Contains(book.Id)).All(book => book.LiteraryTranslation == "" && book.DraftTranslation.Length > 0), "Черновой перевод попал в опубликованное поле.");
+    Check(publishedSeeds.All(seed => books.Single(book => book.Id == seed.Id).Chapters.Single().Translation == seed.Material.Chapters[0].Translation),
+        "Сиды не применены к переводам глав.");
     var positions = await db.ReadingPositions.AsNoTracking().ToListAsync();
     var revisionCount = await db.ContentRevisions.CountAsync();
     var editorId = await db.Users.Where(user => user.IsEditor).Select(user => user.Id).FirstAsync();
@@ -170,6 +179,49 @@ if (args.Contains("--database"))
     Check(reviewedResponse.GetProperty("chapters")[0].GetProperty("translation").GetString() == sample.Chapters[0].Translation
         && reviewedResponse.GetProperty("chapters")[1].GetProperty("translation").GetString() == "",
         "После проверки переводы глав должны оставаться независимыми.");
+    var seedRepository = new EfReadingLibraryRepository(db);
+    var temporarySeeds = publishedSeeds.Select(seed =>
+    {
+        var chapterId = Guid.NewGuid();
+        return seed with { Id = Guid.NewGuid(), Material = seed.Material with
+        { Chapters = [seed.Material.Chapters[0] with { Id = chapterId }], Illustrations = [] } };
+    }).ToArray();
+    var legacySeed = temporarySeeds[0];
+    var legacyMaterial = legacySeed.Material with { Chapters = [legacySeed.Material.Chapters[0] with { Translation = "" }],
+        TranslationReviewed = false, LiteraryTranslation = legacySeed.PreviousTranslation };
+    var legacyId = await repository.Create("book", JsonSerializer.Serialize(legacyMaterial, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+    temporarySeeds[0] = legacySeed with { Id = legacyId };
+    var legacyBook = await db.Books.SingleAsync(book => book.Id == legacyId);
+    legacyBook.Published = true;
+    var userDraft = legacyMaterial with { Title = "Пользовательский черновик", CoverDesign = designedSample.CoverDesign };
+    var userRevision = new ContentRevision { Kind = "book", ContentId = legacyId, BaseVersion = 1, Version = 2,
+        EditorId = editorId, PayloadJson = JsonSerializer.Serialize(userDraft, new JsonSerializerOptions(JsonSerializerDefaults.Web)) };
+    db.ContentRevisions.Add(userRevision);
+    var seedPosition = new ReadingPosition { UserId = editorId, BookId = legacyId, ChapterId = legacyMaterial.Chapters[0].Id,
+        TokenIndex = 3, UpdatedAt = DateTimeOffset.UtcNow };
+    db.ReadingPositions.Add(seedPosition);
+    await db.SaveChangesAsync();
+    var positionBeforeSeed = JsonSerializer.Serialize(seedPosition);
+    var seeded = await seedRepository.PublishSeeds(temporarySeeds, editorId, CancellationToken.None);
+    Check(seeded is { Added: 2, Updated: 1, Unchanged: 0 }, "Сиды должны создать недостающие произведения и обновить исходный перевод.");
+    Check(legacyBook.Version == 2 && legacyBook.Chapters.Single().Translation == temporarySeeds[0].Material.Chapters[0].Translation
+        && legacyBook.TranslationReviewed, "Перевод не опубликован новой версией.");
+    var retainedDraft = JsonSerializer.Deserialize<BookMaterial>(userRevision.PayloadJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+    Check(userRevision.BaseVersion == 2 && userRevision.Version == 3 && retainedDraft.Title == userDraft.Title
+        && retainedDraft.CoverDesign == userDraft.CoverDesign && retainedDraft.Chapters[0].Translation == temporarySeeds[0].Material.Chapters[0].Translation,
+        "Пользовательский черновик потерян или не перенесён на новую версию.");
+    Check(JsonSerializer.Serialize(seedPosition) == positionBeforeSeed, "Сиды изменили позицию чтения.");
+    var seedHistoryCount = await db.ContentRevisions.CountAsync();
+    var repeatedSeeds = await seedRepository.PublishSeeds(temporarySeeds, editorId, CancellationToken.None);
+    Check(repeatedSeeds is { Added: 0, Updated: 0, Unchanged: 3 } && await db.ContentRevisions.CountAsync() == seedHistoryCount,
+        "Повторные сиды изменили историю или создали дубликаты.");
+    var archivedSeed = await db.Books.SingleAsync(book => book.Id == temporarySeeds[1].Id);
+    archivedSeed.Archived = true;
+    legacyBook.Chapters.Single().Translation = "Редакторская правка после сидов";
+    await db.SaveChangesAsync();
+    await seedRepository.PublishSeeds(temporarySeeds, editorId, CancellationToken.None);
+    Check(archivedSeed.Archived && legacyBook.Chapters.Single().Translation == "Редакторская правка после сидов",
+        "Повторные сиды отменили архивирование или правку редактора.");
     await transaction.RollbackAsync();
 }
 var temporary = Path.GetTempFileName();

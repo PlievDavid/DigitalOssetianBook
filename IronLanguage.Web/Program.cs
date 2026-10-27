@@ -62,6 +62,15 @@ builder.Services.AddDataProtection().SetApplicationName("Adam").PersistKeysToFil
 
 var app = builder.Build();
 
+if (args.Contains("reading-seed", StringComparer.OrdinalIgnoreCase))
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<AdamDbContext>().Database.MigrateAsync();
+    var result = await scope.ServiceProvider.GetRequiredService<ReadingSeedService>().PublishSeeds(CancellationToken.None);
+    Console.WriteLine($"Сиды чтения: добавлено {result.Added}, обновлено {result.Updated}, без изменений {result.Unchanged}.");
+    return;
+}
+
 if (args.Contains("reading-import", StringComparer.OrdinalIgnoreCase))
 {
     if (!args.Contains("--replace-library", StringComparer.Ordinal))

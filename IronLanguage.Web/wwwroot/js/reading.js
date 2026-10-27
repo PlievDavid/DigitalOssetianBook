@@ -65,6 +65,19 @@
         meaning.note, `/vocabulary/dictionary/${meaning.id}`);
     }
     if (!definition.childElementCount) definition.textContent = 'Перевод пока не найден в словаре.';
+    else if (definition.childElementCount > 1) {
+      const entries = [...definition.children];
+      definition.replaceChildren();
+      entries.forEach((entry, index) => {
+        const details = document.createElement('details'); details.className = 'reading-meaning'; details.open = index === 0;
+        const summary = document.createElement('summary'); summary.append(entry.firstElementChild);
+        details.append(summary, ...entry.childNodes);
+        details.addEventListener('toggle', () => {
+          if (details.open) [...definition.children].forEach(other => { if (other !== details) other.open = false; });
+        });
+        definition.append(details);
+      });
+    }
     panel.hidden = false;
     panel.scrollTop = 0;
     savePosition(index);

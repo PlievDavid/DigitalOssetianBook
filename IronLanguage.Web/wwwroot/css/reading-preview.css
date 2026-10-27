@@ -56,6 +56,10 @@
 .reading-chapters button[aria-current="true"] { background: #173f31; color: #fff; }
 .reading-word-meanings { display: grid !important; gap: 18px; margin-top: 16px; }
 .reading-word-meanings section { min-width: 0; }
+.reading-meaning { min-width: 0; }
+.reading-meaning summary { cursor: pointer; line-height: 1.4; }
+.reading-meaning + .reading-meaning { padding-top: 10px; border-top: 1px solid #e2e9de; }
+.reading-meaning summary strong { font-weight: 600; }
 .reading-word-meanings audio { display: block; max-width: 100%; margin-top: 12px; }
 .reading-preview .reading-word-meanings .button { display: inline-flex; margin-top: 12px; padding: 8px 12px; font-size: 14px; border: 1px solid #c7d6c0; border-radius: 8px; }
 .reading-line-original > .reading-line-original { min-height: 1.65em; }
@@ -77,7 +81,12 @@
   .reading-preview :is(.reading-language, .reading-text-size) button { padding-inline: 9px; font-size: 13px; }
   .reading-line-pair, .reading-column-headings { column-gap: 20px; }
   .reading-illustration { margin: 24px auto; }
-  .reading-word-panel { right: 16px; bottom: 94px; }
+  .reading-preview .reading-word-panel { right: 12px; bottom: calc(88px + env(safe-area-inset-bottom)); width: min(320px, calc(100vw - 24px)); max-height: min(38dvh, 280px); padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; overscroll-behavior: contain; }
+  .reading-word-panel > div:first-child { position: sticky; top: -12px; z-index: 1; margin-top: -4px; background: white; }
+  .reading-word-panel > div:first-child strong { font-size: 16px; }
+  .reading-word-meanings { gap: 10px; margin-top: 4px; }
+  .reading-word-panel p { margin-top: 6px; }
+  .reading-preview .reading-word-meanings .button { min-height: 40px; margin-top: 8px; padding: 6px 10px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .reading-preview .reading-card { transition: none; }
