@@ -92,7 +92,24 @@ if (args.Contains("--database"))
     Check(!db.Database.HasPendingModelChanges(), "Снимок модели не согласован.");
     var expectedIds = drafts.Select(draft => ReadingSeedService.Build(draft).Id).ToArray();
     var books = await db.Books.AsNoTracking().Include(book => book.Chapters).Where(book => expectedIds.Contains(book.Id)).ToListAsync();
-    Check(books.Count == 8 && books.All(book => book.Published && !book.Archived && !book.TranslationReviewed), "Новая подборка не загружена.");
+    Check(books.Count == 8 && books.All(book => book.Published && !book.TranslationReviewed), "Исходная подборка или статус проверки перевода изменились.");
+    var selectedSlugs = new[] { "schoolboy", "mischief", "testament" };
+    var selectedIds = drafts.Where(draft => selectedSlugs.Contains(draft.Slug)).Select(draft => ReadingSeedService.Build(draft).Id).ToHashSet();
+    var catalog = new EfCatalogRepository(db);
+    var visibleBooks = await catalog.Books();
+    Check(visibleBooks.Count == 3 && selectedIds.SetEquals(visibleBooks.Select(book => book.Id)),
+        "В каталоге должны остаться только Школьник, Шалун и Завещание.");
+    Check(books.All(book => book.Archived == !selectedIds.Contains(book.Id)), "Отложенные произведения должны оставаться в архиве.");
+    foreach (var draft in drafts)
+    {
+        var imported = ReadingSeedService.Build(draft);
+        var stored = books.Single(book => book.Id == imported.Id);
+        Check(stored.Chapters.Single().Id == imported.Material.Chapters[0].Id
+            && string.Concat(JsonSerializer.Deserialize<MaterialToken[]>(stored.Chapters.Single().TokensJson,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web))!.Select(token => token.Text)) == draft.Original,
+            "Сокращение каталога изменило ID главы или текст произведения.");
+        if (!selectedIds.Contains(stored.Id)) Check(await catalog.Book(stored.Id) is null, "Архивный текст доступен через публичный каталог.");
+    }
     Check(books.All(book => book.LiteraryTranslation == "" && book.DraftTranslation.Length > 0), "Черновой перевод попал в опубликованное поле.");
     var positions = await db.ReadingPositions.AsNoTracking().ToListAsync();
     var revisionCount = await db.ContentRevisions.CountAsync();
