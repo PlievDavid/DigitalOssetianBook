@@ -23,6 +23,11 @@ public sealed class EditorFormModel
     public string Difficulty { get; set; } = "";
     public string? ExistingCoverImagePath { get; set; }
     public IFormFile? CoverImage { get; set; }
+    public string CoverBackground { get; set; } = "#E6EDDC";
+    public string CoverTextColor { get; set; } = "#173F31";
+    public string CoverAccent { get; set; } = "#7D9568";
+    public string CoverFont { get; set; } = "onest";
+    public string CoverPattern { get; set; } = "none";
     public string RussianPrompt { get; set; } = "";
     public string OssetianAnswer { get; set; } = "";
     public string TokensText { get; set; } = "";
@@ -85,7 +90,16 @@ public sealed class EditorFormModel
             model.TranslationReviewed = p.TranslationReviewed;
             model.IllustrationsJson = JsonSerializer.Serialize(p.Illustrations ?? [], options);
             model.Authors = p.Authors; model.Difficulty = p.Difficulty; model.ExistingCoverImagePath = p.CoverImagePath;
-            model.ChaptersJson = JsonSerializer.Serialize(p.Chapters, options);
+            var cover = BookCoverDesign.IsValid(p.CoverDesign) ? p.CoverDesign! : BookCoverDesign.ForTitle(p.Title);
+            model.CoverBackground = cover.Background; model.CoverTextColor = cover.TextColor;
+            model.CoverAccent = cover.Accent; model.CoverFont = cover.Font; model.CoverPattern = cover.Pattern;
+            var chapters = p.Chapters;
+            if (chapters.Length == 1 && !string.IsNullOrEmpty(p.LiteraryTranslation))
+            {
+                if (string.IsNullOrEmpty(chapters[0].Translation)) chapters = [chapters[0] with { Translation = p.LiteraryTranslation }];
+                if (chapters[0].Translation == p.LiteraryTranslation) model.LiteraryTranslation = "";
+            }
+            model.ChaptersJson = JsonSerializer.Serialize(chapters, options);
         }
         else if (kind == "dialogue")
         {

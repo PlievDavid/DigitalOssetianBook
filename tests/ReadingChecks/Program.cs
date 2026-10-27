@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using IronLanguage.Db;
 using IronLanguage.Web.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 var path = Path.Combine(Directory.GetCurrentDirectory(), "IronLanguage.Web", "Data", "reading", "drafts.json");
 var drafts = ReadingDraftCatalog.Read(path);
@@ -36,12 +38,41 @@ foreach (var draft in drafts)
     var imported = ReadingSeedService.Build(draft);
     Check(imported.Id == ReadingSeedService.Build(draft).Id, "Импорт должен использовать стабильный ID.");
     Check(!imported.Material.TranslationReviewed, "Черновой перевод нельзя считать проверенным.");
+    Check(imported.Material.Chapters[0].Translation == draft.Translation && imported.Material.LiteraryTranslation == "",
+        "Перевод импорта должен принадлежать главе.");
     Check(string.Concat(imported.Material.Chapters[0].Tokens.Select(token => token.Text)) == draft.Original,
         "Токенизация изменила пробелы или строки оригинала.");
     Check(ReadingContent.ValidIllustrations(imported.Material.Illustrations!, imported.Material.Chapters), "Иллюстрация не прошла проверку.");
 }
 var sample = ReadingSeedService.Build(drafts[0]).Material;
 var illustration = sample.Illustrations![0];
+var cover = BookCoverDesign.ForTitle(sample.Title);
+Check(BookCoverDesign.IsValid(cover), "Обложка по умолчанию должна быть читаемой.");
+Check(cover == BookCoverDesign.ForTitle(sample.Title), "Начальное оформление обложки должно быть стабильным.");
+foreach (var draft in drafts) Check(BookCoverDesign.IsValid(BookCoverDesign.ForTitle(draft.Title)), "Нечитаемая палитра существующего произведения.");
+Check(!BookCoverDesign.IsValid(cover with { Background = "url(https://example.com/image.png)" }), "Принят URL вместо цвета.");
+Check(!BookCoverDesign.IsValid(cover with { TextColor = "#ffffff;display:none" }), "Принят CSS вместо цвета.");
+Check(!BookCoverDesign.IsValid(cover with { Accent = "#FFFFFF\n" }), "Принят лишний перенос в цвете.");
+Check(!BookCoverDesign.IsValid(cover with { Font = "unknown" }), "Принят неизвестный шрифт.");
+Check(!BookCoverDesign.IsValid(cover with { Pattern = "<script>" }), "Принят неизвестный принт.");
+Check(!BookCoverDesign.IsValid(cover with { Background = "#FFFFFF", TextColor = "#FFFFFF" }), "Принято нечитаемое название.");
+Check(Math.Abs(BookCoverDesign.Contrast("#000000", "#FFFFFF") - 21) < .001, "Неправильно вычислен контраст.");
+Check(BookCoverDesign.Read("{broken", sample.Title) == cover, "Старая повреждённая настройка должна безопасно заменяться начальным оформлением.");
+var designedSample = sample with { CoverDesign = cover with { Font = "serif", Pattern = "arches" } };
+var designedForm = EditorFormModel.FromPayload("book", JsonSerializer.Serialize(designedSample, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+Check(designedForm.CoverFont == "serif" && designedForm.CoverPattern == "arches" && designedForm.CoverBackground == cover.Background,
+    "Форма потеряла оформление обложки.");
+var legacySample = sample with { LiteraryTranslation = "Старый перевод", Chapters = [sample.Chapters[0] with { Translation = "" }] };
+var legacyForm = EditorFormModel.FromPayload("book", JsonSerializer.Serialize(legacySample, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+Check(legacyForm.LiteraryTranslation == "" && JsonSerializer.Deserialize<MaterialChapter[]>(legacyForm.ChaptersJson,
+    new JsonSerializerOptions(JsonSerializerDefaults.Web))![0].Translation == "Старый перевод", "Старый перевод единственной главы потерян.");
+var untranslatedChapter = sample.Chapters[0] with { Id = Guid.NewGuid(), Number = 2, Translation = "" };
+var mixedSample = sample with { Chapters = [sample.Chapters[0], untranslatedChapter], LiteraryTranslation = "Общий перевод старой книги" };
+var mixedForm = EditorFormModel.FromPayload("book", JsonSerializer.Serialize(mixedSample, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+var mixedChapters = JsonSerializer.Deserialize<MaterialChapter[]>(mixedForm.ChaptersJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+Check(mixedChapters[0].Translation == sample.Chapters[0].Translation && mixedChapters[1].Translation == "",
+    "Переводы глав перемешаны или пустой перевод подменён.");
+Check(mixedForm.LiteraryTranslation == mixedSample.LiteraryTranslation, "Общий перевод старой многоглавой книги должен сохраняться.");
 Check(!ReadingContent.ValidIllustrations([illustration with { AfterLine = -1 }], sample.Chapters), "Принята отрицательная строка рисунка.");
 Check(!ReadingContent.ValidIllustrations([illustration with { ChapterId = Guid.NewGuid() }], sample.Chapters), "Принята чужая глава рисунка.");
 Check(!ReadingContent.ValidIllustrations([illustration with { AfterLine = 50000 }], sample.Chapters), "Принята строка за концом текста.");
@@ -75,16 +106,53 @@ if (args.Contains("--database"))
     await using var transaction = await db.Database.BeginTransactionAsync();
     var repository = new EfEditorRepository(db);
     var temporaryChapterId = Guid.NewGuid();
-    var temporaryMaterial = sample with { Chapters = [sample.Chapters[0] with { Id = temporaryChapterId }],
+    var temporaryMaterial = sample with { Chapters = [sample.Chapters[0] with { Id = temporaryChapterId }, untranslatedChapter],
         Illustrations = [illustration with { ChapterId = temporaryChapterId }] };
     var temporaryId = await repository.Create("book", JsonSerializer.Serialize(temporaryMaterial, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
-    var changedMaterial = temporaryMaterial with { Illustrations = [illustration with { ChapterId = temporaryChapterId, AfterLine = 0, Description = "Проверка рисунка" }] };
+    var changedMaterial = temporaryMaterial with { Illustrations = [illustration with { ChapterId = temporaryChapterId, AfterLine = 0, Description = "Проверка рисунка" }],
+        CoverDesign = designedSample.CoverDesign };
     Check(await repository.UpdateDraft("book", temporaryId, JsonSerializer.Serialize(changedMaterial, new JsonSerializerOptions(JsonSerializerDefaults.Web))),
         "Не удалось обновить черновик с рисунком.");
     var saved = await repository.Material("book", temporaryId);
     var restored = JsonSerializer.Deserialize<BookMaterial>(saved!.PayloadJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
     Check(restored.Illustrations![0] is { AfterLine: 0, Description: "Проверка рисунка" } && !restored.TranslationReviewed,
         "Сохранение черновика потеряло иллюстрацию или статус перевода.");
+    Check(restored.CoverDesign == designedSample.CoverDesign, "Сохранение черновика потеряло обложку.");
+    Check(restored.Chapters[0].Translation == sample.Chapters[0].Translation && restored.Chapters[1].Translation == "",
+        "Сохранение изменило необязательные переводы глав.");
+    var temporaryBook = await db.Books.Include(book => book.Chapters).SingleAsync(book => book.Id == temporaryId);
+    temporaryBook.Published = true;
+    await db.SaveChangesAsync();
+    var api = new LearningApiController(new EfCatalogRepository(db), null!, null!, new DictionaryService(db), null!)
+        { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+    async Task<JsonElement> BookResponse()
+    {
+        var response = await api.Book(temporaryId, CancellationToken.None) as OkObjectResult;
+        return JsonSerializer.SerializeToElement(response!.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+    }
+    var guestResponse = await BookResponse();
+    Check(guestResponse.GetProperty("chapters").EnumerateArray().All(chapter => chapter.GetProperty("translation").GetString() == ""),
+        "Гость получил непроверенный перевод главы.");
+    api.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Role, "Editor")], "test"));
+    Check((await BookResponse()).GetProperty("chapters")[0].GetProperty("translation").GetString() == sample.Chapters[0].Translation,
+        "Редактор не получил черновой перевод главы.");
+    // Seed a revision inside the rollback transaction; StartRevision owns its own transaction.
+    var revision = new ContentRevision { Kind = "book", ContentId = temporaryId, EditorId = editorId,
+        Version = 2, BaseVersion = 1, PayloadJson = saved.PayloadJson };
+    db.ContentRevisions.Add(revision);
+    await db.SaveChangesAsync();
+    var revisionMaterial = changedMaterial with { Chapters = [changedMaterial.Chapters[0] with { Translation = "Проверка новой версии" }, untranslatedChapter] };
+    Check(await repository.UpdateRevision(revision.Id, JsonSerializer.Serialize(revisionMaterial,
+        new JsonSerializerOptions(JsonSerializerDefaults.Web))), "Не удалось сохранить перевод новой версии.");
+    Check((await BookResponse()).GetProperty("chapters")[0].GetProperty("translation").GetString() == sample.Chapters[0].Translation,
+        "Черновик новой версии изменил опубликованный перевод.");
+    temporaryBook.TranslationReviewed = true;
+    await db.SaveChangesAsync();
+    api.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
+    var reviewedResponse = await BookResponse();
+    Check(reviewedResponse.GetProperty("chapters")[0].GetProperty("translation").GetString() == sample.Chapters[0].Translation
+        && reviewedResponse.GetProperty("chapters")[1].GetProperty("translation").GetString() == "",
+        "После проверки переводы глав должны оставаться независимыми.");
     await transaction.RollbackAsync();
 }
 var temporary = Path.GetTempFileName();

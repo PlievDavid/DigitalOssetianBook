@@ -18,11 +18,11 @@
   }
 
   function setLanguage(value) {
-    language = book?.literaryTranslation ? value : 'os';
+    language = chapter?.translation ? value : 'os';
     root.dataset.language = language;
     root.querySelectorAll('[data-reading-language]').forEach(button => {
       button.setAttribute('aria-pressed', String(button.dataset.readingLanguage === language));
-      button.hidden = button.dataset.readingLanguage !== 'os' && !book?.literaryTranslation;
+      button.hidden = button.dataset.readingLanguage !== 'os' && !chapter?.translation;
     });
     closeWord();
   }
@@ -105,15 +105,17 @@
 
   function showChapter(selected, tokenIndex = 0) {
     chapter = selected;
+    setLanguage(narrow.matches ? language : 'both');
+    element('reading-draft-notice').hidden = !chapter.translation || book.translationReviewed;
     closeWord(); flow.replaceChildren();
-    const originals = makeLines(), translations = (book.literaryTranslation || '').replace(/\r\n?/g, '\n').split('\n');
+    const originals = makeLines(), translations = (chapter.translation || '').replace(/\r\n?/g, '\n').split('\n');
     const aligned = originals.length === translations.length;
-    if (!aligned && book.literaryTranslation) {
+    if (!aligned && chapter.translation) {
       const columns = document.createElement('div'); columns.className = 'reading-line-pair';
       const originalColumn = document.createElement('div'); originalColumn.className = 'reading-line-original';
       const translationColumn = document.createElement('div'); translationColumn.className = 'reading-line-translation'; translationColumn.lang = 'ru';
       originals.forEach((original, index) => { appendIllustrations(index, originalColumn); originalColumn.append(original); });
-      appendIllustrations(originals.length, originalColumn); translationColumn.textContent = book.literaryTranslation;
+      appendIllustrations(originals.length, originalColumn); translationColumn.textContent = chapter.translation;
       columns.append(originalColumn, translationColumn); flow.append(columns);
     } else {
     originals.forEach((original, index) => {
@@ -144,14 +146,13 @@
       meanings = new Map((book.dictionary || []).map(meaning => [meaning.id, meaning]));
       element('reading-title').textContent = book.title;
       element('reading-authors').textContent = book.authors;
-      element('reading-draft-notice').hidden = !book.literaryTranslation || book.translationReviewed;
       const chapters = element('reading-chapters'); chapters.replaceChildren(); chapters.hidden = book.chapters.length < 2;
       for (const part of book.chapters) {
         const button = document.createElement('button'); button.type = 'button'; button.textContent = part.title;
         button.dataset.chapterId = part.id; button.onclick = () => showChapter(part); chapters.append(button);
       }
       element('reading-library').hidden = true; element('reading-story').hidden = false;
-      setLanguage(narrow.matches ? language : 'both'); status.textContent = '';
+      status.textContent = '';
       history.replaceState(null, '', '#' + book.id);
       element('reading-title').focus({ preventScroll: true });
       showChapter(book.chapters.find(part => part.id === saved?.chapterId) || book.chapters[0], saved?.tokenIndex || 0);
@@ -166,10 +167,7 @@
       grid.replaceChildren(); element('reading-count').textContent = catalog.length ? `Произведений: ${catalog.length}` : '';
       for (const item of catalog) {
         const card = document.createElement('button'); card.type = 'button'; card.className = 'reading-card'; card.dataset.bookId = item.id;
-        if (item.coverImagePath) {
-          const image = document.createElement('img'); image.src = item.coverImagePath; image.alt = ''; image.width = 1024; image.height = 1024;
-          image.loading = 'lazy'; image.decoding = 'async'; card.append(image);
-        }
+        card.append(AdamBookCover.create(item));
         const title = document.createElement('strong'); title.textContent = item.title;
         const author = document.createElement('span'); author.textContent = item.authors;
         card.append(title, author); card.onclick = () => openBook(item, card); grid.append(card);

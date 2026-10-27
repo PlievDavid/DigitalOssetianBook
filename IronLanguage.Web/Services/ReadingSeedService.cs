@@ -16,7 +16,7 @@ public sealed partial class ReadingSeedService(DictionaryService dictionary, IRe
         var chapterId = StableId(draft.Slug + ":chapter");
         var tokens = Tokens().Matches(draft.Original).Select(match => new MaterialToken(match.Value, null)).ToArray();
         var material = new BookMaterial(draft.Title, draft.Description,
-            [new(chapterId, 1, draft.OssetianTitle, tokens)], draft.Translation, draft.Authors, draft.Difficulty,
+            [new(chapterId, 1, draft.OssetianTitle, tokens, draft.Translation)], "", draft.Authors, draft.Difficulty,
             draft.CoverImagePath, [new(chapterId, draft.IllustrationAfterLine, draft.IllustrationImagePath, draft.IllustrationDescription)], false);
         return new(StableId(draft.Slug), material);
     }
@@ -27,9 +27,9 @@ public sealed partial class ReadingSeedService(DictionaryService dictionary, IRe
         var items = ReadingDraftCatalog.Read(source).Select(Build).ToArray();
         foreach (var item in items)
         {
-            foreach (var path in new[] { item.Material.CoverImagePath! }.Concat(item.Material.Illustrations!.Select(image => image.ImagePath)))
+            foreach (var path in item.Material.Illustrations!.Select(image => image.ImagePath))
                 if (!File.Exists(Path.Combine(environment.WebRootPath, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))))
-                    throw new InvalidDataException("Перед импортом нужно подготовить все обложки и внутренние рисунки.");
+                    throw new InvalidDataException("Перед импортом нужно подготовить внутренние рисунки.");
         }
         var editor = await accounts.FirstEditor(ct) ?? throw new InvalidOperationException("В локальной базе нет редактора.");
         var prepared = new List<ReadingImportItem>();

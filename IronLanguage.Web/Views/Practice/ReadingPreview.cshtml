@@ -3,6 +3,7 @@
 @{ ViewData["Title"] = "Чтение — предпросмотр"; }
 @section Styles {
     <link rel="stylesheet" href="~/css/reading-preview.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/book-cover.css" asp-append-version="true" />
 }
 <section class="feature-shell reading-preview" id="reading-preview">
     <div id="reading-library">
@@ -50,5 +51,6 @@
 </section>
 <script type="application/json" id="reading-draft-data">@Html.Raw(JsonSerializer.Serialize(Model, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
 @section Scripts {
+    <script src="~/js/book-cover.js" asp-append-version="true" defer></script>
     <script src="~/js/reading-preview.js" asp-append-version="true" defer></script>
 }

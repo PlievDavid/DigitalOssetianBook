@@ -266,9 +266,9 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             if (string.IsNullOrWhiteSpace(model.Authors) || model.Authors.Length > 240) ModelState.AddModelError(nameof(model.Authors), "Укажите автора или авторов (до 240 символов).");
             if (model.Difficulty is not ("Начальный" or "Средний" or "Продвинутый")) ModelState.AddModelError(nameof(model.Difficulty), "Выберите уровень сложности.");
             if (string.IsNullOrWhiteSpace(model.Example) || model.Example.Length > 1000) ModelState.AddModelError(nameof(model.Example), "Добавьте описание до 1000 символов.");
-            if (model.CoverImage is { Length: > 0 } coverFile &&
-                (coverFile.Length > 5_000_000 || Path.GetExtension(coverFile.FileName).ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp")))
-                ModelState.AddModelError(nameof(model.CoverImage), "Выберите PNG, JPEG или WebP до 5 МБ.");
+            var coverDesign = new BookCoverDesign(model.CoverBackground, model.CoverTextColor, model.CoverAccent, model.CoverFont, model.CoverPattern);
+            if (!BookCoverDesign.IsValid(coverDesign))
+                ModelState.AddModelError(nameof(model.CoverBackground), "Проверьте цвета и оформление обложки. Контраст названия и фона должен быть не ниже 4,5:1.");
             MaterialChapter[] chapters = [];
             try { chapters = JsonSerializer.Deserialize<MaterialChapter[]>(model.ChaptersJson, JsonOptions) ?? []; }
             catch (JsonException) { ModelState.AddModelError(nameof(model.ChaptersJson), "Не удалось прочитать разметку глав."); }
@@ -292,8 +292,10 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 !ReadingContent.ValidIllustrations([new(model.IllustrationChapterId ?? Guid.Empty, model.IllustrationAfterLine,
                     "/media/books/00000000000000000000000000000000.png", model.IllustrationDescription ?? "")], chapters))
                 ModelState.AddModelError(nameof(model.InteriorImage), "Выберите главу, номер строки и описание для нового рисунка.");
-            if (model.TranslationReviewed && model.LiteraryTranslation.Contains('⚠'))
-                ModelState.AddModelError(nameof(model.LiteraryTranslation), "Сначала исправьте отмеченные строки чернового перевода.");
+            if (chapters.Any(chapter => (chapter.Translation?.Length ?? 0) > 50000))
+                ModelState.AddModelError(nameof(model.ChaptersJson), "Перевод главы должен содержать не более 50 000 символов.");
+            if (model.TranslationReviewed && (model.LiteraryTranslation.Contains('⚠') || chapters.Any(chapter => chapter.Translation?.Contains('⚠') == true)))
+                ModelState.AddModelError(nameof(model.ChaptersJson), "Сначала исправьте отмеченные строки чернового перевода.");
             if (model.InteriorImage is { Length: > 0 } && illustrations.Length >= 20)
                 ModelState.AddModelError(nameof(model.InteriorImage), "Можно добавить не более 20 иллюстраций.");
             if (ModelState.IsValid)
@@ -309,15 +311,9 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                     illustrations = [.. illustrations, new(model.IllustrationChapterId!.Value, model.IllustrationAfterLine,
                         imagePath, (model.IllustrationDescription ?? "").Trim())];
                 }
-                var coverPath = model.CoverImage is { Length: > 0 } ? await SaveCover(model.CoverImage, ct) : originalCoverPath;
-                if (model.CoverImage is { Length: > 0 } && coverPath is null)
-                {
-                    ModelState.AddModelError(nameof(model.CoverImage), "Файл не является допустимым изображением.");
-                    return null;
-                }
                 var prepared = await dictionary.Prepare(new BookMaterial(model.Russian.Trim(), model.Example.Trim(),
                     chapters.OrderBy(x => x.Number).ToArray(), model.LiteraryTranslation.Trim(), model.Authors.Trim(),
-                    model.Difficulty, coverPath, illustrations, model.TranslationReviewed), ct);
+                    model.Difficulty, originalCoverPath, illustrations, model.TranslationReviewed, coverDesign), ct);
                 payload = JsonSerializer.Serialize(prepared, JsonOptions);
             }
         }

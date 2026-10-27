@@ -138,6 +138,10 @@
   }
 
   if (kind === 'book') {
+    document.getElementById('clear-legacy-translation')?.addEventListener('click', event => {
+      document.getElementById('LiteraryTranslation').value = '';
+      event.currentTarget.closest('details').hidden = true;
+    });
     const hidden = document.getElementById('ChaptersJson'), container = document.getElementById('editor-chapters');
     let chapters; try { chapters = JSON.parse(hidden.value || '[]'); } catch { chapters = []; }
     if (!Array.isArray(chapters)) chapters = [];
@@ -182,6 +186,7 @@
     document.getElementById('InteriorImage').onchange = event => {
       if (interiorUrl) URL.revokeObjectURL(interiorUrl);
       const file = event.target.files[0], preview = document.getElementById('interior-image-preview');
+      document.getElementById('interior-image-file-name').textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toLocaleString('ru', { maximumFractionDigits: 1 })} МБ` : 'Файл не выбран';
       interiorUrl = file ? URL.createObjectURL(file) : null;
       preview.hidden = !file;
       if (interiorUrl) preview.src = interiorUrl; else preview.removeAttribute('src');
@@ -206,7 +211,14 @@
           chapter.tokens = next; sync();
         });
         textLabel.append(textarea);
-        section.append(header, titleLabel, textLabel); container.append(section);
+        const translationLabel = document.createElement('label'); translationLabel.textContent = 'Перевод главы';
+        const translationHelp = document.createElement('span'); translationHelp.className = 'field-help';
+        translationHelp.textContent = 'Необязательно. До проверки доступен только редактору.';
+        const translation = document.createElement('textarea'); translation.rows = 6; translation.maxLength = 50000; translation.lang = 'ru';
+        translation.value = chapter.translation || '';
+        translation.addEventListener('input', () => { chapter.translation = translation.value; sync(); });
+        translationLabel.append(translationHelp, translation);
+        section.append(header, titleLabel, textLabel, translationLabel); container.append(section);
       });
       renderIllustrations();
     };

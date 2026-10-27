@@ -1,0 +1,17 @@
+@model IronLanguage.Web.Models.EditorFormModel
+<section class="cover-builder" id="book-cover-builder" aria-labelledby="cover-builder-title">
+    <header class="cover-builder-heading"><h2 id="cover-builder-title">Обложка</h2><p class="field-help">Название и автор появятся автоматически. Выберите цвета, шрифт и принт.</p></header>
+    <div class="cover-builder-controls">
+        <div><span class="editor-field-label">Готовые палитры</span><div class="cover-builder-presets" id="cover-presets" role="group" aria-label="Палитры обложки"></div></div>
+        <div class="cover-builder-colors">
+            <label>Фон <input asp-for="CoverBackground" type="color" aria-describedby="cover-constructor-status" /></label>
+            <label>Название <input asp-for="CoverTextColor" type="color" aria-describedby="cover-constructor-status" /></label>
+            <label>Принт <input asp-for="CoverAccent" type="color" /></label>
+        </div>
+        <label>Шрифт названия <select asp-for="CoverFont"><option value="onest">Onest — современный</option><option value="golos">Golos Text — спокойный</option><option value="serif">Georgia — книжный</option></select></label>
+        <label>Принт <select asp-for="CoverPattern"><option value="none">Без принта</option><option value="lines">Диагональные линии</option><option value="dots">Точки</option><option value="arches">Дуги</option></select></label>
+        <div id="cover-constructor-status" class="cover-builder-status" role="status" aria-live="polite"></div>
+        <span asp-validation-for="CoverBackground" class="form-error"></span>
+    </div>
+    <figure class="cover-builder-preview"><div id="cover-constructor-preview"></div><figcaption>Предпросмотр обложки</figcaption></figure>
+</section>

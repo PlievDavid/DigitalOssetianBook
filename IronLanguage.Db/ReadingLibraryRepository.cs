@@ -35,13 +35,14 @@ public sealed class EfReadingLibraryRepository(AdamDbContext db) : IReadingLibra
             {
                 Id = item.Id, Title = material.Title, Description = material.Description, Authors = material.Authors,
                 Difficulty = material.Difficulty, CoverImagePath = material.CoverImagePath,
+                CoverDesignJson = JsonSerializer.Serialize(material.CoverDesign ?? BookCoverDesign.ForTitle(material.Title), options),
                 LiteraryTranslation = material.TranslationReviewed ? material.LiteraryTranslation : "",
                 DraftTranslation = material.TranslationReviewed ? "" : material.LiteraryTranslation, TranslationReviewed = material.TranslationReviewed,
                 IllustrationsJson = JsonSerializer.Serialize(material.Illustrations ?? [], options), Published = true,
                 Chapters = material.Chapters.Select(chapter => new BookChapter
                 {
                     Id = chapter.Id, BookId = item.Id, Number = chapter.Number, Title = chapter.Title,
-                    TokensJson = JsonSerializer.Serialize(chapter.Tokens, options)
+                    TokensJson = JsonSerializer.Serialize(chapter.Tokens, options), Translation = chapter.Translation ?? ""
                 }).ToList()
             });
             db.ContentRevisions.Add(new ContentRevision

@@ -118,7 +118,8 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
 
     [HttpGet("books")]
     public async Task<IActionResult> Books(CancellationToken ct) => Ok((await catalog.Books(ct)).Select(x =>
-        new { x.Id, x.Title, x.Authors, x.Difficulty, x.Description, x.CoverImagePath }));
+        new { x.Id, x.Title, x.Authors, x.Difficulty, x.Description, x.CoverImagePath,
+            coverDesign = BookCoverDesign.Read(x.CoverDesignJson, x.Title) }));
 
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpGet("books/{id:guid}")]
@@ -126,11 +127,15 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     {
         var book = await catalog.Book(id, ct);
         if (book is null) return NotFound();
+        var canReadTranslation = book.TranslationReviewed || User.IsInRole("Editor");
+        var legacyTranslation = book.TranslationReviewed ? book.LiteraryTranslation : book.DraftTranslation;
         var chapters = book.Chapters.OrderBy(x => x.Number).Select(x => new
-            { x.Id, x.Number, x.Title, tokens = JsonSerializer.Deserialize<BookToken[]>(x.TokensJson, BookJsonOptions) ?? [] }).ToArray();
+            { x.Id, x.Number, x.Title, tokens = JsonSerializer.Deserialize<BookToken[]>(x.TokensJson, BookJsonOptions) ?? [],
+                translation = canReadTranslation ? (string.IsNullOrEmpty(x.Translation) && book.Chapters.Count == 1 ? legacyTranslation : x.Translation) : "" }).ToArray();
         var senseIds = chapters.SelectMany(x => x.tokens).SelectMany(x => x.Matches ?? []).Select(x => x.SenseId).Distinct().ToArray();
         var meanings = await dictionary.Meanings(senseIds, ct);
         return Ok(new { book.Id, book.Title, book.Authors, book.Difficulty, book.Description, book.CoverImagePath,
+            coverDesign = BookCoverDesign.Read(book.CoverDesignJson, book.Title),
             literaryTranslation = book.TranslationReviewed ? book.LiteraryTranslation : User.IsInRole("Editor") ? book.DraftTranslation : "",
             book.TranslationReviewed, illustrations = JsonSerializer.Deserialize<ReadingIllustration[]>(book.IllustrationsJson, BookJsonOptions) ?? [],
             chapters, dictionary = meanings });

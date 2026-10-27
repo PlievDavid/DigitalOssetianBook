@@ -54,6 +54,9 @@ namespace IronLanguage.Db.Migrations
                     b.Property<string>("CoverImagePath")
                         .HasColumnType("text");
 
+                    b.Property<string>("CoverDesignJson")
+                        .HasColumnType("text");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
@@ -116,6 +119,10 @@ namespace IronLanguage.Db.Migrations
 
                     b.HasIndex("BookId", "Number")
                         .IsUnique();
+
+                    b.Property<string>("Translation")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.ToTable("Chapters");
                 });

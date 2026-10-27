@@ -56,21 +56,31 @@
             <label>Автор или авторы <input asp-for="Authors" required maxlength="240" /><span asp-validation-for="Authors" class="form-error"></span></label>
             <label>Сложность <select asp-for="Difficulty" required><option value="">Выберите уровень</option><option value="Начальный">Начальный</option><option value="Средний">Средний</option><option value="Продвинутый">Продвинутый</option></select><span asp-validation-for="Difficulty" class="form-error"></span></label>
             <label>Описание <textarea asp-for="Example" rows="3" required maxlength="1000"></textarea><span asp-validation-for="Example" class="form-error"></span></label>
-            <label>Обложка <span class="field-help">Необязательно. PNG, JPEG или WebP до 5 МБ.</span><input asp-for="CoverImage" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" /><span asp-validation-for="CoverImage" class="form-error"></span></label>
-            @if (Model.ExistingCoverImagePath is not null) { <img src="@Model.ExistingCoverImagePath" alt="Текущая обложка" style="width: 160px; height: 160px; object-fit: contain" /> }
-            <label>Перевод <span class="field-help">Необязательно. До проверки доступен только редактору.</span><textarea asp-for="LiteraryTranslation" rows="6"></textarea><span asp-validation-for="LiteraryTranslation" class="form-error"></span></label>
-            <label class="editor-check"><input asp-for="TranslationReviewed" /> Перевод проверен и может быть показан читателям</label>
+            @await Html.PartialAsync("_BookCoverBuilder", Model)
+            <input asp-for="LiteraryTranslation" type="hidden" />
+            @if (!string.IsNullOrEmpty(Model.LiteraryTranslation))
+            {
+                <details class="editor-legacy-translation"><summary>Ранее сохранённый общий перевод</summary><p class="field-help">Скопируйте нужные фрагменты в соответствующие главы. После переноса общий перевод можно убрать из этой версии.</p><p style="white-space: pre-wrap">@Model.LiteraryTranslation</p><button type="button" id="clear-legacy-translation" class="button secondary">Убрать общий перевод из этой версии</button></details>
+            }
+            <label class="editor-check"><input asp-for="TranslationReviewed" /><span>Перевод проверен и может быть показан читателям</span></label>
             <div class="editor-book-heading"><h2>Главы</h2><button type="button" id="add-chapter" class="button secondary">Добавить главу</button></div>
             <p class="field-help">Вставьте текст главы. Словарные подсказки подготовятся автоматически при сохранении. Пробелы и знаки препинания сохранятся.</p>
             <div id="editor-chapters"></div>
             <input asp-for="ChaptersJson" type="hidden" /><span asp-validation-for="ChaptersJson" class="form-error"></span>
             <section class="editor-reading-art">
                 <h2>Рисунки внутри текста</h2>
-                <p class="field-help">Обложка и иллюстрации — отдельные изображения. Номер строки включает пустые строки; 0 — перед текстом.</p>
+                <p class="field-help">Добавьте иллюстрацию к нужной главе. Номер строки включает пустые строки; 0 — перед текстом.</p>
                 <div id="editor-illustrations"></div>
                 <input asp-for="IllustrationsJson" type="hidden" /><span asp-validation-for="IllustrationsJson" class="form-error"></span>
-                <label>Добавить рисунок <span class="field-help">PNG, JPEG или WebP до 5 МБ. Один новый файл за сохранение.</span><input asp-for="InteriorImage" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" /><span asp-validation-for="InteriorImage" class="form-error"></span></label>
-                <img id="interior-image-preview" class="editor-interior-preview" alt="Предпросмотр новой иллюстрации" hidden />
+                <div class="editor-audio-field editor-image-field">
+                    <span class="editor-field-label">Новая иллюстрация</span>
+                    <span class="field-help" id="interior-image-help">PNG, JPEG или WebP до 5 МБ. Один файл за сохранение.</span>
+                    <label class="editor-file-button" for="InteriorImage">Выбрать рисунок</label>
+                    <input asp-for="InteriorImage" type="file" class="editor-file-input" aria-describedby="interior-image-help interior-image-file-name" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" />
+                    <span id="interior-image-file-name" class="field-help" role="status">Файл не выбран</span>
+                    <img id="interior-image-preview" class="editor-interior-preview" alt="Предпросмотр новой иллюстрации" hidden />
+                    <span asp-validation-for="InteriorImage" class="form-error"></span>
+                </div>
                 <label>Часть произведения <select asp-for="IllustrationChapterId"></select></label>
                 <label>После строки <input asp-for="IllustrationAfterLine" type="number" min="0" /></label>
                 <label>Описание рисунка <input asp-for="IllustrationDescription" maxlength="400" /></label>
@@ -105,7 +115,11 @@
     </form>
 </section>
 <script id="editor-words-data" type="application/json">@Html.Raw(JsonSerializer.Serialize(words))</script>
+@section Styles {
+    @if (Model.Kind == "book") { <link rel="stylesheet" href="~/css/book-cover.css" asp-append-version="true" /> }
+}
 @section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/editor.js" asp-append-version="true" defer></script>
+    @if (Model.Kind == "book") { <script src="~/js/book-cover.js" asp-append-version="true" defer></script><script src="~/js/book-cover-builder.js" asp-append-version="true" defer></script> }
     @if (Model.Kind == "dialogue") { <script src="~/js/dialogue-builder.js" asp-append-version="true" defer></script> }
     @if (Model.Kind == "matching") { <script src="~/js/matching-builder.js" asp-append-version="true" defer></script> }
 }

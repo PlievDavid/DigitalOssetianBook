@@ -1,6 +1,7 @@
 @{ ViewData["Title"] = "Чтение"; }
 @section Styles {
     <link rel="stylesheet" href="~/css/reading-preview.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/book-cover.css" asp-append-version="true" />
 }
 <section class="feature-shell reading-preview" id="reading-app">
     <div id="reading-library">
@@ -39,4 +40,4 @@
     </aside>
     <p class="reading-status" id="reading-status" role="status" aria-live="polite"></p>
 </section>
-@section Scripts { <script src="~/js/reading.js" asp-append-version="true" defer></script> }
+@section Scripts { <script src="~/js/book-cover.js" asp-append-version="true" defer></script><script src="~/js/reading.js" asp-append-version="true" defer></script> }

@@ -143,25 +143,11 @@
     card.type = 'button';
     card.className = 'reading-card';
     card.dataset.slug = draft.slug;
-    const image = document.createElement('img');
-    image.src = draft.coverImagePath;
-    image.alt = '';
-    image.width = 1024;
-    image.height = 1024;
-    image.loading = 'lazy';
-    image.decoding = 'async';
+    card.append(AdamBookCover.create(draft));
     const title = document.createElement('strong');
     title.textContent = draft.title;
     const authors = document.createElement('span');
     authors.textContent = draft.authors;
-    if (draft.coverReady) {
-      card.append(image);
-    } else {
-      const pending = document.createElement('span');
-      pending.className = 'reading-cover-pending';
-      pending.textContent = 'Обложка ещё не готова';
-      card.append(pending);
-    }
     card.append(title, authors);
     card.onclick = () => openDraft(draft, card);
     grid.append(card);
