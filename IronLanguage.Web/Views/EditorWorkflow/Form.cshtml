@@ -2,7 +2,7 @@
 @inject IronLanguage.Db.ICatalogRepository Catalog
 @using System.Text.Json
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Перевод фразы", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
     ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
     ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
@@ -12,7 +12,7 @@
 <section class="feature-shell editor-form-shell" id="editor-form-app" data-kind="@Model.Kind">
     <header class="editor-page-heading">
         <a class="back-link" href="/editor">← К материалам</a>
-        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "книгу", "picture" => "задание «Картинка и слово»", _ => title.ToLowerInvariant() })</h1>
+        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "книгу", "picture" => "задание «Картинка и слово»", "translation" => "задание «Собери фразу»", _ => title.ToLowerInvariant() })</h1>
         <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
     </header>
     <form method="post" action="@action" enctype="multipart/form-data" class="editor-form">
@@ -34,10 +34,9 @@
             }
             else
             {
-                <label>Русская подсказка <input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
-                <label>Осетинский ответ <input asp-for="OssetianAnswer" required data-ossetian /><span asp-validation-for="OssetianAnswer" class="form-error"></span></label>
+                <label>Фраза на русском <input asp-for="RussianPrompt" required /><span asp-validation-for="RussianPrompt" class="form-error"></span></label>
+                <label>Фраза на осетинском <input asp-for="OssetianAnswer" required data-ossetian /><span asp-validation-for="OssetianAnswer" class="form-error"></span></label>
                 <label>Слова для сборки <span class="field-help">Каждое слово — с новой строки. Добавьте также отвлекающие слова, если нужно.</span><textarea asp-for="TokensText" rows="6" required data-ossetian></textarea><span asp-validation-for="TokensText" class="form-error"></span></label>
-                <label>Другие допустимые ответы <span class="field-help">Необязательно; каждый вариант с новой строки.</span><textarea asp-for="AlternativesText" rows="3" data-ossetian></textarea></label>
             }
             <label>Пояснение после ответа <textarea asp-for="Explanation" rows="3"></textarea></label>
             <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
