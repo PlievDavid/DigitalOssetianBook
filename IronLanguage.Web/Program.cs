@@ -182,6 +182,9 @@ app.UseAuthorization();
 app.UseStaticFiles(); // Uploaded media is added after build, outside the static asset manifest.
 app.MapStaticAssets();
 
+foreach (var (legacyPath, webpPath) in ReadingArtwork.LegacyPaths)
+    app.MapMethods(legacyPath, ["GET", "HEAD"], () => Results.Redirect(webpPath, permanent: true));
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")

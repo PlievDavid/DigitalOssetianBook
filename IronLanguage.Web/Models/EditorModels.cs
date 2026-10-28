@@ -22,7 +22,6 @@ public sealed class EditorFormModel
     public string Authors { get; set; } = "";
     public string Difficulty { get; set; } = "";
     public string? ExistingCoverImagePath { get; set; }
-    public IFormFile? CoverImage { get; set; }
     public string CoverBackground { get; set; } = "#E6EDDC";
     public string CoverTextColor { get; set; } = "#173F31";
     public string CoverAccent { get; set; } = "#7D9568";

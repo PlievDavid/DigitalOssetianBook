@@ -3,105 +3,105 @@
   "status": "Готовы все 8 обложек и 8 отдельных внутренних иллюстраций. Генерация возобновлена 19 октября 2026 года; обложка «Матери сирот» приведена к общей стилистике и исправлена по замечанию о пальцах.",
   "assets": [
     {
-      "file": "schoolboy-cover-v1.png",
+      "file": "schoolboy-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-1124ee46-9bf5-48e5-8a1e-9057aa5cb3cc.png",
       "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
     },
     {
-      "file": "mischief-cover-v1.png",
+      "file": "mischief-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-2a50b4ca-c57a-421f-8ee7-84de45e324ad.png",
       "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
     },
     {
-      "file": "testament-cover-v1.png",
+      "file": "testament-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-8d20eccf-e72e-4e49-8637-a50fcab69216.png",
       "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
     },
     {
-      "file": "reflection-cover-v1.png",
+      "file": "reflection-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-de55b113-a7c2-47fc-a3bf-841cfd67309c.png",
       "prompt": "Ранее отдельно сгенерированная обложка из одобренного оформления; перенесена без редактирования."
     },
     {
-      "file": "hope-cover-v1.png",
+      "file": "hope-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-7a42576d-1bb2-4e86-b992-f3a2176ffc53.png",
       "prompt": "Use case: illustration-story. Asset type: square catalog cover vignette for the Russian-language Ossetian learning platform Adam. Input images are STYLE REFERENCES ONLY, not edit targets. Match their friendly softly rounded, dimensional hand-painted storybook rendering, warm natural colors, gentle shading, forest/sage greens, cream, terracotta and soft blue. This is one standalone illustration, not a website, not a book mockup, no typography or lettering or logos. Subject: A close-up of one adult hand gently sowing a few seeds into rich brown soil, three tiny seedlings, green leaves framing the vignette. Symbol of patient hope. No face or portrait. Composition: single clear centered vignette with generous transparent edge margins; genuine transparent background; subtle pale cream decorative shape and leaves behind the main subject, matching the references. Square 1024x1024. Constraints: no portrait resembling Kosta Khetagurov, no recognizable real person, no physical book cover or spine, no text, no watermarks. Maintain visual consistency with reference illustrations, but depict only the requested scene."
     },
     {
-      "file": "wish-cover-v1.png",
+      "file": "wish-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-4c4203c2-3f6a-4991-94b7-6ceafa5e2ae2.png",
       "prompt": "Use case: illustration-story. Asset type: square catalog cover vignette for the Russian-language Ossetian learning platform Adam. Input images are STYLE REFERENCES ONLY, not edit targets. Match their friendly softly rounded, dimensional hand-painted storybook rendering, warm natural colors, gentle shading, forest/sage greens, cream, terracotta and soft blue. This is one standalone illustration, not a website, not a book mockup, no typography or lettering or logos. Subject: A loving Ossetian mother in a simple cream headscarf and muted terracotta dress embracing her small brown-haired son, gentle contented expressions, green leaves and a few wheat ears framing the vignette. Composition: single clear centered vignette with generous transparent edge margins; genuine transparent background; subtle pale cream decorative shape and leaves behind the main subject, matching the references. Square 1024x1024. Constraints: no portrait resembling Kosta Khetagurov, no recognizable real person, no physical book cover or spine, no text, no watermarks. Maintain visual consistency with reference illustrations, but depict only the requested scene."
     },
     {
-      "file": "farewell-cover-v1.png",
+      "file": "farewell-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-b0f49f4a-ad6e-439d-bb52-2194aa050fc7.png",
       "prompt": "Use case: illustration-story. Asset type: square catalog cover vignette for the Russian-language Ossetian learning platform Adam. Input images are STYLE REFERENCES ONLY, not edit targets. Match their friendly softly rounded, dimensional hand-painted storybook rendering, warm natural colors, gentle shading, forest/sage greens, cream, terracotta and soft blue. This is one standalone illustration, not a website, not a book mockup, no typography or lettering or logos. Subject: A tied blue-grey cloth travelling bundle and a simple wooden walking staff beside a rounded stone, mountain path, distant blue Caucasus mountains and green leaves. No people, no portrait. Composition: single clear centered vignette with generous transparent edge margins; genuine transparent background; subtle pale cream decorative shape and leaves behind the main subject, matching the references. Square 1024x1024. Constraints: no portrait resembling Kosta Khetagurov, no recognizable real person, no physical book cover or spine, no text, no watermarks. Maintain visual consistency with reference illustrations, but depict only the requested scene."
     },
     {
-      "file": "schoolboy-interior-v1.png",
+      "file": "schoolboy-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-a1e4441d-b67e-4e4d-b3a3-9d3556aa0a97.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: A brown-haired Ossetian schoolboy sitting at a simple wooden school desk, carefully learning to write in an open notebook. Simple light shirt, wooden benches, sunlight through a school window and Caucasus foothills beyond. Wide story scene, not a bust portrait, no school backpack close-up. Notebook marks must be indistinct, no legible text. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "mischief-interior-v1.png",
+      "file": "mischief-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-8f7ef4eb-f502-4761-95aa-00dee48ddec6.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: A small brown-haired boy half awake under a simple quilt in a warm modest room, with a piece of bread on a wooden stool beside his bed. A dreamy illustrated vignette outside the window contains a fox, a hare, a small kite bird and an eagle in the sky. Gentle playful story scene, not scary, animals anatomically recognizable. No text. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "testament-interior-v1.png",
+      "file": "testament-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-307af35b-ab2b-4195-844b-12680434889c.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: A modest writing desk by an open window, plain unlettered sheets of paper, dark ink bottle and pale feather quill; outside, a small Caucasus mountain settlement and a distant field. Thoughtful quiet atmosphere, warm morning light. Wide interior scene distinctly different from the isolated cover icon. No people or portraits, no legible writing. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "reflection-interior-v1.png",
+      "file": "reflection-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-e04a8a98-cc3c-4393-a3fb-eea7d4fbcd81.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: A quiet empty traditional village gathering place under a large tree, simple stone seats facing each other, blue Caucasus mountains and an open narrow path beyond. Thoughtful restrained atmosphere, afternoon green and warm pale light. Wide story scene, no people or portraits, no battle, no weapons, no religious symbols. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "hope-interior-v1.png",
+      "file": "hope-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-46833f0a-35a7-4459-8599-96afcc0f7ffd.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: A broad cultivated field in a Caucasus valley, a simple wooden plough drawn by two oxen, a small farmer seen from behind in plain historical clothing, seedlings in the foreground and warm light over distant mountains. Wide hopeful landscape. Farmer is small and anonymous, absolutely no recognizable author portrait. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "wish-interior-v1.png",
+      "file": "wish-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-8b8b0dd7-4e29-4c41-b0d2-63d309c0a734.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: A warm modest Ossetian family home opening onto a green garden, a mother hugging her young child while another family member brings a basket from a sunlit field, spring flowers by the doorstep and soft blue mountains far away. Quiet ordinary family happiness, plain historical clothes. Wide narrative composition, different from the cover bust. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "farewell-interior-v1.png",
+      "file": "farewell-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-dbfc126c-9e53-4b98-b1bd-b7e6846896d2.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: An empty winding path leaving a small Caucasus mountain village at dusk, a simple wooden walking staff and cloth bundle resting by a low stone wall in the foreground, a warm lit window far behind, distant cool blue mountain ridges. Poignant gentle farewell, no person or author portrait, no graves, no frightening elements. Wide narrative landscape. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "orphans-mother-interior-v1.png",
+      "file": "orphans-mother-interior-v1.webp",
       "kind": "interior",
       "sourceFile": "exec-4d367955-1a76-4123-8b7f-2666c390515e.png",
       "prompt": "Use case: illustration-story. Create ONE NEW separate landscape 3:2 interior story illustration for Adam, an Ossetian language learning platform. Input image is STYLE REFERENCE ONLY, not an edit target. Match its friendly stylized rounded storybook forms, soft 3D shading, clear simple shapes, sage greens, honey ochre and muted terracotta; NOT photorealistic. New scene: Inside a poor late-19th-century Ossetian mountain dwelling on a snowy evening: a mother in a dark headscarf tends a small cauldron over the hearth, exactly five young children in worn simple clothes sit close together nearby waiting for food. A snowy mountain night visible through a small window. Sensitive dignified quiet sadness, not cheerful, no graphic misery, no text. Wide story illustration. Wide complete scene with background, generous breathing room, suitable as an illustration between stanzas, genuinely different composition from a cover icon. No author portraits, no labels, no readable text, no border, no UI. Opaque very light warm ivory background.",
       "reference": "schoolboy-cover-v1.png"
     },
     {
-      "file": "orphans-mother-cover-v1.png",
+      "file": "orphans-mother-cover-v1.webp",
       "kind": "cover",
       "sourceFile": "exec-8403b41a-ec56-4cb3-af03-69f554030bd1.png",
       "prompt": "Precise anatomy correction of this exact illustration. Keep absolutely everything else unchanged: square composition, transparent background, cute animated storybook style, colors, five children and mother, faces, expressions, clothes, leaves. Fix ONLY the left-side boy's visible hand resting on his mother's blue chest, around x=33%, y=49%. It currently reads as four fingers. Show anatomically correct FIVE digits, four slender fingers together and a distinct thumb, with natural proportion, same soft cartoon shading and hand placement. Check other visible hands and correct any with four digits to five naturally, without adding extra hands or limbs. Do not redraw faces or restyle the artwork. Preserve real alpha transparency.",

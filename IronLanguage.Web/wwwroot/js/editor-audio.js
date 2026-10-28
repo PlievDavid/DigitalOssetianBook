@@ -128,7 +128,7 @@
     const current = ++generation;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (current !== generation) { releaseMic(); return; }
+      if (current !== generation) { releaseMic(); busy = false; update(); return; }
       const mimeType = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'].find(type => MediaRecorder.isTypeSupported(type));
       recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       const chunks = [];

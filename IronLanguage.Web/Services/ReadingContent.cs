@@ -14,6 +14,6 @@ public static partial class ReadingContent
             && chapters.Any(chapter => chapter.Id == illustration.ChapterId && illustration.AfterLine >= 0
                 && illustration.AfterLine <= string.Concat(chapter.Tokens.Select(token => token.Text)).Split('\n').Length));
 
-    [GeneratedRegex(@"^(?:/media/books/[a-f0-9]{32}\.(?:png|jpg|jpeg|webp)|/images/reading/[a-z]+(?:-[a-z]+)*-interior-v[1-9][0-9]*\.png)$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^(?:/media/books/[a-f0-9]{32}\.(?:png|jpg|jpeg|webp)|/images/reading/[a-z]+(?:-[a-z]+)*-interior-v[1-9][0-9]*\.(?:png|webp))$", RegexOptions.CultureInvariant)]
     private static partial Regex ImagePath();
 }

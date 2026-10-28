@@ -20,6 +20,40 @@ void Check(bool condition, string message)
 }
 
 Check(drafts.Length == 8, "Ожидались восемь произведений.");
+Check(ReadingArtwork.LegacyPaths.Count == 16, "Не все прежние адреса рисунков сохранены.");
+foreach (var (legacyPath, webpPath) in ReadingArtwork.LegacyPaths)
+{
+    Check(legacyPath.EndsWith(".png", StringComparison.Ordinal) && webpPath.EndsWith(".webp", StringComparison.Ordinal),
+        "Неверное перенаправление старой иллюстрации.");
+    var imageBytes = File.ReadAllBytes(Path.Combine("IronLanguage.Web", "wwwroot", webpPath.TrimStart('/')));
+    Check(imageBytes.Length > 12 && System.Text.Encoding.ASCII.GetString(imageBytes, 0, 4) == "RIFF"
+        && System.Text.Encoding.ASCII.GetString(imageBytes, 8, 4) == "WEBP", "Подготовленный рисунок не является WebP.");
+}
+Check(ReadingContent.ValidImagePath("/images/reading/schoolboy-interior-v1.webp"), "WebP рисунка не прошёл проверку.");
+Check(ReadingContent.ValidImagePath("/images/reading/schoolboy-interior-v1.png"), "Старый путь рисунка должен оставаться допустимым.");
+Check(!ReadingContent.ValidImagePath("/images/reading/schoolboy-interior-v1.webp?x=1"), "Принят query в пути WebP.");
+if (args.Contains("--http"))
+{
+    using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+    using var client = new HttpClient(handler) { BaseAddress = new Uri(Environment.GetEnvironmentVariable("ADAM_TEST_URL")
+        ?? throw new InvalidOperationException("Укажите ADAM_TEST_URL запущенного сайта.")) };
+    foreach (var (legacyPath, webpPath) in ReadingArtwork.LegacyPaths)
+    {
+        using var redirect = await client.GetAsync(legacyPath);
+        Check(redirect.StatusCode == System.Net.HttpStatusCode.MovedPermanently && redirect.Headers.Location?.ToString() == webpPath,
+            "Старый адрес рисунка не перенаправляется на WebP.");
+        using var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, legacyPath));
+        Check(head.StatusCode == System.Net.HttpStatusCode.MovedPermanently && head.Headers.Location?.ToString() == webpPath,
+            "HEAD старого рисунка не сохранил совместимость.");
+        using var image = await client.GetAsync(webpPath);
+        Check(image.IsSuccessStatusCode && image.Content.Headers.ContentType?.MediaType == "image/webp"
+            && (await image.Content.ReadAsByteArrayAsync()).AsSpan().SequenceEqual(
+                File.ReadAllBytes(Path.Combine("IronLanguage.Web", "wwwroot", webpPath.TrimStart('/')))),
+            "WebP не отдаётся с правильным типом и содержимым.");
+    }
+    using var missing = await client.GetAsync("/images/reading/missing-interior-v1.png");
+    Check(missing.StatusCode == System.Net.HttpStatusCode.NotFound, "Неизвестное имя не должно перенаправляться.");
+}
 Check(publishedSeeds.Length == 3 && publishedSeeds.All(seed => seed.Material.TranslationReviewed), "Нужны три публичных сида.");
 Check(publishedSeeds.Single(seed => seed.Material.Title == "Школьник").Material.Chapters[0].Translation.Split('\n')[1] == "— Сын Тола.",
     "В переводе изменено имя Тола.");

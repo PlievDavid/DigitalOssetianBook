@@ -274,7 +274,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var exercise = await db.Exercises.SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Kind == revision.Kind && x.Published && x.Version == revision.BaseVersion, ct);
             if (exercise is null) return false;
-            Apply(exercise, Parse<ExerciseMaterial>(revision.PayloadJson)); exercise.Version++;
+            // Поле «Другие допустимые ответы» убрано: в старых черновиках ревизий альтернативы ещё лежат в payload.
+            Apply(exercise, Parse<ExerciseMaterial>(revision.PayloadJson) with { Alternatives = [] });
+            exercise.Version++;
         }
         else if (revision.Kind == "listening")
         {

@@ -1,9 +1,9 @@
 @model string
 @inject IronLanguage.Web.Services.AvatarService Avatars
-@{ var isAudio = Model == "audio"; ViewData["Title"] = isAudio ? "Аудиопазлы" : "Перевод фраз"; }
+@{ var isAudio = Model == "audio"; ViewData["Title"] = isAudio ? "Аудиопазлы" : "Собери фразу"; }
 <section class="feature-shell exercise-page @(isAudio ? "audio-page" : "translate-page")" id="exercise-app" data-kind="@Model">
     <a class="back-link" href="/">← К заданиям</a>
-    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel(isAudio ? "Аудиопазлы" : "Перевод фраз", isAudio ? "Слушайте осетинскую запись и выбирайте слова по одному." : "Соберите осетинский перевод русской фразы.", isAudio ? "audio" : "translate", isAudio ? "blue" : "sand"))
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel(isAudio ? "Аудиопазлы" : "Собери фразу", isAudio ? "Слушайте осетинскую запись и выбирайте слова по одному." : "Соберите осетинский перевод русской фразы.", isAudio ? "audio" : "translate", isAudio ? "blue" : "sand"))
     <div id="exercise-status" role="status"></div>
     <div id="exercise-list" class="exercise-list"></div>
     <div id="exercise-play" class="exercise-play" hidden>

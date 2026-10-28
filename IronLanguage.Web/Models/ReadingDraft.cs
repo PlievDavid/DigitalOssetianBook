@@ -37,8 +37,8 @@ public static partial class ReadingDraftCatalog
                     != string.IsNullOrWhiteSpace(translationLines[index])).Any()
                 || draft.IllustrationAfterLine < 0 || draft.IllustrationAfterLine > originalLines.Length)
                 throw new InvalidDataException("Строки и строфы перевода должны соответствовать оригиналу.");
-            if (draft.CoverImagePath != $"/images/reading/{draft.Slug}-cover-v1.png"
-                || draft.IllustrationImagePath != $"/images/reading/{draft.Slug}-interior-v1.png"
+            if (draft.CoverImagePath != $"/images/reading/{draft.Slug}-cover-v1.webp"
+                || draft.IllustrationImagePath != $"/images/reading/{draft.Slug}-interior-v1.webp"
                 || !Uri.TryCreate(draft.SourceUrl, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps)
                 throw new InvalidDataException("Неверный путь изображения или ссылка на источник.");
         }

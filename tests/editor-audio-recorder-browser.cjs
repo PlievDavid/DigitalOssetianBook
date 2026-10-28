@@ -106,6 +106,13 @@ const output = async page => page.locator('#editor-audio').evaluate(async input 
     await page.waitForFunction(() => document.querySelector('#audio-studio-status').textContent.includes('Доступ к микрофону закрыт'));
     assert.equal(await page.locator('#editor-audio').evaluate(el => el.files[0].name), savedName);
     assert.equal(await page.locator('#editor-audio').isDisabled(), false);
+    // A late microphone permission response after pagehide must not leave the form busy.
+    await page.evaluate(() => { navigator.mediaDevices.getUserMedia = () => new Promise(resolve => { window.finishPermission = resolve; }); });
+    await page.locator('#audio-record').click();
+    assert.equal(await page.locator('#editor-audio').isDisabled(), true);
+    await page.evaluate(() => { window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })); window.finishPermission(new MediaStream()); });
+    await page.waitForFunction(() => !document.querySelector('#editor-audio').disabled);
+    assert.equal(await page.locator('#audio-record').isDisabled(), false);
     assert.deepEqual(errors, []);
     console.log('Audio studio passed: real MediaRecorder with synthetic microphone, released tracks, WAV, repeated/non-destructive trim, audition, invalid bounds, upload transport, pending trim, permission denial, keyboard and two widths.');
   } finally { await browser.close(); }

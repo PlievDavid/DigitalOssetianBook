@@ -89,9 +89,9 @@
       token.text.split('\n').forEach((part, partIndex) => {
         if (partIndex) lines.push(document.createElement('div'));
         if (!part) return;
-        const word = document.createElement('span'); word.textContent = part;
+        const word = document.createElement('span'); word.textContent = part; word.dataset.tokenIndex = index;
         if (/[\p{L}\p{M}]/u.test(part)) {
-          word.className = 'reading-word'; word.tabIndex = 0; word.dataset.tokenIndex = index;
+          word.className = 'reading-word'; word.tabIndex = 0;
           word.setAttribute('role', 'button'); word.setAttribute('aria-label', 'Словарная подсказка: ' + part);
           word.onclick = () => showWord(token, index, word);
           word.onkeydown = event => {
@@ -143,8 +143,9 @@
     appendIllustrations(originals.length);
     }
     root.querySelectorAll('[data-chapter-id]').forEach(button => button.setAttribute('aria-current', button.dataset.chapterId === chapter.id ? 'true' : 'false'));
-    const savedWord = flow.querySelector(`[data-token-index="${tokenIndex}"]`);
-    if (tokenIndex > 0 && savedWord) savedWord.scrollIntoView({ block: 'center' });
+    const renderedTokens = [...flow.querySelectorAll('[data-token-index]')];
+    const savedToken = renderedTokens.find(token => Number(token.dataset.tokenIndex) >= tokenIndex) || renderedTokens.at(-1);
+    if (tokenIndex > 0 && savedToken) savedToken.scrollIntoView({ block: 'center' });
     else window.scrollTo(0, 0);
   }
 
