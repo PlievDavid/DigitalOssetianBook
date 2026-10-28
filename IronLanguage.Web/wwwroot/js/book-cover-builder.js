@@ -3,7 +3,7 @@
   if (!builder) return;
   const element = id => document.getElementById(id);
   const fields = { background: element('CoverBackground'), textColor: element('CoverTextColor'), accent: element('CoverAccent'),
-    font: element('CoverFont'), pattern: element('CoverPattern') };
+    font: element('CoverFont'), pattern: element('CoverPattern'), patternArea: element('CoverPatternArea') };
   const presetNames = ['Шалфей', 'Песок', 'Тёмно-синий', 'Терракота', 'Сирень', 'Мята'];
   const preview = element('cover-constructor-preview'), status = element('cover-constructor-status');
   function refresh() {

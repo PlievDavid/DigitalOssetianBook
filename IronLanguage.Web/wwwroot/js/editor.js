@@ -25,14 +25,6 @@
   const words = JSON.parse(document.getElementById('editor-words-data').textContent);
   const byId = new Map(words.map(word => [word.id, word]));
   const wordKey = text => text.trim().replaceAll('æ', 'ӕ').replaceAll('Æ', 'Ӕ').replace(/\u0301/g, '').normalize('NFC').toLocaleLowerCase('ru');
-  const fileInput = document.getElementById('editor-audio');
-  if (fileInput) {
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0], label = document.getElementById('editor-file-name'), player = document.getElementById('editor-audio-preview');
-      label.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} МБ` : 'Файл не выбран';
-      if (file) { player.src = URL.createObjectURL(file); player.hidden = false; }
-    });
-  }
 
   if (kind === 'picture') {
     const section = document.getElementById('picture-editor');
@@ -213,7 +205,7 @@
         textLabel.append(textarea);
         const translationLabel = document.createElement('label'); translationLabel.textContent = 'Перевод главы';
         const translationHelp = document.createElement('span'); translationHelp.className = 'field-help';
-        translationHelp.textContent = 'Необязательно. До проверки доступен только редактору.';
+        translationHelp.textContent = 'Необязательно. Проверяется вместе с текстом перед публикацией.';
         const translation = document.createElement('textarea'); translation.rows = 6; translation.maxLength = 50000; translation.lang = 'ru';
         translation.value = chapter.translation || '';
         translation.addEventListener('input', () => { chapter.translation = translation.value; sync(); });

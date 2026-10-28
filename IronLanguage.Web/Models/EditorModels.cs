@@ -28,6 +28,7 @@ public sealed class EditorFormModel
     public string CoverAccent { get; set; } = "#7D9568";
     public string CoverFont { get; set; } = "onest";
     public string CoverPattern { get; set; } = "none";
+    public string CoverPatternArea { get; set; } = "corner";
     public string RussianPrompt { get; set; } = "";
     public string OssetianAnswer { get; set; } = "";
     public string TokensText { get; set; } = "";
@@ -87,12 +88,13 @@ public sealed class EditorFormModel
             var p = JsonSerializer.Deserialize<BookMaterial>(json, options)!;
             model.Russian = p.Title; model.Example = p.Description;
             model.LiteraryTranslation = p.LiteraryTranslation;
-            model.TranslationReviewed = p.TranslationReviewed;
+            model.TranslationReviewed = false;
             model.IllustrationsJson = JsonSerializer.Serialize(p.Illustrations ?? [], options);
             model.Authors = p.Authors; model.Difficulty = p.Difficulty; model.ExistingCoverImagePath = p.CoverImagePath;
             var cover = BookCoverDesign.IsValid(p.CoverDesign) ? p.CoverDesign! : BookCoverDesign.ForTitle(p.Title);
             model.CoverBackground = cover.Background; model.CoverTextColor = cover.TextColor;
             model.CoverAccent = cover.Accent; model.CoverFont = cover.Font; model.CoverPattern = cover.Pattern;
+            model.CoverPatternArea = cover.PatternArea;
             var chapters = p.Chapters;
             if (chapters.Length == 1 && !string.IsNullOrEmpty(p.LiteraryTranslation))
             {

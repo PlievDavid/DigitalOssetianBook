@@ -62,14 +62,13 @@
             {
                 <details class="editor-legacy-translation"><summary>Ранее сохранённый общий перевод</summary><p class="field-help">Скопируйте нужные фрагменты в соответствующие главы. После переноса общий перевод можно убрать из этой версии.</p><p style="white-space: pre-wrap">@Model.LiteraryTranslation</p><button type="button" id="clear-legacy-translation" class="button secondary">Убрать общий перевод из этой версии</button></details>
             }
-            <label class="editor-check"><input asp-for="TranslationReviewed" /><span>Перевод проверен и может быть показан читателям</span></label>
+            <input asp-for="TranslationReviewed" type="hidden" />
             <div class="editor-book-heading"><h2>Главы</h2><button type="button" id="add-chapter" class="button secondary">Добавить главу</button></div>
             <p class="field-help">Вставьте текст главы. Словарные подсказки подготовятся автоматически при сохранении. Пробелы и знаки препинания сохранятся.</p>
             <div id="editor-chapters"></div>
             <input asp-for="ChaptersJson" type="hidden" /><span asp-validation-for="ChaptersJson" class="form-error"></span>
             <section class="editor-reading-art">
-                <h2>Рисунки внутри текста</h2>
-                <p class="field-help">Добавьте иллюстрацию к нужной главе. Номер строки включает пустые строки; 0 — перед текстом.</p>
+                <header class="editor-reading-art-heading"><h2>Рисунки внутри текста</h2><p class="field-help">Добавьте иллюстрацию к нужной главе. Номер строки включает пустые строки; 0 — перед текстом.</p></header>
                 <div id="editor-illustrations"></div>
                 <input asp-for="IllustrationsJson" type="hidden" /><span asp-validation-for="IllustrationsJson" class="form-error"></span>
                 <div class="editor-audio-field editor-image-field">
@@ -109,7 +108,43 @@
         @if (Model.Kind is "word" or "audio" or "listening")
         {
             var audioRequired = Model.Kind is "audio" or "listening";
-            <div class="editor-audio-field"><span class="editor-field-label">Осетинская запись @(audioRequired ? "(обязательно)" : "(необязательно)")</span><label class="editor-file-button" for="editor-audio">Выбрать запись</label><input asp-for="Audio" id="editor-audio" type="file" accept=".mp3,.ogg,.wav,audio/mpeg,audio/ogg,audio/wav" class="editor-file-input" /><span id="editor-file-name" class="field-help">@(Model.ExistingAudioPath is null ? "Файл не выбран" : "Текущая запись сохранена")</span>@if (Model.ExistingAudioPath is null) { <audio id="editor-audio-preview" controls hidden></audio> } else { <audio id="editor-audio-preview" controls src="@Model.ExistingAudioPath"></audio> }<span asp-validation-for="Audio" class="form-error"></span></div>
+            <div class="editor-audio-field" id="editor-audio-studio">
+                <span class="editor-field-label">Осетинская запись @(audioRequired ? "(обязательно)" : "(необязательно)")</span>
+                <div class="editor-audio-actions">
+                    <button type="button" class="button secondary" id="audio-record">Записать с микрофона</button>
+                    <button type="button" class="button secondary" id="audio-stop" hidden>Остановить запись</button>
+                    <label class="editor-file-button" for="editor-audio">Выбрать файл</label>
+                    <input asp-for="Audio" id="editor-audio" type="file" accept=".mp3,.ogg,.wav,audio/mpeg,audio/ogg,audio/wav" class="editor-file-input" />
+                </div>
+                <span id="editor-file-name" class="field-help">@(Model.ExistingAudioPath is null ? "Файл не выбран" : "Текущая запись сохранена")</span>
+                <button type="button" class="audio-replace" id="audio-replace" hidden>Заменить запись</button>
+                <p id="audio-studio-status" class="field-help" role="status" aria-live="polite"></p>
+                @if (Model.ExistingAudioPath is null) { <audio id="editor-audio-preview" controls hidden></audio> }
+                else { <audio id="editor-audio-preview" controls src="@Model.ExistingAudioPath"></audio> }
+                <button type="button" class="button secondary" id="audio-edit" hidden>Обрезать запись</button>
+                <fieldset id="audio-trim" class="editor-audio-trim" aria-label="Обрезка аудио" hidden>
+                    <p class="field-help audio-trim-hint">Перетащите края выделения, чтобы оставить нужный фрагмент.</p>
+                    <div class="audio-waveform" id="audio-waveform">
+                        <canvas id="audio-waveform-canvas" aria-hidden="true"></canvas>
+                        <div class="audio-waveform-selection" id="audio-waveform-selection" aria-hidden="true"></div>
+                        <div class="audio-waveform-playhead" id="audio-waveform-playhead" aria-hidden="true" hidden></div>
+                        <input type="range" id="audio-range-start" aria-label="Начало фрагмента" min="0" step="0.01" value="0" />
+                        <input type="range" id="audio-range-end" aria-label="Конец фрагмента" min="0" step="0.01" value="1" />
+                    </div>
+                    <div id="audio-waveform-ruler" class="audio-waveform-ruler" aria-hidden="true"></div>
+                    <div class="editor-audio-bounds">
+                        <label>Начало, сек.<input type="number" id="audio-trim-start" min="0" step="0.1" value="0" /></label>
+                        <label>Конец, сек.<input type="number" id="audio-trim-end" min="0.1" step="0.1" /></label>
+                        <output id="audio-selection-duration" aria-live="off"></output>
+                    </div>
+                    <div class="editor-audio-actions">
+                        <button type="button" class="button secondary" id="audio-trim-listen">Прослушать фрагмент</button>
+                        <button type="button" class="button primary" id="audio-trim-apply">Применить обрезку</button>
+                        <button type="button" class="button secondary" id="audio-trim-reset">Вся запись</button>
+                    </div>
+                </fieldset>
+                <span asp-validation-for="Audio" class="form-error"></span>
+            </div>
         }
         <div class="editor-form-actions"><button class="button primary" type="submit">Сохранить черновик</button><a class="button secondary" href="/editor">Отмена</a></div>
     </form>
@@ -119,6 +154,7 @@
     @if (Model.Kind == "book") { <link rel="stylesheet" href="~/css/book-cover.css" asp-append-version="true" /> }
 }
 @section Scripts { <script src="~/js/letter-keys.js" asp-append-version="true" defer></script><script src="~/js/editor.js" asp-append-version="true" defer></script>
+    @if (Model.Kind is "word" or "audio" or "listening") { <script src="~/js/editor-audio.js" asp-append-version="true" defer></script> }
     @if (Model.Kind == "book") { <script src="~/js/book-cover.js" asp-append-version="true" defer></script><script src="~/js/book-cover-builder.js" asp-append-version="true" defer></script> }
     @if (Model.Kind == "dialogue") { <script src="~/js/dialogue-builder.js" asp-append-version="true" defer></script> }
     @if (Model.Kind == "matching") { <script src="~/js/matching-builder.js" asp-append-version="true" defer></script> }

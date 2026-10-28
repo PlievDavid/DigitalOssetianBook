@@ -205,18 +205,26 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
 
     public async Task<bool> PublishDraft(string kind, Guid id, Guid editorId, CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         var material = await Material(kind, id, ct);
         if (material is null || material.Published) return false;
         if (kind == "word") (await db.Words.SingleAsync(x => x.Id == id, ct)).Published = true;
-        else if (kind == "book") (await db.Books.SingleAsync(x => x.Id == id, ct)).Published = true;
+        else if (kind == "book")
+        {
+            var payload = Parse<BookMaterial>(material.PayloadJson);
+            if (BookTranslationReview.HasWarnings(payload)) return false;
+            payload = BookTranslationReview.Approve(payload);
+            var book = await db.Books.Include(x => x.Chapters).SingleAsync(x => x.Id == id, ct);
+            Apply(book, payload); book.Published = true;
+            material = material with { PayloadJson = JsonSerializer.Serialize(payload, JsonOptions) };
+        }
         else if (kind == "dialogue") (await db.Dialogues.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "matching") (await db.Matchings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "picture") (await db.PictureMatchings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else (await db.Exercises.SingleAsync(x => x.Id == id, ct)).Published = true;
         db.ContentRevisions.Add(new ContentRevision { Kind = kind, ContentId = id, Version = 1, BaseVersion = 0,
             PayloadJson = material.PayloadJson, Published = true, EditorId = editorId, PublishedAt = DateTimeOffset.UtcNow });
-        await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return true;
+        await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); return true;
     }
 
     public Task<ContentRevision?> Revision(Guid id, CancellationToken ct = default) =>
@@ -253,7 +261,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
 
     public async Task<bool> PublishRevision(Guid id, CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         var revision = await db.ContentRevisions.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
         if (revision is null) return false;
         if (revision.Kind == "word")
@@ -279,6 +287,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var book = await db.Books.Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
             if (book is null) return false;
             var payload = Parse<BookMaterial>(revision.PayloadJson);
+            if (BookTranslationReview.HasWarnings(payload)) return false;
+            payload = BookTranslationReview.Approve(payload);
+            revision.PayloadJson = JsonSerializer.Serialize(payload, JsonOptions);
             Apply(book, payload); book.Version++;
             var first = payload.Chapters.OrderBy(x => x.Number).First();
             var chapters = book.Chapters.ToDictionary(x => x.Id);
@@ -310,7 +321,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         }
         else return false;
         revision.Published = true; revision.PublishedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return true;
+        await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); return true;
     }
 
     public async Task<bool> DeleteDraft(string kind, Guid id, CancellationToken ct = default)

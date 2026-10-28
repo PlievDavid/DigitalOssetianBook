@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace IronLanguage.Db;
 
-public sealed partial record BookCoverDesign(string Background, string TextColor, string Accent, string Font, string Pattern)
+public sealed partial record BookCoverDesign(string Background, string TextColor, string Accent, string Font, string Pattern, string PatternArea = "corner")
 {
     private static readonly BookCoverDesign[] Presets =
     [
@@ -36,7 +36,8 @@ public sealed partial record BookCoverDesign(string Background, string TextColor
     public static bool IsValid(BookCoverDesign? design) => design is not null
         && IsColor(design.Background) && IsColor(design.TextColor) && IsColor(design.Accent)
         && design.Font is "onest" or "golos" or "serif"
-        && design.Pattern is "none" or "lines" or "dots" or "arches"
+        && design.Pattern is "none" or "lines" or "dots" or "arches" or "grid" or "waves" or "diamonds" or "zigzag" or "rings"
+        && design.PatternArea is "corner" or "bottom" or "full"
         && Contrast(design.Background, design.TextColor) >= 4.5;
 
     public static double Contrast(string background, string textColor)

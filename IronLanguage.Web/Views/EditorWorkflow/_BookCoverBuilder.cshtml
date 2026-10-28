@@ -9,7 +9,8 @@
             <label>Принт <input asp-for="CoverAccent" type="color" /></label>
         </div>
         <label>Шрифт названия <select asp-for="CoverFont"><option value="onest">Onest — современный</option><option value="golos">Golos Text — спокойный</option><option value="serif">Georgia — книжный</option></select></label>
-        <label>Принт <select asp-for="CoverPattern"><option value="none">Без принта</option><option value="lines">Диагональные линии</option><option value="dots">Точки</option><option value="arches">Дуги</option></select></label>
+        <label>Принт <select asp-for="CoverPattern"><option value="none">Без принта</option><option value="lines">Диагональные линии</option><option value="dots">Точки</option><option value="arches">Дуги</option><option value="grid">Клетка</option><option value="waves">Волны</option><option value="diamonds">Ромбы</option><option value="zigzag">Зигзаг</option><option value="rings">Кольца</option></select></label>
+        <label>Область принта <select asp-for="CoverPatternArea"><option value="corner">В углу</option><option value="bottom">Нижняя половина</option><option value="full">Вся обложка</option></select></label>
         <div id="cover-constructor-status" class="cover-builder-status" role="status" aria-live="polite"></div>
         <span asp-validation-for="CoverBackground" class="form-error"></span>
     </div>

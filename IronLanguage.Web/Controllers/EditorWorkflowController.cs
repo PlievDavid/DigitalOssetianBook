@@ -125,6 +125,8 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         if (revision is null || revision.Published) return NotFound();
         var model = await PreviewModel(revision.Kind, revision.ContentId, id, revision.Version, false, false, revision.PayloadJson, ct);
         if (!confirmReviewed) { model.Error = "Подтвердите проверку текста, перевода и прав на материал."; return View("Preview", model); }
+        if (model.Book is not null && BookTranslationReview.HasWarnings(model.Book))
+        { model.Error = "Сначала исправьте отмеченные строки перевода."; return View("Preview", model); }
         if (!PublishedLinksValid(revision.Kind, revision.PayloadJson, model.Words.Keys.ToHashSet()))
         { model.Error = "Сначала опубликуйте связанные слова."; return View("Preview", model); }
         if (!await editor.PublishRevision(id))
@@ -262,11 +264,12 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         }
         else if (kind == "book")
         {
+            model.TranslationReviewed = false;
             if (string.IsNullOrWhiteSpace(model.Russian)) ModelState.AddModelError(nameof(model.Russian), "Укажите название произведения.");
             if (string.IsNullOrWhiteSpace(model.Authors) || model.Authors.Length > 240) ModelState.AddModelError(nameof(model.Authors), "Укажите автора или авторов (до 240 символов).");
             if (model.Difficulty is not ("Начальный" or "Средний" or "Продвинутый")) ModelState.AddModelError(nameof(model.Difficulty), "Выберите уровень сложности.");
             if (string.IsNullOrWhiteSpace(model.Example) || model.Example.Length > 1000) ModelState.AddModelError(nameof(model.Example), "Добавьте описание до 1000 символов.");
-            var coverDesign = new BookCoverDesign(model.CoverBackground, model.CoverTextColor, model.CoverAccent, model.CoverFont, model.CoverPattern);
+            var coverDesign = new BookCoverDesign(model.CoverBackground, model.CoverTextColor, model.CoverAccent, model.CoverFont, model.CoverPattern, model.CoverPatternArea);
             if (!BookCoverDesign.IsValid(coverDesign))
                 ModelState.AddModelError(nameof(model.CoverBackground), "Проверьте цвета и оформление обложки. Контраст названия и фона должен быть не ниже 4,5:1.");
             MaterialChapter[] chapters = [];
@@ -294,8 +297,6 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 ModelState.AddModelError(nameof(model.InteriorImage), "Выберите главу, номер строки и описание для нового рисунка.");
             if (chapters.Any(chapter => (chapter.Translation?.Length ?? 0) > 50000))
                 ModelState.AddModelError(nameof(model.ChaptersJson), "Перевод главы должен содержать не более 50 000 символов.");
-            if (model.TranslationReviewed && (model.LiteraryTranslation.Contains('⚠') || chapters.Any(chapter => chapter.Translation?.Contains('⚠') == true)))
-                ModelState.AddModelError(nameof(model.ChaptersJson), "Сначала исправьте отмеченные строки чернового перевода.");
             if (model.InteriorImage is { Length: > 0 } && illustrations.Length >= 20)
                 ModelState.AddModelError(nameof(model.InteriorImage), "Можно добавить не более 20 иллюстраций.");
             if (ModelState.IsValid)

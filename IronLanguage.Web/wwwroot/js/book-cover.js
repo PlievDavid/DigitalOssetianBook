@@ -17,8 +17,9 @@
   function normalize(design, title) {
     const fallback = forTitle(title);
     if (!design || !color(design.background) || !color(design.textColor) || !color(design.accent)
-      || !Object.hasOwn(fonts, design.font) || !['none', 'lines', 'dots', 'arches'].includes(design.pattern)) return fallback;
-    return { background: design.background, textColor: design.textColor, accent: design.accent, font: design.font, pattern: design.pattern };
+      || !Object.hasOwn(fonts, design.font) || !['none', 'lines', 'dots', 'arches', 'grid', 'waves', 'diamonds', 'zigzag', 'rings'].includes(design.pattern)
+      || !['corner', 'bottom', 'full'].includes(design.patternArea || 'corner')) return fallback;
+    return { background: design.background, textColor: design.textColor, accent: design.accent, font: design.font, pattern: design.pattern, patternArea: design.patternArea || 'corner' };
   }
   function contrast(background, textColor) {
     if (!color(background) || !color(textColor)) return 0;
@@ -36,6 +37,7 @@
     target.classList.add('book-cover');
     target.setAttribute('aria-hidden', 'true');
     target.dataset.pattern = design.pattern;
+    target.dataset.patternArea = design.patternArea || 'corner';
     target.style.setProperty('--cover-background', design.background);
     target.style.setProperty('--cover-text', design.textColor);
     target.style.setProperty('--cover-accent', design.accent);

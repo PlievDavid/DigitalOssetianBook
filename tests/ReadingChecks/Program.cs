@@ -54,6 +54,11 @@ var sample = ReadingSeedService.Build(drafts[0]).Material;
 var illustration = sample.Illustrations![0];
 var cover = BookCoverDesign.ForTitle(sample.Title);
 Check(BookCoverDesign.IsValid(cover), "Обложка по умолчанию должна быть читаемой.");
+foreach (var pattern in new[] { "grid", "waves", "diamonds", "zigzag", "rings" })
+    Check(BookCoverDesign.IsValid(cover with { Pattern = pattern, PatternArea = "full" }), "Новый принт не сохраняется.");
+Check(!BookCoverDesign.IsValid(cover with { PatternArea = "url(test)" }), "Принята неизвестная область принта.");
+Check(BookCoverDesign.Read("{\"background\":\"#E6EDDC\",\"textColor\":\"#173F31\",\"accent\":\"#7D9568\",\"font\":\"serif\",\"pattern\":\"dots\"}", sample.Title)
+    is { PatternArea: "corner", Font: "serif", Pattern: "dots" }, "Старое оформление обложки потеряно.");
 Check(cover == BookCoverDesign.ForTitle(sample.Title), "Начальное оформление обложки должно быть стабильным.");
 foreach (var draft in drafts) Check(BookCoverDesign.IsValid(BookCoverDesign.ForTitle(draft.Title)), "Нечитаемая палитра существующего произведения.");
 Check(!BookCoverDesign.IsValid(cover with { Background = "url(https://example.com/image.png)" }), "Принят URL вместо цвета.");
@@ -68,6 +73,8 @@ var designedSample = sample with { CoverDesign = cover with { Font = "serif", Pa
 var designedForm = EditorFormModel.FromPayload("book", JsonSerializer.Serialize(designedSample, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 Check(designedForm.CoverFont == "serif" && designedForm.CoverPattern == "arches" && designedForm.CoverBackground == cover.Background,
     "Форма потеряла оформление обложки.");
+Check(!EditorFormModel.FromPayload("book", JsonSerializer.Serialize(sample with { TranslationReviewed = true },
+    new JsonSerializerOptions(JsonSerializerDefaults.Web))).TranslationReviewed, "Изменённый перевод должен проверяться при публикации новой версии.");
 var legacySample = sample with { LiteraryTranslation = "Старый перевод", Chapters = [sample.Chapters[0] with { Translation = "" }] };
 var legacyForm = EditorFormModel.FromPayload("book", JsonSerializer.Serialize(legacySample, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 Check(legacyForm.LiteraryTranslation == "" && JsonSerializer.Deserialize<MaterialChapter[]>(legacyForm.ChaptersJson,
@@ -222,6 +229,40 @@ if (args.Contains("--database"))
     await seedRepository.PublishSeeds(temporarySeeds, editorId, CancellationToken.None);
     Check(archivedSeed.Archived && legacyBook.Chapters.Single().Translation == "Редакторская правка после сидов",
         "Повторные сиды отменили архивирование или правку редактора.");
+    var publishMaterial = sample with { Chapters = [sample.Chapters[0] with { Id = Guid.NewGuid() }], Illustrations = [], TranslationReviewed = false };
+    var publishId = await repository.Create("book", JsonSerializer.Serialize(publishMaterial, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+    Check(await repository.PublishDraft("book", publishId, editorId), "Проверенная перед публикацией книга не опубликована.");
+    Check((await db.Books.AsNoTracking().SingleAsync(book => book.Id == publishId)).TranslationReviewed,
+        "Подтверждение публикации не подтвердило перевод.");
+    Check(!await repository.PublishDraft("book", publishId, editorId), "Повторная публикация создала дубликат.");
+    var publishedRevision = new ContentRevision { Kind = "book", ContentId = publishId, BaseVersion = 1, Version = 2, EditorId = editorId,
+        PayloadJson = JsonSerializer.Serialize(publishMaterial with { TranslationReviewed = false }, new JsonSerializerOptions(JsonSerializerDefaults.Web)) };
+    db.ContentRevisions.Add(publishedRevision); await db.SaveChangesAsync();
+    Check(await repository.PublishRevision(publishedRevision.Id), "Новая версия с проверенным переводом не опубликована.");
+    Check(JsonSerializer.Deserialize<BookMaterial>(publishedRevision.PayloadJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))!.TranslationReviewed,
+        "В истории остался неподтверждённый перевод после публикации.");
+    var warningId = await repository.Create("book", JsonSerializer.Serialize(publishMaterial with { Chapters = [publishMaterial.Chapters[0] with
+        { Id = Guid.NewGuid(), Translation = "⚠ Нужно проверить" }] }, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+    Check(!await repository.PublishDraft("book", warningId, editorId), "Опубликована строка с предупреждением.");
+    var wordleData = JsonSerializer.Deserialize<WordleData>(File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "IronLanguage.Web/Data/wordle/words.json")),
+        new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+    var wordleWord = wordleData.Answers.Single(word => word.Word == "тӕмӕн");
+    var dictionaryPath = Path.Combine(Directory.GetCurrentDirectory(), "IronLanguage.Web/Data/ossetian-russian-dictionary.csv");
+    var wordleSource = DictionaryService.ReadWordleSource(dictionaryPath, wordleWord);
+    Check(wordleSource is { Russian: "излучение" }, "Источник ответа Wordle не найден.");
+    Check(DictionaryService.ReadWordleSource(dictionaryPath, wordleWord with { Word = "хӕдон" }) is null,
+        "Принят ответ, не совпадающий с исходным словом.");
+    Check(DictionaryService.ReadWordleSource(dictionaryPath, wordleWord with { Russian = "неверный перевод" }) is null,
+        "Принят неподтверждённый перевод ответа.");
+    var sourceRepository = new EfDictionarySourceRepository(db);
+    var firstSenseId = await sourceRepository.EnsureSense(wordleSource!, DictionaryService.Key(wordleWord.Word));
+    var repeatedSenseId = await sourceRepository.EnsureSense(wordleSource!, DictionaryService.Key(wordleWord.Word));
+    Check(firstSenseId is not null && firstSenseId == repeatedSenseId, "Повторное сохранение создаёт дубликаты источника.");
+    var savedAnswerId = await new DictionaryService(db).EnsureSavedWord(firstSenseId!.Value, default);
+    Check(savedAnswerId is not null && await new EfProgressRepository(db).AddWord(editorId, savedAnswerId.Value), "Ответ Wordle не добавлен в личный словарь.");
+    Check(await new EfProgressRepository(db).AddWord(editorId, savedAnswerId!.Value)
+        && await db.SavedWords.CountAsync(saved => saved.UserId == editorId && saved.WordId == savedAnswerId) == 1,
+        "Повторное сохранение ответа не идемпотентно.");
     await transaction.RollbackAsync();
 }
 var temporary = Path.GetTempFileName();
