@@ -37,7 +37,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
           showRule: true, rule: 'винительный падеж',
           words: finished ? [{ id: 'word-1', ossetian: 'амбар', russian: 'сарай' }] : [],
           sentence: finished
-            ? [{ text: 'Читам', position: 0, matches: [] }, { text: 'амбар', position: 7, matches: [] }]
+            ? [{ text: 'Читам', position: 0, matches: [] }, { text: 'амбар', position: 6, matches: [] }]
             : [{ text: 'Читам', position: 0, matches: [] }],
           dictionary: []
         } });
@@ -74,7 +74,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await page.locator('#grammar-result .grammar-result-actions').waitFor();
       assert.equal(await page.locator('#grammar-options .grammar-option.is-correct').count(), 1);
       assert.match(await page.locator('#grammar-options .grammar-option.is-correct').innerText(), /амбар/);
-      assert.equal(await page.locator('#grammar-options .grammar-option.is-wrong').count(), 1);
+      assert.equal(await page.locator('#grammar-options .grammar-option.is-wrong').count(), 2);
       assert.equal(await page.locator('#grammar-options .grammar-option:disabled').count(), 4);
       assert.equal((await page.locator('#grammar-sentence').innerText()).trim(), 'Читам амбар.');
       assert(await page.locator('.grammar-inserted').isVisible());
