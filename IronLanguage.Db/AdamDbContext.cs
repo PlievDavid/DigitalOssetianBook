@@ -12,6 +12,10 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<Book> Books => Set<Book>();
     public DbSet<BookChapter> Chapters => Set<BookChapter>();
     public DbSet<SavedWord> SavedWords => Set<SavedWord>();
+    public DbSet<WordReviewState> WordReviewStates => Set<WordReviewState>();
+    public DbSet<WordReviewSettings> WordReviewSettings => Set<WordReviewSettings>();
+    public DbSet<WordReviewSession> WordReviewSessions => Set<WordReviewSession>();
+    public DbSet<WordReviewReward> WordReviewRewards => Set<WordReviewReward>();
     public DbSet<ExerciseAttempt> Attempts => Set<ExerciseAttempt>();
     public DbSet<ReadingPosition> ReadingPositions => Set<ReadingPosition>();
     public DbSet<DailyActivity> DailyActivities => Set<DailyActivity>();
@@ -28,6 +32,17 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        model.Entity<WordReviewState>().HasKey(x => new { x.UserId, x.WordId, x.Reverse });
+        model.Entity<WordReviewState>().HasOne<SavedWord>().WithMany().HasForeignKey(x => new { x.UserId, x.WordId }).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewState>().HasIndex(x => new { x.UserId, x.DueAt });
+        model.Entity<WordReviewSettings>().HasKey(x => x.UserId);
+        model.Entity<WordReviewSettings>().Property(x => x.Format).HasMaxLength(16);
+        model.Entity<WordReviewSettings>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewSession>().HasKey(x => x.UserId);
+        model.Entity<WordReviewSession>().HasIndex(x => x.Id).IsUnique();
+        model.Entity<WordReviewSession>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewReward>().HasKey(x => new { x.UserId, x.Day, x.WordId });
+        model.Entity<WordReviewReward>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordleGame>().HasKey(x => new { x.UserId, x.Day });
         model.Entity<WordleGame>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordleGame>().Property(x => x.ExpectedWord).HasMaxLength(5);

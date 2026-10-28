@@ -46,7 +46,7 @@
                 <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/vocabulary") || currentPath.StartsWith("/word-practice") || currentPath == "/game" ? "is-current" : "")" href="/vocabulary" aria-controls="words-menu" aria-haspopup="true" aria-expanded="false">Слова</a>
                 <div id="words-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/vocabulary">@(User.Identity?.IsAuthenticated == true ? "Мои слова" : "Словарь")</a>
-                    <a class="nav-menu-item" href="/word-practice">Тренировка слов</a>
+                    <a class="nav-menu-item" href="/word-practice">Повторение слов</a>
                     <a class="nav-menu-item" href="/game">Подбор пар</a>
                 </div>
             </div>

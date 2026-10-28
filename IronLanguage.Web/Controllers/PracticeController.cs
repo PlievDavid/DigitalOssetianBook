@@ -9,10 +9,16 @@ public sealed class PracticeController : Controller
     public IActionResult Translate() => View("Index", "translation");
 
     [HttpGet("vocabulary")]
-    public IActionResult Vocabulary() => View();
+    public IActionResult Vocabulary() => View(User.Identity?.IsAuthenticated == true ? "Vocabulary" : "VocabularyGuest");
+
+    [Authorize, HttpGet("vocabulary/all")]
+    public IActionResult AllWords() => View("Vocabulary");
+
+    [HttpGet("vocabulary/available")]
+    public IActionResult AvailableWords() => View("VocabularyList", "available");
 
     [HttpGet("word-practice")]
-    public IActionResult WordPractice() => View();
+    public IActionResult WordPractice() => View(User.Identity?.IsAuthenticated == true ? "WordPractice" : "WordPracticeGuest");
 
     [HttpGet("books")]
     public IActionResult Books() => View();

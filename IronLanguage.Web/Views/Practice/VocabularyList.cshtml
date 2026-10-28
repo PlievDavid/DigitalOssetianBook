@@ -1,0 +1,15 @@
+@model string
+@{ ViewData["Title"] = "Добавить слова"; }
+@section Styles { <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
+<section class="feature-shell words-page" id="word-topics">
+    <a class="back-link" id="topics-back" href="/vocabulary">← Мои слова</a>
+    <header class="words-heading topics-heading"><div><h1 id="topics-title">Добавить слова</h1><p id="topics-subtitle">Выберите тему и добавьте слова, которые хотите изучать.</p></div></header>
+    <p id="words-status" class="words-notice" role="status"></p>
+    <div id="words-topics" class="words-topic-grid"></div>
+    <section id="topic-detail" hidden aria-label="Слова выбранной темы">
+        <div class="topic-list-heading"><span id="topic-word-count"></span><button class="words-text-button" id="topic-select-all" type="button">Выбрать все</button></div>
+        <div id="topic-words" class="topic-word-list"></div>
+        <div class="topic-selection-bar" id="topic-selection-bar"><span id="topic-selected-count">Выберите слова</span><button class="button primary" id="topic-save" type="button" disabled>Добавить в словарь</button><a class="button primary" id="topic-done" href="/vocabulary" hidden>К моим словам</a></div>
+    </section>
+</section>
+@section Scripts { <script src="~/js/word-display.js" asp-append-version="true" defer></script><script src="~/js/my-words.js" asp-append-version="true" defer></script> }

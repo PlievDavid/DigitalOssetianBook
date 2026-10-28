@@ -6,8 +6,8 @@
   const row = (word, label, action) => {
     const item = document.createElement('div'); item.className = 'vocabulary-row';
     const copy = document.createElement('div'); copy.className = 'vocabulary-row-copy';
-    const original = document.createElement('strong'); original.textContent = word.ossetian;
-    const translation = document.createElement('span'); translation.textContent = word.russian;
+    const original = document.createElement('strong'); original.textContent = AdamWordText(word.ossetian);
+    const translation = document.createElement('span'); translation.textContent = AdamWordText(word.russian);
     copy.append(original, translation);
     if (word.example) { const example = document.createElement('small'); example.textContent = word.example; copy.append(example); }
     if (word.dictionaryNote) { const note = document.createElement('small'); note.textContent = word.dictionaryNote; copy.append(note); }
