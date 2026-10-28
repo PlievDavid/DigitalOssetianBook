@@ -60,6 +60,7 @@ public static class GrammarScript
 
         if (blank.Length == 0) errors.Add("Форма слова: укажите метку пропуска, например «___».");
         else if (blank.Length > 10) errors.Add("Форма слова: метка пропуска длиннее 10 символов.");
+        else if (HasLatin(blank)) errors.Add("Форма слова: в метке пропуска есть латинские буквы.");
 
         if (prompt.Length == 0) errors.Add("Форма слова: укажите предложение.");
         else if (prompt.Length > 300) errors.Add("Форма слова: предложение длиннее 300 символов.");

@@ -127,10 +127,19 @@
     return session.prompt;
   }
 
+  // Подставленная правильная форма выделяется классом .grammar-inserted (см. grammar.css).
+  function insertedRange() {
+    if (!session.answered || !session.correctForm || !session.blank) return null;
+    const index = session.prompt.indexOf(session.blank);
+    return index < 0 ? null : { start: index, end: index + session.correctForm.length };
+  }
+
   function makeWordSpan(word) {
     const span = document.createElement("span"); span.className = "grammar-word";
     span.dataset.word = word.text; span.dataset.position = String(word.position);
     span.textContent = word.text;
+    const range = insertedRange();
+    if (range && word.position <= range.start && word.position + word.text.length >= range.end) span.classList.add("grammar-inserted");
     span.tabIndex = 0;
     span.setAttribute("role", "button");
     span.setAttribute("aria-label", `Перевод слова ${word.text}`);
@@ -141,20 +150,34 @@
     return span;
   }
 
+  // Добавляет кусок предложения, разрезая его по границам вставленной формы.
+  function appendText(base, from, to) {
+    const range = insertedRange();
+    const start = range ? Math.max(from, range.start) : to;
+    const end = range ? Math.min(to, range.end) : from;
+    if (start >= end) { if (to > from) sentence.append(document.createTextNode(base.slice(from, to))); return; }
+    if (start > from) sentence.append(document.createTextNode(base.slice(from, start)));
+    const mark = document.createElement("span");
+    mark.className = "grammar-inserted";
+    mark.textContent = base.slice(start, end);
+    sentence.append(mark);
+    if (to > end) sentence.append(document.createTextNode(base.slice(end, to)));
+  }
+
   function renderSentence() {
     closeWord();
     sentence.replaceChildren();
     const base = displayPrompt();
     const words = session.sentence || [];
-    if (!words.length) { sentence.textContent = base; return; }
+    if (!words.length) { appendText(base, 0, base.length); return; }
     let cursor = 0;
     for (const word of words) {
       if (word.position < cursor) continue;
-      sentence.append(document.createTextNode(base.slice(cursor, word.position)));
+      appendText(base, cursor, word.position);
       sentence.append(makeWordSpan(word));
       cursor = word.position + word.text.length;
     }
-    sentence.append(document.createTextNode(base.slice(cursor)));
+    appendText(base, cursor, base.length);
   }
 
   function render() {
