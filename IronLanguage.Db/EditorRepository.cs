@@ -5,12 +5,14 @@ namespace IronLanguage.Db;
 
 public sealed record DictionaryMatch(Guid SenseId, bool Approximate);
 public sealed record MaterialToken(string Text, Guid? WordId, DictionaryMatch[]? Matches = null);
-public sealed record MaterialChapter(Guid Id, int Number, string Title, MaterialToken[] Tokens);
+public sealed record MaterialChapter(Guid Id, int Number, string Title, MaterialToken[] Tokens, string Translation = "");
+public sealed record ReadingIllustration(Guid ChapterId, int AfterLine, string ImagePath, string Description);
 public sealed record WordMaterial(string Ossetian, string Russian, string Example, string? AudioPath);
 public sealed record ExerciseMaterial(string Kind, string RussianPrompt, string OssetianAnswer, string[] Tokens, string[] Alternatives, string Explanation, Guid[] WordIds, string? AudioPath, string[][]? Distractors = null);
 public sealed record ListeningMaterial(string Question, string[] Options, int CorrectOption, string Transcript, string Explanation, string? AudioPath);
 public sealed record BookMaterial(string Title, string Description, MaterialChapter[] Chapters, string LiteraryTranslation = "",
-    string Authors = "", string Difficulty = "", string? CoverImagePath = null);
+    string Authors = "", string Difficulty = "", string? CoverImagePath = null,
+    ReadingIllustration[]? Illustrations = null, bool TranslationReviewed = true, BookCoverDesign? CoverDesign = null);
 public sealed record DialogueCharacter(string Id, string Name, string Color);
 public sealed record DialogueLine(int Number, string CharacterId, string Text, string? AudioPath = null);
 public sealed record DialogueTurn(int LineNumber, string Kind, string[] References, string[] Options, int HintThreshold, bool Skippable);
@@ -124,9 +126,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var p = Parse<BookMaterial>(payloadJson);
             var book = new Book { Title = p.Title, Authors = p.Authors, Difficulty = p.Difficulty,
-                Description = p.Description, CoverImagePath = p.CoverImagePath, LiteraryTranslation = p.LiteraryTranslation };
+                Description = p.Description, CoverImagePath = p.CoverImagePath,
+                CoverDesignJson = JsonSerializer.Serialize(p.CoverDesign ?? BookCoverDesign.ForTitle(p.Title), JsonOptions),
+                LiteraryTranslation = p.TranslationReviewed ? p.LiteraryTranslation : "", DraftTranslation = p.TranslationReviewed ? "" : p.LiteraryTranslation,
+                TranslationReviewed = p.TranslationReviewed, IllustrationsJson = JsonSerializer.Serialize(p.Illustrations ?? [], JsonOptions) };
             book.Chapters = p.Chapters.Select(x => new BookChapter { Id = x.Id == Guid.Empty ? Guid.NewGuid() : x.Id,
-                Number = x.Number, Title = x.Title, TokensJson = JsonSerializer.Serialize(x.Tokens) }).ToList();
+                Number = x.Number, Title = x.Title, TokensJson = JsonSerializer.Serialize(x.Tokens), Translation = x.Translation ?? "" }).ToList();
             db.Books.Add(book); await db.SaveChangesAsync(ct); return book.Id;
         }
         if (kind == "dialogue")
@@ -200,18 +205,26 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
 
     public async Task<bool> PublishDraft(string kind, Guid id, Guid editorId, CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         var material = await Material(kind, id, ct);
         if (material is null || material.Published) return false;
         if (kind == "word") (await db.Words.SingleAsync(x => x.Id == id, ct)).Published = true;
-        else if (kind == "book") (await db.Books.SingleAsync(x => x.Id == id, ct)).Published = true;
+        else if (kind == "book")
+        {
+            var payload = Parse<BookMaterial>(material.PayloadJson);
+            if (BookTranslationReview.HasWarnings(payload)) return false;
+            payload = BookTranslationReview.Approve(payload);
+            var book = await db.Books.Include(x => x.Chapters).SingleAsync(x => x.Id == id, ct);
+            Apply(book, payload); book.Published = true;
+            material = material with { PayloadJson = JsonSerializer.Serialize(payload, JsonOptions) };
+        }
         else if (kind == "dialogue") (await db.Dialogues.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "matching") (await db.Matchings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "picture") (await db.PictureMatchings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else (await db.Exercises.SingleAsync(x => x.Id == id, ct)).Published = true;
         db.ContentRevisions.Add(new ContentRevision { Kind = kind, ContentId = id, Version = 1, BaseVersion = 0,
             PayloadJson = material.PayloadJson, Published = true, EditorId = editorId, PublishedAt = DateTimeOffset.UtcNow });
-        await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return true;
+        await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); return true;
     }
 
     public Task<ContentRevision?> Revision(Guid id, CancellationToken ct = default) =>
@@ -248,7 +261,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
 
     public async Task<bool> PublishRevision(Guid id, CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         var revision = await db.ContentRevisions.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
         if (revision is null) return false;
         if (revision.Kind == "word")
@@ -276,6 +289,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var book = await db.Books.Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
             if (book is null) return false;
             var payload = Parse<BookMaterial>(revision.PayloadJson);
+            if (BookTranslationReview.HasWarnings(payload)) return false;
+            payload = BookTranslationReview.Approve(payload);
+            revision.PayloadJson = JsonSerializer.Serialize(payload, JsonOptions);
             Apply(book, payload); book.Version++;
             var first = payload.Chapters.OrderBy(x => x.Number).First();
             var chapters = book.Chapters.ToDictionary(x => x.Id);
@@ -307,7 +323,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         }
         else return false;
         revision.Published = true; revision.PublishedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return true;
+        await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); return true;
     }
 
     public async Task<bool> DeleteDraft(string kind, Guid id, CancellationToken ct = default)
@@ -397,8 +413,10 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             Parse<string[]>(x.TokensJson), Parse<string[]>(x.AlternativesJson), x.Explanation, Parse<Guid[]>(x.WordIdsJson), x.AudioPath,
             Parse<string[][]>(x.DistractorsJson)), JsonOptions);
     private static string Capture(Book x) => JsonSerializer.Serialize(new BookMaterial(x.Title, x.Description, x.Chapters.OrderBy(c => c.Number)
-        .Select(c => new MaterialChapter(c.Id, c.Number, c.Title, Parse<MaterialToken[]>(c.TokensJson))).ToArray(),
-        x.LiteraryTranslation, x.Authors, x.Difficulty, x.CoverImagePath), JsonOptions);
+        .Select(c => new MaterialChapter(c.Id, c.Number, c.Title, Parse<MaterialToken[]>(c.TokensJson), c.Translation)).ToArray(),
+        x.TranslationReviewed ? x.LiteraryTranslation : x.DraftTranslation, x.Authors, x.Difficulty, x.CoverImagePath,
+        Parse<ReadingIllustration[]>(x.IllustrationsJson), x.TranslationReviewed,
+        BookCoverDesign.Read(x.CoverDesignJson, x.Title)), JsonOptions);
     private static void Apply(WordEntry x, WordMaterial p) { x.Ossetian = p.Ossetian; x.Russian = p.Russian; x.Example = p.Example; x.AudioPath = p.AudioPath; }
     private static void Apply(Exercise x, ExerciseMaterial p)
     {
@@ -444,15 +462,20 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
     private void Apply(Book x, BookMaterial p)
     {
         x.Title = p.Title; x.Authors = p.Authors; x.Difficulty = p.Difficulty;
-        x.Description = p.Description; x.CoverImagePath = p.CoverImagePath; x.LiteraryTranslation = p.LiteraryTranslation;
+        x.Description = p.Description; x.CoverImagePath = p.CoverImagePath;
+        x.CoverDesignJson = JsonSerializer.Serialize(p.CoverDesign ?? BookCoverDesign.ForTitle(p.Title), JsonOptions);
+        x.LiteraryTranslation = p.TranslationReviewed ? p.LiteraryTranslation : "";
+        x.DraftTranslation = p.TranslationReviewed ? "" : p.LiteraryTranslation;
+        x.TranslationReviewed = p.TranslationReviewed;
+        x.IllustrationsJson = JsonSerializer.Serialize(p.Illustrations ?? [], JsonOptions);
         var wanted = p.Chapters.Select(c => c.Id).ToHashSet();
         foreach (var old in x.Chapters.Where(c => !wanted.Contains(c.Id)).ToList()) { db.Chapters.Remove(old); x.Chapters.Remove(old); }
         foreach (var chapter in p.Chapters)
         {
             var current = x.Chapters.SingleOrDefault(c => c.Id == chapter.Id);
             if (current is null)
-                x.Chapters.Add(new BookChapter { Id = chapter.Id, BookId = x.Id, Number = chapter.Number, Title = chapter.Title, TokensJson = JsonSerializer.Serialize(chapter.Tokens) });
-            else { current.Number = chapter.Number; current.Title = chapter.Title; current.TokensJson = JsonSerializer.Serialize(chapter.Tokens); }
+                x.Chapters.Add(new BookChapter { Id = chapter.Id, BookId = x.Id, Number = chapter.Number, Title = chapter.Title, TokensJson = JsonSerializer.Serialize(chapter.Tokens), Translation = chapter.Translation ?? "" });
+            else { current.Number = chapter.Number; current.Title = chapter.Title; current.TokensJson = JsonSerializer.Serialize(chapter.Tokens); current.Translation = chapter.Translation ?? ""; }
         }
     }
 }

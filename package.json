@@ -14,6 +14,8 @@
     "test:avatar-artwork": "node tests/avatar-artwork.cjs",
     "test:avatar": "node tests/avatar-browser.cjs",
     "test:editor-audio": "node tests/editor-audio-layout-browser.cjs",
+    "test:editor-audio-recorder": "node tests/editor-audio-recorder-browser.cjs",
+    "test:reading-position": "node tests/reading-position-browser.cjs",
     "test:game-threads": "node tests/game-threads-browser.cjs",
     "test:app-containers": "node tests/app-containers-browser.cjs",
     "test:layout-components": "node tests/layout-components-browser.cjs",

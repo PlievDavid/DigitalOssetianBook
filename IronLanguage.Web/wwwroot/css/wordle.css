@@ -16,12 +16,16 @@
 .wl-cell { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid #bdcdb7; border-bottom-width: 3px; border-radius: 7px; background: white; color: #244e39; font-weight: 700; font-size: clamp(23px, 5vw, 32px); line-height: 1; }
 .wl-cell.is-current { border-color: #709578; background: #f0f4e9; }
 .wl-cell.is-cursor { box-shadow: inset 0 0 0 2px #477559; }
+.wl-cell { position: relative; }
+.wl-letter-exit { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font: inherit; color: inherit; }
 #wordle-app .is-correct { background: #39754b; color: white; border-color: #39754b; }
 #wordle-app .is-present { background: #d4ae44; color: #302b15; border-color: #bf9d39; }
 #wordle-app .is-absent { background: #e0e1dd; color: #485049; border-color: #d0d3cc; }
 .wl-input-label { display: none; }
 .green-theme #wordle-app .wl-input { position: absolute; top: 24px; left: 50%; width: 1px; height: 1px; min-height: 0; margin: 0; padding: 0; border: 0; opacity: 0; font-size: 16px; }
-.wl-game:has(.wl-input:focus-visible) .wl-cell.is-cursor { outline: 2px solid #286aab; outline-offset: 2px; }
+.wl-game:has(.wl-input:focus-visible) .wl-cell.is-cursor { outline: none; }
+.green-theme #wordle-app .wl-input:is(:focus, :focus-visible) { outline: none; box-shadow: none; }
+.wl-board, .wl-keyboard { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .wl-notice { position: absolute; z-index: 10; top: var(--wl-notice-top, 50%); left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; width: 190px; max-width: calc(100% - 24px); padding: 12px 10px; border: 1px solid #eedbb8; border-radius: 12px; background: #fffaf0; color: #603713; box-shadow: 0 6px 20px #5d43151a; pointer-events: none; }
 .wl-notice-icon { flex: none; width: 24px; height: 24px; padding: 3px; border-radius: 7px; background: #fff0d3; color: #a66a12; }
 .wl-status { min-width: 0; margin: 0; color: inherit; font-size: 13px; font-weight: 600; line-height: 1.35; text-align: left; overflow-wrap: anywhere; }
