@@ -189,7 +189,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 else wordIds.Add(id);
             }
             if (string.IsNullOrWhiteSpace(model.RussianPrompt))
-                ModelState.AddModelError(nameof(model.RussianPrompt), kind == "audio" ? "Укажите перевод предложения." : "Укажите русскую подсказку.");
+                ModelState.AddModelError(nameof(model.RussianPrompt), kind == "audio" ? "Укажите перевод предложения." : "Укажите фразу на русском.");
             if (tokens.Length is < 2 or > 30 || tokens.Any(x => x.Length > 80))
                 ModelState.AddModelError(nameof(model.TokensText), kind == "audio"
                     ? "Предложение: от 2 до 30 слов, каждое с новой строки."
@@ -225,11 +225,11 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             }
             else
             {
-                alternatives = model.AlternativesText.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                alternatives = [];
                 ossetianAnswer = model.OssetianAnswer;
-                if (string.IsNullOrWhiteSpace(model.OssetianAnswer)) ModelState.AddModelError(nameof(model.OssetianAnswer), "Укажите осетинский ответ.");
-                if (tokens.Length is >= 2 and <= 30 && (!CanAssemble(model.OssetianAnswer, tokens) || alternatives.Any(x => !CanAssemble(x, tokens))))
-                    ModelState.AddModelError(nameof(model.TokensText), "Ответ и допустимые варианты должны собираться из этих слов.");
+                if (string.IsNullOrWhiteSpace(model.OssetianAnswer)) ModelState.AddModelError(nameof(model.OssetianAnswer), "Укажите фразу на осетинском.");
+                if (tokens.Length is >= 2 and <= 30 && !CanAssemble(model.OssetianAnswer, tokens))
+                    ModelState.AddModelError(nameof(model.TokensText), "Фраза должна собираться из этих слов.");
             }
             if (kind == "audio" && model.Audio is not { Length: > 0 } && string.IsNullOrEmpty(originalAudioPath))
                 ModelState.AddModelError(nameof(model.Audio), "Для аудиопазла нужна запись.");

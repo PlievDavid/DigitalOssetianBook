@@ -20,14 +20,14 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
         if (kind != "translation" || string.IsNullOrWhiteSpace(russianPrompt) || string.IsNullOrWhiteSpace(ossetianAnswer)) return BadRequest();
         var pieces = tokens.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (pieces.Length < 2 || pieces.Length > 30 || pieces.Any(x => x.Length > 80)) return BadRequest("Укажите от 2 до 30 слов, каждое с новой строки.");
-        var accepted = (alternatives ?? "").Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        // Поле «Другие допустимые ответы» убрано: параметр alternatives оставлен для совместимости и игнорируется.
         var linkedWords = (wordIds ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (linkedWords.Any(x => !Guid.TryParse(x, out _))) return BadRequest("Неверный идентификатор слова.");
         if (!CanAssemble(ossetianAnswer, pieces)) return BadRequest("Ответ должен собираться из указанных слов.");
         var audioPath = audio is null ? null : await SaveAudio(audio, ct);
         await catalog.AddExercise(new Exercise { Kind = kind, RussianPrompt = russianPrompt.Trim(), OssetianAnswer = ossetianAnswer.Trim(),
             TokensJson = JsonSerializer.Serialize(pieces), WordIdsJson = JsonSerializer.Serialize(linkedWords.Select(Guid.Parse)),
-            AlternativesJson = JsonSerializer.Serialize(accepted), Explanation = (explanation ?? "").Trim(), AudioPath = audioPath }, ct);
+            AlternativesJson = "[]", Explanation = (explanation ?? "").Trim(), AudioPath = audioPath }, ct);
         return RedirectToAction(nameof(Index));
     }
 
