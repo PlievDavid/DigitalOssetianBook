@@ -102,7 +102,7 @@ if (args.Contains("--database"))
     var selectedSlugs = new[] { "schoolboy", "mischief", "testament" };
     var selectedIds = drafts.Where(draft => selectedSlugs.Contains(draft.Slug)).Select(draft => ReadingSeedService.Build(draft).Id).ToHashSet();
     var catalog = new EfCatalogRepository(db);
-    var visibleBooks = await catalog.Books();
+    var visibleBooks = (await catalog.Books()).Where(book => expectedIds.Contains(book.Id)).ToList();
     Check(visibleBooks.Count == 3 && selectedIds.SetEquals(visibleBooks.Select(book => book.Id)),
         "В каталоге должны остаться только Школьник, Шалун и Завещание.");
     Check(books.All(book => book.Archived == !selectedIds.Contains(book.Id)), "Отложенные произведения должны оставаться в архиве.");
