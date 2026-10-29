@@ -21,7 +21,10 @@ public sealed class PracticeController : Controller
     public IActionResult WordPractice() => View(User.Identity?.IsAuthenticated == true ? "WordPractice" : "WordPracticeGuest");
 
     [HttpGet("books")]
-    public IActionResult Books() => View();
+    public IActionResult Books() => Redirect("/reading" + Request.QueryString);
+
+    [HttpGet("reading")]
+    public IActionResult Reading() => View();
 
     [HttpGet("dialogs")]
     public IActionResult Dialogs() => View();

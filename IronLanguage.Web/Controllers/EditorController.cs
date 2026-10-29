@@ -94,6 +94,8 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
             var book = (await catalog.DraftBooks(ct)).SingleOrDefault(x => x.Id == id);
             if (book is null) return NotFound();
             if (book.Chapters.Count == 0 || book.Chapters.Any(x => !ValidTokens(x.TokensJson))) return BadRequest("Проверьте разметку глав.");
+            if (book.LiteraryTranslation.Contains('⚠') || book.DraftTranslation.Contains('⚠') || book.Chapters.Any(chapter => chapter.Translation.Contains('⚠')))
+                return BadRequest("Сначала исправьте отмеченные строки перевода.");
             var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
             if (book.Chapters.SelectMany(x => JsonSerializer.Deserialize<BookToken[]>(x.TokensJson) ?? []).Any(x => x.WordId is Guid wordId && !publishedWords.Contains(wordId)))
                 return BadRequest("Сначала опубликуйте слова, на которые ссылается текст.");

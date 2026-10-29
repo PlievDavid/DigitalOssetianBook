@@ -40,10 +40,13 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   // Pause each half of the real animation, inspect the midpoint and then finish it.
   await page.evaluate(()=>{const inner=document.querySelector('.review-flip-inner'),native=inner.animate.bind(inner);window.__flip=[];inner.animate=(frames,options)=>{const animation=native(frames,options);animation.pause();window.__flip.push({animation,duration:options.duration});return animation;};});
   await page.locator('#review-flip').focus();await page.keyboard.press('Space');await page.waitForFunction(()=>window.__flip.length===1);
-  await page.evaluate(()=>window.__flip[0].animation.currentTime=70);
+  await page.evaluate(async()=>{window.__flip[0].animation.currentTime=70;await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
+  assert(Math.abs(await page.locator('.review-flip-inner').evaluate(x=>new DOMMatrix(getComputedStyle(x).transform).m11))<.995);
   assert.equal(await page.locator('.review-front').evaluate(x=>getComputedStyle(x).display),'flex');assert.equal(await page.locator('.review-back').evaluate(x=>getComputedStyle(x).display),'none');
-  await page.screenshot({path:path.join(out,'flip-front-half.png'),clip:bounds});
-  await page.evaluate(()=>window.__flip[0].animation.finish());await page.waitForFunction(()=>window.__flip.length===2);await page.evaluate(()=>window.__flip[1].animation.currentTime=85);
+  assert.notEqual(await page.locator('.review-flip-inner').evaluate(x=>getComputedStyle(x).transform),'none');
+  await page.screenshot({path:path.join(out,'flip-front-half.png'),clip:bounds,animations:'allow'});
+  await page.evaluate(()=>window.__flip[0].animation.finish());await page.waitForFunction(()=>window.__flip.length===2);await page.evaluate(async()=>{window.__flip[1].animation.currentTime=85;await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
+  assert(Math.abs(await page.locator('.review-flip-inner').evaluate(x=>new DOMMatrix(getComputedStyle(x).transform).m11))<.995);
   assert.equal(await page.locator('.review-front').evaluate(x=>getComputedStyle(x).display),'none');assert.equal(await page.locator('.review-back').evaluate(x=>getComputedStyle(x).display),'flex');
   assert.equal(await page.locator('.review-card-controls').evaluate(x=>getComputedStyle(x).opacity),'0');
   await page.screenshot({path:path.join(out,'flip-back-half.png'),clip:bounds});
@@ -58,7 +61,7 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   let practice=await snapshot();assert.equal(practice.card.kind,'choice');assert.equal(practice.result,null);assert.equal(practice.errors,0);assert(await page.locator('#review-check-form').isVisible());
   const source=vocabulary.find(x=>normalize(x.word)===normalize(practice.card.prompt));assert(source);
   const correct=practice.card.options.find(x=>normalize(x)===normalize(source.russian));assert(correct);
-  await page.locator('#review-options label').filter({hasText:normalize(correct)}).click();await page.locator('#review-check').click();await idle();assert((await snapshot()).result.correct);
+  await page.locator('#review-options label').filter({hasText:normalize(correct)}).click();await page.locator('#review-check').click();await idle();assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
   await page.locator('#review-settings-open').click();await idle();assert.equal(await page.locator('input[name=format]').count(),0);await page.keyboard.press('Escape');
   const round=await api('/word-review/sessions',{mode:'due'});assert.equal(round.card.kind,'pairs');assert(round.card.pairs.every(x=>x.expected===null));
   await page.reload();await idle();await page.locator('#review-resume').click();assert(await page.locator('#review-pairs').isVisible());
@@ -69,15 +72,16 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
    else if(index===1){await left.focus();await page.keyboard.press('Enter');await right.focus();await page.keyboard.press('Enter');}
    else{await left.click();await right.click();}
   }
-  assert.equal(await page.locator('#review-pairs-board .game-thread').count(),mapping.length);await page.locator('#review-pairs-check').click();await idle();assert((await snapshot()).result.correct);
+  assert.equal(await page.locator('#review-pairs-board .game-thread').count(),mapping.length);await page.locator('#review-pairs-check').click();await idle();assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
   await page.screenshot({path:path.join(out,'matching-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:path.join(out,'matching-wide.png'),fullPage:true});
   await api('/word-review/settings',{format:'auto',directInput:true},'PUT');const typed=await api('/word-review/sessions',{mode:'due'});assert.equal(typed.card.kind,'input');
   await page.reload();await idle();await page.locator('#review-resume').click();await page.setViewportSize({width:390,height:844});await page.locator('#review-input').fill('неверный ответ');await page.locator('#review-check').click();await idle();assert.match(await page.locator('#review-feedback').innerText(),/Правильный ответ/);
   await page.screenshot({path:path.join(out,'input-error-mobile.png'),fullPage:true});await page.setViewportSize({width:320,height:700});await page.evaluate(()=>document.documentElement.style.fontSize='200%');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.evaluate(()=>document.documentElement.style.fontSize='');
   await page.locator('#review-exit').click();await idle();assert.equal((await snapshot()).card,null);assert(!/Очки/.test(await page.locator('#review-totals').textContent()));await page.screenshot({path:path.join(out,'finish-mobile.png'),fullPage:true});
-  const guestPage=await browser.newPage();await guestPage.goto(`${base}/word-practice`);assert(await guestPage.locator('#word-practice-app').isVisible());
+  const guestPage=await browser.newPage();await guestPage.goto(`${base}/word-practice`);assert(await guestPage.locator('#word-practice-app').isVisible());await guestPage.close();await page.bringToFront();
   await page.goto(`${base}/vocabulary/available`);await page.waitForSelector('.words-topic-card');await page.screenshot({path:path.join(out,'topics-mobile.png'),fullPage:true});
   await page.locator('.words-topic-card').first().click();await page.waitForSelector('.topic-word-row');await page.getByRole('button',{name:'Выбрать все',exact:true}).click();await page.getByRole('button',{name:'Добавить в словарь',exact:true}).click();await page.waitForFunction(()=>document.getElementById('words-status').textContent.includes('Добавлено'));assert.equal(await page.locator('.topic-word-row input:not(:disabled)').count(),0);await page.screenshot({path:path.join(out,'topic-mobile.png'),fullPage:true});
+  await page.goto(`${base}/vocabulary`);await wordsIdle();const before=await page.locator('.words-row strong').first().textContent();await page.locator('.words-delete').first().click();await page.locator('#words-remove-confirm').click();await wordsIdle();await page.waitForFunction(()=>document.getElementById('words-status').textContent.includes('\u0443\u0434\u0430\u043b\u0435\u043d\u043e'),null,{polling:100});assert.notEqual(await page.locator('.words-row strong').first().textContent(),before);
   assert.deepEqual(errors,[]);console.log('Review UX passed: 4 widths, AJAX filters/sort/pages/history, initial diagnosis, smooth flip midpoints, known/unknown branching, integrated pairs with mouse and keyboard, typed checks, no score counters, themes, CSRF and guest route.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

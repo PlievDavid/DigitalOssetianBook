@@ -25,14 +25,6 @@
   const words = JSON.parse(document.getElementById('editor-words-data').textContent);
   const byId = new Map(words.map(word => [word.id, word]));
   const wordKey = text => text.trim().replaceAll('æ', 'ӕ').replaceAll('Æ', 'Ӕ').replace(/\u0301/g, '').normalize('NFC').toLocaleLowerCase('ru');
-  const fileInput = document.getElementById('editor-audio');
-  if (fileInput) {
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0], label = document.getElementById('editor-file-name'), player = document.getElementById('editor-audio-preview');
-      label.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} МБ` : 'Файл не выбран';
-      if (file) { player.src = URL.createObjectURL(file); player.hidden = false; }
-    });
-  }
 
   if (kind === 'picture') {
     const section = document.getElementById('picture-editor');
@@ -138,13 +130,59 @@
   }
 
   if (kind === 'book') {
+    document.getElementById('clear-legacy-translation')?.addEventListener('click', event => {
+      document.getElementById('LiteraryTranslation').value = '';
+      event.currentTarget.closest('details').hidden = true;
+    });
     const hidden = document.getElementById('ChaptersJson'), container = document.getElementById('editor-chapters');
     let chapters; try { chapters = JSON.parse(hidden.value || '[]'); } catch { chapters = []; }
     if (!Array.isArray(chapters)) chapters = [];
     const tokenize = text => Array.from(text.matchAll(/\s+|[\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)*|[^\s\p{L}\p{M}\p{N}]+/gu), match => ({ text: match[0], wordId: null }));
     const blank = () => ({ id: crypto.randomUUID(), number: chapters.length + 1, title: '', tokens: [] });
     if (chapters.length === 0) chapters.push(blank());
-    const sync = () => { chapters.forEach((chapter, index) => { chapter.number = index + 1; }); hidden.value = JSON.stringify(chapters); };
+    const illustrationInput = document.getElementById('IllustrationsJson');
+    const illustrationChapter = document.getElementById('IllustrationChapterId');
+    let illustrations; try { illustrations = JSON.parse(illustrationInput.value || '[]'); } catch { illustrations = []; }
+    const sync = () => {
+      chapters.forEach((chapter, index) => { chapter.number = index + 1; }); hidden.value = JSON.stringify(chapters);
+      illustrationInput.value = JSON.stringify(illustrations);
+      const selected = illustrationChapter.value;
+      illustrationChapter.replaceChildren();
+      chapters.forEach((chapter, index) => {
+        const option = document.createElement('option'); option.value = chapter.id; option.textContent = chapter.title || `Часть ${index + 1}`;
+        illustrationChapter.append(option);
+      });
+      if (chapters.some(chapter => chapter.id === selected)) illustrationChapter.value = selected;
+    };
+    const renderIllustrations = () => {
+      const list = document.getElementById('editor-illustrations'); list.replaceChildren();
+      illustrations.forEach((illustration, index) => {
+        const entry = document.createElement('section'); entry.className = 'editor-reading-illustration';
+        const image = document.createElement('img'); image.src = illustration.imagePath; image.alt = illustration.description; entry.append(image);
+        const chapterLabel = document.createElement('label'); chapterLabel.textContent = 'Часть произведения';
+        const select = document.createElement('select');
+        chapters.forEach(chapter => { const option = document.createElement('option'); option.value = chapter.id; option.textContent = chapter.title; select.append(option); });
+        select.value = illustration.chapterId; select.onchange = () => { illustration.chapterId = select.value; sync(); }; chapterLabel.append(select);
+        const lineLabel = document.createElement('label'); lineLabel.textContent = 'После строки';
+        const line = document.createElement('input'); line.type = 'number'; line.min = '0'; line.value = illustration.afterLine;
+        line.oninput = () => { illustration.afterLine = Number(line.value); sync(); }; lineLabel.append(line);
+        const descriptionLabel = document.createElement('label'); descriptionLabel.textContent = 'Описание рисунка';
+        const description = document.createElement('input'); description.maxLength = 400; description.required = true; description.value = illustration.description;
+        description.oninput = () => { illustration.description = description.value; sync(); }; descriptionLabel.append(description);
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button secondary'; remove.textContent = 'Убрать рисунок';
+        remove.onclick = () => { illustrations.splice(index, 1); sync(); renderIllustrations(); };
+        entry.append(chapterLabel, lineLabel, descriptionLabel, remove); list.append(entry);
+      });
+    };
+    let interiorUrl;
+    document.getElementById('InteriorImage').onchange = event => {
+      if (interiorUrl) URL.revokeObjectURL(interiorUrl);
+      const file = event.target.files[0], preview = document.getElementById('interior-image-preview');
+      document.getElementById('interior-image-file-name').textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toLocaleString('ru', { maximumFractionDigits: 1 })} МБ` : 'Файл не выбран';
+      interiorUrl = file ? URL.createObjectURL(file) : null;
+      preview.hidden = !file;
+      if (interiorUrl) preview.src = interiorUrl; else preview.removeAttribute('src');
+    };
     const render = () => {
       sync(); container.replaceChildren();
       chapters.forEach((chapter, index) => {
@@ -152,7 +190,7 @@
         const header = document.createElement('div'); header.className = 'editor-chapter-header';
         const h = document.createElement('h3'); h.textContent = `Глава ${index + 1}`;
         const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Удалить главу'; remove.disabled = chapters.length === 1;
-        remove.addEventListener('click', () => { chapters.splice(index, 1); render(); }); header.append(h, remove);
+        remove.addEventListener('click', () => { illustrations = illustrations.filter(illustration => illustration.chapterId !== chapter.id); chapters.splice(index, 1); render(); }); header.append(h, remove);
         const titleLabel = document.createElement('label'); titleLabel.textContent = 'Название главы';
         const title = document.createElement('input'); title.value = chapter.title || ''; title.required = true; title.dataset.ossetian = '';
         title.addEventListener('input', () => { chapter.title = title.value; sync(); }); titleLabel.append(title);
@@ -165,8 +203,16 @@
           chapter.tokens = next; sync();
         });
         textLabel.append(textarea);
-        section.append(header, titleLabel, textLabel); container.append(section);
+        const translationLabel = document.createElement('label'); translationLabel.textContent = 'Перевод главы';
+        const translationHelp = document.createElement('span'); translationHelp.className = 'field-help';
+        translationHelp.textContent = 'Необязательно. Проверяется вместе с текстом перед публикацией.';
+        const translation = document.createElement('textarea'); translation.rows = 6; translation.maxLength = 50000; translation.lang = 'ru';
+        translation.value = chapter.translation || '';
+        translation.addEventListener('input', () => { chapter.translation = translation.value; sync(); });
+        translationLabel.append(translationHelp, translation);
+        section.append(header, titleLabel, textLabel, translationLabel); container.append(section);
       });
+      renderIllustrations();
     };
     document.getElementById('add-chapter').addEventListener('click', () => { chapters.push(blank()); render(); });
     formRoot.querySelector('form').addEventListener('submit', sync);

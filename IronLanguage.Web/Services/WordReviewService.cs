@@ -72,7 +72,11 @@ public static class WordReviewRules
 public sealed class WordReviewService(IWordReviewRepository repository, TimeProvider clock)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-    private DateTimeOffset Now => clock.GetUtcNow();
+    // PostgreSQL stores microseconds; keep the JSON snapshot at the same precision.
+    private DateTimeOffset Now
+    {
+        get { var now = clock.GetUtcNow(); return new(now.UtcTicks - now.UtcTicks % 10, TimeSpan.Zero); }
+    }
     private static ReviewCardSnapshot[] Cards(WordReviewSession session) => JsonSerializer.Deserialize<ReviewCardSnapshot[]>(session.ItemsJson, Json) ?? [];
     private static IEnumerable<Guid> Words(ReviewCardSnapshot card) => card.Pairs?.Select(x => x.WordId) ?? [card.WordId];
     private static void Store(WordReviewSession session, IEnumerable<ReviewCardSnapshot> cards) => session.ItemsJson = JsonSerializer.Serialize(cards, Json);

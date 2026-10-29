@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Книга" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Произведение" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
@@ -139,12 +139,22 @@
         {
             <h2>@Model.Book.Title</h2><p>@Model.Book.Description</p>
             <p class="field-help">@Model.Book.Authors · @Model.Book.Difficulty</p>
-            @if (Model.Book.CoverImagePath is not null) { <img src="@Model.Book.CoverImagePath" alt="Обложка @Model.Book.Title" style="width: 140px; height: 186px; object-fit: cover" /> }
-            @if (!string.IsNullOrWhiteSpace(Model.Book.LiteraryTranslation)) { <details><summary>Литературный перевод</summary><p style="white-space: pre-wrap">@Model.Book.LiteraryTranslation</p></details> }
+            <div class="book-cover-preview" data-book-cover data-cover-title="@Model.Book.Title" data-cover-authors="@Model.Book.Authors" data-cover-design="@System.Text.Json.JsonSerializer.Serialize(Model.Book.CoverDesign ?? IronLanguage.Db.BookCoverDesign.ForTitle(Model.Book.Title), new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))"></div>
+            @if (!string.IsNullOrWhiteSpace(Model.Book.LiteraryTranslation)) { <details><summary>Перевод</summary><p style="white-space: pre-wrap">@Model.Book.LiteraryTranslation</p></details> }
+            @if (!Model.Book.TranslationReviewed && (!string.IsNullOrWhiteSpace(Model.Book.LiteraryTranslation) || Model.Book.Chapters.Any(chapter => !string.IsNullOrWhiteSpace(chapter.Translation)))) { <p class="field-help">Черновой перевод виден только редактору. Читатели увидят оригинал.</p> }
             @foreach (var chapter in Model.Book.Chapters.OrderBy(x => x.Number))
             {
                 <h3>@chapter.Title</h3>
-                <div class="editor-book-preview-text">@foreach (var token in chapter.Tokens) { <span class="@(token.WordId is null ? "" : "reader-word")" title="@(token.WordId is Guid id ? Model.Words.GetValueOrDefault(id)?.Russian : null)">@token.Text</span> }</div>
+                var lines = string.Concat(chapter.Tokens.Select(token => token.Text)).Split('\n');
+                for (var lineIndex = 0; lineIndex <= lines.Length; lineIndex++)
+                {
+                    foreach (var illustration in (Model.Book.Illustrations ?? []).Where(image => image.ChapterId == chapter.Id && image.AfterLine == lineIndex))
+                    {
+                        <img class="editor-interior-preview" src="@illustration.ImagePath" alt="@illustration.Description" />
+                    }
+                    if (lineIndex < lines.Length) { <div class="editor-reading-preview-line">@lines[lineIndex]</div> }
+                }
+                @if (!string.IsNullOrWhiteSpace(chapter.Translation)) { <details><summary>Перевод главы</summary><p style="white-space: pre-wrap">@chapter.Translation</p></details> }
             }
         }
     </div>
@@ -167,3 +177,5 @@
         <h2>История версий</h2><div class="editor-history">@foreach (var version in Model.History) { <a href="/editor/history/@Model.Kind/@Model.ContentId/@version.Version">Версия @version.Version · @version.PublishedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</a> }</div>
     }
 </section>
+@section Styles { @if (Model.Book is not null) { <link rel="stylesheet" href="~/css/book-cover.css" asp-append-version="true" /> } }
+@section Scripts { @if (Model.Book is not null) { <script src="~/js/book-cover.js" asp-append-version="true" defer></script> } }

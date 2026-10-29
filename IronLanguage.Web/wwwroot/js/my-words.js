@@ -146,7 +146,7 @@
     sortMenu.addEventListener('keydown',event=>{
       const buttons=[...sortMenu.querySelectorAll('[data-sort]')],index=buttons.indexOf(document.activeElement);
       if(event.key==='Escape'){sortMenu.open=false;sortTrigger.focus();event.preventDefault();}
-      else if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {event.preventDefault();sortMenu.open=true;const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:event.key==='ArrowDown'?(index+1)%buttons.length:(index-1+buttons.length)%buttons.length;buttons[next].focus();}
+      else if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {event.preventDefault();sortMenu.open=true;const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:event.key==='ArrowDown'?(index+1)%buttons.length:(index<0?buttons.length-1:(index-1+buttons.length)%buttons.length);buttons[next].focus();}
     });
     document.addEventListener('click',event=>{if(!sortMenu.contains(event.target))sortMenu.open=false;});
     $('words-remove-dialog').addEventListener('close',async()=>{
