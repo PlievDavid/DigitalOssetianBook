@@ -29,6 +29,7 @@ builder.Services.AddSingleton<GuestLearningStore>();
 builder.Services.AddScoped<DialogueService>();
 builder.Services.AddScoped<MatchingService>();
 builder.Services.AddScoped<PictureService>();
+builder.Services.AddScoped<GrammarService>();
 builder.Services.AddScoped<DictionaryService>();
 builder.Services.AddScoped<IDictionarySourceRepository, EfDictionarySourceRepository>();
 builder.Services.AddSingleton<CrosswordCatalog>();

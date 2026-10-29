@@ -105,6 +105,18 @@ PR №51 согласован с `origin/dev` eb7064a после добавле�
 
 **Ограничения окружения.** Нет `.run-local/connection.ps1` → сайт/БД не запускались; сохранение/публикация через БД и визуальная проверка не выполнены. Коммит и push — после явного «да» пользователя. Out of scope зафиксированы в issue #33.
 
+## Вид задания «Форма слова» (issue №34)
+
+Ветка `feat/grammar-exercise` от `dev` после PR #51/#57. Kind `grammar`: одно задание — предложение с пропуском и выбор формы из четырёх вариантов (правильный + 3 дистрактора, сервер перемешивает). Две попытки: после первой ошибки — подсказка, верная форма скрыта, неверный вариант блокируется; верно или вторая ошибка — финал с вставкой формы в предложение. Прогресс — guest-сессии `GuestLearningStore`, без БД и очков. Free-режим, автопроверка морфологии и сущность «правила» в БД — вне скоупа.
+
+**Данные и API.** Сущность `Grammar` (клон `PictureMatching`), миграция `20261022162327_AddGrammarMaterials`. Payload `GrammarMaterial(Title, Prompt, Blank, Correct, Rule, Distractors, WordIds)` в `EditorRepository`; репозиторий каталога `Grammars()`/`Grammar(id)`. `GrammarService` + `GrammarApiController` (`api/v1/grammars*`): `Start`/`Check(optionIndex)`/`Board` + `DictionaryService` для словаря предложений; `MaxAttempts = 2`, `GrammarSessionState`/`GrammarCheckResult` с `Attempts`/`ShowRule`/`Sentence`/`Dictionary`; `InsertForm`/`Tokenize`; до ответа Board скрывает `Options`/`CorrectForm`/`Rule`/`Words`; идемпотентный повтор через `entry.Gate`. `GrammarScript.Validate`: ровно одно вхождение Blank, ровно 3 дистрактора, без латиницы, лимиты 200/300/10/200/300; Normalize как в matching (NFC, кавычки, æ→ӕ, регистр); тексты ошибок — про «подсказку».
+
+**Редактор.** Kind `grammar` в `Kinds`, `BuildPayload`/`FromPayload`/`CleanOssetianText`/`PublishedLinksValid`, карточка на Editor Index, `_GrammarBuilder.cshtml` (метка, предложение, правильная форма, три дистрактора, «Подсказка»), Preview. Publish через тот же список kind-веток, что и word/dialogue/matching/picture.
+
+**Страница ученика.** `/grammar`, `Grammar.cshtml` tone lilac, `grammar.js` (busy+generation, sessionStorage `adam.grammar.session`, две попытки, `displayPrompt` с вставкой формы, popup `#grammar-word-popup` по образцу диалогов), `grammar.css`: список → play (предложение + 4 кнопки), после финала — вставка формы, результат, подсказка, связанные слова. Карточка `.format-grammar` (сиреневая) на главной, пункт меню, guest notice, `_NavIcon` case `grammar`. Браузерный тест `tests/grammar-threads-browser.cjs` (fixture API, две попытки, вставка, без сервера).
+
+**Проверки.** `dotnet build`; `node --check` grammar.js; xUnit `GrammarScriptTests`/`GrammarServiceTests` 169/169. Playwright в этой среде недоступен, браузерный тест локально не запускался. Коммит и push — после явного «да» пользователя.
+
 ## Общий контейнер и размеры содержимого
 
 Внешние границы всех страниц задаёт `layout.css`, подключённый после стилей страниц в `_Layout.cshtml`. Вложенные элементы сохраняют собственные размеры: формы редактора центрированы, слово ограничено 640 px, остальные виды — 860 px. Блок главной «От чтения к тренировке» оформляет `home-reading.css`: общая светло-зелёная поверхность с акварельной книгой, равная типографика и компактные зелёные кнопки; отдельные голубая и зелёная карточки, номера в кружках и разделитель убраны.

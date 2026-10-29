@@ -1,0 +1,23 @@
+@{ ViewData["Title"] = "Форма слова"; }
+<section class="feature-shell grammar-page" id="grammar-app">
+    <a class="back-link" href="/">← К заданиям</a>
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Форма слова", "В предложении пропущено слово. Выберите правильную форму; после первой ошибки появится подсказка, и можно будет выбрать ещё раз.", "grammar", "lilac"))
+    <div id="grammar-status" role="status"></div>
+    <div id="grammar-list" class="exercise-list"></div>
+    <div id="grammar-play" class="game-play-area" hidden>
+        <div class="dialog-play-head">
+            <a id="grammar-back-link" class="back-link" href="/grammar">← К списку</a>
+        </div>
+        <h2 id="grammar-title"></h2>
+        <p id="grammar-instructions" class="field-help"></p>
+        <p id="grammar-sentence" class="grammar-sentence"></p>
+        <aside id="grammar-word-popup" class="reader-popup grammar-word-popup" aria-label="Словарная статья" hidden></aside>
+        <div id="grammar-options" class="grammar-options" role="group" aria-label="Варианты ответа"></div>
+        <p id="grammar-rule" class="grammar-rule" hidden></p>
+        <p id="grammar-result" class="exercise-feedback" role="status" hidden></p>
+        <div id="grammar-words" class="feature-grid"></div>
+    </div>
+</section>
+@section Scripts { <script src="~/js/grammar.js" asp-append-version="true" defer></script> }
+
+@section Styles { <link rel="stylesheet" href="~/css/grammar.css" asp-append-version="true" /> }

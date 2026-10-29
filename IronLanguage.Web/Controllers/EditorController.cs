@@ -100,7 +100,7 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
             if (book.Chapters.SelectMany(x => JsonSerializer.Deserialize<BookToken[]>(x.TokensJson) ?? []).Any(x => x.WordId is Guid wordId && !publishedWords.Contains(wordId)))
                 return BadRequest("Сначала опубликуйте слова, на которые ссылается текст.");
         }
-        else if (kind is "word" or "dialogue" or "matching" or "picture")
+        else if (kind is "word" or "dialogue" or "matching" or "picture" or "grammar")
         {
             if (!(await editor.Material(kind, id, ct) is { Published: false })) return NotFound();
         }

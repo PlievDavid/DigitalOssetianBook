@@ -2,7 +2,7 @@
 @inject IronLanguage.Db.ICatalogRepository Catalog
 @using System.Text.Json
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Произведение" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", _ => "Произведение" };
     ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
     ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
@@ -12,7 +12,7 @@
 <section class="feature-shell editor-form-shell" id="editor-form-app" data-kind="@Model.Kind">
     <header class="editor-page-heading">
         <a class="back-link" href="/editor">← К материалам</a>
-        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "произведение", "picture" => "задание «Картинка и слово»", "translation" => "задание «Собери фразу»", _ => title.ToLowerInvariant() })</h1>
+        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "произведение", "picture" => "задание «Картинка и слово»", "translation" => "задание «Собери фразу»", "grammar" => "задание «Форма слова»", _ => title.ToLowerInvariant() })</h1>
         <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
     </header>
     <form method="post" action="@action" enctype="multipart/form-data" class="editor-form">
@@ -101,6 +101,12 @@
         {
             <label>Название задания <input asp-for="PictureTitle" autocomplete="off" required maxlength="200" data-ossetian /><span asp-validation-for="PictureTitle" class="form-error"></span></label>
             @await Html.PartialAsync("_PictureBuilder", Model)
+            <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
+        }
+        else if (Model.Kind == "grammar")
+        {
+            <label>Название задания <input asp-for="GrammarTitle" autocomplete="off" required maxlength="200" data-ossetian /><span asp-validation-for="GrammarTitle" class="form-error"></span></label>
+            @await Html.PartialAsync("_GrammarBuilder", Model)
             <div class="editor-word-picker"><label for="word-search">Связанные слова из словаря</label><p class="field-help">Ученик сможет добавить их после упражнения.</p><input id="word-search" type="search" placeholder="Найти слово или перевод" autocomplete="off" data-ossetian /><div id="word-results" class="editor-word-results"></div><div id="selected-words" class="editor-selected-words"></div><input asp-for="WordIdsCsv" type="hidden" /><span asp-validation-for="WordIdsCsv" class="form-error"></span></div>
         }
         @if (Model.Kind is "word" or "audio" or "listening")
