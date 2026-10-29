@@ -1,17 +1,17 @@
-@{ ViewData["Title"] = "Повторение слов"; }
+@{ ViewData["Title"] = "Изучение слов"; }
 @section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
 <section class="feature-shell review-page" id="spaced-review">
     <a class="back-link" href="/vocabulary">← Мои слова</a>
-    <header class="words-heading"><h1>Повторение слов</h1><div class="review-header-actions"><button type="button" class="button secondary" id="review-settings-open">Настройки</button></div></header>
+    <header class="words-heading"><h1>Изучение слов</h1><div class="review-header-actions"><button type="button" class="button secondary" id="review-settings-open">Настройки</button></div></header>
     <p id="review-status" class="words-notice" role="status" aria-live="polite"></p>
     <section id="review-start" class="review-setup" hidden>
-        <h2>Что повторим?</h2><p class="review-muted">Выберите слова для этого занятия.</p>
+        <h2>Чем займёмся?</h2><p class="review-muted">Выберите слова для этого занятия.</p>
         <fieldset class="review-modes"><legend>Режим занятия</legend>
             <label><input type="radio" name="mode" value="due" /><strong>Повторение</strong><small>Закрепить знакомые слова</small><span id="review-count-due"></span></label>
             <label><input type="radio" name="mode" value="new" /><strong>Новые слова</strong><small>Начать изучать добавленное</small><span id="review-count-new"></span></label>
             <label><input type="radio" name="mode" value="mixed" checked /><strong>Всё вместе</strong><small>Повторять и узнавать новое</small><span id="review-count-mixed"></span></label>
         </fieldset>
-        <div class="review-start-actions"><button type="button" class="button primary" id="review-begin">Начать повторение</button><button type="button" class="button secondary" id="review-resume" hidden>Продолжить занятие</button><a class="button secondary" id="review-add-words" href="/vocabulary/available" hidden>Добавить слова</a></div>
+        <div class="review-start-actions"><button type="button" class="button primary" id="review-begin">Начать занятие</button><button type="button" class="button secondary" id="review-resume" hidden>Продолжить занятие</button><a class="button secondary" id="review-add-words" href="/vocabulary/available" hidden>Новые слова</a></div>
         <p id="review-start-note" class="review-muted"></p>
     </section>
     <section id="review-study" hidden aria-label="Занятие">
@@ -35,6 +35,6 @@
         </div>
     </section>
     <section id="review-finish" class="review-finish" hidden><h2 tabindex="-1" id="review-finish-title">Готово на сейчас</h2><dl id="review-totals"></dl><a class="button primary" href="/vocabulary">К моим словам</a><button type="button" class="review-link" id="review-again">Ещё одно занятие</button></section>
-    <dialog id="review-settings" class="review-settings"><form id="review-settings-form"><h2>Настройки повторения</h2><p class="review-muted">Сначала — знакомство с новым словом. Незнакомые слова закрепляем заданиями.</p><label class="review-direct"><input type="checkbox" name="directInput" /> Сразу вводить перевод</label><p class="review-muted">Для незнакомых слов пропускать выбор вариантов и подбор пар. Изменения начнут действовать со следующего занятия.</p><p id="review-settings-error" role="status"></p><div class="review-settings-actions"><button class="button primary" type="submit">Сохранить</button><button type="button" class="button secondary" id="review-settings-close">Отмена</button></div></form></dialog>
+    <dialog id="review-settings" class="review-settings"><form id="review-settings-form"><h2>Настройки занятия</h2><p class="review-muted">Сначала — знакомство с новым словом. Незнакомые слова закрепляем заданиями.</p><label class="review-direct"><input type="checkbox" name="directInput" /> Сразу вводить перевод</label><p class="review-muted">Для незнакомых слов пропускать выбор вариантов и подбор пар. Изменения начнут действовать со следующего занятия.</p><p id="review-settings-error" role="status"></p><div class="review-settings-actions"><button class="button primary" type="submit">Сохранить</button><button type="button" class="button secondary" id="review-settings-close">Отмена</button></div></form></dialog>
 </section>
 @section Scripts { <script src="~/js/word-display.js" asp-append-version="true" defer></script><script src="~/js/review-pairs.js" asp-append-version="true" defer></script><script src="~/js/word-practice.js" asp-append-version="true" defer></script> }

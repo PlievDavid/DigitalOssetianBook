@@ -5,8 +5,13 @@
 .words-heading { display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:28px; }
 .words-heading h1 { margin:0;font:650 clamp(30px,3vw,40px)/1.15 var(--theme-heading-font);letter-spacing:-.03em; }
 .words-heading p { margin:10px 0 0;font-size:15px;color:var(--words-muted); }
-.words-actions { display:flex;align-items:center;gap:12px;flex:none; }
-.words-actions .button { min-height:46px;padding:12px 20px;white-space:nowrap; }
+.words-actions { display:flex;align-items:center;gap:8px 20px;flex:none;flex-wrap:wrap; }
+.words-actions .button { min-height:48px;padding:12px 20px;white-space:nowrap;font-size:15px; }
+.words-catalog-link { display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 0;color:var(--theme-green);font-size:15px;font-weight:500;white-space:nowrap;text-decoration:none; }
+.words-catalog-link svg { width:18px;height:18px;flex:none; }
+.words-catalog-link:hover { text-decoration:underline;text-underline-offset:4px; }
+.words-catalog-link:active { opacity:.7; }
+.words-catalog-link:focus-visible { outline:2px solid var(--theme-focus);outline-offset:4px;border-radius:4px; }
 .words-tabs { display:flex;gap:28px;border-bottom:1px solid var(--words-line);overflow-x:auto;scrollbar-width:none;margin-bottom:20px; }
 .words-tabs::-webkit-scrollbar { display:none; }
 .words-tab { display:flex;align-items:center;gap:9px;flex:none;padding:14px 0;color:var(--words-muted);text-decoration:none;border-bottom:2px solid transparent;font-size:15px; }
@@ -157,8 +162,8 @@
  .words-heading { margin-bottom:20px;gap:18px; }
  .words-heading h1 { font-size:30px; }
  .words-heading p { font-size:13px;margin-top:8px; }
- .words-actions { width:100%;gap:8px; }
- .words-actions .button { flex:1;justify-content:center;padding:12px 10px;font-size:13px; }
+ .words-actions { width:100%;gap:8px 20px; }
+ .words-actions .button { flex:none;justify-content:center;padding:12px 20px;font-size:15px; }
  .words-tabs { gap:22px;margin-bottom:16px; }
  .words-tab { font-size:13px;gap:6px;padding:12px 0; }
  .words-tab-count { font-size:11px; }

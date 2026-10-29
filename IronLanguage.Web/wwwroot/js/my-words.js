@@ -70,7 +70,6 @@
       const [counts,data]=await Promise.all([AdamApi('/word-review/summary',{signal}),AdamApi(`/word-review/words?${params}`,{signal})]);
       if(request!==sequence)return;
       renderTabs(counts,state);$('words-total').textContent=counts.total ? `${noun(counts.total)} в вашем словаре` : 'Добавьте первые слова и начните заниматься';
-      $('words-due-count').textContent=counts.due ? `· ${counts.due}` : '';
       results.replaceChildren(...data.items.map(wordRow));
       document.querySelector('.words-table-head').hidden=!data.items.length;
       if(!data.items.length) {
