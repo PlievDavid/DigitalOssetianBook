@@ -20,6 +20,8 @@ builder.Services.AddScoped<IAccountRepository, EfAccountRepository>();
 builder.Services.AddScoped<AvatarService>();
 builder.Services.AddScoped<ICatalogRepository, EfCatalogRepository>();
 builder.Services.AddScoped<IEditorRepository, EfEditorRepository>();
+builder.Services.AddScoped<IReadingLibraryRepository, EfReadingLibraryRepository>();
+builder.Services.AddScoped<ReadingSeedService>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 builder.Services.AddScoped<LearningService>();
 builder.Services.AddScoped<ListeningService>();
@@ -60,6 +62,26 @@ Directory.CreateDirectory(keysPath);
 builder.Services.AddDataProtection().SetApplicationName("Adam").PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 var app = builder.Build();
+
+if (args.Contains("reading-seed", StringComparer.OrdinalIgnoreCase))
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<AdamDbContext>().Database.MigrateAsync();
+    var result = await scope.ServiceProvider.GetRequiredService<ReadingSeedService>().PublishSeeds(CancellationToken.None);
+    Console.WriteLine($"Сиды чтения: добавлено {result.Added}, обновлено {result.Updated}, без изменений {result.Unchanged}.");
+    return;
+}
+
+if (args.Contains("reading-import", StringComparer.OrdinalIgnoreCase))
+{
+    if (!args.Contains("--replace-library", StringComparer.Ordinal))
+        throw new InvalidOperationException("Укажите --replace-library: старые опубликованные книги будут перемещены в архив.");
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<AdamDbContext>().Database.MigrateAsync();
+    var result = await scope.ServiceProvider.GetRequiredService<ReadingSeedService>().Import(CancellationToken.None);
+    Console.WriteLine($"Чтение: добавлено {result.Added}, перенесено в архив {result.Archived}. Черновые переводы доступны только редактору.");
+    return;
+}
 
 if (args.Contains("dictionary-check", StringComparer.OrdinalIgnoreCase))
 {
@@ -160,6 +182,9 @@ app.UseAuthorization();
 
 app.UseStaticFiles(); // Uploaded media is added after build, outside the static asset manifest.
 app.MapStaticAssets();
+
+foreach (var (legacyPath, webpPath) in ReadingArtwork.LegacyPaths)
+    app.MapMethods(legacyPath, ["GET", "HEAD"], () => Results.Redirect(webpPath, permanent: true));
 
 app.MapControllerRoute(
     name: "default",

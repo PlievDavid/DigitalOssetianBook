@@ -9,7 +9,7 @@ public sealed record WordleInput(DateOnly Day, int Revision, string? Guess);
 public sealed record WordleSaveInput(DateOnly Day);
 
 [AutoValidateAntiforgeryToken]
-public sealed class WordleController(WordleService service, GuestLearningStore guests, DictionaryService dictionary, IDictionarySourceRepository dictionarySource, IProgressRepository progress) : Controller
+public sealed class WordleController(WordleService service, GuestLearningStore guests, DictionaryService dictionary, IDictionarySourceRepository dictionarySource, IProgressRepository progress, IWebHostEnvironment environment) : Controller
 {
     private Guid GuestOwner() => User.UserId() is null ? guests.Owner(HttpContext) : Guid.Empty;
     [HttpGet("games/wordle")]
@@ -40,8 +40,13 @@ public sealed class WordleController(WordleService service, GuestLearningStore g
         var word = await service.AnswerForVocabulary(userId, input.Day, ct);
         if (word is null) return BadRequest(new { error = "Добавить слово можно после завершения своей игры." });
         var senseId = await dictionarySource.FindSense(word.SourceRow, word.SourceColumn, DictionaryService.Key(word.Word), ct);
+        if (senseId is null)
+        {
+            var source = DictionaryService.ReadWordleSource(Path.Combine(environment.ContentRootPath, "Data", "ossetian-russian-dictionary.csv"), word);
+            if (source is not null) senseId = await dictionarySource.EnsureSense(source, DictionaryService.Key(word.Word), ct);
+        }
         var wordId = senseId is Guid sense ? await dictionary.EnsureSavedWord(sense, ct) : null;
         return wordId is Guid id && await progress.AddWord(userId, id, ct)
-            ? Ok() : NotFound(new { error = "Слово пока недоступно в словаре. Попробуйте позже." });
+            ? Ok() : NotFound(new { error = "Не удалось найти исходную словарную запись этого слова." });
     }
 }

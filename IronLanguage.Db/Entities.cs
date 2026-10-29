@@ -71,7 +71,11 @@ public sealed class Book
     public string Difficulty { get; set; } = "";
     public string Description { get; set; } = "";
     public string? CoverImagePath { get; set; }
+    public string? CoverDesignJson { get; set; }
     public string LiteraryTranslation { get; set; } = "";
+    public bool TranslationReviewed { get; set; } = true;
+    public string DraftTranslation { get; set; } = "";
+    public string IllustrationsJson { get; set; } = "[]";
     public bool Published { get; set; }
     public bool Archived { get; set; }
     public int Version { get; set; } = 1;
@@ -86,6 +90,7 @@ public sealed class BookChapter
     public int Number { get; set; }
     public string Title { get; set; } = "";
     public string TokensJson { get; set; } = "[]";
+    public string Translation { get; set; } = "";
 }
 
 public sealed class SavedWord

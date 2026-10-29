@@ -125,6 +125,8 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         if (revision is null || revision.Published) return NotFound();
         var model = await PreviewModel(revision.Kind, revision.ContentId, id, revision.Version, false, false, revision.PayloadJson, ct);
         if (!confirmReviewed) { model.Error = "Подтвердите проверку текста, перевода и прав на материал."; return View("Preview", model); }
+        if (model.Book is not null && BookTranslationReview.HasWarnings(model.Book))
+        { model.Error = "Сначала исправьте отмеченные строки перевода."; return View("Preview", model); }
         if (!PublishedLinksValid(revision.Kind, revision.PayloadJson, model.Words.Keys.ToHashSet()))
         { model.Error = "Сначала опубликуйте связанные слова."; return View("Preview", model); }
         if (!await editor.PublishRevision(id))
@@ -263,13 +265,14 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         }
         else if (kind == "book")
         {
-            if (string.IsNullOrWhiteSpace(model.Russian)) ModelState.AddModelError(nameof(model.Russian), "Укажите название книги.");
+            model.TranslationReviewed = false;
+            if (string.IsNullOrWhiteSpace(model.Russian)) ModelState.AddModelError(nameof(model.Russian), "Укажите название произведения.");
             if (string.IsNullOrWhiteSpace(model.Authors) || model.Authors.Length > 240) ModelState.AddModelError(nameof(model.Authors), "Укажите автора или авторов (до 240 символов).");
             if (model.Difficulty is not ("Начальный" or "Средний" or "Продвинутый")) ModelState.AddModelError(nameof(model.Difficulty), "Выберите уровень сложности.");
             if (string.IsNullOrWhiteSpace(model.Example) || model.Example.Length > 1000) ModelState.AddModelError(nameof(model.Example), "Добавьте описание до 1000 символов.");
-            if (model.CoverImage is { Length: > 0 } coverFile &&
-                (coverFile.Length > 5_000_000 || Path.GetExtension(coverFile.FileName).ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp")))
-                ModelState.AddModelError(nameof(model.CoverImage), "Выберите PNG, JPEG или WebP до 5 МБ.");
+            var coverDesign = new BookCoverDesign(model.CoverBackground, model.CoverTextColor, model.CoverAccent, model.CoverFont, model.CoverPattern, model.CoverPatternArea);
+            if (!BookCoverDesign.IsValid(coverDesign))
+                ModelState.AddModelError(nameof(model.CoverBackground), "Проверьте цвета и оформление обложки. Контраст названия и фона должен быть не ниже 4,5:1.");
             MaterialChapter[] chapters = [];
             try { chapters = JsonSerializer.Deserialize<MaterialChapter[]>(model.ChaptersJson, JsonOptions) ?? []; }
             catch (JsonException) { ModelState.AddModelError(nameof(model.ChaptersJson), "Не удалось прочитать разметку глав."); }
@@ -281,17 +284,38 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 ModelState.AddModelError(nameof(model.ChaptersJson), "Номера и идентификаторы глав не должны повторяться.");
             if (chapters.SelectMany(x => x.Tokens ?? []).Any(x => x.Text is null || x.WordId is Guid wordId && !publishedWords.Contains(wordId)))
                 ModelState.AddModelError(nameof(model.ChaptersJson), "Связанные слова должны быть опубликованы.");
+            ReadingIllustration[] illustrations = [];
+            try { illustrations = JsonSerializer.Deserialize<ReadingIllustration[]>(model.IllustrationsJson ?? "[]", JsonOptions) ?? []; }
+            catch (JsonException) { ModelState.AddModelError(nameof(model.IllustrationsJson), "Не удалось прочитать список иллюстраций."); }
+            if (ModelState.IsValid && !ReadingContent.ValidIllustrations(illustrations, chapters))
+                ModelState.AddModelError(nameof(model.IllustrationsJson), "Проверьте описания, главы и номера строк иллюстраций (не более 20). Пути картинок должны быть локальными.");
+            if (model.InteriorImage is { Length: > 0 } interior &&
+                (interior.Length > 5_000_000 || Path.GetExtension(interior.FileName).ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp")))
+                ModelState.AddModelError(nameof(model.InteriorImage), "Выберите PNG, JPEG или WebP до 5 МБ.");
+            if (model.InteriorImage is { Length: > 0 } && ModelState.IsValid &&
+                !ReadingContent.ValidIllustrations([new(model.IllustrationChapterId ?? Guid.Empty, model.IllustrationAfterLine,
+                    "/media/books/00000000000000000000000000000000.png", model.IllustrationDescription ?? "")], chapters))
+                ModelState.AddModelError(nameof(model.InteriorImage), "Выберите главу, номер строки и описание для нового рисунка.");
+            if (chapters.Any(chapter => (chapter.Translation?.Length ?? 0) > 50000))
+                ModelState.AddModelError(nameof(model.ChaptersJson), "Перевод главы должен содержать не более 50 000 символов.");
+            if (model.InteriorImage is { Length: > 0 } && illustrations.Length >= 20)
+                ModelState.AddModelError(nameof(model.InteriorImage), "Можно добавить не более 20 иллюстраций.");
             if (ModelState.IsValid)
             {
-                var coverPath = model.CoverImage is { Length: > 0 } ? await SaveCover(model.CoverImage, ct) : originalCoverPath;
-                if (model.CoverImage is { Length: > 0 } && coverPath is null)
+                if (model.InteriorImage is { Length: > 0 })
                 {
-                    ModelState.AddModelError(nameof(model.CoverImage), "Файл не является допустимым изображением.");
-                    return null;
+                    var imagePath = await SaveCover(model.InteriorImage, ct);
+                    if (imagePath is null)
+                    {
+                        ModelState.AddModelError(nameof(model.InteriorImage), "Файл не является допустимым изображением.");
+                        return null;
+                    }
+                    illustrations = [.. illustrations, new(model.IllustrationChapterId!.Value, model.IllustrationAfterLine,
+                        imagePath, (model.IllustrationDescription ?? "").Trim())];
                 }
                 var prepared = await dictionary.Prepare(new BookMaterial(model.Russian.Trim(), model.Example.Trim(),
                     chapters.OrderBy(x => x.Number).ToArray(), model.LiteraryTranslation.Trim(), model.Authors.Trim(),
-                    model.Difficulty, coverPath), ct);
+                    model.Difficulty, originalCoverPath, illustrations, model.TranslationReviewed, coverDesign), ct);
                 payload = JsonSerializer.Serialize(prepared, JsonOptions);
             }
         }

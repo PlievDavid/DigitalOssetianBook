@@ -17,6 +17,14 @@
   function animate(element, frames, options) {
     if (!reducedMotion.matches && element?.animate) element.animate(frames, options);
   }
+  function animateErasedLetter(cell, letter) {
+    if (!letter || reducedMotion.matches || !cell?.animate) return;
+    const ghost = document.createElement('span'); ghost.className = 'cw-letter-exit';
+    ghost.textContent = letter.toUpperCase(); ghost.setAttribute('aria-hidden', 'true'); cell.append(ghost);
+    const animation = ghost.animate([{ opacity: 1, transform: 'scale(1)' },
+      { opacity: 0, transform: 'translateY(3px) scale(.65)' }], { duration: 180, easing: 'ease-out' });
+    animation.finished.then(() => ghost.remove(), () => ghost.remove());
+  }
   function celebrate(newWords, previousFixed) {
     const newCells = [...new Set(newWords.flatMap(keys))].filter(k => !previousFixed.has(k));
     newCells.forEach((k, index) => animate(inputAt(k)?.closest('.cw-cell'),
@@ -133,11 +141,14 @@
       const wordKeys = keys(selected);
       target = wordKeys.slice(0, wordKeys.indexOf(k)).reverse().find(candidate => !fixed.has(candidate)) || k;
     }
+    const erasedLetter = cells[target];
     delete cells[target]; remember(); paint(); focusCell(target);
+    animateErasedLetter(inputAt(target)?.closest('.cw-cell'), erasedLetter);
   }
   function paint() {
     const active = new Set(selected ? keys(selected) : []), fixed = new Set(level.words.filter(w => solved.has(w.id)).flatMap(keys));
     $('grid').querySelectorAll('.cw-cell').forEach(el => {
+      el.querySelectorAll('.cw-letter-exit').forEach(ghost => ghost.remove());
       const input = el.querySelector('input');
       input.value = (cells[el.dataset.key] || '').toUpperCase();
       input.readOnly = fixed.has(el.dataset.key);
@@ -190,7 +201,7 @@
         input.addEventListener('input', event => {
           if (event.isComposing) return;
           if (input.readOnly || busy) { paint(); return; }
-          if (event.inputType?.startsWith('delete')) { delete cells[k]; remember(); paint(); return; }
+          if (event.inputType?.startsWith('delete')) { erase(k, false); return; }
           writeText(event.data || input.value, k);
         });
         input.addEventListener('paste', event => { event.preventDefault(); writeText(event.clipboardData.getData('text'), k); });

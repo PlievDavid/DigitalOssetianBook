@@ -45,6 +45,14 @@
   function animate(element, frames, options) {
     if (!reducedMotion.matches && element?.animate) element.animate(frames, options);
   }
+  function animateErasedLetter(cell, letter) {
+    if (!letter || reducedMotion.matches || !cell?.animate) return;
+    const ghost = document.createElement('span'); ghost.className = 'wl-letter-exit';
+    ghost.textContent = letter.toUpperCase(); ghost.setAttribute('aria-hidden', 'true'); cell.append(ghost);
+    const animation = ghost.animate([{ opacity: 1, transform: 'scale(1)' },
+      { opacity: 0, transform: 'translateY(3px) scale(.65)' }], { duration: 180, easing: 'ease-out' });
+    animation.finished.then(() => ghost.remove(), () => ghost.remove());
+  }
   const rowCells = row => [...$('board').children].slice(row * 5, row * 5 + 5);
   function shakeRow() {
     rowCells(state.revision).forEach(cell => animate(cell,
@@ -120,8 +128,10 @@
   }
   function updateTyped(value) {
     if (busy || !state || state.finished) return;
-    const previousLength = typed.length;
+    const previous = typed, previousLength = typed.length;
     typed = normalize(value); pending = null; render(); message('');
+    if (typed.length < previousLength) rowCells(state.revision).slice(typed.length, previousLength)
+      .forEach((cell, index) => animateErasedLetter(cell, previous[typed.length + index]));
     rowCells(state.revision).slice(previousLength, typed.length).forEach(cell => animate(cell,
       [{ transform: 'scale(.92)' }, { transform: 'scale(1.04)' }, { transform: 'scale(1)' }],
       { duration: 140, easing: 'ease-out' }));
