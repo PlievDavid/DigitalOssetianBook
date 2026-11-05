@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IronLanguage.Web.Controllers;
 
-public sealed record GrammarCheckInput(int? OptionIndex);
+public sealed record GrammarCheckInput(int? OptionIndex, Guid? SubmissionId);
 
 [ApiController, AutoValidateAntiforgeryToken, Route("api/v1")]
 public sealed class GrammarApiController(ICatalogRepository catalog, GrammarService grammars, DictionaryService dictionary, GuestLearningStore guests) : ControllerBase
@@ -31,7 +31,7 @@ public sealed class GrammarApiController(ICatalogRepository catalog, GrammarServ
         try
         {
             var owner = User.UserId() ?? guests.Owner(HttpContext);
-            var result = await grammars.Check(owner, sid, input.OptionIndex, ct);
+            var result = await grammars.Check(owner, sid, input.OptionIndex, input.SubmissionId, ct);
             return result is null ? NotFound() : Ok(await WithDictionary(result, ct));
         }
         catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }

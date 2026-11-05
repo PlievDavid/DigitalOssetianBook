@@ -556,6 +556,8 @@ namespace IronLanguage.Db.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Published", "Archived");
+
                     b.ToTable("Grammars");
                 });
 

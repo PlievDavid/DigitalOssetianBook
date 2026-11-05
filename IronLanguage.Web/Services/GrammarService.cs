@@ -38,7 +38,7 @@ public sealed class GrammarService(ICatalogRepository catalog, GuestLearningStor
         return await Board(owner, sessionId, ct);
     }
 
-    public async Task<GrammarCheckResult?> Check(Guid owner, Guid sessionId, int? optionIndex, CancellationToken ct)
+    public async Task<GrammarCheckResult?> Check(Guid owner, Guid sessionId, int? optionIndex, Guid? submissionId, CancellationToken ct)
     {
         var entry = guests.Find<GrammarState>(owner, sessionId);
         if (entry is null) return null;
@@ -46,19 +46,28 @@ public sealed class GrammarService(ICatalogRepository catalog, GuestLearningStor
         try
         {
             var state = entry.Value;
+            // Повтор той же отправки (клиент потерял ответ) возвращает прежний результат без новой попытки.
+            if (submissionId is Guid sid && state.LastSubmissionId == sid && state.LastResult is not null)
+                return state.LastResult;
             if (state.Answered)
                 return await FinishedResult(state, ct);
             var correct = CheckChoice(state, optionIndex);
             state.Attempts++;
+            GrammarCheckResult result;
             if (correct || state.Attempts >= MaxAttempts)
             {
                 state.Answered = true;
                 state.Correct = correct;
-                return await FinishedResult(state, ct);
+                result = await FinishedResult(state, ct);
             }
-            // Первая ошибка: подсказка, правильная форма скрыта, варианты остаются.
-            return new GrammarCheckResult(false, false, null, state.Rule.Length > 0, state.Rule,
-                state.Attempts, [], Sentence(state, null), []);
+            else
+            {
+                // Первая ошибка: подсказка, правильная форма скрыта, варианты остаются.
+                result = new GrammarCheckResult(false, false, null, state.Rule.Length > 0, state.Rule,
+                    state.Attempts, [], Sentence(state, null), []);
+            }
+            if (submissionId is Guid id) { state.LastSubmissionId = id; state.LastResult = result; }
+            return result;
         }
         finally { entry.Gate.Release(); }
     }
@@ -130,13 +139,9 @@ public sealed class GrammarService(ICatalogRepository catalog, GuestLearningStor
 
     private async Task<GrammarWord[]> Words(Guid[] wordIds, CancellationToken ct)
     {
-        var words = new List<GrammarWord>();
-        foreach (var wordId in wordIds)
-        {
-            var word = await catalog.Word(wordId, ct);
-            if (word is not null) words.Add(new GrammarWord(word.Id, word.Ossetian, word.Russian));
-        }
-        return [.. words];
+        if (wordIds.Length == 0) return [];
+        var words = await catalog.WordsByIds(wordIds, ct);
+        return [.. words.Select(word => new GrammarWord(word.Id, word.Ossetian, word.Russian))];
     }
 
     private static string[] Shuffle(string[] values)
@@ -164,5 +169,7 @@ public sealed class GrammarService(ICatalogRepository catalog, GuestLearningStor
         public bool Answered { get; set; }
         public bool Correct { get; set; }
         public int Attempts { get; set; }
+        public Guid? LastSubmissionId { get; set; }
+        public GrammarCheckResult? LastResult { get; set; }
     }
 }

@@ -57,5 +57,6 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<BookChapter>().HasOne(x => x.Book).WithMany(x => x.Chapters).HasForeignKey(x => x.BookId);
         model.Entity<DialogueReward>().HasKey(x => new { x.UserId, x.DialogueId, x.Day });
         model.Entity<DialogueSession>().HasIndex(x => new { x.UserId, x.DialogueId, x.CompletedAt });
+        model.Entity<Grammar>().HasIndex(x => new { x.Published, x.Archived });
     }
 }

@@ -8,6 +8,7 @@ namespace IronLanguage.Web.Services;
 public static class GrammarScript
 {
     private static readonly Regex Latin = new("[A-Za-z]", RegexOptions.Compiled);
+    private static readonly char[] EndPunctuation = ['.', ',', '?', '!'];
 
     public static bool HasLatin(string? value) => value is not null && Latin.IsMatch(value);
 
@@ -30,13 +31,14 @@ public static class GrammarScript
             });
         }
         var collapsed = string.Join(' ', builder.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        collapsed = collapsed.TrimEnd(EndPunctuation);
         while (collapsed.Length > 1)
         {
             var last = collapsed[^1];
             if (last is not ('"' or '\'' or ')' or ']')) break;
             var opening = last switch { ')' => '(', ']' => '[', _ => last };
             if (!collapsed.StartsWith(opening)) break;
-            collapsed = collapsed[1..^1].Trim();
+            collapsed = collapsed[1..^1].TrimEnd(EndPunctuation);
         }
         return collapsed.ToLowerInvariant();
     }

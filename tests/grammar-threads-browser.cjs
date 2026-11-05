@@ -11,11 +11,15 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     const page = await browser.newPage();
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     let attempts = 0;
+    let loseNext = false;
+    let reusedSubmission = false;
+    const submissions = new Map();
     await page.route('**/api/v1/grammars**', async route => {
       const url = new URL(route.request().url()).pathname;
       if (url === '/api/v1/grammars') return route.fulfill({ json: [{ id: 'fixture', title: 'Винительный падеж' }] });
       if (url.endsWith('/sessions')) {
         attempts = 0;
+        submissions.clear();
         return route.fulfill({ json: {
           sessionId: 'session-1', materialId: 'fixture', version: 1, title: 'Винительный падеж',
           prompt: 'Читам «___».', blank: '«___»',
@@ -28,19 +32,26 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       }
       if (url.endsWith('/check')) {
         const body = route.request().postDataJSON();
-        attempts += 1;
-        const correct = body.optionIndex === 0;
-        const finished = correct || attempts >= 2;
-        return route.fulfill({ json: {
-          correct, finished, attempts,
-          correctForm: finished ? 'амбар' : null,
-          showRule: true, rule: 'винительный падеж',
-          words: finished ? [{ id: 'word-1', ossetian: 'амбар', russian: 'сарай' }] : [],
-          sentence: finished
-            ? [{ text: 'Читам', position: 0, matches: [] }, { text: 'амбар', position: 6, matches: [] }]
-            : [{ text: 'Читам', position: 0, matches: [] }],
-          dictionary: []
-        } });
+        const key = body.submissionId || 'anon-' + attempts;
+        if (submissions.has(key)) reusedSubmission = true;
+        if (!submissions.has(key)) {
+          attempts += 1;
+          const correct = body.optionIndex === 0;
+          const finished = correct || attempts >= 2;
+          submissions.set(key, {
+            correct, finished, attempts,
+            correctForm: finished ? 'амбар' : null,
+            showRule: true, rule: 'винительный падеж',
+            words: finished ? [{ id: 'word-1', ossetian: 'амбар', russian: 'сарай' }] : [],
+            sentence: finished
+              ? [{ text: 'Читам', position: 0, matches: [] }, { text: 'амбар', position: 6, matches: [] }]
+              : [{ text: 'Читам', position: 0, matches: [] }],
+            dictionary: []
+          });
+          // Сервер принял ответ, но клиент потеряет его: повтор должен вернуть прежний результат.
+          if (loseNext) { loseNext = false; return route.abort('failed'); }
+        }
+        return route.fulfill({ json: submissions.get(key) });
       }
       throw new Error('Unexpected fixture API: ' + url);
     });
@@ -90,6 +101,23 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       assert.equal((await page.locator('#grammar-sentence').innerText()).trim(), 'Читам амбар.');
       assert(await page.locator('.grammar-inserted').isVisible());
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+
+      // Path 3: lost response — retrying the same choice must not burn the second attempt.
+      await start();
+      loseNext = true;
+      await page.getByRole('button', { name: 'амбару', exact: true }).click();
+      await page.locator('#grammar-result').waitFor();
+      assert(await page.locator('#grammar-result.is-incorrect').isVisible());
+      assert.equal(await page.locator('#grammar-options .grammar-option:disabled').count(), 0);
+      await page.getByRole('button', { name: 'амбару', exact: true }).click();
+      await page.locator('#grammar-rule').waitFor();
+      assert.match(await page.locator('#grammar-result').innerText(), /Пока неверно/);
+      assert(await page.locator('#grammar-rule').isVisible());
+      assert.equal(await page.locator('#grammar-options .grammar-option.is-correct').count(), 0);
+      assert.equal(await page.locator('#grammar-options .grammar-option:disabled').count(), 1);
+      assert.equal(await page.locator('#grammar-result .grammar-result-actions').count(), 0);
+      assert.equal((await page.locator('#grammar-sentence').innerText()).trim(), 'Читам «___».');
+      assert(reusedSubmission);
 
       if (width === 1280) await page.screenshot({ path: path.join(__dirname, '../.run-local/grammar/' + width + '.png'), fullPage: true });
     }

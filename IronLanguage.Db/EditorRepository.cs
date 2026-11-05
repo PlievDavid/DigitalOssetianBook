@@ -326,25 +326,25 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         }
         else if (revision.Kind == "dialogue")
         {
-            var dialogue = await db.Dialogues.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            var dialogue = await db.Dialogues.SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
             if (dialogue is null) return false;
             Apply(dialogue, Parse<DialogueMaterial>(revision.PayloadJson)); dialogue.Version++;
         }
         else if (revision.Kind == "matching")
         {
-            var matching = await db.Matchings.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            var matching = await db.Matchings.SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
             if (matching is null) return false;
             Apply(matching, Parse<MatchingMaterial>(revision.PayloadJson)); matching.Version++;
         }
         else if (revision.Kind == "picture")
         {
-            var picture = await db.PictureMatchings.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            var picture = await db.PictureMatchings.SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
             if (picture is null) return false;
             Apply(picture, Parse<PictureMaterial>(revision.PayloadJson)); picture.Version++;
         }
         else if (revision.Kind == "grammar")
         {
-            var grammar = await db.Grammars.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            var grammar = await db.Grammars.SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
             if (grammar is null) return false;
             Apply(grammar, Parse<GrammarMaterial>(revision.PayloadJson)); grammar.Version++;
         }

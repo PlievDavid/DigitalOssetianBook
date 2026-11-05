@@ -44,6 +44,7 @@ public interface ICatalogRepository
     Task<Exercise?> Exercise(Guid id, bool includeDraft = false, CancellationToken ct = default);
     Task<List<WordEntry>> Words(CancellationToken ct = default);
     Task<WordEntry?> Word(Guid id, CancellationToken ct = default);
+    Task<List<WordEntry>> WordsByIds(Guid[] ids, CancellationToken ct = default);
     Task<List<Book>> Books(CancellationToken ct = default);
     Task<Book?> Book(Guid id, CancellationToken ct = default);
     Task<List<Dialogue>> Dialogues(CancellationToken ct = default);
@@ -76,6 +77,19 @@ public sealed class EfCatalogRepository(AdamDbContext db) : ICatalogRepository
         db.Words.AsNoTracking().Where(x => x.Published && !x.Archived && x.DictionarySenseId == null).OrderBy(x => x.Ossetian).ToListAsync(ct);
     public Task<WordEntry?> Word(Guid id, CancellationToken ct = default) =>
         db.Words.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
+
+    public async Task<List<WordEntry>> WordsByIds(Guid[] ids, CancellationToken ct = default)
+    {
+        if (ids.Length == 0) return [];
+        var found = await db.Words.AsNoTracking()
+            .Where(x => ids.Contains(x.Id) && x.Published && !x.Archived).ToListAsync(ct);
+        var byId = found.ToDictionary(x => x.Id);
+        // Порядок задаёт вызывающая сторона, отсутствующие слова пропускаются — как в цикле по Word.
+        var result = new List<WordEntry>(ids.Length);
+        foreach (var id in ids)
+            if (byId.TryGetValue(id, out var word)) result.Add(word);
+        return result;
+    }
     public Task<List<Book>> Books(CancellationToken ct = default) =>
         db.Books.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
     public Task<Book?> Book(Guid id, CancellationToken ct = default) =>

@@ -14,6 +14,8 @@
   let meanings = new Map();
   let busy = false;
   let generation = 0;
+  // Отправка, чей ответ потерян: повтор использует тот же идентификатор и не жрёт попытку.
+  let pending = null;
 
   const button = (label, action, className = "button secondary") => {
     const b = document.createElement("button"); b.type = "button"; b.className = className;
@@ -27,6 +29,12 @@
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+
+  const newSubmissionId = () => (crypto.randomUUID ? crypto.randomUUID() :
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, char => {
+      const random = Math.random() * 16 | 0;
+      return (char === "x" ? random : (random & 3 | 8)).toString(16);
+    }));
 
   async function load() {
     status.textContent = "Загрузка…";
@@ -60,6 +68,7 @@
       busy = false;
       session = next;
       meanings.clear();
+      pending = null;
       rememberDictionary(session);
       sessionStorage.setItem("adam.grammar.session", session.sessionId);
       list.hidden = true; play.hidden = false;
@@ -210,7 +219,11 @@
 
   async function submitChoice(optionIndex) {
     if (busy || !session || session.answered) return;
-    await check({ optionIndex }, optionIndex);
+    // Повтор того же выбора после ошибки сети шлёт ту же отправку.
+    const submissionId = pending && pending.optionIndex === optionIndex
+      ? pending.submissionId : newSubmissionId();
+    pending = { submissionId, optionIndex };
+    await check({ optionIndex, submissionId }, optionIndex);
   }
 
   async function check(payload, selectedIndex) {
@@ -223,6 +236,7 @@
         method: "POST",
         body: JSON.stringify(payload)
       });
+      pending = null;
       if (gen !== generation || !session || session.sessionId !== sid) return;
       session.correct = response.correct;
       session.attempts = response.attempts;
@@ -346,6 +360,7 @@
   function back() {
     generation++;
     busy = false;
+    pending = null;
     play.hidden = true; list.hidden = false;
     session = null;
     closeWord();

@@ -26,6 +26,11 @@ namespace IronLanguage.Db.Migrations
                 {
                     table.PrimaryKey("PK_Grammars", x => x.Id);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Grammars_Published_Archived",
+                table: "Grammars",
+                columns: new[] { "Published", "Archived" });
         }
 
         /// <inheritdoc />
