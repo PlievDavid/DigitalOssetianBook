@@ -103,10 +103,13 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
    if(index===0){const a=await left.boundingBox(),b=await right.boundingBox();await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:10});await page.mouse.up();}
    else if(index===1){await left.focus();await page.keyboard.press('Enter');await right.focus();await page.keyboard.press('Enter');}
    else{await left.click();await right.click();}
+   assert.equal(await page.evaluate(i=>AdamReviewPairs.indices()[i],index),mapping[index],`Connection for pair ${index+1}`);
   }
   assert.equal(await page.locator('#review-pairs-board .game-thread').count(),mapping.length);
   const pairsTop=await page.locator('#review-pairs-check').evaluate(x=>x.getBoundingClientRect().top+scrollY);
-  await page.locator('#review-pairs-check').click();await idle();assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
+  await page.locator('#review-pairs-check').click();await idle();
+  await page.locator('#review-pairs .review-pair-sweep').first().waitFor({state:'attached'});
+  assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
   assert(Math.abs(await checkTop()-pairsTop)<1);
   await page.screenshot({path:path.join(out,'matching-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:path.join(out,'matching-wide.png'),fullPage:true});
   await api('/word-review/settings',{format:'auto',directInput:true},'PUT');const typed=await api('/word-review/sessions',{mode:'due'});assert.equal(typed.card.kind,'input');

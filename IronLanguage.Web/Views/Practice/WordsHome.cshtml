@@ -32,10 +32,11 @@
         <section class="words-week" aria-labelledby="words-week-title">
             <header><h2 id="words-week-title">Выучено за неделю</h2><strong class="words-week-total">@total</strong></header>
             <ol class="words-week-chart" aria-label="Выученные слова за последние семь дней">
-                @foreach (var day in Model)
+                @for (var index = 0; index < Model.Length; index++)
                 {
-                    var today = day == Model[^1];
-                    <li class="@(today ? "words-week-today" : null)">
+                    var day = Model[index];
+                    var today = index == Model.Length - 1;
+                    <li class="@(today ? "words-week-today" : null) @(day.Count == 0 ? "words-week-empty" : null)" style="--day-delay: @(index * 35)ms">
                         <span class="words-sr">@day.Day.ToString("dd MMMM", culture)@(today ? ", сегодня" : ""): @day.Count</span>
                         <div class="words-week-track" aria-hidden="true"><span style="--bar-height: @(day.Count * 100L / peak)%"></span></div>
                         <span class="words-week-day" aria-hidden="true">@day.Day.ToString("ddd", culture)</span>
