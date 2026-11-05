@@ -23,17 +23,44 @@
                 <div class="review-card-controls"><button class="button primary" type="button" id="review-reveal">Показать перевод</button><div id="review-rating" class="review-rating" hidden><button type="button" class="button secondary" id="review-unknown">Не знаю</button><button type="button" class="button primary" id="review-known">Знаю</button></div></div>
             </div>
             <form id="review-check-form" class="review-check" hidden>
-                <p id="review-test-direction" class="review-muted"></p><h2 id="review-test-prompt"></h2><p id="review-choice-days" class="review-muted"></p>
+                <div class="review-question">
+                    <p id="review-test-direction" class="review-direction"></p>
+                    <h2 id="review-test-prompt"></h2>
+                    <p id="review-choice-days" class="review-muted"></p>
+                </div>
                 <fieldset id="review-options" class="review-options" hidden><legend class="visually-hidden">Выберите перевод</legend></fieldset>
-                <div id="review-input-wrap" hidden><label for="review-input">Ваш ответ</label><div class="review-input-row"><input id="review-input" maxlength="1000" autocomplete="off" /><button type="button" class="button secondary" id="review-letter" aria-label="Вставить осетинскую букву ӕ">ӕ</button></div></div>
-                <button type="submit" class="button primary" id="review-check">Проверить</button>
+                <div id="review-input-wrap" hidden>
+                    <label for="review-input">Ваш ответ</label>
+                    <div class="review-input-row">
+                        <span class="review-input-field"><input id="review-input" maxlength="1000" autocomplete="off" aria-describedby="review-input-answer" /><span id="review-input-mark" class="review-input-mark" aria-hidden="true"></span></span>
+                        <button type="button" class="button secondary" id="review-letter" aria-label="Вставить осетинскую букву ӕ">ӕ</button>
+                    </div>
+                    <p class="review-input-answer" id="review-input-answer"></p>
+                </div>
             </form>
-            <section class="review-pairs game-shell" id="review-pairs" hidden><h2>Подберите пары</h2><p id="review-pairs-instructions" class="review-muted">Соедините слова с переводами: протяните нитки или нажимайте по очереди.</p><div id="review-pairs-board" class="game-board"></div><p id="review-pairs-status" role="status"></p><button type="button" class="button primary" id="review-pairs-check" disabled>Проверить пары</button></section>
-            <p id="review-feedback" role="status"></p>
-            <div class="review-step-actions"><button type="button" class="button primary" id="review-next" hidden>Далее</button><button type="button" class="review-link" id="review-skip" title="Слово вернётся в следующем занятии">Пропустить</button></div>
+            <section class="review-pairs game-shell" id="review-pairs" hidden><h2>Подберите пары</h2><p id="review-pairs-instructions" class="review-muted">Соедините слова линиями или нажмите на них по очереди.</p><div id="review-pairs-board" class="game-board"></div><p id="review-pairs-status" role="status"></p></section>
+            <p id="review-feedback" class="visually-hidden" role="status"></p>
+            <div class="review-step-actions">
+                <button type="submit" form="review-check-form" class="button primary" id="review-check" hidden>Проверить</button>
+                <button type="button" class="button primary" id="review-pairs-check" disabled hidden>Проверить пары</button>
+                <button type="button" class="button primary" id="review-next" hidden>Далее</button>
+                <button type="button" class="review-link" id="review-skip" title="Слово вернётся в следующем занятии">Пропустить</button>
+            </div>
         </div>
     </section>
-    <section id="review-finish" class="review-finish" hidden><h2 tabindex="-1" id="review-finish-title">Готово на сейчас</h2><dl id="review-totals"></dl><a class="button primary" href="/vocabulary">К моим словам</a><button type="button" class="review-link" id="review-again">Ещё одно занятие</button></section>
+    <section id="review-finish" class="review-finish" aria-labelledby="review-finish-title" hidden>
+        <span class="review-finish-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 4 4 8-8"/></svg></span>
+        <h1 tabindex="-1" id="review-finish-title">Занятие завершено</h1>
+        <dl id="review-totals">
+            <div><dt>Верных</dt><dd id="review-total-correct"></dd></div>
+            <div><dt>Ошибок</dt><dd id="review-total-errors"></dd></div>
+            <div><dt>Пропусков</dt><dd id="review-total-skipped"></dd></div>
+        </dl>
+        <div class="review-finish-actions">
+            <a class="button primary" href="/vocabulary">К словам</a>
+            <button type="button" class="button secondary" id="review-again">Ещё занятие</button>
+        </div>
+    </section>
     <dialog id="review-settings" class="review-settings"><form id="review-settings-form"><h2>Настройки занятия</h2><p class="review-muted">Сначала — знакомство с новым словом. Незнакомые слова закрепляем заданиями.</p><label class="review-direct"><input type="checkbox" name="directInput" /> Сразу вводить перевод</label><p class="review-muted">Для незнакомых слов пропускать выбор вариантов и подбор пар. Изменения начнут действовать со следующего занятия.</p><p id="review-settings-error" role="status"></p><div class="review-settings-actions"><button class="button primary" type="submit">Сохранить</button><button type="button" class="button secondary" id="review-settings-close">Отмена</button></div></form></dialog>
 </section>
 @section Scripts { <script src="~/js/word-display.js" asp-append-version="true" defer></script><script src="~/js/review-pairs.js" asp-append-version="true" defer></script><script src="~/js/word-practice.js" asp-append-version="true" defer></script> }

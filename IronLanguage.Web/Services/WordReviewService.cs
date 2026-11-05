@@ -7,7 +7,7 @@ namespace IronLanguage.Web.Services;
 public sealed record ReviewCardSnapshot(Guid WordId, bool Reverse, string Prompt, string[] Answers, string Kind,
     string[] Options, int Stage, DateTimeOffset? DueAt, bool NewWord, string PracticeKind = "input", string[]? PracticeOptions = null,
     ReviewCardSnapshot? Opposite = null, bool InitialPractice = false, ReviewCardSnapshot[]? Pairs = null);
-public sealed record ReviewAnswerResult(bool Correct, string Expected, DateTimeOffset NextDue);
+public sealed record ReviewAnswerResult(bool Correct, string Expected, DateTimeOffset NextDue, string? Answer = null);
 public sealed record ReviewPairView(Guid WordId, string Prompt, string? Expected, bool? Correct);
 public sealed record ReviewPairBatch(int[] Submission, ReviewAnswerResult?[] Results);
 public sealed record ReviewCardView(Guid WordId, string Direction, string Prompt, string Kind, string[] Options, string? Translation, ReviewPairView[]? Pairs = null, int[]? PairIndices = null);
@@ -293,7 +293,7 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
                 Store(current,Cards(current).Where((x,i)=>i<=current.Index||!Words(x).Contains(item.WordId)));
             }
             if(correct)current.Correct++;else current.Errors++;saved.ReviewedAt=now;
-            current.ResultJson=JsonSerializer.Serialize(new ReviewAnswerResult(correct,item.Answers[0],state.DueAt!.Value),Json);
+            current.ResultJson=JsonSerializer.Serialize(new ReviewAnswerResult(correct,item.Answers[0],state.DueAt!.Value,command.Answer),Json);
             return new ReviewWrite(correct,MarkKnown:item.Kind=="cards");
         },ct);
         return session is null?null:View(session);

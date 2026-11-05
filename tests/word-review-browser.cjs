@@ -71,10 +71,31 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   const practice=await snapshot();assert.equal(practice.card.wordId,unfamiliar.card.wordId);assert.equal(practice.card.kind,'choice');assert.equal(practice.result,null);assert.equal(practice.errors,0);assert(await page.locator('#review-check-form').isVisible());
   const source=vocabulary.find(x=>normalize(x.word)===normalize(practice.card.prompt));assert(source);
   const correct=practice.card.options.find(x=>normalize(x)===normalize(source.russian));assert(correct);
-  await page.locator('#review-options label').filter({hasText:normalize(correct)}).click();await page.locator('#review-check').click();await idle();assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
+  const wrongIndex=practice.card.options.findIndex(x=>x!==correct);
+  const checkTop=()=>page.locator('#review-check, #review-next').filter({visible:true}).evaluate(x=>x.getBoundingClientRect().top+scrollY);
+  await page.setViewportSize({width:888,height:674});
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  assert.equal(await page.locator('#review-test-direction').textContent(),'осетинский → русский');
+  const wrongTile=page.locator('#review-options label').nth(wrongIndex);
+  const tile=await wrongTile.boundingBox();
+  await page.mouse.move(tile.x+tile.width/2,tile.y+tile.height/2);await page.mouse.down();
+  await page.waitForFunction(index=>getComputedStyle(document.querySelectorAll('#review-options label')[index]).transform!=='none',wrongIndex);
+  await page.mouse.up();
+  const choiceTop=await checkTop();
+  await page.locator('#review-check').click();await idle();assert.equal((await snapshot()).result?.correct,false);
+  assert(Math.abs(await checkTop()-choiceTop)<1);
+  assert.equal(await wrongTile.getAttribute('data-outcome'),'incorrect');
+  assert.equal(normalize((await page.locator('#review-options [data-outcome=correct] span').first().textContent())),normalize(correct));
+  await page.reload();await idle();await page.locator('#review-resume').click();
+  assert.equal(await wrongTile.getAttribute('data-outcome'),'incorrect');
+  await page.screenshot({path:path.join(out,'choice-feedback.png'),fullPage:true});
   await page.locator('#review-settings-open').click();await idle();assert.equal(await page.locator('input[name=format]').count(),0);await page.keyboard.press('Escape');
   const round=await api('/word-review/sessions',{mode:'due'});assert.equal(round.card.kind,'pairs');assert(round.card.pairs.every(x=>x.expected===null));
+  await page.setViewportSize({width:487,height:674});
   await page.reload();await idle();await page.locator('#review-resume').click();assert(await page.locator('#review-pairs').isVisible());
+  await page.evaluate(()=>scrollTo(0,0));
+  const skipBox=await page.locator('#review-skip').boundingBox(),navBox=await page.locator('.mobile-bottom-nav').boundingBox();
+  assert(skipBox.y+skipBox.height<=navBox.y, 'Pair board and actions fit above mobile navigation');
   const mapping=round.card.pairs.map(pair=>{const word=fixture.find(x=>x.id===pair.wordId);assert(word);const answer=round.card.direction.startsWith('Русский')?word.ossetian:word.russian;return round.card.options.findIndex(x=>normalize(x)===normalize(answer));});
   for(let index=0;index<mapping.length;index++){
    const left=page.locator(`#review-pairs [data-left="${index}"]`),right=page.locator(`#review-pairs [data-right="${mapping[index]}"]`);
@@ -82,10 +103,17 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
    else if(index===1){await left.focus();await page.keyboard.press('Enter');await right.focus();await page.keyboard.press('Enter');}
    else{await left.click();await right.click();}
   }
-  assert.equal(await page.locator('#review-pairs-board .game-thread').count(),mapping.length);await page.locator('#review-pairs-check').click();await idle();assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
+  assert.equal(await page.locator('#review-pairs-board .game-thread').count(),mapping.length);
+  const pairsTop=await page.locator('#review-pairs-check').evaluate(x=>x.getBoundingClientRect().top+scrollY);
+  await page.locator('#review-pairs-check').click();await idle();assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
+  assert(Math.abs(await checkTop()-pairsTop)<1);
   await page.screenshot({path:path.join(out,'matching-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:path.join(out,'matching-wide.png'),fullPage:true});
   await api('/word-review/settings',{format:'auto',directInput:true},'PUT');const typed=await api('/word-review/sessions',{mode:'due'});assert.equal(typed.card.kind,'input');
-  await page.reload();await idle();await page.locator('#review-resume').click();await page.setViewportSize({width:390,height:844});await page.locator('#review-input').fill('неверный ответ');await page.locator('#review-check').click();await idle();assert.match(await page.locator('#review-feedback').innerText(),/Правильный ответ/);
+  await page.reload();await idle();await page.locator('#review-resume').click();await page.setViewportSize({width:390,height:674});
+  await page.locator('#review-input').fill('неверный ответ');const typedTop=await checkTop();
+  await page.locator('#review-input').press('Enter');await idle();
+  assert.match(await page.locator('#review-input-answer').innerText(),/Правильный ответ/);
+  assert(Math.abs(await checkTop()-typedTop)<1);
   await page.screenshot({path:path.join(out,'input-error-mobile.png'),fullPage:true});await page.setViewportSize({width:320,height:700});await page.evaluate(()=>document.documentElement.style.fontSize='200%');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.evaluate(()=>document.documentElement.style.fontSize='');
   await page.locator('#review-exit').click();await idle();assert.equal((await snapshot()).card,null);assert(!/Очки/.test(await page.locator('#review-totals').textContent()));await page.screenshot({path:path.join(out,'finish-mobile.png'),fullPage:true});
   const guestPage=await browser.newPage();await guestPage.goto(`${base}/word-practice`);assert(await guestPage.locator('#word-practice-app').isVisible());await guestPage.close();await page.bringToFront();

@@ -40,18 +40,19 @@
     setText('review-count-mixed', words(data.due + data.new));
   }
   function showStart() {
+    root.dataset.view = 'start';
     el('review-start').hidden = false; el('review-study').hidden = true; el('review-finish').hidden = true;
     el('review-resume').hidden = !session?.card;
   }
   function render() {
     el('review-start').hidden = true;
     const card = session.card;
+    root.dataset.view = card ? 'study' : 'finish';
     el('review-study').hidden = !card; el('review-finish').hidden = !!card;
     if (!card) {
-      const totals = el('review-totals'); totals.replaceChildren();
-      for (const [label, value] of [['Вспомнили', session.correct], ['Повторим ещё', session.errors], ['Пропущено', session.skipped]]) {
-        const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; totals.append(dt, dd);
-      }
+      setText('review-total-correct', session.correct);
+      setText('review-total-errors', session.errors);
+      setText('review-total-skipped', session.skipped);
       if (!session.total) status.textContent = 'Для этого режима пока нет карточек. Сохраните новые слова или дождитесь времени повторения.';
       el('review-finish-title').focus();
       return;
@@ -59,6 +60,7 @@
     setText('review-step', `${session.index + 1} из ${session.total}`);
     el('review-progress-bar').max = session.total; el('review-progress-bar').value = session.index;
     const flash = card.kind === 'cards', pairs = card.kind === 'pairs', done = !!session.result;
+    el('review-study').dataset.kind = card.kind;
     el('review-flashcard').hidden = !flash; el('review-check-form').hidden = flash || pairs;el('review-pairs').hidden = !pairs;
     if(pairs) AdamReviewPairs.render(card,done,`${session.id}:${session.index}`);
     const flip = el('review-flip');
@@ -71,7 +73,8 @@
       void flip.offsetWidth;
       flip.querySelector('.review-flip-inner').style.transition = '';
     }
-    setText('review-direction', card.direction); setText('review-prompt', AdamWordText(card.prompt));
+    const direction = card.direction.toLocaleLowerCase('ru');
+    setText('review-direction', direction); setText('review-prompt', AdamWordText(card.prompt));
     setText('review-translation', AdamWordText(card.translation)); setText('review-original', session.revealed ? AdamWordText(card.prompt) : '');
     flip.classList.toggle('is-flipped', session.revealed);
     flip.setAttribute('aria-expanded', String(session.revealed));
@@ -82,25 +85,44 @@
     el('review-rating').hidden = !flash || !session.revealed || done;
     el('review-reveal').hidden = !flash || session.revealed || done;
     el('review-next').hidden = !done; el('review-skip').hidden = done;
-    setText('review-feedback', done && !flash ? (pairs ? (session.result.correct?'Все пары верно!':'Посмотрите правильные пары и продолжайте.') : session.result.correct ? 'Верно!' : `Пока неверно. Правильный ответ: ${AdamWordText(session.result.expected)}`) : '');
-    el('review-feedback').dataset.correct = String(session.result?.correct ?? '');
+    el('review-check').hidden = flash || pairs || done;
+    el('review-pairs-check').hidden = !pairs || done;
+    const correction = done && !flash && !pairs && !session.result.correct ? `Правильный ответ: ${AdamWordText(session.result.expected)}` : '';
+    setText('review-feedback', done && !flash ? (pairs ? 'Пары проверены.' : correction || 'Ответ правильный.') : '');
     if (!flash && !pairs) {
-      setText('review-test-direction', card.direction); setText('review-test-prompt', AdamWordText(card.prompt));
+      setText('review-test-direction', direction); setText('review-test-prompt', AdamWordText(card.prompt));
       setText('review-choice-days', card.kind === 'choice' ? 'Выберите перевод' : 'Введите перевод');
       const options = el('review-options'); options.querySelectorAll('label').forEach(x => x.remove());
       options.hidden = card.kind !== 'choice'; el('review-input-wrap').hidden = card.kind !== 'input';
-      el('review-letter').hidden = card.direction !== 'Русский → осетинский';
-      el('review-input').required = card.kind === 'input' && !done;
-      el('review-input').disabled = done;
-      const testKey=`${session.id}:${session.index}:${card.kind}`;
-      if (el('review-input').dataset.key!==testKey) el('review-input').value = '';
-      el('review-input').dataset.key=testKey;
+      el('review-letter').hidden = direction !== 'русский → осетинский';
+      el('review-letter').disabled = done;
+      const inputField = el('review-input');
+      inputField.required = card.kind === 'input' && !done;
+      inputField.disabled = done;
+      inputField.setAttribute('aria-invalid', String(!!correction));
+      const testKey = `${session.id}:${session.index}:${card.kind}`;
+      if (inputField.dataset.key !== testKey) inputField.value = '';
+      if (session.result?.answer != null) inputField.value = session.result.answer;
+      inputField.dataset.key = testKey;
+      el('review-input-wrap').dataset.outcome = done ? (correction ? 'incorrect' : 'correct') : '';
+      setText('review-input-mark', done ? (correction ? '×' : '✓') : '');
+      setText('review-input-answer', correction);
+      el('review-input-answer').tabIndex = correction ? 0 : -1;
       card.options.forEach((text, index) => {
-        const label = document.createElement('label'), input = document.createElement('input'), span = document.createElement('span');
+        const label = document.createElement('label'), input = document.createElement('input'), span = document.createElement('span'), mark = document.createElement('span');
         input.type = 'radio'; input.name = 'choice'; input.value = text; input.required = true; input.disabled = done;
-        input.id = `review-option-${index}`; span.textContent = AdamWordText(text); label.append(input, span); options.append(label);
+        input.id = `review-option-${index}`; span.textContent = AdamWordText(text);
+        mark.className = 'review-option-mark'; mark.setAttribute('aria-hidden', 'true');
+        if (done) {
+          input.checked = text === session.result.answer;
+          if (text === (session.result.correct ? session.result.answer ?? session.result.expected : session.result.expected)) {
+            label.dataset.outcome = 'correct'; mark.textContent = '✓';
+          } else if (input.checked) {
+            label.dataset.outcome = 'incorrect'; mark.textContent = '×';
+          }
+        }
+        label.append(input, span, mark); options.append(label);
       });
-      el('review-check').hidden = done;
       el('review-check').disabled = card.kind === 'choice';
     }
   }
@@ -120,7 +142,7 @@
     } finally {outgoing?.cancel();incoming?.cancel();controls.classList.remove('is-animating');}
     // lock(false) restores pre-request controls; render after unlocking applies the new state.
     if (action === 'reveal') setTimeout(() => el('review-known').focus(),0);
-    if (action === 'answer' && !selfAssessment) setTimeout(() => el('review-next').focus(), 0);
+    if (action === 'answer' && !selfAssessment) setTimeout(() => el('review-next').focus({ preventScroll: true }), 0);
     if ((['next','skip'].includes(action) || selfAssessment) && session.card) setTimeout(() => {
       if (session.card.kind === 'input') el('review-input').focus();
       else if (session.card.kind === 'cards') el('review-flip').focus();
