@@ -81,6 +81,7 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   await page.mouse.move(tile.x+tile.width/2,tile.y+tile.height/2);await page.mouse.down();
   await page.waitForFunction(index=>getComputedStyle(document.querySelectorAll('#review-options label')[index]).transform!=='none',wrongIndex);
   await page.mouse.up();
+  assert(await wrongTile.evaluate(tile=>tile.getAnimations().some(animation=>animation.effect?.getKeyframes().length===4)), 'A short tap animates after release');
   const choiceTop=await checkTop();
   await page.locator('#review-check').click();await idle();assert.equal((await snapshot()).result?.correct,false);
   assert(Math.abs(await checkTop()-choiceTop)<1);

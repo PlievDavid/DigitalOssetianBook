@@ -126,6 +126,10 @@
 .words-week-track { display:flex;align-items:flex-end;width:min(100%,28px);height:58px;border-radius:8px;background:#d7e9df; }
 .words-week-track span { width:100%;height:var(--bar-height);border-radius:8px;background:#568e7a; }
 .words-week-today .words-week-track span { background:#17634f; }
+@media (prefers-reduced-motion:no-preference) {
+    .words-week-track span { transform-origin:center bottom;animation:words-week-rise .55s ease-out both; }
+    @keyframes words-week-rise { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+}
 .words-week-today .words-week-day { font-weight:700; }
 .words-week p { margin:10px 0 0;color:#3b554c;font-size:13px; }
 

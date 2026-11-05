@@ -4,7 +4,9 @@
   const status = el('review-status');
   const settings = el('review-settings');
   const settingsForm = el('review-settings-form');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   let session = null, busy = false, summary = null;
+  let optionAnimation;
   const setText = (id, text) => { el(id).textContent = text; };
   const post = (path, body) => AdamApi(`/word-review/${path}`, { method: 'POST', body: JSON.stringify(body) });
   function lock(value) {
@@ -130,7 +132,7 @@
     if (!session?.card) return;
     const selfAssessment = action === 'answer' && session.card.kind === 'cards', submittedIndex=session.index,submittedWord=session.card.wordId;
     const response = await post(`sessions/${session.id}`, { index: submittedIndex, action, ...extra });
-    const animate=action==='reveal' && !session.revealed && response.revealed && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const animate=action==='reveal' && !session.revealed && response.revealed && !reducedMotion.matches;
     const inner=el('review-flip').querySelector('.review-flip-inner'),controls=root.querySelector('.review-card-controls');
     let outgoing=null,incoming=null;
     try {
@@ -172,6 +174,17 @@
     if (answer?.trim()) work(() => command('answer', { answer }));
   };
   el('review-options').addEventListener('change', () => { el('review-check').disabled = busy || !root.querySelector('input[name=choice]:checked'); });
+  el('review-options').addEventListener('click', ({ target }) => {
+    // A label forwards the tap to its radio, including taps on an already selected option.
+    if (reducedMotion.matches || !target.matches('input[name=choice]:not(:disabled)')) return;
+    optionAnimation?.cancel();
+    optionAnimation = target.closest('label').animate([
+      { transform: 'scale(1)', offset: 0 },
+      { transform: 'scale(.95)', offset: .3 },
+      { transform: 'scale(1.015)', offset: .72 },
+      { transform: 'scale(1)', offset: 1 }
+    ], { duration: 260, easing: 'ease-in-out' });
+  });
   el('review-pairs-check').onclick=()=>work(()=>command('answer',{pairIndices:AdamReviewPairs.indices()}));
   el('review-letter').onclick = () => {
     const input = el('review-input'); input.setRangeText('ӕ', input.selectionStart, input.selectionEnd, 'end'); input.focus();
