@@ -131,6 +131,7 @@
   async function command(action, extra = {}) {
     if (!session?.card) return;
     const selfAssessment = action === 'answer' && session.card.kind === 'cards', submittedIndex=session.index,submittedWord=session.card.wordId;
+    const checkingChoice = action === 'answer' && session.card.kind === 'choice' && !session.result;
     const response = await post(`sessions/${session.id}`, { index: submittedIndex, action, ...extra });
     const animate=action==='reveal' && !session.revealed && response.revealed && !reducedMotion.matches;
     const inner=el('review-flip').querySelector('.review-flip-inner'),controls=root.querySelector('.review-card-controls');
@@ -140,6 +141,13 @@
       session=response;
       if(selfAssessment && session.index===submittedIndex && session.card?.wordId===submittedWord && session.result)session=await post(`sessions/${session.id}`,{index:session.index,action:'next'});
       lock(false);render();lock(true);
+      if (checkingChoice && session.index === submittedIndex && session.card?.wordId === submittedWord && session.result?.correct && !reducedMotion.matches) {
+        el('review-options').querySelector('[data-outcome="correct"]')?.animate([
+          { transform: 'scale(1)', boxShadow: '0 0 0 0 rgb(29 115 83 / .28)' },
+          { transform: 'scale(1.035)', boxShadow: '0 0 0 4px rgb(29 115 83 / .18)', offset: .36 },
+          { transform: 'scale(1)', boxShadow: '0 0 0 8px rgb(29 115 83 / 0)' }
+        ], { duration: 360, easing: 'ease-out' });
+      }
       if(animate){incoming=inner.animate([{transform:'rotateY(90deg)'},{transform:'rotateY(0deg)'}],{duration:170,easing:'cubic-bezier(.2,.5,.4,1)',fill:'forwards'});outgoing.cancel();await incoming.finished;}
     } finally {outgoing?.cancel();incoming?.cancel();controls.classList.remove('is-animating');}
     // lock(false) restores pre-request controls; render after unlocking applies the new state.
