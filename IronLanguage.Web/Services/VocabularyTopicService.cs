@@ -13,16 +13,23 @@ public sealed record VocabularyTopicSource(int Id, int Version, string Title, Vo
 public sealed record VocabularyTopicWord(Guid SenseId, string Ossetian, string Russian, bool Saved);
 public sealed record VocabularyTopicView(int Id, string Title, VocabularyTopicWord[] Words);
 
-// Reuse the curated themes and exact dictionary source references already checked for crosswords.
-// No inferred CEFR levels, frequency rankings, translations or automatic imports.
+// Keep the original themes and their word IDs, with extra cards curated for the vocabulary.
 public sealed class VocabularyTopicCatalog
 {
     public VocabularyTopicSource[] Topics { get; }
     public VocabularyTopicCatalog(IWebHostEnvironment environment)
     {
-        var path = Path.Combine(environment.ContentRootPath, "Data", "crosswords", "levels.json");
-        var sources = JsonSerializer.Deserialize<VocabularyTopicSource[]>(File.ReadAllText(path), new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? [];
-        Topics = sources.GroupBy(x => x.Id).Select(x => x.MaxBy(t => t.Version)!).OrderBy(x => x.Id).ToArray();
+        var data = Path.Combine(environment.ContentRootPath, "Data");
+        var json = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var sources = JsonSerializer.Deserialize<VocabularyTopicSource[]>(File.ReadAllText(Path.Combine(data, "crosswords", "levels.json")), json) ?? [];
+        var additions = JsonSerializer.Deserialize<Dictionary<int, VocabularyTopicSourceWord[]>>(
+            File.ReadAllText(Path.Combine(data, "vocabulary", "topic-additions.json")), json) ?? [];
+
+        Topics = sources.GroupBy(x => x.Id).Select(x => x.MaxBy(t => t.Version)!).OrderBy(x => x.Id)
+            .Select(topic => topic with
+            {
+                Words = topic.Words.Concat(additions.GetValueOrDefault(topic.Id) ?? []).DistinctBy(word => word.Key).ToArray()
+            }).ToArray();
     }
 }
 
@@ -39,7 +46,7 @@ public sealed class VocabularyTopicService(VocabularyTopicCatalog catalog, IWord
             {
                 var sense = senses.FirstOrDefault(s => s.SourceRow == word.SourceRow && s.SourceColumn == word.SourceColumn && DictionaryService.Key(s.Ossetian) == DictionaryService.Key(word.Answer));
                 return new VocabularyTopicWord(word.Key, word.Answer, word.Clue, savedWords.Contains(word.Key) || sense is not null && saved.Contains(sense.Id));
-            }).DistinctBy(x => x.SenseId).ToArray()))
+            }).ToArray()))
             .Where(x => x.Words.Length > 0).ToArray();
     }
 

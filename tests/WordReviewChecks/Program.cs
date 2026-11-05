@@ -233,8 +233,10 @@ try {
         await db.WordReviewStates.Where(x => x.UserId == owners[0]).ExecuteUpdateAsync(x => x.SetProperty(s => s.DueAt, DateTimeOffset.UtcNow.AddHours(-1)));
         var earlyIds=entries.Take(8).Select(x=>x.Id).ToArray();
         await db.WordReviewStates.Where(x=>x.UserId==owners[0]&&earlyIds.Contains(x.WordId)).ExecuteUpdateAsync(x=>x.SetProperty(s=>s.Stage,0).SetProperty(s=>s.Mastered,false).SetProperty(s=>s.ChoiceDays,0));
-        var topicData = JsonSerializer.Deserialize<VocabularyTopicSource[]>(File.ReadAllText(Path.Combine(root,"IronLanguage.Web/Data/crosswords/levels.json")),new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
-        var topicKeys = topicData.SelectMany(x => x.Words).Select(x => x.Key).Distinct().ToArray();
+        var json = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var topicData = JsonSerializer.Deserialize<VocabularyTopicSource[]>(File.ReadAllText(Path.Combine(root,"IronLanguage.Web/Data/crosswords/levels.json")), json)!;
+        var additions = JsonSerializer.Deserialize<Dictionary<int, VocabularyTopicSourceWord[]>>(File.ReadAllText(Path.Combine(root,"IronLanguage.Web/Data/vocabulary/topic-additions.json")), json)!;
+        var topicKeys = topicData.SelectMany(x => x.Words).Concat(additions.Values.SelectMany(x => x)).Select(x => x.Key).Distinct().ToArray();
         var alreadyExisting = await db.Words.Where(x => topicKeys.Contains(x.Id)).Select(x => x.Id).ToArrayAsync();
         extraIds.AddRange(topicKeys.Except(alreadyExisting));
         var protection = DataProtectionProvider.Create(new DirectoryInfo(Path.Combine(root,"IronLanguage.Web/.data-protection-keys")), cfg => cfg.SetApplicationName("Adam"));
