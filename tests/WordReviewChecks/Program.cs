@@ -77,23 +77,39 @@ foreach(var pair in new[] { ("чиныг","книга"),("карк","куриц�
     memory.Words.Add(new(new SavedWord {UserId=memoryOwner,WordId=word.Id,Word=word},null,null));
 }
 single=await memoryService.Start(memoryOwner,"new",default);
-var seen=new List<Guid>();var first=true;
-while(single.Card is not null) {
-    Check(!seen.TakeLast(3).Contains(single.Card.WordId),"Removing a known card preserves spacing for all remaining words");
-    seen.Add(single.Card.WordId);
-    await memoryService.Command(memoryOwner,single.Id,new(single.Index,"reveal"),default);
-    single=(await memoryService.Command(memoryOwner,single.Id,new(single.Index,"answer",Known:first),default))!;first=false;
-    if(single.Card?.Kind is "choice" or "input") {
-        Check(single.Result is null,"Unknown diagnostic switches directly to practice without grading self assessment");
-        var repeated=(await memoryService.Command(memoryOwner,single.Id,new(single.Index,"answer",Known:false),default))!;
-        Check(repeated.Card?.Kind==single.Card.Kind && repeated.Errors==single.Errors,"Diagnostic retry does not answer or reset practice");
-        var word=memory.Words.First(x=>x.Saved.WordId==single.Card.WordId).Saved.Word;
-        var answer=single.Card.Direction.StartsWith("Русский")?word.Ossetian:word.Russian;
-        single=(await memoryService.Command(memoryOwner,single.Id,new(single.Index,"answer",Answer:answer),default))!;
-        Check(single.Result!.NextDue==memoryClock.Now.AddHours(4),"First checked success schedules four hours after diagnosis");
-    }
+var unfamiliarId = single.Card!.WordId;
+await memoryService.Command(memoryOwner, single.Id, new(0, "reveal"), default);
+single = (await memoryService.Command(memoryOwner, single.Id, new(0, "answer", Known: false), default))!;
+Check(single.Index == 1 && single.Result is null && single.Errors == 0, "Unknown introduction advances without grading");
+var repeated = (await memoryService.Command(memoryOwner, single.Id, new(0, "answer", Known: false), default))!;
+Check(repeated.Index == 1 && repeated.Card?.WordId == single.Card?.WordId, "Diagnostic retry leaves the next task unchanged");
+for (var i = 0; i < 3; i++)
+{
+    Check(single.Card is { Kind: "cards" } && single.Card.WordId != unfamiliarId, "An intervening task uses another word");
+    await memoryService.Command(memoryOwner, single.Id, new(single.Index, "reveal"), default);
+    single = (await memoryService.Command(memoryOwner, single.Id, new(single.Index, "answer", Known: true), default))!;
     single=(await memoryService.Command(memoryOwner,single.Id,new(single.Index,"next"),default))!;
 }
+Check(single.Card is { Kind: "choice" or "input" } && single.Card.WordId == unfamiliarId, "First checked task returns after three other tasks");
+var expectedTranslation = memory.Words.Single(x => x.Saved.WordId == unfamiliarId).Saved.Word.Russian;
+single = (await memoryService.Command(memoryOwner, single.Id, new(single.Index, "answer", Answer: expectedTranslation), default))!;
+Check(single.Result!.NextDue == memoryClock.Now.AddHours(4), "First checked success schedules four hours after diagnosis");
+
+var shortOwner = Guid.NewGuid();
+memory.Words.Add(new(new SavedWord { UserId = shortOwner, WordId = singleWord.Id, Word = singleWord }, null, null));
+var shortSession = await memoryService.Start(shortOwner, "new", default);
+await memoryService.Command(shortOwner, shortSession.Id, new(0, "reveal"), default);
+shortSession = (await memoryService.Command(shortOwner, shortSession.Id, new(0, "answer", Known: false), default))!;
+Check(shortSession.Card is null, "A one-word session ends after an unknown introduction");
+shortSession = await memoryService.Start(shortOwner, "due", default);
+Check(shortSession.Card is { Kind: "input" } && shortSession.Card.WordId == singleWord.Id, "Deferred practice survives into the next session");
+var legacy = new WordReviewSession
+{
+    UserId = shortOwner, StartedAt = memoryClock.Now,
+    ItemsJson = JsonSerializer.Serialize(new[] { Card(singleWord.Id, false, false) with { Kind = "input", InitialPractice = true } })
+};
+await memory.Start(legacy, default);
+Check((await memoryService.Current(shortOwner, default))?.Card is null, "An old snapshot defers its immediate practice when reopened");
 var matchingMemory=new ReviewMemoryRepository();
 foreach(var entry in memory.Words.TakeLast(4)) {
     matchingMemory.Words.Add(entry);

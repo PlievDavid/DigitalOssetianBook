@@ -86,11 +86,38 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
     {
         session.Index++; session.Revealed = false; session.ResultJson = null;
         var cards = Cards(session).ToList();
-        var recent = cards.Take(session.Index).SelectMany(Words).TakeLast(3).ToHashSet();
+        var recent = cards.Take(session.Index).TakeLast(3).SelectMany(Words).ToHashSet();
         var next = cards.FindIndex(session.Index, x => !Words(x).Any(recent.Contains));
         if (next < 0) cards = cards.Take(session.Index).ToList();
         else if (next > session.Index) { var item = cards[next]; cards.RemoveAt(next); cards.Insert(session.Index, item); }
         Store(session,cards);
+    }
+
+    private static bool IsImmediatePractice(WordReviewSession session, ReviewCardSnapshot[] cards)
+    {
+        var item = cards.ElementAtOrDefault(session.Index);
+        return session.ResultJson is null && item is { InitialPractice: true, Kind: "choice" or "input" } &&
+            !cards.Take(session.Index).Any(previous => Words(previous).Contains(item.WordId));
+    }
+
+    private static void DeferImmediatePractice(WordReviewSession session)
+    {
+        var cards = Cards(session);
+        if (!IsImmediatePractice(session, cards)) return;
+        var practice = cards[session.Index];
+        // Old snapshots replaced the introduction in place. Keep it in the history for spacing.
+        cards[session.Index] = practice with { Kind = "cards", Options = [], InitialPractice = false };
+        var opposite = cards.Skip(session.Index + 1).FirstOrDefault(card => card.WordId == practice.WordId && card.Reverse != practice.Reverse);
+        QueuePractice(session, cards, practice, opposite);
+    }
+
+    private static void QueuePractice(WordReviewSession session, ReviewCardSnapshot[] cards, ReviewCardSnapshot practice, ReviewCardSnapshot? opposite)
+    {
+        var pending = cards.Skip(session.Index + 1).Where(card => !Words(card).Contains(practice.WordId)).ToArray();
+        var reordered = pending.Take(3).Append(practice).Concat(pending.Skip(3));
+        if (opposite is not null) reordered = reordered.Append(opposite);
+        Store(session, cards.Take(session.Index + 1).Concat(reordered));
+        Advance(session);
     }
     public static ReviewSessionView View(WordReviewSession session)
     {
@@ -111,7 +138,15 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
     public async Task<ReviewSessionView?> Current(Guid userId,CancellationToken ct)
     {
         var session=await repository.Session(userId,ct);
-        return session is null || session.StartedAt<Now.AddDays(-7)?null:View(session);
+        var now = Now;
+        if (session is null || session.StartedAt < now.AddDays(-7)) return null;
+        if (IsImmediatePractice(session, Cards(session)))
+            session = await repository.Mutate(userId, session.Id, null, false, now, (current, _, _) =>
+            {
+                DeferImmediatePractice(current);
+                return false;
+            }, ct);
+        return session is null ? null : View(session);
     }
     private static ReviewCardSnapshot[] PairRounds(ReviewCardSnapshot[] cards)
     {
@@ -212,6 +247,11 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
                 Advance(current);return false;
             }
             if(current.ResultJson is not null)return false;
+            if (IsImmediatePractice(current, Cards(current)))
+            {
+                DeferImmediatePractice(current);
+                return false;
+            }
             if(saved is null||!saved.Word.Published||saved.Word.Archived)throw new InvalidOperationException("Слово больше недоступно. Пропустите его.");
             if(command.Action=="reveal")
             {
@@ -228,14 +268,14 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
                 {
                     state.Mastered=false;state.Stage=state.Stage<0?-1:Math.Max(0,state.Stage-1);state.DueAt=now;
                     var practice=item with {Kind=item.PracticeKind,Options=item.PracticeOptions??[],Stage=state.Stage,DueAt=now,InitialPractice=item.Stage<0,Opposite=null,NewWord=false};
-                    var cards=Cards(current).ToList();cards[current.Index]=practice;
-                    if(item.Opposite is {} opposite)
+                    var opposite = item.Opposite;
+                    var reverse = opposite is null ? null : opposite with
                     {
-                        var next=opposite with {Stage=opposite.Stage<0?-1:Math.Max(0,opposite.Stage-1),DueAt=now,InitialPractice=opposite.Stage<0,NewWord=false};
-                        var existing=cards.FindIndex(current.Index+1,x=>x.WordId==item.WordId&&x.Reverse!=item.Reverse);
-                        if(existing>=0)cards[existing]=next;else cards.Add(next);
-                    }
-                    Store(current,cards);current.Revealed=false;return new ReviewWrite(false,Introduce:true);
+                        Stage = opposite.Stage < 0 ? -1 : Math.Max(0, opposite.Stage - 1),
+                        DueAt = now, InitialPractice = opposite.Stage < 0, NewWord = false
+                    };
+                    QueuePractice(current, Cards(current), practice, reverse);
+                    return new ReviewWrite(false, Introduce: true);
                 }
                 correct=true;
             }

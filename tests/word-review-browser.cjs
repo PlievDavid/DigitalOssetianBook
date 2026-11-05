@@ -61,8 +61,14 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   const mastered=await(await page.request.get(`${base}/api/v1/word-review/words?status=mastered&search=${encodeURIComponent(front.card.prompt)}`)).json();assert(mastered.items.some(x=>x.wordId===front.card.wordId));
   await page.reload();await idle();await page.locator('#review-resume').click();await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});
   await page.screenshot({path:path.join(out,'card-front-mobile.png'),fullPage:true});
+  const unfamiliar=await snapshot();
   await page.locator('#review-reveal').click();await idle();await page.locator('#review-unknown').click();await idle();
-  let practice=await snapshot();assert.equal(practice.card.kind,'choice');assert.equal(practice.result,null);assert.equal(practice.errors,0);assert(await page.locator('#review-check-form').isVisible());
+  for(let step=0;step<3;step++){
+   const intervening=await snapshot();
+   assert.notEqual(intervening.card.wordId,unfamiliar.card.wordId);
+   await page.locator('#review-reveal').click();await idle();await page.locator('#review-known').click();await idle();
+  }
+  const practice=await snapshot();assert.equal(practice.card.wordId,unfamiliar.card.wordId);assert.equal(practice.card.kind,'choice');assert.equal(practice.result,null);assert.equal(practice.errors,0);assert(await page.locator('#review-check-form').isVisible());
   const source=vocabulary.find(x=>normalize(x.word)===normalize(practice.card.prompt));assert(source);
   const correct=practice.card.options.find(x=>normalize(x)===normalize(source.russian));assert(correct);
   await page.locator('#review-options label').filter({hasText:normalize(correct)}).click();await page.locator('#review-check').click();await idle();assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));

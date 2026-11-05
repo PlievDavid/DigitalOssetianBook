@@ -100,19 +100,22 @@
 .words-home-hero .button { min-height:48px;gap:10px; }
 .words-home-hero img { width:100%;height:auto;max-height:180px;object-fit:contain; }
 .words-home-lower { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);gap:16px;margin-top:16px; }
-.words-home-links { display:grid;gap:12px; }
-.words-home-tile {
-    display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;
-    min-height:88px;padding:12px 16px;border-radius:18px;color:var(--theme-ink);text-decoration:none;
+.words-home-links {
+    display:grid;grid-template-rows:1fr 1fr;border:1px solid #dfe5ea;
+    border-radius:20px;background:#fff;
 }
-.words-home-discover { background:#fff0db; }
-.words-home-saved { background:#eeeaff; }
-.words-home-tile strong,.words-home-tile small { display:block; }
+.words-home-tile {
+    display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;
+    min-height:64px;padding:10px 16px;color:var(--theme-ink);text-decoration:none;
+}
+.words-home-tile:first-child { border-radius:19px 19px 0 0; }
+.words-home-tile:last-child { border-radius:0 0 19px 19px;border-top:1px solid #e6eaee; }
+.words-home-tile:hover { background:#f7f9fb; }
 .words-home-tile strong { font:650 19px/1.25 var(--theme-heading-font); }
-.words-home-tile small { margin-top:4px;color:#475571;font-size:14px;line-height:1.35; }
-.words-home-tile img,.words-home-book { width:56px;height:56px;object-fit:contain; }
-.words-home-book { display:grid;place-items:center;background:#e0d7ff;color:#5442a2;border-radius:16px; }
-.words-home-book svg { width:31px;height:31px; }
+.words-home-icon { display:grid;place-items:center;width:44px;height:44px;border-radius:12px; }
+.words-home-discover .words-home-icon { background:#fff0d2;color:#855322; }
+.words-home-saved .words-home-icon { background:#e4efff;color:#385991; }
+.words-home-icon svg { width:28px;height:28px; }
 .words-home-arrow { color:#425573;font-size:21px; }
 .words-week { min-width:0;padding:16px 20px;border-radius:20px;background:#eaf5ed; }
 .words-week header { display:flex;justify-content:space-between;align-items:center;gap:12px; }
@@ -128,9 +131,10 @@
 .words-week p { margin:10px 0 0;color:#3b554c;font-size:13px; }
 
 @media (max-width: 660px) {
-    .words-home-lower { grid-template-columns:1fr; }
-    .words-home-hero { grid-template-columns:minmax(0,1fr) minmax(74px,29%);padding:20px 16px;gap:6px; }
+    .words-home-lower { grid-template-columns:1fr;gap:12px;margin-top:12px; }
+    .words-home-hero { grid-template-columns:minmax(0,1fr) minmax(74px,29%);min-height:0;padding:18px 16px;gap:6px; }
     .words-home-hero .button { padding-inline:12px; }
+    .words-home-tile strong { font-size:17px; }
     .words-topic-grid { gap:10px; }
 }
 /* Repetition: a clear setup, then a single compact task inside the wide page. */
