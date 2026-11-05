@@ -37,4 +37,6 @@ internal sealed class ReviewMemoryRepository : IWordReviewRepository
     public Task<Guid[]> SavedSenseIds(Guid userId, CancellationToken ct) => Task.FromResult(Array.Empty<Guid>());
     public Task<Guid[]> SavedWordIds(Guid userId, CancellationToken ct) => Task.FromResult(Array.Empty<Guid>());
     public Task<Guid> EnsureTopicWord(WordEntry word, CancellationToken ct) => Task.FromResult(word.Id);
+    public Task<MasteryDay[]> MasteryWeek(Guid userId, DateOnly today, CancellationToken ct) => throw new NotSupportedException();
+    public Task RateTopicWord(Guid userId, Guid wordId, int stage, DateTimeOffset dueAt, bool known, DateTimeOffset now, CancellationToken ct) => throw new NotSupportedException();
 }

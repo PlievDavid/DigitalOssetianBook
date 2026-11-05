@@ -1,9 +1,9 @@
 @{ ViewData["Title"] = "Мои слова"; }
 @section Styles { <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
 <section class="feature-shell words-page" id="my-words-list" data-kind="saved">
+    <a class="back-link" href="/vocabulary">← Слова</a>
     <header class="words-heading">
-        <div><h1>Мои слова</h1><p id="words-total">Ваш личный словарь</p></div>
-        <div class="words-actions"><a class="button primary" href="/word-practice">Учить слова</a><a class="words-catalog-link" href="/vocabulary/available">Новые слова<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 12h15m-6-6 6 6-6 6" /></svg></a></div>
+        <h1>Мои слова</h1>
     </header>
     <nav class="words-tabs" id="words-counts" aria-label="Состояние слов"></nav>
     <form id="words-search" class="words-tools" role="search">

@@ -17,6 +17,7 @@ public sealed record ReviewCommand(int Index, string Action, string? Answer = nu
 
 public static class WordReviewRules
 {
+    public const int KnownStage = 5;
     public static readonly TimeSpan[] Intervals = [TimeSpan.FromHours(4), TimeSpan.FromHours(12), TimeSpan.FromDays(1),
         TimeSpan.FromDays(6), TimeSpan.FromDays(12), TimeSpan.FromDays(48), TimeSpan.FromDays(96)];
     public static string Normalize(string text) => string.Join(' ', text.Normalize(NormalizationForm.FormD)
@@ -248,7 +249,7 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
             WordReviewRules.Apply(state,correct,item.Kind=="choice",now);
             if(item.Kind=="cards")
             {
-                state.Mastered=true;state.Stage=Math.Max(5,state.Stage);state.DueAt=state.Stage==7?now.AddMonths(6):now.Add(WordReviewRules.Intervals[state.Stage]);
+                state.Mastered=true;state.Stage=Math.Max(WordReviewRules.KnownStage,state.Stage);state.DueAt=state.Stage==7?now.AddMonths(6):now.Add(WordReviewRules.Intervals[state.Stage]);
                 Store(current,Cards(current).Where((x,i)=>i<=current.Index||!Words(x).Contains(item.WordId)));
             }
             if(correct)current.Correct++;else current.Errors++;saved.ReviewedAt=now;

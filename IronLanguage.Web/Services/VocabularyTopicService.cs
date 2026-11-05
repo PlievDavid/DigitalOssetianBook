@@ -26,7 +26,7 @@ public sealed class VocabularyTopicCatalog
     }
 }
 
-public sealed class VocabularyTopicService(VocabularyTopicCatalog catalog, IWordReviewRepository repository, IProgressRepository progress)
+public sealed class VocabularyTopicService(VocabularyTopicCatalog catalog, IWordReviewRepository repository, IProgressRepository progress, TimeProvider clock)
 {
     public async Task<VocabularyTopicView[]> Topics(Guid? userId, CancellationToken ct)
     {
@@ -52,13 +52,28 @@ public sealed class VocabularyTopicService(VocabularyTopicCatalog catalog, IWord
         foreach (var id in ids.Distinct())
         {
             if (topic.Words.Single(x => x.SenseId == id).Saved) continue;
-            var source = catalog.Topics.Single(x => x.Id == topicId).Words.First(x => x.Key == id);
-            var senses = await repository.TopicSenses([source.SourceRow], ct);
-            var sense = senses.FirstOrDefault(s => s.SourceColumn == source.SourceColumn && DictionaryService.Key(s.Ossetian) == DictionaryService.Key(source.Answer));
-            var wordId = await repository.EnsureTopicWord(new() { Id = id, Ossetian = source.Answer, Russian = source.Clue,
-                Published = true, DictionarySenseId = sense?.Id }, ct);
+            var wordId = await ResolveWord(topicId, id, ct);
             if (await progress.AddWord(userId, wordId, ct)) added++;
         }
         return added;
+    }
+
+    public async Task Rate(Guid userId, int topicId, Guid senseId, bool known, CancellationToken ct)
+    {
+        var wordId = await ResolveWord(topicId, senseId, ct);
+        var now = clock.GetUtcNow();
+        var stage = known ? WordReviewRules.KnownStage : -1;
+        var dueAt = known ? now.Add(WordReviewRules.Intervals[stage]) : now;
+        await repository.RateTopicWord(userId, wordId, stage, dueAt, known, now, ct);
+    }
+
+    private async Task<Guid> ResolveWord(int topicId, Guid id, CancellationToken ct)
+    {
+        var source = catalog.Topics.SingleOrDefault(x => x.Id == topicId)?.Words.FirstOrDefault(x => x.Key == id)
+            ?? throw new ArgumentException("Слово не принадлежит выбранной теме.");
+        var senses = await repository.TopicSenses([source.SourceRow], ct);
+        var sense = senses.FirstOrDefault(s => s.SourceColumn == source.SourceColumn && DictionaryService.Key(s.Ossetian) == DictionaryService.Key(source.Answer));
+        return await repository.EnsureTopicWord(new() { Id = id, Ossetian = source.Answer, Russian = source.Clue,
+            Published = true, DictionarySenseId = sense?.Id }, ct);
     }
 }

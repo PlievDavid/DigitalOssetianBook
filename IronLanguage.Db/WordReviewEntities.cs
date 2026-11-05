@@ -44,3 +44,10 @@ public sealed class WordReviewReward
     public Guid WordId { get; set; }
     public DateOnly Day { get; set; }
 }
+
+public sealed class WordReviewMastery
+{
+    public Guid UserId { get; set; }
+    public Guid WordId { get; set; }
+    public DateOnly Day { get; set; }
+}

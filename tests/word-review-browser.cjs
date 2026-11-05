@@ -16,10 +16,14 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   const api=(route,body,method='POST')=>page.evaluate(async({route,body,method})=>AdamApi(route,{method,body:JSON.stringify(body)}),{route,body,method});
   const snapshot=async()=>await(await page.request.get(`${base}/api/v1/word-review/session`)).json();
   for(const width of[1440,768,390,320]){
-   await page.setViewportSize({width,height:900});await page.goto(`${base}/vocabulary`);await wordsIdle();
-   assert.equal(await page.locator('.words-row').count(),30);assert.equal(await page.locator('.words-tab').count(),3);
+   await page.setViewportSize({width,height:900});await page.goto(`${base}/vocabulary`);
+   assert.equal(await page.locator('.words-row').count(),0);
+   assert.equal(await page.locator('.words-week-chart li').count(),7);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    await page.screenshot({path:path.join(out,`overview-${width}.png`),fullPage:true});
+   await page.locator('.words-home-saved').focus();await page.keyboard.press('Enter');await wordsIdle();
+   assert.equal(await page.locator('.words-row').count(),30);assert.equal(await page.locator('.words-tab').count(),3);
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   }
   await page.goto(`${base}/vocabulary?sort=recent`);await wordsIdle();await page.evaluate(()=>window.__navigationProbe='stable');
   await page.locator('.words-tab').filter({hasText:'Выучено'}).click();await wordsIdle();assert.equal(await page.evaluate(()=>window.__navigationProbe),'stable');
@@ -79,9 +83,31 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   await page.screenshot({path:path.join(out,'input-error-mobile.png'),fullPage:true});await page.setViewportSize({width:320,height:700});await page.evaluate(()=>document.documentElement.style.fontSize='200%');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.evaluate(()=>document.documentElement.style.fontSize='');
   await page.locator('#review-exit').click();await idle();assert.equal((await snapshot()).card,null);assert(!/Очки/.test(await page.locator('#review-totals').textContent()));await page.screenshot({path:path.join(out,'finish-mobile.png'),fullPage:true});
   const guestPage=await browser.newPage();await guestPage.goto(`${base}/word-practice`);assert(await guestPage.locator('#word-practice-app').isVisible());await guestPage.close();await page.bringToFront();
-  await page.goto(`${base}/vocabulary/available`);await page.waitForSelector('.words-topic-card');await page.screenshot({path:path.join(out,'topics-mobile.png'),fullPage:true});
-  await page.locator('.words-topic-card').first().click();await page.waitForSelector('.topic-word-row');await page.getByRole('button',{name:'Выбрать все',exact:true}).click();await page.getByRole('button',{name:'Добавить в словарь',exact:true}).click();await page.waitForFunction(()=>document.getElementById('words-status').textContent.includes('Добавлено'));assert.equal(await page.locator('.topic-word-row input:not(:disabled)').count(),0);await page.screenshot({path:path.join(out,'topic-mobile.png'),fullPage:true});
-  await page.goto(`${base}/vocabulary`);await wordsIdle();const before=await page.locator('.words-row strong').first().textContent();await page.locator('.words-delete').first().click();await page.locator('#words-remove-confirm').click();await wordsIdle();await page.waitForFunction(()=>document.getElementById('words-status').textContent.includes('\u0443\u0434\u0430\u043b\u0435\u043d\u043e'),null,{polling:100});assert.notEqual(await page.locator('.words-row strong').first().textContent(),before);
+  await page.goto(`${base}/vocabulary`);
+  const masteredBefore=Number(await page.locator('.words-week-total').textContent());
+  await page.locator('.words-home-discover').click();
+  await page.waitForSelector('.words-topic-card');await page.screenshot({path:path.join(out,'topics-mobile.png'),fullPage:true});
+  const topics=await (await page.request.get(`${base}/api/v1/word-review/topics`)).json();
+  const topic=topics.find(item=>item.words.filter(word=>!word.saved).length>=2);assert(topic);
+  const [known,unknown]=topic.words.filter(word=>!word.saved);
+  await page.locator(`.words-topic-card[href$="?topic=${topic.id}"]`).click();
+  await page.waitForSelector('#topic-reveal');
+  assert.equal(await page.locator('#topic-translation').textContent(),'');
+  await page.locator('#topic-reveal').click();
+  assert.equal(normalize(await page.locator('#topic-translation').textContent()),normalize(known.russian));
+  await page.screenshot({path:path.join(out,'topic-mobile.png'),fullPage:true});
+  await page.locator('#topic-known').click();
+  await page.locator('#topic-reveal').click();
+  assert.equal(normalize(await page.locator('#topic-prompt').textContent()),normalize(unknown.ossetian));
+  await page.locator('#topic-unknown').click();
+  await page.waitForFunction(()=>!document.getElementById('topic-unknown').disabled);
+  await api(`/word-review/topics/${topic.id}/words/${known.senseId}/rating`,{known:false});
+  const saved=async (word,status)=> (await (await page.request.get(`${base}/api/v1/word-review/words?status=${status}&search=${encodeURIComponent(word.ossetian)}`)).json()).items;
+  assert((await saved(known,'mastered')).some(word=>normalize(word.russian)===normalize(known.russian)));
+  assert((await saved(unknown,'learning')).some(word=>normalize(word.russian)===normalize(unknown.russian)));
+  await page.goto(`${base}/vocabulary`);
+  assert.equal(Number(await page.locator('.words-week-total').textContent()),masteredBefore+1);
+  await page.locator('.words-home-saved').click();await wordsIdle();const before=await page.locator('.words-row').first().getAttribute('data-word-id');await page.locator('.words-delete').first().click();await page.locator('#words-remove-confirm').click();await wordsIdle();await page.waitForFunction(()=>document.getElementById('words-status').textContent.includes('\u0443\u0434\u0430\u043b\u0435\u043d\u043e'),null,{polling:100});assert.notEqual(await page.locator('.words-row').first().getAttribute('data-word-id'),before);
   assert.deepEqual(errors,[]);console.log('Review UX passed: 4 widths, AJAX filters/sort/pages/history, initial diagnosis, smooth flip midpoints, known/unknown branching, integrated pairs with mouse and keyboard, typed checks, no score counters, themes, CSRF and guest route.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

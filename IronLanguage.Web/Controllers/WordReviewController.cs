@@ -8,6 +8,7 @@ namespace IronLanguage.Web.Controllers;
 public sealed record ReviewStartInput(string Mode);
 public sealed record ReviewSettingsInput(string Format, bool DirectInput);
 public sealed record TopicSaveInput(Guid[] SenseIds);
+public sealed record TopicRatingInput(bool? Known);
 
 [ApiController, Authorize, AutoValidateAntiforgeryToken, Route("api/v1/word-review")]
 public sealed class WordReviewController(IWordReviewRepository repository, WordReviewService service, TimeProvider clock, VocabularyTopicService topics) : ControllerBase
@@ -26,6 +27,18 @@ public sealed class WordReviewController(IWordReviewRepository repository, WordR
 
     [HttpGet("summary")]
     public async Task<IActionResult> Summary(CancellationToken ct) => Ok(await repository.Counts(Owner, clock.GetUtcNow(), ct));
+
+    [HttpPost("topics/{id:int}/words/{senseId:guid}/rating")]
+    public async Task<IActionResult> RateTopicWord(int id, Guid senseId, TopicRatingInput input, CancellationToken ct)
+    {
+        if (input.Known is not bool known) return BadRequest(new { error = "Выберите «Знаю» или «Не знаю»." });
+        try
+        {
+            await topics.Rate(Owner, id, senseId, known, ct);
+            return NoContent();
+        }
+        catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
+    }
 
     [HttpGet("words")]
     public async Task<IActionResult> Words(string search = "", string status = "all", string sort = "due", int page = 1, int size = 30, CancellationToken ct = default)

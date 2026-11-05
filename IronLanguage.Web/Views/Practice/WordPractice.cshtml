@@ -1,18 +1,17 @@
 @{ ViewData["Title"] = "Изучение слов"; }
 @section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
 <section class="feature-shell review-page" id="spaced-review">
-    <a class="back-link" href="/vocabulary">← Мои слова</a>
+    <a class="back-link" href="/vocabulary">← Слова</a>
     <header class="words-heading"><h1>Изучение слов</h1><div class="review-header-actions"><button type="button" class="button secondary" id="review-settings-open">Настройки</button></div></header>
     <p id="review-status" class="words-notice" role="status" aria-live="polite"></p>
     <section id="review-start" class="review-setup" hidden>
-        <h2>Чем займёмся?</h2><p class="review-muted">Выберите слова для этого занятия.</p>
-        <fieldset class="review-modes"><legend>Режим занятия</legend>
-            <label><input type="radio" name="mode" value="due" /><strong>Повторение</strong><small>Закрепить знакомые слова</small><span id="review-count-due"></span></label>
-            <label><input type="radio" name="mode" value="new" /><strong>Новые слова</strong><small>Начать изучать добавленное</small><span id="review-count-new"></span></label>
-            <label><input type="radio" name="mode" value="mixed" checked /><strong>Всё вместе</strong><small>Повторять и узнавать новое</small><span id="review-count-mixed"></span></label>
+        <fieldset class="review-modes"><legend>Выбери занятие</legend>
+            <label><input type="radio" name="mode" value="due" /><strong>Повторение</strong><span id="review-count-due"></span></label>
+            <label><input type="radio" name="mode" value="new" /><strong>Первое знакомство</strong><span id="review-count-new"></span></label>
+            <label><input type="radio" name="mode" value="mixed" checked /><strong>Всё вместе</strong><span id="review-count-mixed"></span></label>
         </fieldset>
         <div class="review-start-actions"><button type="button" class="button primary" id="review-begin">Начать занятие</button><button type="button" class="button secondary" id="review-resume" hidden>Продолжить занятие</button><a class="button secondary" id="review-add-words" href="/vocabulary/available" hidden>Новые слова</a></div>
-        <p id="review-start-note" class="review-muted"></p>
+        <p id="review-start-note" class="review-muted" hidden></p>
     </section>
     <section id="review-study" hidden aria-label="Занятие">
         <div class="review-progress"><span id="review-step"></span><progress id="review-progress-bar" value="0" max="1" aria-label="Проверено карточек"></progress><button type="button" class="review-link" id="review-exit">Закончить</button></div>

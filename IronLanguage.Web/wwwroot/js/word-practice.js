@@ -27,13 +27,17 @@
     const count = mode === 'due' ? summary.due : mode === 'new' ? summary.new : summary.due + summary.new;
     el('review-begin').disabled = busy || !count;
     el('review-add-words').hidden = !!count;
-    setText('review-start-note', count ? (mode === 'mixed' ? 'Три повторения чередуются с одним новым словом.' : mode === 'due' ? 'Система подберёт слова, которые пора закрепить.' : 'Занимайтесь в удобном темпе — дневного лимита нет.') : mode === 'due' ? 'На сейчас всё повторено. Можно перейти к новым словам.' : 'Добавьте слова из интересной темы, чтобы начать.');
+    el('review-start-note').hidden = count > 0;
+    setText('review-start-note', mode === 'due' ? 'Пока нет слов для повторения. Открой новые карточки или выбери другое занятие.' : 'Открой карточки из любой темы или сохрани слово при чтении.');
   }
   async function counts() {
     const data = await AdamApi('/word-review/summary');
     summary = data;
-    setText('review-count-due', `${data.due} слов`); setText('review-count-new', `${data.new} слов`);
-    setText('review-count-mixed', `${data.due + data.new} слов`);
+    const plural = new Intl.PluralRules('ru');
+    const words = n => `${n} ${{ one: 'слово', few: 'слова', many: 'слов', other: 'слов' }[plural.select(n)]}`;
+    setText('review-count-due', words(data.due));
+    setText('review-count-new', words(data.new));
+    setText('review-count-mixed', words(data.due + data.new));
   }
   function showStart() {
     el('review-start').hidden = false; el('review-study').hidden = true; el('review-finish').hidden = true;

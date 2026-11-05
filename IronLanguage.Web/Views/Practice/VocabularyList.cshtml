@@ -1,15 +1,29 @@
-@model string
-@{ ViewData["Title"] = "Добавить слова"; }
+@{ ViewData["Title"] = "Новые слова"; }
 @section Styles { <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
 <section class="feature-shell words-page" id="word-topics">
-    <a class="back-link" id="topics-back" href="/vocabulary">← Мои слова</a>
-    <header class="words-heading topics-heading"><div><h1 id="topics-title">Добавить слова</h1><p id="topics-subtitle">Выберите тему и добавьте слова, которые хотите изучать.</p></div></header>
+    <a class="back-link" id="topics-back" href="/vocabulary">← Слова</a>
+    <header class="words-heading topics-heading"><div><h1 id="topics-title">Новые слова</h1><p id="topics-subtitle">Выбери тему и открой карточки.</p></div></header>
     <p id="words-status" class="words-notice" role="status"></p>
     <div id="words-topics" class="words-topic-grid"></div>
-    <section id="topic-detail" hidden aria-label="Слова выбранной темы">
-        <div class="topic-list-heading"><span id="topic-word-count"></span><button class="words-text-button" id="topic-select-all" type="button">Выбрать все</button></div>
-        <div id="topic-words" class="topic-word-list"></div>
-        <div class="topic-selection-bar" id="topic-selection-bar"><span id="topic-selected-count">Выберите слова</span><button class="button primary" id="topic-save" type="button" disabled>Добавить в словарь</button><a class="button primary" id="topic-done" href="/vocabulary" hidden>К моим словам</a></div>
+    <section id="topic-detail" hidden aria-label="Карточки темы">
+        <div class="topic-card-progress"><span id="topic-position"></span><progress id="topic-progress" value="0" max="1" aria-label="Просмотрено карточек"></progress></div>
+        <div class="topic-study-card">
+            <p>По-осетински</p>
+            <h2 id="topic-prompt" tabindex="-1"></h2>
+            <p id="topic-translation" aria-live="polite"></p>
+        </div>
+        <div class="topic-card-actions">
+            <button class="button primary" id="topic-reveal" type="button">Показать перевод</button>
+            <button class="button secondary" id="topic-unknown" type="button" hidden>Не знаю</button>
+            <button class="button primary" id="topic-known" type="button" hidden>Знаю</button>
+            <button class="button primary" id="topic-next" type="button" hidden>Дальше</button>
+        </div>
+        <p id="topic-login-note" hidden><a id="topic-login" href="/account/login">Войти, чтобы сохранять слова</a></p>
+    </section>
+    <section class="topic-complete" id="topic-complete" hidden>
+        <h2 id="topic-complete-title" tabindex="-1">Карточки закончились</h2>
+        <p id="topic-complete-copy"></p>
+        <div class="topic-card-actions"><a class="button primary" href="/word-practice">К занятию</a><a class="button secondary" href="/vocabulary/available">Другие темы</a></div>
     </section>
 </section>
-@section Scripts { <script src="~/js/word-display.js" asp-append-version="true" defer></script><script src="~/js/my-words.js" asp-append-version="true" defer></script> }
+@section Scripts { <script src="~/js/word-display.js" asp-append-version="true" defer></script><script src="~/js/word-topics.js" asp-append-version="true" defer></script> }

@@ -19,6 +19,7 @@ public sealed class VocabularyItem
 }
 public sealed record VocabularyPage(VocabularyItem[] Items, int Total, int Page, int Pages);
 public sealed record ReviewCounts(int Total, int New, int Learning, int Mastered, int Due, int PointsToday, DateTimeOffset? NextDue);
+public sealed record MasteryDay(DateOnly Day, int Count);
 public sealed record ReviewSource(SavedWord Saved, WordReviewState? Forward, WordReviewState? Backward);
 public sealed record ReviewWrite(bool Award, bool MarkKnown = false, bool Introduce = false)
 {
@@ -28,6 +29,8 @@ public sealed record ReviewWrite(bool Award, bool MarkKnown = false, bool Introd
 public interface IWordReviewRepository
 {
     Task<ReviewCounts> Counts(Guid userId, DateTimeOffset now, CancellationToken ct);
+    Task<MasteryDay[]> MasteryWeek(Guid userId, DateOnly today, CancellationToken ct);
+    Task RateTopicWord(Guid userId, Guid wordId, int stage, DateTimeOffset dueAt, bool known, DateTimeOffset now, CancellationToken ct);
     Task<VocabularyPage> Page(Guid userId, string search, string status, string sort, int page, int size, CancellationToken ct);
     Task<VocabularyPage> Available(Guid? userId, string search, int page, CancellationToken ct);
     Task<List<ReviewSource>> Sources(Guid userId, CancellationToken ct);
@@ -77,6 +80,17 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
         var day = DateOnly.FromDateTime(now.UtcDateTime);
         var points = await db.WordReviewRewards.CountAsync(x => x.UserId == userId && x.Day == day, ct);
         return new(total, fresh, total - mastered, mastered, due, points, next);
+    }
+
+    public async Task<MasteryDay[]> MasteryWeek(Guid userId, DateOnly today, CancellationToken ct)
+    {
+        var first = today.AddDays(-6);
+        var days = await db.WordReviewMasteries.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Day >= first && x.Day <= today)
+            .GroupBy(x => x.Day).Select(group => new MasteryDay(group.Key, group.Count())).ToArrayAsync(ct);
+        var counts = days.ToDictionary(x => x.Day, x => x.Count);
+        return Enumerable.Range(0, 7).Select(offset => first.AddDays(offset))
+            .Select(day => new MasteryDay(day, counts.GetValueOrDefault(day))).ToArray();
     }
 
     public async Task<VocabularyPage> Available(Guid? userId, string search, int page, CancellationToken ct)
@@ -135,6 +149,35 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
     private Task Lock(Guid userId, CancellationToken ct) =>
         db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"word-review:" + userId}, 0))", ct);
 
+    private async Task RecordMastery(Guid userId, Guid wordId, DateTimeOffset now, CancellationToken ct)
+    {
+        if (!await db.WordReviewMasteries.AnyAsync(x => x.UserId == userId && x.WordId == wordId, ct))
+            db.WordReviewMasteries.Add(new() { UserId = userId, WordId = wordId, Day = DateOnly.FromDateTime(now.UtcDateTime) });
+    }
+
+    public async Task RateTopicWord(Guid userId, Guid wordId, int stage, DateTimeOffset dueAt, bool known, DateTimeOffset now, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await Lock(userId, ct);
+        if (!await db.Words.AnyAsync(x => x.Id == wordId && x.Published && !x.Archived, ct))
+            throw new ArgumentException("Это слово сейчас недоступно.");
+
+        // The first successful save wins, including saves from reading or other tabs.
+        var inserted = await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "SavedWords" ("UserId", "WordId", "AddedAt", "Errors")
+            VALUES ({userId}, {wordId}, {now}, 0) ON CONFLICT ("UserId", "WordId") DO NOTHING
+            """, ct);
+        if (inserted == 1)
+        {
+            db.WordReviewStates.AddRange(
+                new WordReviewState { UserId = userId, WordId = wordId, Stage = stage, DueAt = dueAt, Mastered = known },
+                new WordReviewState { UserId = userId, WordId = wordId, Reverse = true, Stage = stage, DueAt = dueAt, Mastered = known });
+            if (known) await RecordMastery(userId, wordId, now, ct);
+            await db.SaveChangesAsync(ct);
+        }
+        await tx.CommitAsync(ct);
+    }
+
     public async Task SaveSettings(WordReviewSettings settings, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -178,6 +221,7 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
         var state = wordId is null ? null : await db.WordReviewStates.SingleOrDefaultAsync(x => x.UserId == userId && x.WordId == wordId && x.Reverse == reverse, ct);
         var created = state is null && saved is not null;
         if (created) state = new() { UserId = userId, WordId = wordId!.Value, Reverse = reverse };
+        var wasMastered = state?.Mastered == true;
         var write = action(session, state, saved);
         if (created && state!.DueAt is not null) db.WordReviewStates.Add(state);
         if ((write.MarkKnown || write.Introduce) && state is not null && wordId is Guid wholeWord)
@@ -187,6 +231,10 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
             other.Stage = write.MarkKnown ? state.Stage : other.Stage < 0 ? -1 : Math.Max(0,other.Stage - 1);
             other.DueAt = write.MarkKnown ? state.DueAt : now; other.Mastered = write.MarkKnown;
         }
+        if (!wasMastered && state?.Mastered == true &&
+            (write.MarkKnown || await db.WordReviewStates.AnyAsync(x => x.UserId == userId && x.WordId == state.WordId && x.Reverse != reverse && x.Mastered, ct)))
+            await RecordMastery(userId, state.WordId, now, ct);
+
         if (write.Award && wordId is Guid value)
         {
             var day = DateOnly.FromDateTime(now.UtcDateTime);
@@ -226,6 +274,7 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
             db.Entry(word).State = EntityState.Detached;
             var concurrent = await db.Words.AsNoTracking().FirstOrDefaultAsync(x => x.Id == word.Id || word.DictionarySenseId != null && x.DictionarySenseId == word.DictionarySenseId, ct);
             if (concurrent is null) throw;
+            if (!concurrent.Published || concurrent.Archived) throw new ArgumentException("Слово из этой темы сейчас недоступно.");
             return concurrent.Id;
         }
     }

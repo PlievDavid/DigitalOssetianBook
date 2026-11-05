@@ -16,6 +16,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<WordReviewSettings> WordReviewSettings => Set<WordReviewSettings>();
     public DbSet<WordReviewSession> WordReviewSessions => Set<WordReviewSession>();
     public DbSet<WordReviewReward> WordReviewRewards => Set<WordReviewReward>();
+    public DbSet<WordReviewMastery> WordReviewMasteries => Set<WordReviewMastery>();
     public DbSet<ExerciseAttempt> Attempts => Set<ExerciseAttempt>();
     public DbSet<ReadingPosition> ReadingPositions => Set<ReadingPosition>();
     public DbSet<DailyActivity> DailyActivities => Set<DailyActivity>();
@@ -43,6 +44,9 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<WordReviewSession>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordReviewReward>().HasKey(x => new { x.UserId, x.Day, x.WordId });
         model.Entity<WordReviewReward>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewMastery>().HasKey(x => new { x.UserId, x.WordId });
+        model.Entity<WordReviewMastery>().HasIndex(x => new { x.UserId, x.Day });
+        model.Entity<WordReviewMastery>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordleGame>().HasKey(x => new { x.UserId, x.Day });
         model.Entity<WordleGame>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordleGame>().Property(x => x.ExpectedWord).HasMaxLength(5);
