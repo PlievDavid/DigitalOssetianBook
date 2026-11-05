@@ -36,8 +36,7 @@
                 {
                     var today = day == Model[^1];
                     <li class="@(today ? "words-week-today" : null)">
-                        <span class="words-sr">@day.Day.ToString("dd MMMM", culture)@(today ? ", сегодня" : ""):</span>
-                        <span class="words-week-value">@day.Count</span>
+                        <span class="words-sr">@day.Day.ToString("dd MMMM", culture)@(today ? ", сегодня" : ""): @day.Count</span>
                         <div class="words-week-track" aria-hidden="true"><span style="--bar-height: @(day.Count * 100L / peak)%"></span></div>
                         <span class="words-week-day" aria-hidden="true">@day.Day.ToString("ddd", culture)</span>
                     </li>

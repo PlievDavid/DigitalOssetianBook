@@ -123,7 +123,6 @@
 .words-week-total { font:700 28px/1 var(--theme-heading-font);color:var(--theme-green); }
 .words-week-chart { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:14px 0 0;padding:0;list-style:none; }
 .words-week-chart li { display:grid;gap:5px;justify-items:center;align-items:end;font-size:13px;color:#374d47; }
-.words-week-value { font-variant-numeric:tabular-nums; }
 .words-week-track { display:flex;align-items:flex-end;width:min(100%,28px);height:58px;border-radius:8px;background:#d7e9df; }
 .words-week-track span { width:100%;height:var(--bar-height);border-radius:8px;background:#568e7a; }
 .words-week-today .words-week-track span { background:#17634f; }
