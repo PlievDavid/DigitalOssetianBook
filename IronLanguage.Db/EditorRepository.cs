@@ -20,6 +20,8 @@ public sealed record DialogueMaterial(string Title, string Dialect, int Level, D
     public sealed record MatchingPair(string Left, string Right);
     public sealed record MatchingMaterial(string Title, MatchingPair[] Pairs, string[] Distractors, Guid[] WordIds);
     public sealed record PictureMaterial(string Title, string PicturePath, string Word, string Mode, string[] Distractors, Guid[] WordIds);
+public sealed record GroupingWord(string Text, int Group);
+public sealed record GroupingMaterial(string Title, string[] Groups, GroupingWord[] Words, Guid[] WordIds);
 public sealed record EditorItem(string Kind, Guid Id, string Title, bool Published, int Version, Guid? PendingRevisionId, bool Archived);
 public sealed record EditorMaterial(string Kind, Guid Id, bool Published, int Version, string PayloadJson);
 
@@ -52,6 +54,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         var dialogues = await db.Dialogues.AsNoTracking().ToListAsync(ct);
         var matchings = await db.Matchings.AsNoTracking().ToListAsync(ct);
         var pictures = await db.PictureMatchings.AsNoTracking().ToListAsync(ct);
+        var groupings = await db.Groupings.AsNoTracking().ToListAsync(ct);
         var pending = await db.ContentRevisions.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
         Guid? Pending(string kind, Guid id) => pending.FirstOrDefault(x => x.Kind == kind && x.ContentId == id)?.Id;
         return words.Select(x => new EditorItem("word", x.Id, x.Ossetian, x.Published, x.Version, Pending("word", x.Id), x.Archived))
@@ -60,6 +63,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             .Concat(dialogues.Select(x => new EditorItem("dialogue", x.Id, x.Title, x.Published, x.Version, Pending("dialogue", x.Id), x.Archived)))
             .Concat(matchings.Select(x => new EditorItem("matching", x.Id, x.Title, x.Published, x.Version, Pending("matching", x.Id), x.Archived)))
             .Concat(pictures.Select(x => new EditorItem("picture", x.Id, x.Title, x.Published, x.Version, Pending("picture", x.Id), x.Archived)))
+            .Concat(groupings.Select(x => new EditorItem("grouping", x.Id, x.Title, x.Published, x.Version, Pending("grouping", x.Id), x.Archived)))
             .OrderBy(x => x.Title).ToList();
     }
 
@@ -94,6 +98,11 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var picture = await db.PictureMatchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
             return picture is null ? null : new(kind, id, picture.Published, picture.Version, Capture(picture));
+        }
+        if (kind == "grouping")
+        {
+            var grouping = await db.Groupings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+            return grouping is null ? null : new(kind, id, grouping.Published, grouping.Version, Capture(grouping));
         }
         return null;
     }
@@ -152,6 +161,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             var picture = new PictureMatching { Title = p.Title, ScriptJson = payloadJson };
             db.PictureMatchings.Add(picture); await db.SaveChangesAsync(ct); return picture.Id;
         }
+        if (kind == "grouping")
+        {
+            var p = Parse<GroupingMaterial>(payloadJson);
+            var grouping = new Grouping { Title = p.Title, ScriptJson = payloadJson };
+            db.Groupings.Add(grouping); await db.SaveChangesAsync(ct); return grouping.Id;
+        }
         throw new ArgumentException("Unknown material kind", nameof(kind));
     }
 
@@ -199,6 +214,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (picture is null) return false;
             Apply(picture, Parse<PictureMaterial>(payloadJson));
         }
+        else if (kind == "grouping")
+        {
+            var grouping = await db.Groupings.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (grouping is null) return false;
+            Apply(grouping, Parse<GroupingMaterial>(payloadJson));
+        }
         else return false;
         await db.SaveChangesAsync(ct); return true;
     }
@@ -221,6 +242,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         else if (kind == "dialogue") (await db.Dialogues.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "matching") (await db.Matchings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else if (kind == "picture") (await db.PictureMatchings.SingleAsync(x => x.Id == id, ct)).Published = true;
+        else if (kind == "grouping") (await db.Groupings.SingleAsync(x => x.Id == id, ct)).Published = true;
         else (await db.Exercises.SingleAsync(x => x.Id == id, ct)).Published = true;
         db.ContentRevisions.Add(new ContentRevision { Kind = kind, ContentId = id, Version = 1, BaseVersion = 0,
             PayloadJson = material.PayloadJson, Published = true, EditorId = editorId, PublishedAt = DateTimeOffset.UtcNow });
@@ -321,6 +343,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (picture is null) return false;
             Apply(picture, Parse<PictureMaterial>(revision.PayloadJson)); picture.Version++;
         }
+        else if (revision.Kind == "grouping")
+        {
+            var grouping = await db.Groupings.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            if (grouping is null) return false;
+            Apply(grouping, Parse<GroupingMaterial>(revision.PayloadJson)); grouping.Version++;
+        }
         else return false;
         revision.Published = true; revision.PublishedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); return true;
@@ -365,6 +393,12 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
             if (picture is null) return false;
             db.PictureMatchings.Remove(picture);
         }
+        else if (kind == "grouping")
+        {
+            var grouping = await db.Groupings.SingleOrDefaultAsync(x => x.Id == id && !x.Published, ct);
+            if (grouping is null) return false;
+            db.Groupings.Remove(grouping);
+        }
         else return false;
         await db.ContentRevisions.Where(x => x.Kind == kind && x.ContentId == id && !x.Published).ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);
@@ -400,6 +434,9 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
         if (kind == "picture")
             return await db.PictureMatchings.Where(x => x.Id == id && x.Published && x.Archived != archived)
+                .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
+        if (kind == "grouping")
+            return await db.Groupings.Where(x => x.Id == id && x.Published && x.Archived != archived)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;
         return false;
     }
@@ -455,6 +492,16 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         return JsonSerializer.Serialize(p with { Title = x.Title }, JsonOptions);
     }
     private void Apply(PictureMatching x, PictureMaterial p)
+    {
+        x.Title = p.Title;
+        x.ScriptJson = JsonSerializer.Serialize(p, JsonOptions);
+    }
+    private static string Capture(Grouping x)
+    {
+        var p = Parse<GroupingMaterial>(x.ScriptJson);
+        return JsonSerializer.Serialize(p with { Title = x.Title }, JsonOptions);
+    }
+    private void Apply(Grouping x, GroupingMaterial p)
     {
         x.Title = p.Title;
         x.ScriptJson = JsonSerializer.Serialize(p, JsonOptions);
