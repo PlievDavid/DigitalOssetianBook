@@ -40,11 +40,13 @@ public sealed record CurriculumItem(ContentRevision Revision, CurriculumDocument
 public sealed record CurriculumChoice(Guid Id, string Kind, string Title, bool Published = true);
 public sealed record CurriculumEditorModel(string Kind, Guid Id, CurriculumForm Form, CurriculumChoice[] Choices);
 public sealed record CurriculumPreview(string Kind, ContentRevision Revision, CurriculumDocument Document, CurriculumChoice[] Choices, string? Error = null);
-public sealed record CoursePage(CurriculumItem Course, CurriculumItem[] Lessons, List<LessonRun> Runs);
+public sealed record CoursePage(CurriculumItem Course, CurriculumItem[] Lessons, List<LessonRun> Runs, CurriculumAuthor? Author = null);
 public sealed record LessonSnapshot(string Title, CurriculumCard[] Cards, Guid?[] AttemptIds)
 {
     public int[]? CompletedSteps { get; init; }
 }
 public sealed record LessonPage(LessonRun Run, LessonSnapshot Snapshot, string? Error = null, CoursePage? Course = null, int SelectedStep = 0, int[]? CompletedSteps = null);
 
-public sealed record CurriculumCatalog(CurriculumItem[] Items, CurriculumItem[] Lessons, List<LessonRun> Runs, string Kind, string Query, string Filter);
+public sealed record CurriculumCatalog(CurriculumItem[] Items, CurriculumItem[] Lessons, List<LessonRun> Runs, string Kind, string Query, string Filter, Dictionary<Guid, CurriculumAuthor>? Authors = null, Dictionary<Guid, CourseRatingSummary>? Ratings = null);
+
+public sealed record PublicAuthorPage(CurriculumAuthor Author, CurriculumItem[] Courses);

@@ -51,10 +51,10 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("CoverImagePath")
+                    b.Property<string>("CoverDesignJson")
                         .HasColumnType("text");
 
-                    b.Property<string>("CoverDesignJson")
+                    b.Property<string>("CoverImagePath")
                         .HasColumnType("text");
 
                     b.Property<string>("Description")
@@ -65,11 +65,11 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("IllustrationsJson")
+                    b.Property<string>("DraftTranslation")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DraftTranslation")
+                    b.Property<string>("IllustrationsJson")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -84,13 +84,13 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("TranslationReviewed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Version")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.Property<bool>("TranslationReviewed")
-                        .HasColumnType("boolean");
 
                     b.ToTable("Books");
                 });
@@ -115,14 +115,14 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Translation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BookId", "Number")
                         .IsUnique();
-
-                    b.Property<string>("Translation")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.ToTable("Chapters");
                 });
@@ -173,6 +173,27 @@ namespace IronLanguage.Db.Migrations
                         .HasFilter("\"Published\"");
 
                     b.ToTable("ContentRevisions");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseRating", b =>
+                {
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.HasKey("CourseId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CourseRatings", t =>
+                        {
+                            t.HasCheckConstraint("CK_CourseRatings_Score", "\"Score\" >= 1 AND \"Score\" <= 5");
+                        });
                 });
 
             modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
@@ -700,6 +721,10 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PublicName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -798,6 +823,15 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseRating", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>

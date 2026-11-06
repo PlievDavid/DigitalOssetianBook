@@ -1,87 +1,109 @@
-.lesson-editor { max-width: 1240px; margin-inline: auto; }
+.lesson-editor { max-width: 1240px; margin-inline: auto; --lesson-line: #dce2e9; --lesson-soft: #f5f7fa; --lesson-accent: #315b84; }
+.lesson-editor.feature-shell { padding-top: 22px; }
 .lesson-editor .back-link { font-size: 14px; }
-.lesson-editor .curriculum-editor-header { align-items: center; margin: 18px 0 24px; padding-bottom: 20px; border-bottom: 1px solid var(--curriculum-border); }
-.lesson-editor .curriculum-editor-header h1 { font-size: 25px; }
+.lesson-editor .curriculum-editor-header { align-items: center; margin: 12px 0 18px; padding-bottom: 14px; border-bottom: 1px solid var(--curriculum-border); }
+.lesson-editor .curriculum-editor-header h1 { font-size: 26px; line-height: 1.2; }
 .lesson-editor .curriculum-editor-header p { display: none; }
-.lesson-editor .curriculum-header-actions .button { font-size: 14px; padding-inline: 14px; }
+.lesson-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lesson-title-field { display: block; min-width: 0; width: min(480px, 45vw); }
+.lesson-title-field input { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid #cbd3dd; border-radius: 7px; color: var(--theme-ink); background: #fff; font: inherit; font-size: 20px; font-weight: 600; }
+.curriculum-save-controls { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 16px; }
+#curriculum-save-state { color: #596476; font-size: 12px; }
+.lesson-editor #curriculum-status:not(:empty) { margin: 12px 0; color: #596476; font-size: 14px; }
+.lesson-editor #curriculum-status button { border: 0; padding: 4px; background: transparent; color: #315b84; font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.green-theme .lesson-editor .curriculum-header-actions .button { min-height: 40px; padding: 8px 14px; font-size: 14px; }
 .lesson-identity { max-width: 760px; }
 .lesson-identity > .curriculum-field { font-size: 14px; margin: 0; }
-.lesson-identity > .curriculum-field input { font-size: 20px; font-weight: 500; padding: 12px 14px; }
-.lesson-description-settings { margin: 12px 0 0; font-size: 14px; }
-.lesson-description-settings summary { cursor: pointer; display: list-item; padding-block: 8px; color: var(--curriculum-muted); }
+.lesson-editor .lesson-identity > .curriculum-field input { font-size: 16px; font-weight: 500; padding: 10px 12px; }
+.lesson-description-settings { margin: 4px 0 0; font-size: 14px; }
+.lesson-description-settings summary { cursor: pointer; display: list-item; padding-block: 7px; color: var(--curriculum-muted); }
 .lesson-description-settings .curriculum-field { margin: 8px 0; }
-.lesson-first-card { margin: 32px 0 20px; padding: 28px; background: #f7f8fa; border: 1px solid var(--curriculum-border); border-radius: 12px; }
-.lesson-first-card h2 { margin: 0 0 8px; font-size: 21px; }
-.lesson-first-card > p { color: var(--curriculum-muted); font-size: 15px; margin: 0 0 24px; }
-.lesson-first-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.lesson-first-options button { display: grid; grid-template-columns: 32px 1fr; gap: 5px 10px; align-items: center; text-align: left; padding: 18px 14px; border: 1px solid #d4dae3; border-radius: 8px; color: var(--theme-ink); background: #fff; font: inherit; cursor: pointer; }
+.lesson-first-card { margin: 24px 0; padding: 24px; background: var(--lesson-soft); border: 1px solid var(--curriculum-border); border-radius: 12px; }
+.lesson-first-card h2 { margin: 0 0 8px; font-size: 19px; }
+.lesson-first-card > p { color: var(--curriculum-muted); font-size: 15px; margin: 0 0 16px; }
+.lesson-first-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.lesson-first-options button { display: grid; grid-template-columns: 32px 1fr; gap: 5px 10px; align-items: center; text-align: left; padding: 14px 12px; border: 1px solid #d4dae3; border-radius: 8px; color: var(--theme-ink); background: #fff; font: inherit; cursor: pointer; }
 .lesson-first-options button:hover { border-color: #7f91aa; background: #fafbfc; }
 .first-card-symbol { grid-row: span 2; display: grid; place-items: center; color: #597293; }
 .first-card-symbol svg { width: 26px; height: 26px; }
 .lesson-first-options strong { font-size: 15px; font-weight: 600; }
 .lesson-first-options small { font-size: 13px; color: var(--curriculum-muted); }
-.lesson-add-practice { border: 0; background: none; font: inherit; font-size: 14px; color: var(--theme-ink); min-height: 44px; padding: 12px 0 0; margin-top: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+.lesson-add-practice { border: 0; background: none; font: inherit; font-size: 14px; color: var(--lesson-accent); min-height: 40px; padding: 8px 0 0; margin-top: 8px; cursor: pointer; text-decoration: none; font-weight: 600; }
+.lesson-add-practice:hover { text-decoration: underline; }
 .lesson-editor:not(.has-cards) .curriculum-workspace { display: none; }
-.lesson-editor .curriculum-workspace { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 32px; margin: 28px 0; }
-.lesson-editor .curriculum-sidebar { grid-column: 1 / -1; border: 0; padding: 0 0 22px; border-bottom: 1px solid var(--curriculum-border); }
-.lesson-outline-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.lesson-editor .curriculum-workspace { align-items: start; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 24px; margin: 20px 0 28px; }
+.lesson-editor .curriculum-sidebar { grid-column: 1 / -1; grid-row: 1; border: 0; padding: 0 0 16px; border-bottom: 1px solid var(--curriculum-border); }
+.lesson-outline-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .lesson-editor .lesson-outline-heading h2 { margin: 0; font-size: 15px; }
-.lesson-editor .curriculum-add { width: auto; margin: 0; padding: 8px 12px; min-height: 44px; font-size: 14px; }
+.lesson-editor .curriculum-add { width: auto; margin: 0; padding: 8px 12px; min-height: 40px; font-size: 14px; font-weight: 600; }
 .lesson-editor #curriculum-cards { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 8px; scroll-padding-inline: 4px; }
-.lesson-editor .curriculum-card-choice { flex: 0 0 178px; min-width: 0; margin: 0; padding: 12px; gap: 8px; border: 1px solid #dce1e8; border-radius: 8px; background: #fff; min-height: 82px; align-items: start; }
-.lesson-editor .curriculum-card-choice.is-selected { border: 2px solid #667f9b; padding: 11px; background: #f3f6fa; }
+.lesson-editor .curriculum-card-choice { flex: 0 0 165px; min-width: 0; min-height: 72px; margin: 0; padding: 10px; gap: 8px; border: 1px solid #dce1e8; border-radius: 8px; background: #fff; align-items: start; }
+.lesson-editor .curriculum-card-choice.is-selected { border: 2px solid var(--lesson-accent); padding: 9px; background: #f0f5fa; }
 .lesson-editor .curriculum-card-label { min-width: 0; }
 .lesson-editor .curriculum-card-label strong, .lesson-editor .curriculum-card-label small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; }
 .lesson-editor .curriculum-card-label strong { font-size: 13px; line-height: 1.45; }
 .lesson-editor .curriculum-card-label small { margin-top: 5px; font-size: 12px; line-height: 1.4; white-space: normal; }
-.lesson-editor .curriculum-card-icon { width: 22px; height: 22px; background: none; padding: 0; }
+.lesson-editor .curriculum-card-icon { width: 22px; height: 22px; background: none; padding: 0; color: var(--lesson-accent); }
 .lesson-editor .curriculum-card-icon svg { width: 20px; height: 20px; }
-.lesson-editor .curriculum-edit-panel { grid-column: 1; }
-.lesson-editor .curriculum-canvas { grid-column: 2; grid-row: 2; padding: 20px; background: #f7f8fa; border: 1px solid var(--curriculum-border); border-radius: 10px; }
+.lesson-editor .curriculum-edit-panel { grid-column: 1; grid-row: 2; min-width: 0; }
+.lesson-editor .curriculum-canvas { grid-column: 2; grid-row: 2; min-width: 0; padding: 16px; background: var(--lesson-soft); border: 1px solid var(--lesson-line); border-radius: 10px; position: sticky; top: 16px; }
 .lesson-editor .curriculum-canvas > h2 { font-size: 14px; margin-bottom: 4px; }
 .lesson-editor #curriculum-preview-position { font-size: 12px; margin: 4px 0 16px; }
-.lesson-editor #curriculum-canvas .theory-card { min-height: 280px; background: #fff; }
-.lesson-editor .curriculum-edit-card > h2 { font-size: 17px; margin-bottom: 12px; }
-.lesson-editor .curriculum-templates { gap: 6px; flex-wrap: wrap; }
-.lesson-editor .curriculum-template { padding: 8px 10px; font-size: 13px; }
-.lesson-editor .curriculum-field { font-size: 14px; }
-.lesson-editor .curriculum-edit-card textarea { min-height: 180px; }
-.lesson-editor .curriculum-edit-card .curriculum-actions { margin: 16px 0 0; }
-.lesson-editor .curriculum-edit-card .curriculum-actions button { font-size: 13px; padding: 8px 12px; }
-@media (max-width: 900px) { .lesson-first-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lesson-editor .curriculum-workspace { gap: 20px; } .lesson-editor .curriculum-canvas { padding: 14px; } }
-@media (max-width: 700px) {
-  .lesson-editor .curriculum-editor-header { align-items: start; flex-direction: column; gap: 16px; }
-  .lesson-editor .curriculum-header-actions { width: 100%; }
-  .lesson-editor .curriculum-header-actions .button { flex: 1; padding: 10px; }
-  .lesson-first-card { padding: 20px 16px; }
-  .lesson-first-options { gap: 8px; }
-  .lesson-first-options button { grid-template-columns: 1fr; padding: 14px 12px; }
-  .first-card-symbol { display: none; }
-  .lesson-editor .curriculum-workspace { grid-template-columns: minmax(0, 1fr); }
-  .lesson-editor .curriculum-canvas { grid-column: 1; grid-row: auto; }
-  .lesson-editor .curriculum-card-choice { flex-basis: 155px; }
-}
-.lesson-editor.feature-shell { padding-top: 22px; }
-.lesson-editor .curriculum-editor-header { margin-block: 12px 18px; padding-bottom: 14px; }
-.lesson-editor .curriculum-workspace { margin-top: 20px; gap: 20px 28px; }
-.lesson-editor .curriculum-sidebar { padding-bottom: 14px; }
-.lesson-editor #curriculum-canvas .theory-card { min-height: 0; display: block; }
+.lesson-editor #curriculum-canvas .theory-card { min-height: 0; display: block; padding: 18px; background: #fff; }
 .lesson-editor #curriculum-canvas .theory-card--rule { background: #fffaf0; }
+.lesson-editor #curriculum-canvas .theory-card h3 { margin: 4px 0 12px; font-size: 20px; }
 .lesson-editor .curriculum-canvas .theory-content { flex: none; }
-.lesson-picker-tabs { display: flex; gap: 6px; margin: 24px 0; border-bottom: 1px solid #dfe3e8; }
-.lesson-picker-tabs button { flex: 1; min-height: 44px; padding: 10px; font: inherit; font-size: 14px; border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer; color: #596476; }
-.lesson-picker-tabs button[aria-selected=true] { border-bottom-color: var(--theme-ink); color: var(--theme-ink); font-weight: 600; }
-.lesson-picker-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.lesson-editor .curriculum-edit-card > h2 { font-size: 17px; margin: 0 0 10px; }
+.lesson-editor .curriculum-templates { gap: 6px; flex-wrap: wrap; }
+.lesson-editor .curriculum-template { min-height: 38px; padding: 7px 10px; font-size: 13px; }
+.lesson-editor .curriculum-template.is-selected { color: #254d73; border-color: #9db4ca; background: #eef4fa; }
+.lesson-editor .curriculum-field { font-size: 14px; }
+.lesson-editor .curriculum-edit-card .curriculum-field { gap: 6px; margin: 12px 0; }
+.lesson-editor .curriculum-edit-card .curriculum-field input, .lesson-editor .curriculum-edit-card .curriculum-field textarea { padding: 9px 11px; line-height: 1.45; }
+.lesson-editor .curriculum-edit-card textarea { min-height: 112px; }
+.lesson-editor .curriculum-edit-card .curriculum-actions { gap: 8px; margin: 16px 0 0; }
+.lesson-editor .curriculum-edit-card .curriculum-actions button { min-height: 38px; font-size: 13px; padding: 8px 12px; }
+.lesson-editor .curriculum-edit-card .curriculum-actions button:last-child { color: #a23e3e; border-color: #e0c9c9; }
+.lesson-editor :is(button, input, textarea, summary):focus-visible, .card-picker :is(button, a, input, select):focus-visible { outline: 2px solid #4d607a; outline-offset: 2px; }
+.card-picker { width: min(680px, 94vw); padding: 24px; }
+.card-picker .course-picker-heading h2 { font-size: 21px; }
+.lesson-picker-tabs { display: flex; gap: 6px; margin: 16px 0; border-bottom: 1px solid #dfe3e8; }
+.lesson-picker-tabs button { flex: 1; min-height: 40px; padding: 8px; font: inherit; font-size: 14px; border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer; color: #596476; }
+.lesson-picker-tabs button[aria-selected=true] { border-bottom-color: #315b84; color: #254d73; font-weight: 600; }
+.lesson-picker-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .lesson-picker-options[hidden] { display: none; }
-.lesson-picker-options button, .lesson-picker-options a { display: grid; gap: 5px; padding: 18px; text-align: left; font: inherit; font-size: 15px; border: 1px solid #d5dce5; border-radius: 9px; background: #fff; color: var(--theme-ink); cursor: pointer; text-decoration: none; }
+.lesson-picker-options button, .lesson-picker-options a { display: grid; gap: 5px; padding: 14px; text-align: left; font: inherit; font-size: 15px; border: 1px solid #d5dce5; border-radius: 9px; background: #fff; color: var(--theme-ink); cursor: pointer; text-decoration: none; }
+.lesson-picker-options :is(button, a):hover { border-color: #8da5bd; background: #f5f8fb; }
 .lesson-picker-options small { color: #596476; font-size: 13px; }
 .lesson-picker-filters { display: grid; grid-template-columns: 1fr 150px; gap: 12px; margin-bottom: 16px; }
 .lesson-picker-filters label { display: grid; gap: 6px; font-size: 13px; }
-.lesson-picker-filters input, .lesson-picker-filters select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid #b8c0cb; border-radius: 7px; font: inherit; }
+.lesson-picker-filters input, .lesson-picker-filters select { width: 100%; min-width: 0; min-height: 40px; padding: 10px; border: 1px solid #b8c0cb; border-radius: 7px; font: inherit; }
 .lesson-picker-materials { max-height: 340px; overflow-y: auto; }
-.lesson-picker-material { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid #e3e7ed; }
+.lesson-picker-material { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e3e7ed; }
 .lesson-picker-material > div { display: grid; gap: 5px; }
 .lesson-picker-material strong { font-size: 14px; }
 .lesson-picker-material small { font-size: 12px; color: #596476; }
-.lesson-picker-material button { min-height: 44px; padding: 8px 12px; border: 1px solid #b8c0cb; background: #fff; border-radius: 7px; font: inherit; font-size: 13px; cursor: pointer; }
-@media (max-width: 480px) { .lesson-picker-filters, .lesson-picker-options { grid-template-columns: minmax(0,1fr); } .lesson-picker-tabs { gap: 0; } .lesson-picker-tabs button { font-size: 12px; padding: 8px; } }
+.lesson-picker-material button { min-height: 40px; padding: 8px 12px; border: 1px solid #b8c0cb; background: #fff; border-radius: 7px; font: inherit; font-size: 13px; cursor: pointer; }
+@media (max-width: 900px) {
+  .lesson-first-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lesson-editor .curriculum-workspace { gap: 20px; }
+}
+@media (max-width: 700px) {
+  .lesson-editor .curriculum-editor-header { align-items: start; flex-direction: column; gap: 16px; }
+  .lesson-heading, .lesson-title-field, .curriculum-save-controls, .lesson-editor .curriculum-header-actions { width: 100%; }
+  .curriculum-save-controls { justify-content: flex-start; }
+  .green-theme .lesson-editor .curriculum-header-actions .button { flex: 1; padding: 10px; }
+  .lesson-first-card { padding: 20px 16px; }
+  .lesson-first-options button { grid-template-columns: 1fr; }
+  .first-card-symbol { display: none; }
+  .lesson-editor .curriculum-workspace { grid-template-columns: minmax(0, 1fr); }
+  .lesson-editor .curriculum-edit-panel { grid-column: 1; grid-row: 2; }
+  .lesson-editor .curriculum-canvas { grid-column: 1; grid-row: 3; position: static; }
+  .lesson-editor .curriculum-card-choice { flex-basis: 155px; }
+  .card-picker { padding: 18px; }
+}
+@media (max-width: 480px) {
+  .lesson-picker-filters, .lesson-picker-options { grid-template-columns: minmax(0, 1fr); }
+  .lesson-picker-tabs { gap: 0; }
+  .lesson-picker-tabs button { font-size: 12px; padding: 8px; }
+}

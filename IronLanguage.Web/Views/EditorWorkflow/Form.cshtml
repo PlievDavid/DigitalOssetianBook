@@ -7,11 +7,13 @@
     ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
         : Model.ContentId is Guid contentId ? $"/editor/draft/{Model.Kind}/{contentId}" : $"/editor/new/{Model.Kind}";
+    var lessonId = ViewData["LessonId"] as Guid?;
+    if (lessonId is Guid lesson) { action += $"?lessonId={lesson}"; }
     var words = (await Catalog.Words()).Select(x => new { id = x.Id, ossetian = x.Ossetian, russian = x.Russian }).ToArray();
 }
 <section class="feature-shell editor-form-shell" id="editor-form-app" data-kind="@Model.Kind">
     <header class="editor-page-heading">
-        <a class="back-link" href="/editor">← К материалам</a>
+        <a class="back-link" href="@(lessonId is Guid lessonBack ? $"/editor/curriculum/lesson/{lessonBack}/edit" : "/editor")">← @(lessonId is null ? "К материалам" : "В урок")</a>
         <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "произведение", "picture" => "задание «Картинка и слово»", "translation" => "задание «Собери фразу»", _ => title.ToLowerInvariant() })</h1>
         <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
     </header>
@@ -144,7 +146,7 @@
                 <span asp-validation-for="Audio" class="form-error"></span>
             </div>
         }
-        <div class="editor-form-actions"><button class="button primary" type="submit">Сохранить черновик</button><a class="button secondary" href="/editor">Отмена</a></div>
+        <div class="editor-form-actions"><button class="button primary" type="submit">Сохранить черновик</button><a class="button secondary" href="@(lessonId is Guid cancelLesson ? $"/editor/curriculum/lesson/{cancelLesson}/edit" : "/editor")">Отмена</a></div>
     </form>
 </section>
 <script id="editor-words-data" type="application/json">@Html.Raw(JsonSerializer.Serialize(words))</script>

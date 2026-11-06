@@ -10,6 +10,11 @@
   const form = $("curriculum-form");
   const formState = () => JSON.stringify([...new FormData(form)].filter(([name]) => name !== "StructureJson")) + JSON.stringify(items);
   const initialState = formState(); let submitting = false;
+  const saveState = $("curriculum-save-state");
+  function updateSaveState() { if (saveState) saveState.textContent = formState() === initialState ? "Нет несохранённых изменений" : "Есть несохранённые изменения"; }
+  form.addEventListener("input", updateSaveState);
+  form.addEventListener("change", updateSaveState);
+  updateSaveState();
   form.addEventListener("submit", () => { submitting = true; });
   window.addEventListener("beforeunload", event => { if (!submitting && formState() !== initialState) { event.preventDefault(); event.returnValue = ""; } });
   if (course) {
@@ -73,6 +78,29 @@
     $("curriculum-form").addEventListener("submit", () => { hidden.value = JSON.stringify(items); });
     courseRender(); return;
   }
+  // Статус доступен и тогда, когда удалена последняя карточка и рабочая область скрыта.
+  $("lesson-first-card").after(status);
+  let removedCard = null, draggedIndex = null;
+  function revealSelected() {
+    const card = cards.children[selected]; if (!card) return;
+    const strip = cards.getBoundingClientRect(), bounds = card.getBoundingClientRect();
+    if (bounds.left < strip.left) cards.scrollLeft += bounds.left - strip.left;
+    else if (bounds.right > strip.right) cards.scrollLeft += bounds.right - strip.right;
+  }
+  function showUndo() {
+    status.replaceChildren(document.createTextNode("Карточка удалена. "));
+    const undo = document.createElement("button"); undo.type = "button"; undo.textContent = "Вернуть";
+    undo.addEventListener("click", () => {
+      if (!removedCard || items.includes(removedCard.item)) return;
+      if (removedCard.item.materialId && items.some(item => item.materialId === removedCard.item.materialId)) {
+        removedCard = null; status.textContent = "Это задание уже добавлено в урок."; return;
+      }
+      if (items.length >= 50) { status.textContent = "В уроке не более 50 карточек."; removedCard = null; return; }
+      selected = Math.min(removedCard.index, items.length); items.splice(selected, 0, removedCard.item);
+      removedCard = null; status.textContent = "Карточка восстановлена."; render("heading");
+    });
+    status.append(undo);
+  }
   const labels = { text: "Текст", rule: "Правило", example: "Пример", comparison: "Сравнение", audio: "Аудиопазл", translation: "Перевод фразы", dialogue: "Диалог", lesson: "Урок" };
   const iconPaths = { audio: "M4 14v-3a8 8 0 0 1 16 0v3 M4 12h3v8H4z M17 12h3v8h-3z", translation: "M4 6h12v9H9l-4 3v-3H4z M16 9h4v11l-4-3h-4", dialogue: "M4 4h16v12H9l-5 4z M8 8h8 M8 12h5", text: "M5 4h14v16H5z M8 8h8 M8 12h8 M8 16h5", rule: "M5 5h14v14H5z M8 9h8 M8 13h8 M8 17h5", example: "M5 5h14v14H5z M8 9h8 M8 13h5", comparison: "M4 5h16v14H4z M12 5v14 M7 9h2 M15 9h2" };
   function icon(name) { const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"), path = document.createElementNS("http://www.w3.org/2000/svg", "path"); svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "22"); svg.setAttribute("height", "22"); svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "1.5"); svg.setAttribute("aria-hidden", "true"); path.setAttribute("d", iconPaths[name] || iconPaths.text); svg.append(path); return svg; }
@@ -102,11 +130,21 @@
   }  function list() {
     cards.replaceChildren(); items.forEach((item, index) => {
       const b = button(null, () => { selected = index; render("list"); }, `curriculum-card-choice${index === selected ? " is-selected" : ""}`);
+      b.draggable = true;
+      b.addEventListener("dragstart", event => { draggedIndex = index; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); });
+      b.addEventListener("dragover", event => { if (draggedIndex !== null) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; } });
+      b.addEventListener("drop", event => {
+        if (draggedIndex === null) return; event.preventDefault();
+        const from = draggedIndex; draggedIndex = null; if (from === index) return;
+        const current = items[selected], [moved] = items.splice(from, 1); items.splice(index, 0, moved);
+        selected = items.indexOf(current); render(); if (!removedCard) status.textContent = `Карточка перемещена на позицию ${index + 1}.`;
+      });
+      b.addEventListener("dragend", () => { draggedIndex = null; });
       b.setAttribute("aria-pressed", String(index === selected)); const symbol = el("span", null, "curriculum-card-icon"); symbol.append(icon(item.kind === "theory" ? item.template : item.kind));
       const text = el("span", null, "curriculum-card-label"); text.append(el("strong", `${index + 1}. ${title(item)}`), el("small", item.kind === "theory" ? (item.body || type(item)) : type(item))); b.append(symbol, text); cards.append(b);
     });
   }
-  function sync() { hidden.value = JSON.stringify(items); list(); preview(); }
+  function sync() { hidden.value = JSON.stringify(items); list(); preview(); updateSaveState(); }
   function field(parent, label, value, max, update, multiline = false) {
     const wrapper = el("label", label, "curriculum-field"); const input = el(multiline ? "textarea" : "input"); input.value = value || ""; input.setAttribute("aria-label", label); input.dataset.ossetian = ""; input.maxLength = max; if (multiline) input.rows = 5;
     input.addEventListener("input", () => { update(input.value); sync(); }); wrapper.append(input); parent.append(wrapper);
@@ -114,7 +152,7 @@
   function render(focus = "") {
     root.classList.toggle("has-cards", items.length > 0);
     $("lesson-first-card").hidden = items.length > 0;
-    panel.replaceChildren(); list(); preview(); hidden.value = JSON.stringify(items);
+    panel.replaceChildren(); list(); preview(); hidden.value = JSON.stringify(items); updateSaveState(); if (focus) revealSelected();
     const item = items[selected]; if (!item) { if (focus) root.querySelector("[data-first-template]").focus(); return; }
     const article = el("article", null, "curriculum-edit-card"); const heading = el("h2", type(item)); heading.tabIndex = -1; article.append(heading);
     if (!course && item.kind === "theory") {
@@ -131,7 +169,7 @@
     const move = delta => { [items[selected], items[selected + delta]] = [items[selected + delta], items[selected]]; selected += delta; render("heading"); };
     const up = button("↑ Выше", () => move(-1)); up.disabled = selected === 0; up.setAttribute("aria-label", `Поднять карточку ${selected + 1}`);
     const down = button("↓ Ниже", () => move(1)); down.disabled = selected === items.length - 1; down.setAttribute("aria-label", `Опустить карточку ${selected + 1}`);
-    actions.append(up, down, button("Удалить", () => { items.splice(selected, 1); selected = Math.max(0, Math.min(selected, items.length - 1)); render("heading"); })); article.append(actions); panel.append(article); if (focus === "heading") heading.focus(); else if (focus === "list") cards.children[selected]?.focus(); else if (focus === "template") panel.querySelector(".curriculum-template.is-selected")?.focus(); else if (focus === "preview") canvas.querySelector(".curriculum-preview-next")?.focus();
+    actions.append(up, down, button("Удалить", () => { const index = selected; const [item] = items.splice(index, 1); removedCard = { item, index }; selected = Math.max(0, Math.min(index, items.length - 1)); render("heading"); showUndo(); })); article.append(actions); panel.append(article); if (focus === "heading") heading.focus({ preventScroll: true }); else if (focus === "list") cards.children[selected]?.focus({ preventScroll: true }); else if (focus === "template") panel.querySelector(".curriculum-template.is-selected")?.focus(); else if (focus === "preview") canvas.querySelector(".curriculum-preview-next")?.focus();
   }
   function addTheory(template) {
     if (items.length >= 50) { status.textContent = "В уроке не более 50 карточек."; return; }
@@ -144,11 +182,17 @@
   $("lesson-first-practice").addEventListener("click", () => window.AdamLessonPicker.open("ready"));
   root.addEventListener("curriculum:add-theory", e => addTheory(e.detail));
   root.addEventListener("curriculum:choices-refreshed", e => { choices = e.detail; list(); preview(); });
-  root.addEventListener("curriculum:add-material", e => {
-    const entry = choices.find(c => c.id === e.detail);
+  function addMaterial(id, kind) {
+    const entry = choices.find(c => c.id === id && (!kind || c.kind === kind));
     if (!entry || items.some(item => item.materialId === entry.id) || items.length >= 50) return;
     items.push({ kind: entry.kind, materialId: entry.id, title: entry.title }); selected = items.length - 1;
     window.AdamLessonPicker.close(); render("heading");
-  });
-  $("curriculum-form").addEventListener("submit", () => { hidden.value = JSON.stringify(items); }); render();
+  }
+  root.addEventListener("curriculum:add-material", e => addMaterial(e.detail));
+  form.addEventListener("submit", () => { hidden.value = JSON.stringify(items); });
+  render();
+  const query = new URLSearchParams(location.search);
+  if (query.has("addMaterialId") && query.has("addKind")) {
+    addMaterial(query.get("addMaterialId"), query.get("addKind"));
+  }
 })();

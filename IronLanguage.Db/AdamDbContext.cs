@@ -25,10 +25,14 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
     public DbSet<CrosswordSolvedWord> CrosswordSolvedWords => Set<CrosswordSolvedWord>();
     public DbSet<WordleGame> WordleGames => Set<WordleGame>();
+    public DbSet<CourseRating> CourseRatings => Set<CourseRating>();
     public DbSet<LessonRun> LessonRuns => Set<LessonRun>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        model.Entity<CourseRating>().HasKey(x => new { x.CourseId, x.UserId });
+        model.Entity<CourseRating>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<CourseRating>().ToTable(t => t.HasCheckConstraint("CK_CourseRatings_Score", "\"Score\" >= 1 AND \"Score\" <= 5"));
         model.Entity<WordleGame>().HasKey(x => new { x.UserId, x.Day });
         model.Entity<WordleGame>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordleGame>().Property(x => x.ExpectedWord).HasMaxLength(5);
@@ -38,6 +42,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<CrosswordSolvedWord>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<UserAccount>().HasIndex(x => x.Email).IsUnique();
         model.Entity<UserAccount>().Property(x => x.AvatarJson).HasMaxLength(2048);
+        model.Entity<UserAccount>().Property(x => x.PublicName).HasMaxLength(100);
         model.Entity<LessonRun>().HasIndex(x => new { x.UserId, x.LessonId }).IsUnique().HasFilter("\"CompletedAt\" IS NULL");
         model.Entity<WordEntry>().HasIndex(x => x.Ossetian);
         model.Entity<WordEntry>().HasIndex(x => x.DictionarySenseId).IsUnique();

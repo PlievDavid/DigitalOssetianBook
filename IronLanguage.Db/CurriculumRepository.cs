@@ -7,6 +7,7 @@ namespace IronLanguage.Db;
 public interface ICurriculumRepository
 {
     Task<List<ContentRevision>> List(string kind, bool editor, CancellationToken ct);
+    Task<Dictionary<Guid, CurriculumAuthor>> Authors(Guid[] courseIds, CancellationToken ct);
     Task<ContentRevision?> Get(string kind, Guid id, bool draft, CancellationToken ct);
     Task<List<ContentRevision>> ListOwned(string kind, Guid editor, bool publishedOnly, CancellationToken ct);
     Task<ContentRevision?> GetOwned(string kind, Guid id, Guid editor, CancellationToken ct);
@@ -17,6 +18,8 @@ public interface ICurriculumRepository
     Task<LessonRun> Start(LessonRun run, List<ExerciseAttempt> attempts, List<DialogueSession> dialogs, CancellationToken ct);
     Task<bool> Advance(Guid user, Guid id, int step, int count, CancellationToken ct);
 }
+
+public sealed record CurriculumAuthor(Guid Id, string Name);
 
 public sealed class LessonRun
 {
@@ -40,6 +43,19 @@ public sealed class EfCurriculumRepository(AdamDbContext db) : ICurriculumReposi
     {
         var rows = await db.ContentRevisions.AsNoTracking().Where(x => x.Kind == kind && (editor || x.Published)).ToListAsync(ct);
         return rows.GroupBy(x => x.ContentId).Select(g => g.OrderBy(x => x.Published).ThenByDescending(x => x.Version).First()).ToList();
+    }
+
+    public async Task<Dictionary<Guid, CurriculumAuthor>> Authors(Guid[] courseIds, CancellationToken ct)
+    {
+        if (courseIds.Length == 0) return [];
+        var revisions = await db.ContentRevisions.AsNoTracking().Where(x => x.Kind == "course" && courseIds.Contains(x.ContentId))
+            .Select(x => new { x.ContentId, x.EditorId, x.Version, x.CreatedAt }).ToListAsync(ct);
+        var owners = revisions.GroupBy(x => x.ContentId).ToDictionary(g => g.Key, g => g.OrderBy(x => x.Version).ThenBy(x => x.CreatedAt).First().EditorId);
+        var ids = owners.Values.Distinct().ToArray();
+        var users = await db.Users.AsNoTracking().Where(x => ids.Contains(x.Id) && x.PublicName != null && x.PublicName != "")
+            .Select(x => new { x.Id, x.PublicName }).ToListAsync(ct);
+        var names = users.Where(x => !string.IsNullOrWhiteSpace(x.PublicName)).ToDictionary(x => x.Id, x => x.PublicName!.Trim());
+        return owners.Where(x => names.ContainsKey(x.Value)).ToDictionary(x => x.Key, x => new CurriculumAuthor(x.Value, names[x.Value]));
     }
 
     public Task<ContentRevision?> Get(string kind, Guid id, bool draft, CancellationToken ct) =>

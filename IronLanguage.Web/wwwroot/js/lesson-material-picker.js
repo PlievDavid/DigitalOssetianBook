@@ -50,6 +50,14 @@
   });
   dialog.querySelectorAll('[data-picker-theory]').forEach(button => button.addEventListener('click', () => { root.dispatchEvent(new CustomEvent('curriculum:add-theory', { detail: button.dataset.pickerTheory })); dialog.close(); }));
   byId('card-picker-close').addEventListener('click', () => dialog.close());
+  dialog.querySelectorAll('[form="curriculum-form"]').forEach(button => button.addEventListener('click', event => {
+    const form = button.form;
+    if (form.checkValidity()) return;
+    event.preventDefault();
+    opener = null;
+    dialog.close();
+    form.reportValidity();
+  }));
   dialog.addEventListener('close', () => { if (opener && opener.isConnected) opener.focus(); });
   search.addEventListener('input', render); kind.addEventListener('change', render);
   window.addEventListener('focus', () => { if (dialog.open) refresh(); });

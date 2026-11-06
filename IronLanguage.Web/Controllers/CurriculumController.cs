@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public sealed class CurriculumController(ICurriculumRepository repository, CurriculumService curriculum, GuestLearningStore guests) : Controller
+public sealed class CurriculumController(ICurriculumRepository repository, CurriculumService curriculum, GuestLearningStore guests, ICourseRatingRepository ratings) : Controller
 {
     private static string CourseQuery(Guid? id) => id.HasValue ? $"?courseId={id}" : "";
 
@@ -24,11 +24,14 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
         var runs = User.UserId() is Guid user ? await repository.Runs(user, ct) : [];
         bool Complete(CurriculumItem item) => item.Document.LessonIds.Length > 0 && item.Document.LessonIds.All(id =>
             lessons.Any(lesson => lesson.Revision.ContentId == id && runs.Any(run => run.LessonId == id && run.LessonVersion == lesson.Revision.Version && run.CompletedAt != null)));
-        filter = filter is "started" or "completed" ? filter : "all";
+        filter = filter == "started" ? "started" : "all";
         items = items.Where(x => x.Document.Title.Contains(query, StringComparison.OrdinalIgnoreCase) &&
-            (filter == "all" || filter == "completed" && Complete(x) || filter == "started" && !Complete(x) && runs.Any(run => x.Document.LessonIds.Contains(run.LessonId))))
+            (filter == "all" || filter == "started" && !Complete(x) && runs.Any(run => x.Document.LessonIds.Contains(run.LessonId))))
             .OrderBy(x => x.Document.Title).ToArray();
-        return View("Index", new CurriculumCatalog(items, lessons, runs, kind, query, filter));
+        var ids = items.Select(x => x.Revision.ContentId).ToArray();
+        var authors = kind == "course" ? await repository.Authors(ids, ct) : null;
+        var summaries = kind == "course" ? await ratings.Summaries(ids, ct) : null;
+        return View("Index", new CurriculumCatalog(items, lessons, runs, kind, query, filter, authors, summaries));
     }
 
     [HttpGet("courses/{id:guid}")]
@@ -43,8 +46,9 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
             var revision = await repository.Get("lesson", lessonId, false, ct);
             if (revision is not null) lessons.Add(new(revision, CurriculumService.Parse(revision)));
         }
+        var authors = await repository.Authors([id], ct);
         ViewData["CourseAbout"] = true;
-        return View("About", new CoursePage(new(course, document), lessons.ToArray(), User.UserId() is Guid user ? await repository.Runs(user, ct) : []));
+        return View("About", new CoursePage(new(course, document), lessons.ToArray(), User.UserId() is Guid user ? await repository.Runs(user, ct) : [], authors.GetValueOrDefault(id)));
     }
 
     [HttpGet("courses/{id:guid}/contents")]
@@ -62,6 +66,16 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
         var result = await Course(id, ct);
         if (result is not ViewResult view) return result;
         return View("About", view.Model);
+    }
+
+    [HttpGet("authors/{id:guid}")]
+    public async Task<IActionResult> Author(Guid id, CancellationToken ct)
+    {
+        var courses = (await repository.List("course", false, ct)).Select(x => new CurriculumItem(x, CurriculumService.Parse(x))).ToArray();
+        var authors = await repository.Authors(courses.Select(x => x.Revision.ContentId).ToArray(), ct);
+        var author = authors.Values.FirstOrDefault(x => x.Id == id);
+        if (author is null) return NotFound();
+        return View(new PublicAuthorPage(author, courses.Where(x => authors.TryGetValue(x.Revision.ContentId, out var owner) && owner.Id == id).OrderBy(x => x.Document.Title).ToArray()));
     }
 
     [HttpGet("lessons/{id:guid}")]

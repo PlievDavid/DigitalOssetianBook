@@ -52,6 +52,8 @@ public sealed class CurriculumEditorController(ICurriculumRepository repository,
                 Response.StatusCode = 409;
                 throw new ArgumentException("Материал изменился в другой вкладке. Скопируйте свои правки и откройте конструктор заново.");
             }
+            if (kind == "lesson" && action is "create-audio" or "create-translation" or "create-dialogue")
+                return Redirect($"/editor/new/{action[7..]}?lessonId={id}");
             if (action != "preview") TempData["CurriculumSaved"] = "Черновик сохранён";
             return Redirect($"/editor/curriculum/{kind}/{id}/{(action == "preview" ? "preview" : "edit")}");
         }

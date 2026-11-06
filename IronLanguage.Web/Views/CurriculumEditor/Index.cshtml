@@ -7,26 +7,28 @@
 }
 <section class="feature-shell curriculum curriculum-library">
 
-    <h1>Преподавание</h1>
+    <aside class="teaching-navigation">
+    <p class="teaching-navigation-title">Преподавание</p>
     <nav class="curriculum-library-nav" aria-label="Разделы библиотеки">
         <a href="/editor/curriculum?kind=course" aria-current="@(course ? "page" : null)">Мои курсы</a>
         <a href="/editor/curriculum?kind=lesson" aria-current="@(!course ? "page" : null)">Мои уроки</a>
         <a href="/editor">Материалы</a>
     </nav>
+    </aside>
     <section class="curriculum-library-section">
-        <div class="curriculum-library-heading"><h2>@(course ? "Мои курсы" : "Мои уроки")</h2><a class="button primary" href="/editor/curriculum/@kind/new">@(course ? "Создать курс" : "Создать урок")</a></div>
+        <div class="curriculum-library-heading"><h1>@(course ? "Мои курсы" : "Мои уроки")</h1><a class="button primary" href="/editor/curriculum/@kind/new">@(course ? "Создать курс" : "Создать урок")</a></div>
         <form method="get" action="/editor/curriculum" class="curriculum-library-search">
             <input type="hidden" name="kind" value="@kind" />
-            <label class="curriculum-field">Поиск по названию<input type="search" name="q" value="@query" /></label>
+            <label class="curriculum-field"><span class="visually-hidden">Поиск по названию</span><input type="search" name="q" value="@query" placeholder="Поиск по названию" /></label>
             <button class="button secondary" type="submit">Найти</button>
         </form>
         @if (Model.Length == 0) { <p>@(query.Length > 0 ? "Ничего не найдено." : course ? "Курсов пока нет." : "Уроков пока нет.")</p> }
         <div class="curriculum-library-list">
         @foreach (var item in Model) {
-            <article class="curriculum-library-row"><div><p class="eyebrow">@(item.Revision.Published ? "Опубликовано" : "Черновик") · версия @item.Revision.Version</p><h3>@item.Document.Title</h3>
+            <article class="curriculum-library-row"><div><h3><a href="/editor/curriculum/@kind/@item.Revision.ContentId/edit">@item.Document.Title</a></h3><p><span class="teaching-status @(item.Revision.Published ? "is-published" : "")">@(item.Revision.Published ? "Опубликовано" : "Черновик")</span><span class="teaching-version">Версия @item.Revision.Version</span></p>
             @if (!item.Revision.Published && item.Revision.BaseVersion > 0) { <p>Ученикам доступна опубликованная версия.</p> }</div>
             <div class="curriculum-actions"><a href="/editor/curriculum/@kind/@item.Revision.ContentId/edit">@(item.Revision.Published ? "Новая версия" : "Изменить")</a><a href="/editor/curriculum/@kind/@item.Revision.ContentId/preview">Предпросмотр</a></div></article>
         }</div>
     </section>
 </section>
-@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/curriculum-editor-refined.css" asp-append-version="true" /> }
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/curriculum-editor-refined.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/teaching-library.css" asp-append-version="true" /> }

@@ -49,7 +49,7 @@ public sealed class CurriculumService(ICurriculumRepository repository, ICatalog
             else
             {
                 document.Cards = JsonSerializer.Deserialize<CurriculumCard[]>(form.StructureJson, JsonOptions) ?? [];
-                if (document.Cards.Length is < 1 or > 50) throw new ArgumentException("В уроке должно быть от 1 до 50 карточек.");
+                if (document.Cards.Length > 50 || (publishing && document.Cards.Length == 0)) throw new ArgumentException("В уроке должно быть от 1 до 50 карточек.");
                 foreach (var card in document.Cards)
                 {
                     if (card is null) throw new ArgumentException("Пустая карточка.");

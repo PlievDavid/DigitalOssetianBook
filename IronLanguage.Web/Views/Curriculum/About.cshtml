@@ -1,16 +1,17 @@
 @model IronLanguage.Web.Models.CoursePage
 @{ ViewData["Title"] = $"О курсе — {Model.Course.Document.Title}"; ViewData["CourseAbout"] = true; }
-<section class="feature-shell curriculum learner-curriculum">
+<section class="feature-shell curriculum learner-curriculum course-overview">
     <a class="back-link" href="/courses">← К курсам</a>
     <div class="course-layout">
         <partial name="_CourseSidebar" model="Model" />
         <div class="course-main course-about">
-            <h1>О курсе</h1>
-            <h2>@Model.Course.Document.Title</h2>
-            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Description)) { <p class="theory-copy">@Model.Course.Document.Description</p> }
-            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Outcomes)) { <h2>Чему вы научитесь</h2><p class="theory-copy">@Model.Course.Document.Outcomes</p> }
-            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Audience)) { <h2>Для кого этот курс</h2><p class="theory-copy">@Model.Course.Document.Audience</p> }
+            <h1>@Model.Course.Document.Title</h1>
+            @if (Model.Author is { } author) { <p class="course-author"><a href="/authors/@author.Id">@author.Name</a></p> }
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Description)) { <div class="course-about-intro theory-copy">@Model.Course.Document.Description</div> }
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Outcomes)) { <section class="course-about-section"><h2>Чему вы научитесь</h2><p class="theory-copy">@Model.Course.Document.Outcomes</p></section> }
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Audience)) { <section class="course-about-section"><h2>Для кого этот курс</h2><p class="theory-copy">@Model.Course.Document.Audience</p></section> }
         </div>
+        @await Component.InvokeAsync("CourseRating", new { courseId = Model.Course.Revision.ContentId })
     </div>
 </section>
-@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/course-overview.css" asp-append-version="true" /> }

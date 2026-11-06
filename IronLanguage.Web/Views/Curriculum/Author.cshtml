@@ -1,0 +1,13 @@
+@model IronLanguage.Web.Models.PublicAuthorPage
+@{ ViewData["Title"] = Model.Author.Name; }
+<section class="feature-shell curriculum">
+    <a class="back-link" href="/courses">← К курсам</a>
+    <h1>@Model.Author.Name</h1>
+    <h2>Курсы автора</h2>
+    <ul class="curriculum-list">
+        @foreach (var course in Model.Courses) {
+            <li><a href="/courses/@course.Revision.ContentId/about">@course.Document.Title</a></li>
+        }
+    </ul>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }

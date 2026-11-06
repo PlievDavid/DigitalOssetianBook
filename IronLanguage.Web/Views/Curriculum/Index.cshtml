@@ -4,24 +4,23 @@
     ViewData["Title"] = course ? "Курсы" : "Уроки";
 }
 <section class="feature-shell curriculum learner-curriculum catalog-page">
-    <header class="catalog-page-heading">
-        <div><h1>@ViewData["Title"]</h1><p>@(course ? "Выберите курс и учитесь в своём темпе" : "Выберите урок для изучения")</p></div>
-        <form method="get" class="catalog-page-search" role="search">
-            <label class="visually-hidden" for="course-search">Поиск по названию</label>
-            <input id="course-search" name="q" type="search" value="@Model.Query" placeholder="@(course ? "Найти курс" : "Найти урок")" />
-            @if (course) { <input type="hidden" name="filter" value="@Model.Filter" /> }
-            <button type="submit">Найти</button>
-        </form>
-    </header>
+    <div class="catalog-main">
+    <form method="get" class="catalog-page-search" role="search">
+        <label class="visually-hidden" for="course-search">Поиск по названию</label>
+        <input id="course-search" name="q" type="search" value="@Model.Query" placeholder="@(course ? "Найти курс" : "Найти урок")" />
+        @if (course) { <input type="hidden" name="filter" value="@Model.Filter" /> }
+        <button type="submit">Найти</button>
+    </form>
+    <header class="catalog-page-heading"><h1>@ViewData["Title"]</h1></header>
     @if (course) {
         <nav class="catalog-page-tabs" aria-label="Курсы по прогрессу">
-            @foreach (var tab in new[] { (Key: "all", Label: "Все курсы"), (Key: "started", Label: "Продолжаю"), (Key: "completed", Label: "Пройденные") }) {
+            @foreach (var tab in new[] { (Key: "all", Label: "Все курсы"), (Key: "started", Label: "Продолжаю") }) {
                 <a href="/courses?filter=@tab.Key&q=@Uri.EscapeDataString(Model.Query)" aria-current="@(Model.Filter == tab.Key ? "page" : null)">@tab.Label</a>
             }
         </nav>
     } else { <a class="catalog-back" href="/courses">← Все курсы</a> }
     @if (Model.Items.Length == 0) {
-        <div class="curriculum-empty-state"><h2>@(Model.Query.Length > 0 ? "Ничего не найдено" : Model.Filter != "all" ? "Здесь пока нет курсов" : course ? "Курсы готовятся" : "Уроки готовятся")</h2><p>@(Model.Query.Length > 0 ? "Попробуйте другое название." : Model.Filter == "started" ? "Начните курс, и он появится здесь." : Model.Filter == "completed" ? "Здесь появятся пройденные курсы." : "Опубликованные материалы появятся здесь.")</p></div>
+        <div class="curriculum-empty-state"><h2>@(Model.Query.Length > 0 ? "Ничего не найдено" : Model.Filter != "all" ? "Здесь пока нет курсов" : course ? "Курсы готовятся" : "Уроки готовятся")</h2><p>@(Model.Query.Length > 0 ? "Попробуйте другое название." : Model.Filter == "started" ? "Начните курс, и он появится здесь." : "Опубликованные материалы появятся здесь.")</p></div>
     }
     <div class="catalog-list">
         @foreach (var item in Model.Items) {
@@ -39,11 +38,18 @@
                     </div>
                 </div>
                 <div class="catalog-item-footer">
+                    @if (course) {
+                        var rating = Model.Ratings?.GetValueOrDefault(item.Revision.ContentId);
+                        <span class="catalog-item-meta">@(rating?.Average is double average ? $"★ {average:0.0} ({rating.Count})" : "Пока без оценок")</span>
+                    }
                     @if (course) { <div class="catalog-item-meta"><span>Уроков: @total</span>@if (completed > 0) { <span>@(finished ? "Пройден" : $"{completed} из {total} пройдено")</span> }</div> }
-                    @if (active is not null) { <a class="catalog-continue" href="/lessons/runs/@active.Id@(course ? $"?courseId={item.Revision.ContentId}" : "")">Продолжить <span aria-hidden="true">→</span></a> }
+                    @if (course && Model.Authors?.GetValueOrDefault(item.Revision.ContentId) is { } author) { <a class="catalog-author" href="/authors/@author.Id">@author.Name</a> }
+                    @if (active is not null) { <a class="catalog-continue" href="/lessons/runs/@active.Id@(course ? $"?courseId={item.Revision.ContentId}" : "")">Продолжить</a> }
+
                 </div>
             </article>
         }
+    </div>
     </div>
 </section>
 @section Styles {

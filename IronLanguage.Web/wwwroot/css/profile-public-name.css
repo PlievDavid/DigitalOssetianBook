@@ -1,0 +1,6 @@
+.profile-public-name { display: grid; justify-items: start; gap: 8px; margin: 24px 0; }
+.profile-public-name label { font-weight: 600; }
+.profile-public-name p { margin: 0; color: #596476; font-size: 14px; }
+.profile-public-name input { box-sizing: border-box; width: min(100%, 360px); min-height: 44px; padding: 9px 12px; border: 1px solid #b8c0cb; border-radius: 8px; background: #fff; color: inherit; font: inherit; }
+.profile-public-name button { min-height: 44px; padding: 9px 16px; border: 1px solid #b8c0cb; border-radius: 8px; background: #fff; color: inherit; font: inherit; cursor: pointer; }
+.profile-public-name :focus-visible { outline: 2px solid #273e58; outline-offset: 3px; }
