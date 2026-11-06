@@ -25,6 +25,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
     public DbSet<CrosswordSolvedWord> CrosswordSolvedWords => Set<CrosswordSolvedWord>();
     public DbSet<WordleGame> WordleGames => Set<WordleGame>();
+    public DbSet<LessonRun> LessonRuns => Set<LessonRun>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -37,6 +38,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<CrosswordSolvedWord>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<UserAccount>().HasIndex(x => x.Email).IsUnique();
         model.Entity<UserAccount>().Property(x => x.AvatarJson).HasMaxLength(2048);
+        model.Entity<LessonRun>().HasIndex(x => new { x.UserId, x.LessonId }).IsUnique().HasFilter("\"CompletedAt\" IS NULL");
         model.Entity<WordEntry>().HasIndex(x => x.Ossetian);
         model.Entity<WordEntry>().HasIndex(x => x.DictionarySenseId).IsUnique();
         model.Entity<DictionarySense>().HasIndex(x => new { x.SourceRow, x.SourceColumn });

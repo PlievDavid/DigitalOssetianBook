@@ -107,6 +107,7 @@ public sealed class ExerciseAttempt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
+    public Guid? LessonRunId { get; set; }
     public Guid ExerciseId { get; set; }
     public int ExerciseVersion { get; set; }
     public string ExpectedAnswer { get; set; } = "";
@@ -207,6 +208,7 @@ public sealed class DialogueSession
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
+    public Guid? LessonRunId { get; set; }
     public Guid DialogueId { get; set; }
     public int DialogueVersion { get; set; }
     public string DialogueTitle { get; set; } = "";

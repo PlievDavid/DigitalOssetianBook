@@ -1,0 +1,16 @@
+@model IronLanguage.Web.Models.CoursePage
+@{ ViewData["Title"] = $"О курсе — {Model.Course.Document.Title}"; ViewData["CourseAbout"] = true; }
+<section class="feature-shell curriculum learner-curriculum">
+    <a class="back-link" href="/courses">← К курсам</a>
+    <div class="course-layout">
+        <partial name="_CourseSidebar" model="Model" />
+        <div class="course-main course-about">
+            <h1>О курсе</h1>
+            <h2>@Model.Course.Document.Title</h2>
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Description)) { <p class="theory-copy">@Model.Course.Document.Description</p> }
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Outcomes)) { <h2>Чему вы научитесь</h2><p class="theory-copy">@Model.Course.Document.Outcomes</p> }
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Audience)) { <h2>Для кого этот курс</h2><p class="theory-copy">@Model.Course.Document.Audience</p> }
+        </div>
+    </div>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }

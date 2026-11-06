@@ -19,7 +19,7 @@
     </section>
     <div class="profile-links">
         <a href="/profile/avatar"><strong>Мой аватар</strong><span>Внешность, причёска и одежда персонажа</span></a>
-        @if (User.IsInRole("Editor")) { <a class="mobile-profile-results-link" href="/editor"><strong>Редактор материалов</strong><span>Управление учебными материалами</span></a> }
+        @if (User.IsInRole("Editor")) { <a class="mobile-profile-results-link" href="/editor/curriculum"><strong>Преподавание</strong><span>Курсы, уроки и учебные материалы</span></a> }
     </div>
     <form action="/account/logout" method="post" class="profile-logout">@Html.AntiForgeryToken()<button type="submit">Выйти из аккаунта</button></form>
 </section>

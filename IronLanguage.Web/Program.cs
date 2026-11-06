@@ -22,6 +22,8 @@ builder.Services.AddScoped<ICatalogRepository, EfCatalogRepository>();
 builder.Services.AddScoped<IEditorRepository, EfEditorRepository>();
 builder.Services.AddScoped<IReadingLibraryRepository, EfReadingLibraryRepository>();
 builder.Services.AddScoped<ReadingSeedService>();
+builder.Services.AddScoped<ICurriculumRepository, EfCurriculumRepository>();
+builder.Services.AddScoped<CurriculumService>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 builder.Services.AddScoped<LearningService>();
 builder.Services.AddScoped<ListeningService>();

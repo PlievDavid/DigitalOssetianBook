@@ -289,6 +289,9 @@ namespace IronLanguage.Db.Migrations
                     b.Property<int>("Hints")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("LessonRunId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Revision")
                         .HasColumnType("integer");
 
@@ -479,6 +482,9 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("LessonRunId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("OptionsJson")
                         .IsRequired()
                         .HasColumnType("text");
@@ -529,6 +535,43 @@ namespace IronLanguage.Db.Migrations
                     b.HasKey("UserId", "ExerciseId", "Day");
 
                     b.ToTable("ExerciseRewards");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.LessonRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LessonVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Step")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "LessonId")
+                        .IsUnique()
+                        .HasFilter("\"CompletedAt\" IS NULL");
+
+                    b.ToTable("LessonRuns");
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Matching", b =>
