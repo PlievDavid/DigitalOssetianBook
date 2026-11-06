@@ -55,6 +55,9 @@ public sealed class EditorFormModel
     public string PictureMode { get; set; } = "choice";
     public string PictureDistractor1 { get; set; } = "";
     public string PictureDistractor2 { get; set; } = "";
+    public string GroupingTitle { get; set; } = "";
+    public string GroupingGroupsText { get; set; } = "";
+    public string GroupingWordsText { get; set; } = "";
     public string? ExistingAudioPath { get; set; }
     public IFormFile? Audio { get; set; }
 
@@ -133,6 +136,14 @@ public sealed class EditorFormModel
             model.PictureDistractor2 = p.Distractors.ElementAtOrDefault(1) ?? "";
             model.WordIdsCsv = string.Join(',', p.WordIds);
         }
+        else if (kind == "grouping")
+        {
+            var p = JsonSerializer.Deserialize<GroupingMaterial>(json, options)!;
+            model.GroupingTitle = p.Title;
+            model.GroupingGroupsText = string.Join('\n', p.Groups);
+            model.GroupingWordsText = string.Join('\n', p.Words.Select(x => $"{x.Text} | {x.Group + 1}"));
+            model.WordIdsCsv = string.Join(',', p.WordIds);
+        }
         return model;
     }
 }
@@ -155,6 +166,7 @@ public sealed class EditorPreviewModel
     public DialogueMaterial? Dialogue { get; init; }
     public MatchingMaterial? Matching { get; init; }
     public PictureMaterial? Picture { get; init; }
+    public GroupingMaterial? Grouping { get; init; }
     public List<ContentRevision> History { get; init; } = [];
     public Dictionary<Guid, WordEntry> Words { get; init; } = [];
 }

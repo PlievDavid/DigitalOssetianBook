@@ -1,0 +1,25 @@
+@{ ViewData["Title"] = "Разбить слова на группы"; }
+<section class="feature-shell grouping-page game-shell" id="grouping-app">
+    <a class="back-link" href="/">← К заданиям</a>
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Разбить слова на группы", "Перетащите каждое слово в подходящую группу. Ошибочное слово можно вернуть и попробовать снова.", "grouping", "plum"))
+    <div id="grouping-status" role="status"></div>
+    <div id="grouping-list" class="exercise-list"></div>
+    <div id="grouping-play" class="game-play-area" hidden>
+        <div class="dialog-play-head">
+            <a id="grouping-back-link" class="back-link" href="/grouping">← К списку</a>
+            <span id="grouping-counters" class="dialog-counters" aria-live="polite"></span>
+        </div>
+        <h2 id="grouping-title"></h2>
+        <p id="grouping-instructions" class="field-help">Перетащите слово в группу мышью или пальцем. С клавиатуры выберите слово, затем нажмите «Положить сюда» у нужной группы.</p>
+        <section class="grouping-pool" aria-labelledby="grouping-pool-title">
+            <h3 id="grouping-pool-title">Слова</h3>
+            <div id="grouping-pool" class="grouping-pool-list" role="group" aria-label="Слова для распределения"></div>
+        </section>
+        <div id="grouping-groups" class="grouping-groups"></div>
+        <p id="grouping-result" role="status"></p>
+        <div id="grouping-summary" class="dialog-summary" hidden></div>
+        <div id="grouping-words" class="feature-grid"></div>
+    </div>
+</section>
+@section Scripts { <script src="~/js/grouping.js" asp-append-version="true" defer></script> }
+@section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/grouping.css" asp-append-version="true" /> }

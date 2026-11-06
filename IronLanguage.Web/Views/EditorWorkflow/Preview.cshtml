@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Произведение" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grouping" => "Разбить слова на группы", _ => "Произведение" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
@@ -134,6 +134,20 @@
                     <p class="field-help">Связанные слова: @string.Join(", ", Model.Picture.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p>
                 }
             </div>
+        }
+        else if (Model.Grouping is not null)
+        {
+            <h2>@Model.Grouping.Title</h2>
+            <p class="field-help">Ученик перетаскивает каждое слово в подходящую группу. Порядок слов перемешивается, названия групп остаются в указанном порядке.</p>
+            @for (var groupIndex = 0; groupIndex < Model.Grouping.Groups.Length; groupIndex++)
+            {
+                <h3>@Model.Grouping.Groups[groupIndex]</h3>
+                <ul>@foreach (var word in Model.Grouping.Words.Where(x => x.Group == groupIndex)) { <li>@word.Text</li> }</ul>
+            }
+            @if (Model.Grouping.WordIds.Length > 0)
+            {
+                <p class="field-help">Связанные слова: @string.Join(", ", Model.Grouping.WordIds.Select(id => Model.Words.GetValueOrDefault(id)?.Ossetian ?? "Не опубликовано"))</p>
+            }
         }
         else if (Model.Book is not null)
         {
