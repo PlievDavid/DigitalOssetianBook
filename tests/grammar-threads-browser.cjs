@@ -12,6 +12,9 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     let attempts = 0;
     let loseNext = false;
+    let holdNext = false;
+    let heldCheck = null;
+    let sessionSeq = 0;
     let reusedSubmission = false;
     const submissions = new Map();
     await page.route('**/api/v1/grammars**', async route => {
@@ -20,8 +23,9 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       if (url.endsWith('/sessions')) {
         attempts = 0;
         submissions.clear();
+        sessionSeq += 1;
         return route.fulfill({ json: {
-          sessionId: 'session-1', materialId: 'fixture', version: 1, title: 'Винительный падеж',
+          sessionId: 'session-' + sessionSeq, materialId: 'fixture', version: 1, title: 'Винительный падеж',
           prompt: 'Читам «___».', blank: '«___»',
           options: ['амбар', 'амбаре', 'амбары', 'амбару'],
           answered: false, correct: false, attempts: 0, correctForm: null, showRule: false, rule: '',
@@ -51,7 +55,10 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
           // Сервер принял ответ, но клиент потеряет его: повтор должен вернуть прежний результат.
           if (loseNext) { loseNext = false; return route.abort('failed'); }
         }
-        return route.fulfill({ json: submissions.get(key) });
+        const json = submissions.get(key);
+        // Ответ удерживается и отдаётся позже — как запоздалый ответ прошлого занятия.
+        if (holdNext) { holdNext = false; heldCheck = { route, json }; return; }
+        return route.fulfill({ json });
       }
       throw new Error('Unexpected fixture API: ' + url);
     });
@@ -59,6 +66,14 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await page.goto(base + '/grammar');
       await page.getByRole('button', { name: 'Начать →' }).click();
       await page.locator('#grammar-sentence').waitFor();
+    };
+    // Ждёт, пока фикстура удержит запрос /check (ответ отдаётся позже).
+    const waitForHeld = async () => {
+      const deadline = Date.now() + 5000;
+      while (!heldCheck) {
+        if (Date.now() > deadline) throw new Error('удерживаемый запрос /check не пришёл');
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
     };
     fs.mkdirSync(path.join(__dirname, '../.run-local/grammar'), { recursive: true });
     for (const width of [360, 768, 1280]) {
@@ -118,6 +133,35 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       assert.equal(await page.locator('#grammar-result .grammar-result-actions').count(), 0);
       assert.equal((await page.locator('#grammar-sentence').innerText()).trim(), 'Читам «___».');
       assert(reusedSubmission);
+
+      // Path 4: поздний ответ прошлого занятия не сбрасывает submissionId текущей отправки.
+      reusedSubmission = false;
+      await start();
+      holdNext = true;
+      await page.getByRole('button', { name: 'амбару', exact: true }).click();
+      await waitForHeld();
+      // Возврат к списку и новое занятие — без перезагрузки страницы, чтобы запрос остался висеть.
+      await page.locator('#grammar-back-link').click();
+      await page.getByRole('button', { name: 'Начать →' }).click();
+      await page.locator('#grammar-sentence').waitFor();
+      loseNext = true;
+      await page.getByRole('button', { name: 'амбару', exact: true }).click();
+      await page.locator('#grammar-result').waitFor();
+      assert(await page.locator('#grammar-result.is-incorrect').isVisible());
+      // Отпускаем ответ старого занятия уже после начала нового.
+      const held = heldCheck; heldCheck = null;
+      await held.route.fulfill({ json: held.json });
+      await page.waitForTimeout(150);
+      // Повтор в новом занятии должен использовать тот же submissionId и не сжечь вторую попытку.
+      await page.getByRole('button', { name: 'амбару', exact: true }).click();
+      await page.locator('#grammar-rule').waitFor();
+      assert(reusedSubmission);
+      assert.match(await page.locator('#grammar-result').innerText(), /Пока неверно/);
+      assert(await page.locator('#grammar-rule').isVisible());
+      assert.equal(await page.locator('#grammar-options .grammar-option:disabled').count(), 1);
+      assert.equal(await page.locator('#grammar-options .grammar-option.is-correct').count(), 0);
+      assert.equal(await page.locator('#grammar-result .grammar-result-actions').count(), 0);
+      assert.equal((await page.locator('#grammar-sentence').innerText()).trim(), 'Читам «___».');
 
       if (width === 1280) await page.screenshot({ path: path.join(__dirname, '../.run-local/grammar/' + width + '.png'), fullPage: true });
     }

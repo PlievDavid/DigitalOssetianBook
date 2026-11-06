@@ -236,8 +236,9 @@
         method: "POST",
         body: JSON.stringify(payload)
       });
-      pending = null;
+      // Поздний ответ прошлого занятия не должен сбрасывать pending текущего.
       if (gen !== generation || !session || session.sessionId !== sid) return;
+      pending = null;
       session.correct = response.correct;
       session.attempts = response.attempts;
       session.showRule = response.showRule;
