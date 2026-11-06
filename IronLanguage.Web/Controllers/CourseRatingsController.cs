@@ -13,6 +13,11 @@ public sealed class CourseRatingsController(ICourseRatingRepository ratings) : C
     {
         if (score is < 1 or > 5) return BadRequest("Выберите оценку от 1 до 5.");
         if (!await ratings.Set(id, User.UserId()!.Value, score, ct)) return NotFound();
+        if (Request.Headers.Accept.ToString() == "application/json")
+        {
+            var summary = await ratings.Summary(id, User.UserId()!.Value, ct);
+            return Json(summary);
+        }
         return Redirect($"/courses/{id}/about#course-rating");
     }
 }

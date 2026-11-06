@@ -173,3 +173,6 @@
 .course-lesson-open:hover { background: #f7f8fa; }
 .course-lesson-open strong { display: block; }
 @media (max-width: 600px) { .lesson-content .theory-card { padding: 18px; } .course-lesson-open { grid-template-columns: 26px minmax(0,1fr); gap: 10px; } .course-lesson-open .lesson-status { grid-column: 2; } }
+.lesson-course-navigation button { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lesson-course-navigation button > span:first-child { min-width: 0; }
+.lesson-progress-circle { flex: none; box-sizing: border-box; width: 18px; height: 18px; border: 1px solid #81978a; border-radius: 50%; background: conic-gradient(from 0deg, #326749 0% var(--lesson-progress), #f3f6f4 var(--lesson-progress) 100%); }

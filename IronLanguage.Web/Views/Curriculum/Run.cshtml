@@ -1,4 +1,5 @@
 @model IronLanguage.Web.Models.LessonPage
+@using IronLanguage.Web.Services
 @{
     ViewData["Title"] = Model.Snapshot.Title;
     var course = Model.Course;
@@ -15,8 +16,17 @@
             <ol>
             @foreach (var lesson in course.Lessons) {
                 var current = lesson.Revision.ContentId == Model.Run.LessonId;
-                var completed = course.Runs.Any(x => x.LessonId == lesson.Revision.ContentId && x.LessonVersion == lesson.Revision.Version && x.CompletedAt != null);
-                <li><form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@courseId">@Html.AntiForgeryToken()<button type="submit" aria-current="@(current ? "page" : null)">@lesson.Document.Title @if (completed) { <span class="lesson-complete-mark" aria-label="Пройден">✓</span> }</button></form></li>
+                var percent = CurriculumService.LessonProgress(course.Runs, lesson, current ? Model.Run : null);
+                <li>
+                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@courseId">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" aria-current="@(current ? "page" : null)">
+                            <span>@lesson.Document.Title</span>
+                            <span class="lesson-progress-circle" style="--lesson-progress: @percent%;" aria-hidden="true"></span>
+                            <span class="visually-hidden">Выполнено @percent%</span>
+                        </button>
+                    </form>
+                </li>
             }
             </ol>
         </aside>

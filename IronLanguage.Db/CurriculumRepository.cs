@@ -52,9 +52,9 @@ public sealed class EfCurriculumRepository(AdamDbContext db) : ICurriculumReposi
             .Select(x => new { x.ContentId, x.EditorId, x.Version, x.CreatedAt }).ToListAsync(ct);
         var owners = revisions.GroupBy(x => x.ContentId).ToDictionary(g => g.Key, g => g.OrderBy(x => x.Version).ThenBy(x => x.CreatedAt).First().EditorId);
         var ids = owners.Values.Distinct().ToArray();
-        var users = await db.Users.AsNoTracking().Where(x => ids.Contains(x.Id) && x.PublicName != null && x.PublicName != "")
+        var users = await db.Users.AsNoTracking().Where(x => ids.Contains(x.Id))
             .Select(x => new { x.Id, x.PublicName }).ToListAsync(ct);
-        var names = users.Where(x => !string.IsNullOrWhiteSpace(x.PublicName)).ToDictionary(x => x.Id, x => x.PublicName!.Trim());
+        var names = users.ToDictionary(x => x.Id, x => string.IsNullOrWhiteSpace(x.PublicName) ? "Автор курса" : x.PublicName.Trim());
         return owners.Where(x => names.ContainsKey(x.Value)).ToDictionary(x => x.Key, x => new CurriculumAuthor(x.Value, names[x.Value]));
     }
 

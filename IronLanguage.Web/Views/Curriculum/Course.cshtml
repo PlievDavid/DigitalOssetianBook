@@ -1,4 +1,5 @@
 @model IronLanguage.Web.Models.CoursePage
+@using IronLanguage.Web.Services
 @{ ViewData["Title"] = Model.Course.Document.Title; }
 <section class="feature-shell curriculum learner-curriculum course-overview">
     <a class="back-link" href="/courses">← К курсам</a>
@@ -9,11 +10,26 @@
             <h2>Содержание курса</h2>
             @if (User.Identity?.IsAuthenticated != true) { <p class="course-note">Гостям доступны все уроки. Чтобы сохранять прогресс, <a href="/account/login">войдите</a>.</p> }
             <ol class="course-lesson-list">
-            @foreach (var lesson in Model.Lessons)
+            @for (var i = 0; i < Model.Lessons.Length; i++)
             {
-                var active = Model.Runs.FirstOrDefault(x => x.LessonId == lesson.Revision.ContentId && x.CompletedAt == null);
-                var complete = Model.Runs.Any(x => x.LessonId == lesson.Revision.ContentId && x.LessonVersion == lesson.Revision.Version && x.CompletedAt != null);
-                <li><form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId">@Html.AntiForgeryToken()<button type="submit" class="course-lesson-open"><span class="lesson-number @(complete ? "is-complete" : "")" aria-hidden="true">@(complete ? "✓" : (Model.Lessons.ToList().IndexOf(lesson) + 1).ToString())</span><span><strong>@lesson.Document.Title</strong>@if (!string.IsNullOrWhiteSpace(lesson.Document.Description)) { <span class="lesson-description">@lesson.Document.Description</span> }</span><span class="lesson-status">@(active is not null ? "Продолжить" : complete ? "Пройден" : "") <span aria-hidden="true">→</span></span></button></form></li>
+                var lesson = Model.Lessons[i];
+                var percent = CurriculumService.LessonProgress(Model.Runs, lesson);
+                <li>
+                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="course-lesson-open">
+                            <span class="lesson-number">@(i + 1)</span>
+                            <span>
+                                <strong>@lesson.Document.Title</strong>
+                                @if (!string.IsNullOrWhiteSpace(lesson.Document.Description)) { <span class="lesson-description">@lesson.Document.Description</span> }
+                            </span>
+                            <span class="course-lesson-progress">
+                                <span class="lesson-progress-circle" style="--lesson-progress: @percent%;" aria-hidden="true"></span>
+                                <span class="visually-hidden">Выполнено </span>@percent%
+                            </span>
+                        </button>
+                    </form>
+                </li>
             }
             </ol>
         </div>
