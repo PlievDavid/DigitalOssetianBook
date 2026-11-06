@@ -48,3 +48,23 @@
 .course-rating-stars button:hover { background: #f9edd6; }
 .course-rating-stars svg { width: 23px; height: 23px; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; fill: none; }
 .course-rating-stars .is-filled svg, .course-rating-stars button:hover svg { fill: #f6c35d; }
+.course-rating-stars { gap: 4px; }
+.course-rating-stars button { color: #859087; background: #fff; border: 1px solid #e0e5e0; border-radius: 8px; }
+.course-rating-stars button:hover { background: #fff; }
+.course-rating-stars svg { width: 24px; height: 24px; stroke-width: 1.35; }
+.course-rating-stars button:hover svg, .course-rating .is-previewing .is-filled svg { fill: none; }
+.course-rating-stars .is-filled svg, .course-rating .is-previewing .is-preview svg { color: #866124; fill: #ebc273; }
+.course-rating [data-rating-status] { color: var(--curriculum-muted); font-size: 13px; }
+.course-rating [data-rating-status]:empty { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+    .course-rating-stars svg { transition: fill 140ms ease, color 140ms ease; }
+    .course-rating-stars .is-confirmed svg { animation: course-rating-confirm 260ms ease-out; }
+}
+@keyframes course-rating-confirm {
+    45% { transform: scale(1.19); }
+}
+.course-overview .course-lesson-open { grid-template-columns: 24px minmax(0, 1fr) auto; }
+.course-lesson-progress { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--curriculum-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 600px) {
+    .course-overview .course-lesson-open { grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; }
+}

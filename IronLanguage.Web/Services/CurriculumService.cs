@@ -134,6 +134,20 @@ public sealed class CurriculumService(ICurriculumRepository repository, ICatalog
     public static int[] CompletedSteps(LessonRun run, LessonSnapshot snapshot) =>
         snapshot.CompletedSteps ?? Enumerable.Range(0, Math.Min(run.Step, snapshot.Cards.Length)).ToArray();
 
+    public static int LessonProgress(IEnumerable<LessonRun> runs, CurriculumItem lesson, LessonRun? current = null)
+    {
+        var saved = current ?? runs
+            .Where(run => run.LessonId == lesson.Revision.ContentId && run.LessonVersion == lesson.Revision.Version)
+            .OrderByDescending(run => run.CompletedAt.HasValue)
+            .ThenByDescending(run => run.StartedAt)
+            .FirstOrDefault();
+        if (saved is null) return 0;
+        if (saved.CompletedAt.HasValue) return 100;
+        var snapshot = Snapshot(saved);
+        if (snapshot.Cards.Length == 0) return 0;
+        return Math.Clamp(CompletedSteps(saved, snapshot).Length * 100 / snapshot.Cards.Length, 0, 100);
+    }
+
     public async Task<object?> Exercise(Guid? user, Guid owner, LessonRun run, CancellationToken ct, int? selectedStep = null)
     {
         var snapshot = Snapshot(run);

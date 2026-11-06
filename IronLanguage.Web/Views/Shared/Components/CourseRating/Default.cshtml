@@ -6,14 +6,14 @@
 <section id="course-rating" class="course-rating" aria-labelledby="course-rating-title">
     <div class="course-rating-summary">
         <h2 id="course-rating-title">Оценки курса</h2>
-        <p>@(average is null ? "Пока без оценок" : $"★ {average} из 5 · оценок: {Model.Summary.Count}")</p>
+        <p data-rating-summary>@(average is null ? "Пока без оценок" : $"★ {average} из 5 · оценок: {Model.Summary.Count}")</p>
     </div>
     @if (User.Identity?.IsAuthenticated == true)
     {
         <form method="post" action="/courses/@Model.CourseId/rating">
             @Html.AntiForgeryToken()
             <fieldset>
-                <legend>@(own == 0 ? "Ваша оценка" : $"Ваша оценка: {own} из 5")</legend>
+                <legend data-rating-own>@(own == 0 ? "Ваша оценка" : $"Ваша оценка: {own} из 5")</legend>
                 <div class="course-rating-stars">
                     @for (var score = 1; score <= 5; score++)
                     {
@@ -23,6 +23,7 @@
                     }
                 </div>
             </fieldset>
+            <span data-rating-status role="status"></span>
         </form>
     }
     else { <a href="/account/login?ReturnUrl=%2Fcourses%2F@Model.CourseId%2Fabout%23course-rating">Войти и оценить</a> }
