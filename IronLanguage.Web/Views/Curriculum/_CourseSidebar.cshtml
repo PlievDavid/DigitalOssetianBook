@@ -6,15 +6,16 @@
     var about = (bool?)ViewData["CourseAbout"] == true;
 }
 <aside class="course-sidebar">
-    <p class="course-kicker">Курс</p>
-    <h2>@Model.Course.Document.Title</h2>
-    <p class="course-sidebar-description">@Model.Course.Document.Description</p>
-    <p class="course-progress-label">Пройдено уроков: @completed из @Model.Lessons.Length</p>
-    @if (Model.Lessons.Length > 0) { <progress value="@completed" max="@Model.Lessons.Length" aria-label="Прогресс курса"></progress> }
-    @if (active is not null) { <a class="button primary course-start" href="/lessons/runs/@active.Id?courseId=@Model.Course.Revision.ContentId">Продолжить</a> }
-    else if (next is not null) { <form method="post" action="/lessons/@next.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId">@Html.AntiForgeryToken()<button class="button primary course-start" type="submit">@(completed == Model.Lessons.Length ? "Повторить курс" : completed > 0 ? "Продолжить курс" : "Начать курс")</button></form> }
     <nav class="course-navigation" aria-label="Разделы курса">
         <a href="/courses/@Model.Course.Revision.ContentId/about" aria-current="@(about ? "page" : null)">О курсе</a>
         <a href="/courses/@Model.Course.Revision.ContentId/contents" aria-current="@(about ? null : "page")">Содержание</a>
     </nav>
+    <div class="course-sidebar-progress">
+        @if (completed > 0) {
+            <p class="course-progress-label">@completed из @Model.Lessons.Length пройдено</p>
+            <progress value="@completed" max="@Model.Lessons.Length" aria-label="Прогресс курса"></progress>
+        }
+        @if (active is not null) { <a class="button primary course-start" href="/lessons/runs/@active.Id?courseId=@Model.Course.Revision.ContentId">Продолжить</a> }
+        else if (next is not null) { <form method="post" action="/lessons/@next.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId">@Html.AntiForgeryToken()<button class="button primary course-start" type="submit">@(completed == Model.Lessons.Length ? "Повторить курс" : completed > 0 ? "Продолжить курс" : "Начать курс")</button></form> }
+    </div>
 </aside>

@@ -10,8 +10,12 @@
         <input type="hidden" name="Stamp" value="@Model.Form.Stamp" />
         <input type="hidden" name="StructureJson" id="curriculum-structure" value="@Model.Form.StructureJson" />
         <header class="curriculum-editor-header">
-            <div><div class="curriculum-heading"><h1>@ViewData["Title"]</h1><span class="curriculum-draft">Черновик</span></div><p>@(course ? "Соберите курс из своих уроков" : "Соберите урок из карточек и заданий")</p></div>
-            <div class="curriculum-header-actions"><button class="button secondary" type="submit" name="action" value="preview">Сохранить и посмотреть</button><button class="button primary" type="submit" name="action" value="save">Сохранить черновик</button></div>
+            @if (course) {
+                <div><div class="curriculum-heading"><h1>@ViewData["Title"]</h1><span class="curriculum-draft">Черновик</span></div><p>Соберите курс из своих уроков</p></div>
+            } else {
+                <div class="lesson-heading"><h1 class="visually-hidden">Редактор урока</h1><label class="lesson-title-field"><span class="visually-hidden">Название урока</span><input name="Title" aria-label="Название" maxlength="200" value="@Model.Form.Title" placeholder="Название урока" required /></label><span class="curriculum-draft">Черновик</span></div>
+            }
+            <div class="curriculum-save-controls"><span id="curriculum-save-state" role="status" aria-live="polite"></span><div class="curriculum-header-actions"><button class="button secondary" type="submit" name="action" value="preview">Сохранить и посмотреть</button><button class="button primary" type="submit" name="action" value="save">Сохранить черновик</button></div></div>
         </header>
         <div asp-validation-summary="All" class="form-error" role="alert"></div>
         @if (TempData["CurriculumSaved"] is string saved) { <p class="curriculum-saved" role="status">@saved</p> }
@@ -19,7 +23,7 @@
             <h2 class="course-section-heading">О курсе</h2>
             <div class="curriculum-meta"><label class="curriculum-field">Название<input name="Title" maxlength="200" value="@Model.Form.Title" required /></label><label class="curriculum-field">Описание<textarea name="Description" maxlength="2000" rows="2">@Model.Form.Description</textarea></label></div>
         } else {
-            <div class="lesson-identity"><label class="curriculum-field">Название урока<input name="Title" aria-label="Название" maxlength="200" value="@Model.Form.Title" placeholder="Например, знакомство с алфавитом" required /></label>
+            <div class="lesson-identity">
                 <details class="lesson-description-settings" open="@(!string.IsNullOrWhiteSpace(Model.Form.Description))"><summary>Описание урока</summary><label class="curriculum-field"><span class="visually-hidden">Описание</span><textarea name="Description" aria-label="Описание" maxlength="2000" rows="2">@Model.Form.Description</textarea></label></details>
             </div>
         }
@@ -79,11 +83,11 @@
             <div id="picker-materials" class="lesson-picker-materials"></div>
         </div>
         <div id="picker-new" role="tabpanel" aria-labelledby="picker-tab-new" hidden>
-            <p>Создайте и опубликуйте задание в новой вкладке, затем вернитесь сюда и добавьте его в урок.</p>
+            <p>Сохраним черновик урока и откроем редактор задания. После публикации его можно добавить в этот урок.</p>
             <div class="lesson-picker-options">
-                <a href="/editor/new/audio" target="_blank" rel="noopener" aria-label="Создать аудиопазл (откроется в новой вкладке)">Аудиопазл ↗</a>
-                <a href="/editor/new/translation" target="_blank" rel="noopener" aria-label="Создать перевод фразы (откроется в новой вкладке)">Перевод фразы ↗</a>
-                <a href="/editor/new/dialogue" target="_blank" rel="noopener" aria-label="Создать диалог (откроется в новой вкладке)">Диалог ↗</a>
+                <button type="submit" form="curriculum-form" name="action" value="create-audio">Аудиопазл</button>
+                <button type="submit" form="curriculum-form" name="action" value="create-translation">Перевод фразы</button>
+                <button type="submit" form="curriculum-form" name="action" value="create-dialogue">Диалог</button>
             </div>
         </div>
         <p id="picker-status" role="status" aria-live="polite"></p>

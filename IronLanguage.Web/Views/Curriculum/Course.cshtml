@@ -1,6 +1,6 @@
 @model IronLanguage.Web.Models.CoursePage
 @{ ViewData["Title"] = Model.Course.Document.Title; }
-<section class="feature-shell curriculum learner-curriculum">
+<section class="feature-shell curriculum learner-curriculum course-overview">
     <a class="back-link" href="/courses">← К курсам</a>
     <div class="course-layout">
         <partial name="_CourseSidebar" model="Model" />
@@ -19,4 +19,4 @@
         </div>
     </div>
 </section>
-@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/course-overview.css" asp-append-version="true" /> }

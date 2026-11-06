@@ -28,7 +28,7 @@
         } else {
             var card = Model.Snapshot.Cards[step];
             <div class="lesson-position"><div class="lesson-step-list" aria-label="Прогресс урока">
-                @for (var i = 0; i < Model.Snapshot.Cards.Length; i++) { <a href="/lessons/runs/@Model.Run.Id?step=@i&courseId=@courseId" class="@(done.Contains(i) ? "is-complete" : "") @(i == step ? "is-current" : "")" aria-current="@(i == step ? "step" : null)" aria-label="Карточка @(i + 1): @Model.Snapshot.Cards[i].Title@(done.Contains(i) ? ", выполнена" : "")">@(i + 1)@if (done.Contains(i)) { <small aria-hidden="true">✓</small> }</a> }
+                @for (var i = 0; i < Model.Snapshot.Cards.Length; i++) { <a href="/lessons/runs/@Model.Run.Id?step=@i&courseId=@courseId" class="@(done.Contains(i) ? "is-complete" : "") @(Model.Snapshot.Cards[i].Kind == "theory" ? "is-theory" : "") @(i == step ? "is-current" : "")" aria-current="@(i == step ? "step" : null)" aria-label="Карточка @(i + 1): @Model.Snapshot.Cards[i].Title@(done.Contains(i) ? ", выполнена" : "")">@(i + 1)</a> }
             </div><span>Шаг @(step + 1) из @Model.Snapshot.Cards.Length</span></div>
             @if (card.Kind == "theory") { <partial name="_TheoryCard" model="card" /> }
             else if (card.Kind == "dialogue") {

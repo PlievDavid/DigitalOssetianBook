@@ -1,8 +1,15 @@
-.course-editor #curriculum-form { max-width: 1040px; margin-inline: auto; }
+.course-editor .curriculum-editor-header { align-items: center; margin: 16px 0 24px; }
+.course-editor .curriculum-editor-header h1 { font-size: 26px; }
+.course-editor .curriculum-editor-header p { display: none; }
+.course-editor .curriculum-field { font-size: 14px; margin: 12px 0; gap: 6px; }
+.course-editor .curriculum-field input, .course-editor .curriculum-field textarea { padding: 9px 11px; border-radius: 5px; line-height: 1.5; }
+.course-editor h2 { font-size: 19px; }
+.green-theme .course-editor .button { min-height: 40px; padding: 8px 14px; font-size: 14px; border-radius: 5px; }
+.course-editor #curriculum-form { max-width: 960px; margin-inline: auto; }
 .course-editor .curriculum-meta { grid-template-columns: 1fr; gap: 0; }
-.course-section-heading { border-top: 1px solid var(--curriculum-border); padding-top: 28px; }
+.course-section-heading { border-top: 1px solid var(--curriculum-border); padding-top: 20px; }
 .course-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-.course-lessons { margin: 32px 0; padding-top: 28px; border-top: 1px solid var(--curriculum-border); }
+.course-lessons { margin: 24px 0; padding-top: 20px; border-top: 1px solid var(--curriculum-border); }
 .course-editor .course-lesson-list { margin: 20px 0; padding: 0; counter-reset: course-lesson; }
 .course-editor .course-lesson-list li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 14px 0; counter-increment: course-lesson; }
 .course-editor .course-lesson-list li::before { content: counter(course-lesson); color: var(--curriculum-muted); }
@@ -43,5 +50,5 @@
 .lesson-settings { margin: 0 0 24px; border-bottom: 1px solid var(--curriculum-border); padding-bottom: 16px; }
 .lesson-settings summary { cursor: pointer; padding: 10px 0; font-size: 15px; }
 .lesson-settings[open] summary { margin-bottom: 14px; }
-.course-editor > .back-link { display: block; max-width: 1040px; margin-inline: auto; }
+.course-editor > .back-link { display: block; max-width: 960px; margin-inline: auto; }
 .curriculum-saved { font-size: 14px; color: var(--curriculum-muted); margin: -8px 0 20px; }

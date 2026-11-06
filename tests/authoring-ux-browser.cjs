@@ -11,7 +11,7 @@ const output = '.run-local/curriculum-qa';
     await context.addCookies([{ name: 'Adam.Auth', value: fixture.cookie, url: base }]);
     const page = await context.newPage();
     const errors = []; page.on('pageerror', e => errors.push(e.message));
-    for (const [route, name] of [['/courses', 'catalog'], ['/editor', 'materials'], ['/editor/curriculum/lesson/new', 'lesson-empty']]) {
+    for (const [route, name] of [['/courses', 'catalog'], ['/editor/curriculum', 'teaching'], ['/editor', 'materials'], ['/editor/curriculum/lesson/new', 'lesson-empty']]) {
       await page.goto(route);
       for (const width of [360, 768, 1024, 1246, 1440]) {
         await page.setViewportSize({ width, height: 900 });
@@ -53,8 +53,10 @@ const output = '.run-local/curriculum-qa';
         assert(Math.abs(columns[0].top - columns[1].top) < 1 && Math.abs(columns[0].height - columns[1].height) < 1, 'Колонки сравнения не выровнены');
         assert.equal(columns[0].padding, columns[1].padding);
         assert.notEqual(columns[0].background, columns[1].background);
+        await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({ path: `${output}/comparison-preview.png`, fullPage: true });
         await page.getByRole('button', { name: 'Правило', exact: true }).click();
+        await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({ path: `${output}/rule-preview.png`, fullPage: true });
         await page.getByRole('button', { name: 'Удалить', exact: true }).click();
         assert.equal(await page.locator('#lesson-first-card').isVisible(), true);

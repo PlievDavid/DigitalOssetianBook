@@ -43,7 +43,23 @@ public sealed class AccountController(IAccountRepository accounts, AvatarService
     public IActionResult AccessDenied() => View();
 
     [Authorize, HttpGet("/profile")]
-    public async Task<IActionResult> Profile() => View(await avatars.Current(User));
+    public async Task<IActionResult> Profile(CancellationToken ct)
+    {
+        var user = await accounts.FindById(User.UserId()!.Value, ct);
+        if (user is null) return NotFound();
+        ViewData["PublicName"] = user.PublicName;
+        return View(await avatars.Current(User));
+    }
+
+    [Authorize, HttpPost("/profile/name"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> SavePublicName(string? publicName, CancellationToken ct)
+    {
+        var name = publicName?.Trim();
+        if (name?.Length > 100) { TempData["PublicNameError"] = "Имя должно содержать не более 100 символов."; return Redirect("/profile"); }
+        await accounts.SavePublicName(User.UserId()!.Value, string.IsNullOrWhiteSpace(name) ? null : name, ct);
+        TempData["PublicNameSaved"] = true;
+        return Redirect("/profile");
+    }
 
     [HttpPost("register"), ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(AccountInput input, CancellationToken ct)

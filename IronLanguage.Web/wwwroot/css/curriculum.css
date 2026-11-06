@@ -164,8 +164,8 @@
 .theory-preview-navigation button:disabled { opacity: .4; cursor: default; }
 .lesson-content .lesson-position { padding: 14px 0; }
 .lesson-step-list a { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 44px; height: 44px; background: #f4f5f7; border: 1px solid #dde2e9; border-radius: 7px; color: var(--theme-ink); text-decoration: none; }
-.lesson-step-list a.is-complete { background: #eef3f8; color: #334d69; border-color: #c8d6e4; }
-.lesson-step-list a.is-current { background: #fff; border: 2px solid var(--theme-ink); color: var(--theme-ink); }
+.lesson-step-list a:is(.is-complete, .is-theory) { background: #e6f2e8; color: #225539; border-color: #bdd8c5; }
+.lesson-step-list a.is-current { border: 2px solid var(--theme-ink); color: var(--theme-ink); }
 .lesson-step-list a small { font-size: 11px; }
 .lesson-course-navigation button { display: block; width: 100%; text-align: left; padding: 12px 8px; background: transparent; color: var(--theme-ink); border: 0; border-radius: 6px; font: inherit; cursor: pointer; }
 .lesson-course-navigation button[aria-current=page] { background: #eef1f5; font-weight: 600; }

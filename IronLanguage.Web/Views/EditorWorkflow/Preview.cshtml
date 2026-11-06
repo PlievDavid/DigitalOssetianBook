@@ -3,11 +3,13 @@
     var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", _ => "Произведение" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
+    var lessonId = ViewData["LessonId"] as Guid?;
+    var lessonQuery = lessonId is Guid lesson ? $"?lessonId={lesson}" : "";
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
 }
 <section class="feature-shell editor-preview-shell">
     <header class="editor-page-heading editor-preview-heading">
-        <a class="back-link" href="/editor">← К материалам</a>
+        <a class="back-link" href="@(lessonId is Guid lessonBack ? $"/editor/curriculum/lesson/{lessonBack}/edit" : "/editor")">← @(lessonId is null ? "К материалам" : "В урок")</a>
         <h1>Предпросмотр</h1>
         <span class="editor-status">@title · версия @Model.Version · @(Model.Published ? "опубликовано" : "черновик")</span>
     </header>
@@ -163,11 +165,12 @@
         <div class="editor-preview-actions">
             @if (!Model.Published)
             {
-                <a class="button secondary" href="@(Model.RevisionId is Guid draftRevision ? $"/editor/revisions/{draftRevision}/edit" : $"/editor/draft/{Model.Kind}/{Model.ContentId}")">Изменить</a>
-                <form method="post" action="@publishAction" class="editor-publish-form">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirmReviewed" value="true" required /> Я проверил текст, перевод и права на публикацию</label><button class="button primary" type="submit">Опубликовать</button></form>
+                <a class="button secondary" href="@((Model.RevisionId is Guid draftRevision ? $"/editor/revisions/{draftRevision}/edit" : $"/editor/draft/{Model.Kind}/{Model.ContentId}") + lessonQuery)">Изменить</a>
+                <form method="post" action="@(publishAction + lessonQuery)" class="editor-publish-form">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirmReviewed" value="true" required /> Я проверил текст, перевод и права на публикацию</label><button class="button primary" type="submit">Опубликовать</button></form>
             }
             else
             {
+                @if (lessonId is Guid returnLesson) { <a class="button primary" href="/editor/curriculum/lesson/@returnLesson/edit?addKind=@Model.Kind&amp;addMaterialId=@Model.ContentId">Вернуться в урок</a> }
                 <form method="post" action="/editor/published/@Model.Kind/@Model.ContentId/revise">@Html.AntiForgeryToken()<button class="button primary" type="submit">Создать новую версию</button></form>
             }
         </div>

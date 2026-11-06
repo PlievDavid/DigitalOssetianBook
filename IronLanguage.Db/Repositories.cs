@@ -9,10 +9,16 @@ public interface IAccountRepository
     Task<UserAccount?> FirstEditor(CancellationToken ct = default);
     Task<bool> Create(UserAccount user, CancellationToken ct = default);
     Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default);
+    Task<bool> SavePublicName(Guid id, string? name, CancellationToken ct = default);
 }
 
 public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
 {
+    public Task<bool> SavePublicName(Guid id, string? name, CancellationToken ct = default) => SaveName(id, name, ct);
+
+    private async Task<bool> SaveName(Guid id, string? name, CancellationToken ct) =>
+        await db.Users.Where(x => x.Id == id).ExecuteUpdateAsync(x => x.SetProperty(p => p.PublicName, name), ct) == 1;
+
     public async Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(avatarJson);
