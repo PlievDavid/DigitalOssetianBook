@@ -22,7 +22,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     private async Task<bool> ValidLesson(Guid? lessonId, string kind, CancellationToken ct) =>
-        lessonId is null || (kind is "audio" or "translation" or "dialogue" &&
+        lessonId is null || (kind is "audio" or "translation" or "dialogue" or "listening" &&
             await curriculum.GetOwned("lesson", lessonId.Value, User.UserId()!.Value, ct) is not null);
 
     [HttpPost("new/{kind}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
@@ -80,9 +80,22 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     public async Task<IActionResult> DeleteRevision(Guid id, CancellationToken ct) =>
         await editor.DeleteRevision(id, ct) ? Redirect("/editor") : NotFound();
 
+    [HttpGet("published/{kind}/{id:guid}/usage")]
+    public async Task<IActionResult> Usage(string kind, Guid id, CancellationToken ct)
+    {
+        if (!Kinds.Contains(kind) || await editor.Material(kind, id, ct) is not { Published: true }) return NotFound();
+        var rows = await curriculum.MaterialUsage(kind, id, ct);
+        ViewData["ArchiveUrl"] = $"/editor/published/{kind}/{id}/archive";
+        ViewData["EditorId"] = User.UserId();
+        return View(rows.Select(row => new CurriculumItem(row, CurriculumService.Parse(row))).ToArray());
+    }
+
     [HttpPost("published/{kind}/{id:guid}/archive"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Archive(string kind, Guid id, CancellationToken ct) =>
-        await editor.SetArchived(kind, id, true, ct) ? Redirect("/editor") : NotFound();
+    public async Task<IActionResult> Archive(string kind, Guid id, CancellationToken ct)
+    {
+        if (await editor.SetArchived(kind, id, true, ct)) return Redirect("/editor");
+        return await Usage(kind, id, ct);
+    }
 
     [HttpPost("archived/{kind}/{id:guid}/restore"), ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(string kind, Guid id, CancellationToken ct) =>
