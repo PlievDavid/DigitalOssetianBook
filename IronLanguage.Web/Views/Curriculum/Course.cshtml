@@ -1,0 +1,45 @@
+@model IronLanguage.Web.Models.CoursePage
+@using IronLanguage.Web.Services
+@{ ViewData["Title"] = Model.Course.Document.Title; }
+<section class="feature-shell curriculum learner-curriculum course-overview">
+    <a class="back-link" href="/courses">← К курсам</a>
+    <div class="course-layout">
+        <h1 class="course-title">@Model.Course.Document.Title</h1>
+        <partial name="_CourseSidebar" model="Model" />
+        <div class="course-main">
+            <h2>Содержание курса</h2>
+            @if (User.Identity?.IsAuthenticated != true) { <p class="course-note">Гостям доступны все уроки. Чтобы сохранять прогресс, <a href="/account/login">войдите</a>.</p> }
+            @{ var number = 0; }
+            @foreach (var section in Model.Sections())
+            {
+            @if (section.Title is not null) { <h3>@(section.Title)</h3> }
+            <ol class="course-lesson-list" start="@(number + 1)">
+            @foreach (var lesson in section.Lessons)
+            {
+                var percent = CurriculumService.LessonProgress(Model.Runs, lesson);
+                <li>
+                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId&amp;firstStep=true">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="course-lesson-open">
+                            <span class="lesson-number">@(++number)</span>
+                            <span>
+                                <strong>@lesson.Document.Title</strong>
+                                @if (CurriculumService.NeedsReview(Model.Runs, lesson)) { <span class="lesson-description">Урок существенно обновился</span> }
+                                @if (!string.IsNullOrWhiteSpace(lesson.Document.Goal)) { <span class="lesson-description">@lesson.Document.Goal</span> }
+                                @if (lesson.Document.Minutes is int minutes) { <span class="lesson-description">@minutes мин.</span> }
+                                @if (!string.IsNullOrWhiteSpace(lesson.Document.Description)) { <span class="lesson-description">@lesson.Document.Description</span> }
+                            </span>
+                            <span class="course-lesson-progress">
+                                <span class="lesson-progress-circle" style="--lesson-progress: @percent%;" aria-hidden="true"></span>
+                                <span class="visually-hidden">Выполнено </span>@percent%
+                            </span>
+                        </button>
+                    </form>
+                </li>
+            }
+            </ol>
+            }
+        </div>
+    </div>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/course-overview.css" asp-append-version="true" /> }

@@ -57,6 +57,32 @@
 .editor-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .editor-file-input:focus-visible + .field-help { outline: 2px solid #425fcd; }
 .editor-audio-field audio { max-width: 100%; }
+.editor-audio-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.audio-replace { border: 0; padding: 0; background: transparent; color: #315b78; font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.editor-audio-field > :is(audio, fieldset) { width: 100%; min-width: 0; }
+.editor-audio-field [hidden] { display: none !important; }
+.editor-audio-field #audio-studio-status:empty { display: none; }
+.editor-audio-field #audio-studio-status { margin: 0; }
+.editor-audio-field[data-recording="true"] #audio-studio-status { color: #a33426; font-variant-numeric: tabular-nums; }
+.editor-audio-trim { box-sizing: border-box; margin: 0; padding: 16px; border: 1px solid #cbd7d2; border-radius: 12px; background: #ffffffb3; }
+.editor-audio-trim legend { padding: 0 6px; font-weight: 600; }
+.editor-audio-bounds { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin: 16px 0; }
+.editor-audio-bounds label { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; }
+#editor-audio-studio .editor-audio-bounds input { width: 85px; min-height: 36px; padding: 6px 8px; box-sizing: border-box; font-size: 14px; font-variant-numeric: tabular-nums; }
+.editor-audio-bounds output { margin-left: auto; font-size: 13px; color: #526979; font-variant-numeric: tabular-nums; }
+.audio-trim-hint { margin: 0 0 16px; }
+.audio-waveform { position: relative; height: 112px; width: 100%; overflow: hidden; border-radius: 8px; background: #edf2ee; isolation: isolate; }
+.audio-waveform canvas { display: block; width: 100%; height: 100%; }
+.audio-waveform-selection { position: absolute; inset: 0; border: 2px solid #276851; border-radius: 5px; background: #2768510a; box-shadow: 0 0 0 1000px #edf2eead; pointer-events: none; }
+.audio-waveform-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #a7522c; pointer-events: none; }
+#editor-audio-studio .audio-waveform input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; margin: 0; border: 0; border-radius: 0; outline: 0; background: transparent; appearance: none; pointer-events: none; }
+.audio-waveform input[type="range"]::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.audio-waveform input[type="range"]::-webkit-slider-thumb { appearance: none; width: 18px; height: 112px; border: 3px solid #276851; border-radius: 5px; background: linear-gradient(90deg, #276851 6px, #fff 6px, #fff 8px, #276851 8px); cursor: ew-resize; pointer-events: auto; touch-action: none; }
+.audio-waveform input[type="range"]::-moz-range-track { height: 100%; background: transparent; }
+.audio-waveform input[type="range"]::-moz-range-thumb { width: 14px; height: 106px; border: 2px solid #276851; border-radius: 5px; background: #276851; cursor: ew-resize; pointer-events: auto; touch-action: none; }
+.audio-waveform input[type="range"]:focus-visible::-webkit-slider-thumb { border-color: #ffffff; outline: 3px solid #276851; outline-offset: -5px; }
+.audio-waveform input[type="range"]:focus-visible::-moz-range-thumb { outline: 3px solid #ffffff; outline-offset: -5px; }
+.audio-waveform-ruler { display: flex; justify-content: space-between; margin-top: 6px; color: #627189; font-size: 11px; font-variant-numeric: tabular-nums; }
 .editor-cover-preview { width: 120px; height: 160px; object-fit: cover; border: 1px solid #dfe5ee; border-radius: 10px; }
 .editor-file-input:focus-visible ~ .editor-cover-preview { outline: 2px solid #425fcd; }
 .editor-form-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 8px; }
@@ -144,3 +170,9 @@
   .builder-line .builder-heading { align-items: start; }
   .builder-character > .builder-actions { margin-left: 0; width: 100%; }
 }
+.editor-reading-art { display: grid; gap: 16px; min-width: 0; }
+.editor-reading-art h2, .editor-reading-art p { margin: 0; }
+.editor-reading-illustration { display: grid; gap: 12px; padding: 18px; margin-bottom: 16px; border: 1px solid #dce5d7; border-radius: 14px; background: #f5f7f0; }
+.editor-reading-illustration img, .editor-interior-preview { display: block; width: 100%; max-width: 640px; max-height: 320px; object-fit: contain; border-radius: 12px; margin: 12px 0; }
+.editor-reading-art [hidden] { display: none; }
+.editor-reading-preview-line { min-height: 1.65em; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }

@@ -1,0 +1,5 @@
+.course-markdown { line-height: 1.7; overflow-wrap: anywhere; }
+.course-markdown p, .course-markdown ul { margin: 0 0 1em; }
+.course-markdown > :last-child { margin-bottom: 0; }
+.course-markdown ul { padding-left: 1.4em; }
+.course-markdown h3 { margin: 1em 0 .4em; font-size: 1.08em; line-height: 1.35; }

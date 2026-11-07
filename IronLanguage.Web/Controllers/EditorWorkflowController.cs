@@ -8,35 +8,49 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), Route("editor")]
-public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment) : Controller
+public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment, ICurriculumRepository curriculum) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "book", "dialogue", "matching", "picture"];
 
     [HttpGet("new/{kind}")]
-    public IActionResult New(string kind) => Kinds.Contains(kind) ? View("Form", new EditorFormModel { Kind = kind }) : NotFound();
+    public async Task<IActionResult> New(string kind, Guid? lessonId, CancellationToken ct)
+    {
+        if (!Kinds.Contains(kind) || !await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
+        return View("Form", new EditorFormModel { Kind = kind });
+    }
+
+    private async Task<bool> ValidLesson(Guid? lessonId, string kind, CancellationToken ct) =>
+        lessonId is null || (kind is "audio" or "translation" or "dialogue" or "listening" &&
+            await curriculum.GetOwned("lesson", lessonId.Value, User.UserId()!.Value, ct) is not null);
 
     [HttpPost("new/{kind}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
-    public async Task<IActionResult> New(string kind, EditorFormModel model, CancellationToken ct)
+    public async Task<IActionResult> New(string kind, EditorFormModel model, Guid? lessonId, CancellationToken ct)
     {
-        if (!Kinds.Contains(kind)) return NotFound();
+        if (!Kinds.Contains(kind) || !await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
         model.Kind = kind;
         var payload = await BuildPayload(model, null, null, ct);
         if (payload is null) return View("Form", model);
         var id = await editor.Create(kind, payload, ct);
-        return Redirect($"/editor/{kind}/{id}/preview");
+        return Redirect($"/editor/{kind}/{id}/preview{LessonQuery(lessonId)}");
     }
 
     [HttpGet("draft/{kind}/{id:guid}")]
-    public async Task<IActionResult> EditDraft(string kind, Guid id, CancellationToken ct)
+    public async Task<IActionResult> EditDraft(string kind, Guid id, Guid? lessonId, CancellationToken ct)
     {
+        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
         var material = await editor.Material(kind, id, ct);
         return material is null || material.Published ? NotFound() : View("Form", EditorFormModel.FromPayload(kind, material.PayloadJson, id));
     }
 
     [HttpPost("draft/{kind}/{id:guid}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
-    public async Task<IActionResult> EditDraft(string kind, Guid id, EditorFormModel model, CancellationToken ct)
+    public async Task<IActionResult> EditDraft(string kind, Guid id, EditorFormModel model, Guid? lessonId, CancellationToken ct)
     {
+        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
         var material = await editor.Material(kind, id, ct);
         if (material is null || material.Published) return NotFound();
         model.Kind = kind; model.ContentId = id;
@@ -47,7 +61,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         var payload = await BuildPayload(model, audio, cover, ct);
         if (payload is null) return View("Form", model);
         if (!await editor.UpdateDraft(kind, id, payload, ct)) return Conflict();
-        return Redirect($"/editor/{kind}/{id}/preview");
+        return Redirect($"/editor/{kind}/{id}/preview{LessonQuery(lessonId)}");
     }
 
     [HttpPost("published/{kind}/{id:guid}/revise"), ValidateAntiForgeryToken]
@@ -66,9 +80,22 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     public async Task<IActionResult> DeleteRevision(Guid id, CancellationToken ct) =>
         await editor.DeleteRevision(id, ct) ? Redirect("/editor") : NotFound();
 
+    [HttpGet("published/{kind}/{id:guid}/usage")]
+    public async Task<IActionResult> Usage(string kind, Guid id, CancellationToken ct)
+    {
+        if (!Kinds.Contains(kind) || await editor.Material(kind, id, ct) is not { Published: true }) return NotFound();
+        var rows = await curriculum.MaterialUsage(kind, id, ct);
+        ViewData["ArchiveUrl"] = $"/editor/published/{kind}/{id}/archive";
+        ViewData["EditorId"] = User.UserId();
+        return View(rows.Select(row => new CurriculumItem(row, CurriculumService.Parse(row))).ToArray());
+    }
+
     [HttpPost("published/{kind}/{id:guid}/archive"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Archive(string kind, Guid id, CancellationToken ct) =>
-        await editor.SetArchived(kind, id, true, ct) ? Redirect("/editor") : NotFound();
+    public async Task<IActionResult> Archive(string kind, Guid id, CancellationToken ct)
+    {
+        if (await editor.SetArchived(kind, id, true, ct)) return Redirect("/editor");
+        return await Usage(kind, id, ct);
+    }
 
     [HttpPost("archived/{kind}/{id:guid}/restore"), ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(string kind, Guid id, CancellationToken ct) =>
@@ -98,8 +125,10 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpGet("{kind}/{id:guid}/preview")]
-    public async Task<IActionResult> Preview(string kind, Guid id, CancellationToken ct)
+    public async Task<IActionResult> Preview(string kind, Guid id, Guid? lessonId, CancellationToken ct)
     {
+        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
         var material = await editor.Material(kind, id, ct);
         return material is null ? NotFound() : View("Preview", await PreviewModel(kind, id, null, material.Version, material.Published, false, material.PayloadJson, ct));
     }
@@ -125,12 +154,16 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         if (revision is null || revision.Published) return NotFound();
         var model = await PreviewModel(revision.Kind, revision.ContentId, id, revision.Version, false, false, revision.PayloadJson, ct);
         if (!confirmReviewed) { model.Error = "Подтвердите проверку текста, перевода и прав на материал."; return View("Preview", model); }
+        if (model.Book is not null && BookTranslationReview.HasWarnings(model.Book))
+        { model.Error = "Сначала исправьте отмеченные строки перевода."; return View("Preview", model); }
         if (!PublishedLinksValid(revision.Kind, revision.PayloadJson, model.Words.Keys.ToHashSet()))
         { model.Error = "Сначала опубликуйте связанные слова."; return View("Preview", model); }
         if (!await editor.PublishRevision(id))
         { model.Error = "Материал уже изменился. Откройте его заново перед публикацией."; return View("Preview", model); }
         return Redirect($"/editor/{revision.Kind}/{revision.ContentId}/preview");
     }
+
+    private static string LessonQuery(Guid? lessonId) => lessonId is Guid id ? $"?lessonId={id}" : "";
 
     private async Task<EditorPreviewModel> PreviewModel(string kind, Guid id, Guid? revisionId, int version, bool published, bool historical, string payload, CancellationToken ct)
     {
@@ -188,7 +221,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 else wordIds.Add(id);
             }
             if (string.IsNullOrWhiteSpace(model.RussianPrompt))
-                ModelState.AddModelError(nameof(model.RussianPrompt), kind == "audio" ? "Укажите перевод предложения." : "Укажите русскую подсказку.");
+                ModelState.AddModelError(nameof(model.RussianPrompt), kind == "audio" ? "Укажите перевод предложения." : "Укажите фразу на русском.");
             if (tokens.Length is < 2 or > 30 || tokens.Any(x => x.Length > 80))
                 ModelState.AddModelError(nameof(model.TokensText), kind == "audio"
                     ? "Предложение: от 2 до 30 слов, каждое с новой строки."
@@ -224,11 +257,11 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             }
             else
             {
-                alternatives = model.AlternativesText.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                alternatives = [];
                 ossetianAnswer = model.OssetianAnswer;
-                if (string.IsNullOrWhiteSpace(model.OssetianAnswer)) ModelState.AddModelError(nameof(model.OssetianAnswer), "Укажите осетинский ответ.");
-                if (tokens.Length is >= 2 and <= 30 && (!CanAssemble(model.OssetianAnswer, tokens) || alternatives.Any(x => !CanAssemble(x, tokens))))
-                    ModelState.AddModelError(nameof(model.TokensText), "Ответ и допустимые варианты должны собираться из этих слов.");
+                if (string.IsNullOrWhiteSpace(model.OssetianAnswer)) ModelState.AddModelError(nameof(model.OssetianAnswer), "Укажите фразу на осетинском.");
+                if (tokens.Length is >= 2 and <= 30 && !CanAssemble(model.OssetianAnswer, tokens))
+                    ModelState.AddModelError(nameof(model.TokensText), "Фраза должна собираться из этих слов.");
             }
             if (kind == "audio" && model.Audio is not { Length: > 0 } && string.IsNullOrEmpty(originalAudioPath))
                 ModelState.AddModelError(nameof(model.Audio), "Для аудиопазла нужна запись.");
@@ -262,13 +295,14 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         }
         else if (kind == "book")
         {
-            if (string.IsNullOrWhiteSpace(model.Russian)) ModelState.AddModelError(nameof(model.Russian), "Укажите название книги.");
+            model.TranslationReviewed = false;
+            if (string.IsNullOrWhiteSpace(model.Russian)) ModelState.AddModelError(nameof(model.Russian), "Укажите название произведения.");
             if (string.IsNullOrWhiteSpace(model.Authors) || model.Authors.Length > 240) ModelState.AddModelError(nameof(model.Authors), "Укажите автора или авторов (до 240 символов).");
             if (model.Difficulty is not ("Начальный" or "Средний" or "Продвинутый")) ModelState.AddModelError(nameof(model.Difficulty), "Выберите уровень сложности.");
             if (string.IsNullOrWhiteSpace(model.Example) || model.Example.Length > 1000) ModelState.AddModelError(nameof(model.Example), "Добавьте описание до 1000 символов.");
-            if (model.CoverImage is { Length: > 0 } coverFile &&
-                (coverFile.Length > 5_000_000 || Path.GetExtension(coverFile.FileName).ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp")))
-                ModelState.AddModelError(nameof(model.CoverImage), "Выберите PNG, JPEG или WebP до 5 МБ.");
+            var coverDesign = new BookCoverDesign(model.CoverBackground, model.CoverTextColor, model.CoverAccent, model.CoverFont, model.CoverPattern, model.CoverPatternArea);
+            if (!BookCoverDesign.IsValid(coverDesign))
+                ModelState.AddModelError(nameof(model.CoverBackground), "Проверьте цвета и оформление обложки. Контраст названия и фона должен быть не ниже 4,5:1.");
             MaterialChapter[] chapters = [];
             try { chapters = JsonSerializer.Deserialize<MaterialChapter[]>(model.ChaptersJson, JsonOptions) ?? []; }
             catch (JsonException) { ModelState.AddModelError(nameof(model.ChaptersJson), "Не удалось прочитать разметку глав."); }
@@ -280,17 +314,38 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
                 ModelState.AddModelError(nameof(model.ChaptersJson), "Номера и идентификаторы глав не должны повторяться.");
             if (chapters.SelectMany(x => x.Tokens ?? []).Any(x => x.Text is null || x.WordId is Guid wordId && !publishedWords.Contains(wordId)))
                 ModelState.AddModelError(nameof(model.ChaptersJson), "Связанные слова должны быть опубликованы.");
+            ReadingIllustration[] illustrations = [];
+            try { illustrations = JsonSerializer.Deserialize<ReadingIllustration[]>(model.IllustrationsJson ?? "[]", JsonOptions) ?? []; }
+            catch (JsonException) { ModelState.AddModelError(nameof(model.IllustrationsJson), "Не удалось прочитать список иллюстраций."); }
+            if (ModelState.IsValid && !ReadingContent.ValidIllustrations(illustrations, chapters))
+                ModelState.AddModelError(nameof(model.IllustrationsJson), "Проверьте описания, главы и номера строк иллюстраций (не более 20). Пути картинок должны быть локальными.");
+            if (model.InteriorImage is { Length: > 0 } interior &&
+                (interior.Length > 5_000_000 || Path.GetExtension(interior.FileName).ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp")))
+                ModelState.AddModelError(nameof(model.InteriorImage), "Выберите PNG, JPEG или WebP до 5 МБ.");
+            if (model.InteriorImage is { Length: > 0 } && ModelState.IsValid &&
+                !ReadingContent.ValidIllustrations([new(model.IllustrationChapterId ?? Guid.Empty, model.IllustrationAfterLine,
+                    "/media/books/00000000000000000000000000000000.png", model.IllustrationDescription ?? "")], chapters))
+                ModelState.AddModelError(nameof(model.InteriorImage), "Выберите главу, номер строки и описание для нового рисунка.");
+            if (chapters.Any(chapter => (chapter.Translation?.Length ?? 0) > 50000))
+                ModelState.AddModelError(nameof(model.ChaptersJson), "Перевод главы должен содержать не более 50 000 символов.");
+            if (model.InteriorImage is { Length: > 0 } && illustrations.Length >= 20)
+                ModelState.AddModelError(nameof(model.InteriorImage), "Можно добавить не более 20 иллюстраций.");
             if (ModelState.IsValid)
             {
-                var coverPath = model.CoverImage is { Length: > 0 } ? await SaveCover(model.CoverImage, ct) : originalCoverPath;
-                if (model.CoverImage is { Length: > 0 } && coverPath is null)
+                if (model.InteriorImage is { Length: > 0 })
                 {
-                    ModelState.AddModelError(nameof(model.CoverImage), "Файл не является допустимым изображением.");
-                    return null;
+                    var imagePath = await SaveCover(model.InteriorImage, ct);
+                    if (imagePath is null)
+                    {
+                        ModelState.AddModelError(nameof(model.InteriorImage), "Файл не является допустимым изображением.");
+                        return null;
+                    }
+                    illustrations = [.. illustrations, new(model.IllustrationChapterId!.Value, model.IllustrationAfterLine,
+                        imagePath, (model.IllustrationDescription ?? "").Trim())];
                 }
                 var prepared = await dictionary.Prepare(new BookMaterial(model.Russian.Trim(), model.Example.Trim(),
                     chapters.OrderBy(x => x.Number).ToArray(), model.LiteraryTranslation.Trim(), model.Authors.Trim(),
-                    model.Difficulty, coverPath), ct);
+                    model.Difficulty, originalCoverPath, illustrations, model.TranslationReviewed, coverDesign), ct);
                 payload = JsonSerializer.Serialize(prepared, JsonOptions);
             }
         }

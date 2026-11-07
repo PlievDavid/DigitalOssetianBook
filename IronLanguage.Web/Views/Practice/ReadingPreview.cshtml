@@ -1,0 +1,56 @@
+@using System.Text.Json
+@model IronLanguage.Web.Models.ReadingDraft[]
+@{ ViewData["Title"] = "Чтение — предпросмотр"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/reading-preview.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/book-cover.css" asp-append-version="true" />
+}
+<section class="feature-shell reading-preview" id="reading-preview">
+    <div id="reading-library">
+        <a class="back-link" href="/editor">← К материалам</a>
+        <header class="reading-library-heading">
+            <h1>Чтение на осетинском</h1>
+            <p>Произведения с переводом и иллюстрациями.</p>
+        </header>
+        <div class="reading-library-meta">
+            <span>8 произведений</span>
+            <span class="reading-draft-badge">Предпросмотр · переводы не проверены</span>
+        </div>
+        <div class="reading-library-grid" id="reading-library-grid"></div>
+    </div>
+    <article class="reading-story" id="reading-story" hidden aria-labelledby="reading-title">
+        <button class="reading-back" id="reading-back" type="button">← К чтению</button>
+        <header class="reading-story-heading">
+            <h1 id="reading-title" tabindex="-1"></h1>
+            <p><span id="reading-ossetian-title" lang="os"></span><span aria-hidden="true"> · </span>Коста Хетагуров</p>
+        </header>
+        <div class="reading-toolbar">
+            <div class="reading-language" role="group" aria-label="Язык чтения">
+                <button type="button" data-reading-language="both" aria-pressed="true">Оригинал и перевод</button>
+                <button type="button" data-reading-language="os" aria-pressed="false">Осетинский</button>
+                <button type="button" data-reading-language="ru" aria-pressed="false">Перевод</button>
+            </div>
+            <div class="reading-text-size" role="group" aria-label="Размер текста">
+                <button type="button" id="reading-smaller" aria-label="Уменьшить текст">А−</button>
+                <button type="button" id="reading-larger" aria-label="Увеличить текст">А+</button>
+            </div>
+        </div>
+        <p class="reading-draft-notice">Черновой перевод для проверки. Отмеченные строки требуют уточнения.</p>
+        <div class="reading-column-headings" aria-hidden="true"><span>Осетинский оригинал</span><span>Подстрочный перевод</span></div>
+        <div class="reading-flow" id="reading-flow" data-language="both"></div>
+        <details class="reading-review">
+            <summary>Что нужно проверить в переводе</summary>
+            <p id="reading-review-notes"></p>
+        </details>
+    </article>
+    <aside class="reading-word-panel" id="reading-word-panel" hidden aria-label="Словарная подсказка">
+        <div><strong id="reading-word-title"></strong><button type="button" id="reading-word-close" aria-label="Закрыть подсказку">×</button></div>
+        <p id="reading-word-definition"></p>
+    </aside>
+    <p class="reading-status" id="reading-status" role="status" aria-live="polite"></p>
+</section>
+<script type="application/json" id="reading-draft-data">@Html.Raw(JsonSerializer.Serialize(Model, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
+@section Scripts {
+    <script src="~/js/book-cover.js" asp-append-version="true" defer></script>
+    <script src="~/js/reading-preview.js" asp-append-version="true" defer></script>
+}

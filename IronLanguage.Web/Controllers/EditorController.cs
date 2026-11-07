@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), Route("editor")]
-public sealed class EditorController(ICatalogRepository catalog, IEditorRepository editor, IWebHostEnvironment environment) : Controller
+public sealed class EditorController(ICatalogRepository catalog, IEditorRepository editor, IWebHostEnvironment environment, ICurriculumRepository curriculum) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct) => View(new EditorIndexModel(await editor.Items(ct)));
@@ -20,14 +20,14 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
         if (kind != "translation" || string.IsNullOrWhiteSpace(russianPrompt) || string.IsNullOrWhiteSpace(ossetianAnswer)) return BadRequest();
         var pieces = tokens.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (pieces.Length < 2 || pieces.Length > 30 || pieces.Any(x => x.Length > 80)) return BadRequest("Укажите от 2 до 30 слов, каждое с новой строки.");
-        var accepted = (alternatives ?? "").Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        // Поле «Другие допустимые ответы» убрано: параметр alternatives оставлен для совместимости и игнорируется.
         var linkedWords = (wordIds ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (linkedWords.Any(x => !Guid.TryParse(x, out _))) return BadRequest("Неверный идентификатор слова.");
         if (!CanAssemble(ossetianAnswer, pieces)) return BadRequest("Ответ должен собираться из указанных слов.");
         var audioPath = audio is null ? null : await SaveAudio(audio, ct);
         await catalog.AddExercise(new Exercise { Kind = kind, RussianPrompt = russianPrompt.Trim(), OssetianAnswer = ossetianAnswer.Trim(),
             TokensJson = JsonSerializer.Serialize(pieces), WordIdsJson = JsonSerializer.Serialize(linkedWords.Select(Guid.Parse)),
-            AlternativesJson = JsonSerializer.Serialize(accepted), Explanation = (explanation ?? "").Trim(), AudioPath = audioPath }, ct);
+            AlternativesJson = "[]", Explanation = (explanation ?? "").Trim(), AudioPath = audioPath }, ct);
         return RedirectToAction(nameof(Index));
     }
 
@@ -68,8 +68,9 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
     }
 
     [HttpPost("publish/{kind}/{id:guid}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Publish(string kind, Guid id, bool confirmReviewed, CancellationToken ct)
+    public async Task<IActionResult> Publish(string kind, Guid id, bool confirmReviewed, Guid? lessonId, CancellationToken ct)
     {
+        if (lessonId is Guid lesson && (kind is not ("audio" or "translation" or "dialogue") || await curriculum.GetOwned("lesson", lesson, User.UserId()!.Value, ct) is null)) return NotFound();
         if (!confirmReviewed) return BadRequest("Подтвердите проверку материала и прав на публикацию.");
         if (kind == "exercise") kind = (await catalog.Exercise(id, true, ct))?.Kind ?? kind;
         if (kind is "audio" or "translation" or "listening")
@@ -94,6 +95,8 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
             var book = (await catalog.DraftBooks(ct)).SingleOrDefault(x => x.Id == id);
             if (book is null) return NotFound();
             if (book.Chapters.Count == 0 || book.Chapters.Any(x => !ValidTokens(x.TokensJson))) return BadRequest("Проверьте разметку глав.");
+            if (book.LiteraryTranslation.Contains('⚠') || book.DraftTranslation.Contains('⚠') || book.Chapters.Any(chapter => chapter.Translation.Contains('⚠')))
+                return BadRequest("Сначала исправьте отмеченные строки перевода.");
             var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
             if (book.Chapters.SelectMany(x => JsonSerializer.Deserialize<BookToken[]>(x.TokensJson) ?? []).Any(x => x.WordId is Guid wordId && !publishedWords.Contains(wordId)))
                 return BadRequest("Сначала опубликуйте слова, на которые ссылается текст.");
@@ -104,7 +107,7 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
         }
         else return NotFound();
         if (!await editor.PublishDraft(kind, id, User.UserId()!.Value, ct)) return Conflict();
-        return Redirect($"/editor/{kind}/{id}/preview");
+        return Redirect($"/editor/{kind}/{id}/preview{(lessonId is Guid lessonIdValue ? $"?lessonId={lessonIdValue}" : "")}");
     }
 
     private static bool CanAssemble(string answer, string[] pieces)
