@@ -1,8 +1,9 @@
+@using IronLanguage.Web.Services
 @model IronLanguage.Web.Models.CoursePage
 @{
-    var completed = Model.Lessons.Count(lesson => Model.Runs.Any(x => x.LessonId == lesson.Revision.ContentId && x.LessonVersion == lesson.Revision.Version && x.CompletedAt != null));
+    var completed = Model.Lessons.Count(lesson => Model.Runs.Any(x => CurriculumService.CountsForProgress(x, lesson) && x.CompletedAt != null));
     var active = completed == Model.Lessons.Length ? null : Model.Lessons.Select(lesson => Model.Runs.FirstOrDefault(x => x.LessonId == lesson.Revision.ContentId && x.CompletedAt == null)).FirstOrDefault(x => x is not null);
-    var next = Model.Lessons.FirstOrDefault(lesson => !Model.Runs.Any(x => x.LessonId == lesson.Revision.ContentId && x.LessonVersion == lesson.Revision.Version && x.CompletedAt != null)) ?? Model.Lessons.FirstOrDefault();
+    var next = Model.Lessons.FirstOrDefault(lesson => !Model.Runs.Any(x => CurriculumService.CountsForProgress(x, lesson) && x.CompletedAt != null)) ?? Model.Lessons.FirstOrDefault();
     var about = (bool?)ViewData["CourseAbout"] == true;
 }
 <aside class="course-sidebar">

@@ -2,6 +2,7 @@
   const root = document.getElementById("listening-app");
   if (!root) return;
   const $ = id => document.getElementById(id);
+  const lessonPath = root.dataset.lessonPath;
   const status = $("listening-status");
   const list = $("listening-list");
   const play = $("listening-play");
@@ -44,7 +45,8 @@
     if (checking) return;
     checking = true;
     try {
-      const data = await AdamApi(`/listening/${id}/attempts`, { method: "POST" });
+      const data = lessonPath ? await AdamApi(lessonPath) :
+        await AdamApi(`/listening/${id}/attempts`, { method: "POST" });
       card = data.card; attemptId = data.attemptId;
       chosenIndex = null; answer = null; submitted = false; audioReady = false;
       question.textContent = card.question;
@@ -56,12 +58,13 @@
       if (card.audioPath) {
         audio.src = card.audioPath; audio.load();
         audioReady = true;
-        audio.play().catch(() => {});
+        if (!lessonPath) audio.play().catch(() => {});
       } else {
         audio.removeAttribute("src"); audio.hidden = true;
         audioError.hidden = false;
         audioReady = false;
       }
+      if (data.result) showAnswer(data.result);
       renderOptions();
     } catch (error) { status.textContent = error.message; }
     finally {
@@ -96,17 +99,7 @@
     renderOptions();
     try {
       answer = await AdamApi(`/listening/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ optionIndex: index }) });
-      submitted = true;
-      result.className = answer.correct ? "exercise-feedback is-correct" : "exercise-feedback is-incorrect";
-      result.textContent = answer.correct ? "Верно!" : `Неверно. Правильный ответ: ${answer.correctAnswer}.`;
-      if (answer.transcript && answer.transcript.trim()) {
-        transcript.textContent = answer.transcript;
-        transcriptBlock.hidden = false;
-      }
-      if (answer.explanation && answer.explanation.trim()) {
-        explanation.textContent = answer.explanation;
-        explanation.hidden = false;
-      }
+      showAnswer(answer);
       renderOptions();
     } catch (error) {
       chosenIndex = null;
@@ -115,6 +108,21 @@
     } finally {
       checking = false;
       if (!submitted) renderOptions();
+    }
+  }
+
+  function showAnswer(saved) {
+    answer = saved;
+    submitted = true;
+    result.className = answer.correct ? "exercise-feedback is-correct" : "exercise-feedback is-incorrect";
+    result.textContent = answer.correct ? "Верно!" : `Неверно. Правильный ответ: ${answer.correctAnswer}.`;
+    if (answer.transcript && answer.transcript.trim()) {
+      transcript.textContent = answer.transcript;
+      transcriptBlock.hidden = false;
+    }
+    if (answer.explanation && answer.explanation.trim()) {
+      explanation.textContent = answer.explanation;
+      explanation.hidden = false;
     }
   }
 
@@ -153,6 +161,7 @@
     audioReady = false;
     renderOptions();
   });
-  $("listening-back").addEventListener("click", event => { event.preventDefault(); back(); });
-  load();
+  $("listening-back")?.addEventListener("click", event => { event.preventDefault(); back(); });
+  if (lessonPath) start();
+  else load();
 })();

@@ -43,7 +43,7 @@
     <div id="editor-published" class="editor-items" role="tabpanel" hidden>
         @foreach (var item in Model.Items.Where(x => x.Published && !x.Archived))
         {
-            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · версия @item.Version</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/published/@item.Kind/@item.Id/revise">@Html.AntiForgeryToken()<button type="submit">Новая версия</button></form><form method="post" action="/editor/published/@item.Kind/@item.Id/archive" data-confirm="Убрать «@item.Title» из публикации? Материал останется в архиве.">@Html.AntiForgeryToken()<button class="editor-danger" type="submit">Убрать с сайта</button></form></div></article>
+            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · версия @item.Version</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/published/@item.Kind/@item.Id/revise">@Html.AntiForgeryToken()<button type="submit">Новая версия</button></form><a href="/editor/published/@item.Kind/@item.Id/usage">Где используется и как снять</a></div></article>
         }
         <p class="editor-empty" hidden>Материалы не найдены. Попробуйте изменить поиск или тип.</p>
     </div>

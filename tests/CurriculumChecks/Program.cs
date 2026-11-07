@@ -122,7 +122,10 @@ var theory = new CurriculumCard { Kind = "theory", Template = "comparison", Titl
 var cards = new[] { theory }.Concat(exercises.Select(x => new CurriculumCard { Kind = x.Kind, MaterialId = x.Id })).Concat(dialogs.Select(x => new CurriculumCard { Kind = "dialogue", MaterialId = x.Id })).ToArray();
 var form = new CurriculumForm { Title = "Проверка курсов Ӕ ӕ", Description = "Временный материал для проверки интерфейса", StructureJson = JsonSerializer.Serialize(cards, json) };
 await Invalid(new CurriculumForm { Title = "Проверка", StructureJson = "[null]" });
-await Invalid(new CurriculumForm { Title = "Проверка", StructureJson = "[]" });
+var emptyLesson = new CurriculumForm { Title = "Пустой урок" };
+Check((await service.Validate("lesson", emptyLesson, user.Id, ct)).Cards.Length == 0, "Пустой черновик урока не сохраняется");
+try { await service.Validate("lesson", emptyLesson, user.Id, ct, publishing: true); throw new Exception("Пустой урок разрешено публиковать"); }
+catch (ArgumentException) { checks++; }
 await Invalid(new CurriculumForm { Title = "Проверка", StructureJson = "[{}]" });
 await Invalid(new CurriculumForm { Title = "Проверка", StructureJson = JsonSerializer.Serialize(new[] { new CurriculumCard { Kind = "audio", MaterialId = Guid.NewGuid() } }, json) });
 await Invalid(new CurriculumForm { Title = "Проверка", StructureJson = JsonSerializer.Serialize(new[] { cards[1], cards[1] }, json) });
@@ -149,7 +152,13 @@ Check(roundTrip.Outcomes == draftCourse.Outcomes && roundTrip.Audience == draftC
 try { await service.Validate("course", new CurriculumForm { Title = "Длина", Outcomes = new string('x', 2001) }, user.Id, ct); throw new Exception("Длина целей не ограничена"); } catch (ArgumentException) { checks++; }
 Check(await repository.Publish("lesson", lessonId, draft.Id, EfCurriculumRepository.Stamp(draft), user.Id, ct), "Публикация не выполнена");
 Check(!await repository.Publish("lesson", lessonId, draft.Id, EfCurriculumRepository.Stamp(draft), user.Id, ct), "Повторная публикация принята");
-var courseDoc = await service.Validate("course", new CurriculumForm { Title = "Проверочный курс", StructureJson = JsonSerializer.Serialize(new[] { lessonId }) }, user.Id, ct, publishing: true);
+var courseDoc = await service.Validate("course", new CurriculumForm
+{
+    Title = "Проверочный курс",
+    StructureJson = JsonSerializer.Serialize(new[] { lessonId }),
+    ModulesJson = JsonSerializer.Serialize(new[] { new CourseModule("Приветствие", [lessonId]) }, json)
+}, user.Id, ct, publishing: true);
+Check(courseDoc.Modules.Single().LessonIds.SequenceEqual([lessonId]), "Модуль не сохранился");
 await repository.Save("course", courseId, JsonSerializer.Serialize(courseDoc, json), user.Id, "", ct);
 var courseDraft = (await repository.Get("course", courseId, true, ct))!;
 await repository.Publish("course", courseId, courseDraft.Id, EfCurriculumRepository.Stamp(courseDraft), user.Id, ct);
@@ -172,7 +181,12 @@ var transitions = await Task.WhenAll(ConcurrentAdvance(), ConcurrentAdvance());
 Check(transitions.All(x => x) && (await repository.Run(user.Id, simultaneousRuns[0].Id, ct))!.Step == 1,
     "Одновременный переход изменил шаг несколько раз");
 Check(!await repository.Advance(Guid.NewGuid(), simultaneousRuns[0].Id, 1, 2, ct), "Чужой урок удалось продвинуть");
-var run = (await service.Start(user.Id, Guid.Empty, lessonId, ct))!;
+var run = (await service.Start(user.Id, Guid.Empty, lessonId, ct, courseId))!;
+Check(CurriculumService.Snapshot(run).CourseId == courseId, "Урок не привязан к курсу в отчёте");
+var editorRepository = new EfEditorRepository(db);
+Check((await repository.MaterialUsage(exercises[0].Kind, exercises[0].Id, ct)).Any(row => row.ContentId == lessonId),
+    "Связанный урок не найден");
+Check(!await editorRepository.SetArchived(exercises[0].Kind, exercises[0].Id, true, ct), "Связанное задание снято с публикации");
 Check((await service.Start(user.Id, Guid.Empty, lessonId, ct))!.Id == run.Id, "Повторный старт не восстановил урок");
 // Самостоятельный запуск не должен подхватывать ещё не открытую карточку урока.
 var lessonSnapshot = CurriculumService.Snapshot(run);
@@ -203,7 +217,17 @@ var editedDoc = await service.Validate("lesson", edited, user.Id, ct);
 Check(await repository.Save("lesson", lessonId, JsonSerializer.Serialize(editedDoc, json), user.Id, edited.Stamp, ct), "Новая версия не сохранена");
 Check(CurriculumService.Parse((await repository.Get("lesson", lessonId, false, ct))!).Title == doc.Title, "Черновик заменил публикацию");
 var newDraft = (await repository.Get("lesson", lessonId, true, ct))!;
-await repository.Publish("lesson", lessonId, newDraft.Id, EfCurriculumRepository.Stamp(newDraft), user.Id, ct);
+Check(await repository.Publish("lesson", lessonId, newDraft.Id, EfCurriculumRepository.Stamp(newDraft), user.Id, ct, preserveProgress: true),
+    "Мелкая правка не опубликована");
+var minor = (await repository.Get("lesson", lessonId, false, ct))!;
+Check(CurriculumService.CountsForProgress(run, new(minor, CurriculumService.Parse(minor))), "Мелкая правка сбросила результат");
+Check(await repository.Save("lesson", lessonId, JsonSerializer.Serialize(editedDoc, json), user.Id, EfCurriculumRepository.Stamp(minor), ct),
+    "Существенная версия не сохранена");
+var majorDraft = (await repository.Get("lesson", lessonId, true, ct))!;
+Check(await repository.Publish("lesson", lessonId, majorDraft.Id, EfCurriculumRepository.Stamp(majorDraft), user.Id, ct),
+    "Существенная версия не опубликована");
+var major = (await repository.Get("lesson", lessonId, false, ct))!;
+Check(!CurriculumService.CountsForProgress(run, new(major, CurriculumService.Parse(major))), "Существенная правка засчитала старую попытку");
 Check(CurriculumService.Snapshot((await repository.Run(user.Id, run.Id, ct))!).Title == doc.Title, "Публикация изменила снимок");
 Check(await service.Advance(user.Id, Guid.Empty, run, 0, ct), "Теория не пройдена");
 run = (await repository.Run(user.Id, run.Id, ct))!;
@@ -229,6 +253,20 @@ Check(await service.Advance(user.Id, Guid.Empty, run, index, ct), "Заверш�
 var afterFuture = (await repository.Run(user.Id, run.Id, ct))!;
 Check(CurriculumService.CompletedSteps(afterFuture, CurriculumService.Snapshot(afterFuture)).Contains(index), "Результат карточки не сохранён");
 if (index > 1) Check(afterFuture.Step == 1 && afterFuture.CompletedAt is null, "Переход к будущей карточке завершил пропущенные карточки");
+
+var report = await service.Report((await repository.Get("course", courseId, false, ct))!, ct);
+Check(report.Lessons.Single().Started == 1 && report.Lessons.Single().Completed == 0, "Итоги отчёта неверны");
+Check(report.Lessons.Single().Cards[index].Answered == 1, "Ответ не вошёл в отчёт");
+var listening = new ListeningService(catalog, progress, guests);
+var listeningSource = new Exercise { Kind = "listening", AudioPath = "/media/test.wav",
+    OptionsJson = "[\"Первый\",\"Второй\",\"Третий\",\"Четвёртый\"]", CorrectOption = 2 };
+var listeningAttempt = ListeningService.CreateSnapshot(listeningSource, Guid.Empty);
+Check(listeningAttempt?.CorrectOption == 2 && listeningAttempt.ExpectedAnswer == "Третий", "Условия аудирования не попали в снимок");
+var listeningOwner = Guid.NewGuid();
+guests.Add(listeningOwner, listeningAttempt!.Id, listeningAttempt);
+Check(await listening.AnswerGuest(Guid.NewGuid(), listeningAttempt.Id, 2, ct) is null, "Чужой ответ на аудирование принят");
+Check((await listening.AnswerGuest(listeningOwner, listeningAttempt.Id, 2, ct))?.Correct == true, "Ответ по снимку аудирования не проверен");
+Check((await listening.AnswerGuest(listeningOwner, listeningAttempt.Id, 1, ct))?.AlreadySubmitted == true, "Повторный ответ изменил результат аудирования");
 
 var before = await db.Attempts.CountAsync(); var beforeRuns = await db.LessonRuns.CountAsync();
 var owner = Guid.NewGuid(); var guestRun = (await service.Start(null, owner, lessonId, ct))!;
