@@ -51,6 +51,9 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("CoverDesignJson")
+                        .HasColumnType("text");
+
                     b.Property<string>("CoverImagePath")
                         .HasColumnType("text");
 
@@ -59,6 +62,14 @@ namespace IronLanguage.Db.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DraftTranslation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IllustrationsJson")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -72,6 +83,9 @@ namespace IronLanguage.Db.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("TranslationReviewed")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Version")
                         .HasColumnType("integer");
@@ -98,6 +112,10 @@ namespace IronLanguage.Db.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("TokensJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Translation")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -155,6 +173,27 @@ namespace IronLanguage.Db.Migrations
                         .HasFilter("\"Published\"");
 
                     b.ToTable("ContentRevisions");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseRating", b =>
+                {
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.HasKey("CourseId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CourseRatings", t =>
+                        {
+                            t.HasCheckConstraint("CK_CourseRatings_Score", "\"Score\" >= 1 AND \"Score\" <= 5");
+                        });
                 });
 
             modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
@@ -270,6 +309,9 @@ namespace IronLanguage.Db.Migrations
 
                     b.Property<int>("Hints")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("LessonRunId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Revision")
                         .HasColumnType("integer");
@@ -461,6 +503,9 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("LessonRunId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("OptionsJson")
                         .IsRequired()
                         .HasColumnType("text");
@@ -511,6 +556,43 @@ namespace IronLanguage.Db.Migrations
                     b.HasKey("UserId", "ExerciseId", "Day");
 
                     b.ToTable("ExerciseRewards");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.LessonRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LessonVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Step")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "LessonId")
+                        .IsUnique()
+                        .HasFilter("\"CompletedAt\" IS NULL");
+
+                    b.ToTable("LessonRuns");
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Matching", b =>
@@ -639,6 +721,10 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PublicName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -737,6 +823,15 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseRating", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>

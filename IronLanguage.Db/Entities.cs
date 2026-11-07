@@ -7,6 +7,7 @@ public sealed class UserAccount
     public string PasswordHash { get; set; } = "";
     public bool IsEditor { get; set; }
     public string? AvatarJson { get; set; }
+    public string? PublicName { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
@@ -71,7 +72,11 @@ public sealed class Book
     public string Difficulty { get; set; } = "";
     public string Description { get; set; } = "";
     public string? CoverImagePath { get; set; }
+    public string? CoverDesignJson { get; set; }
     public string LiteraryTranslation { get; set; } = "";
+    public bool TranslationReviewed { get; set; } = true;
+    public string DraftTranslation { get; set; } = "";
+    public string IllustrationsJson { get; set; } = "[]";
     public bool Published { get; set; }
     public bool Archived { get; set; }
     public int Version { get; set; } = 1;
@@ -86,6 +91,7 @@ public sealed class BookChapter
     public int Number { get; set; }
     public string Title { get; set; } = "";
     public string TokensJson { get; set; } = "[]";
+    public string Translation { get; set; } = "";
 }
 
 public sealed class SavedWord
@@ -102,6 +108,7 @@ public sealed class ExerciseAttempt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
+    public Guid? LessonRunId { get; set; }
     public Guid ExerciseId { get; set; }
     public int ExerciseVersion { get; set; }
     public string ExpectedAnswer { get; set; } = "";
@@ -202,6 +209,7 @@ public sealed class DialogueSession
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
+    public Guid? LessonRunId { get; set; }
     public Guid DialogueId { get; set; }
     public int DialogueVersion { get; set; }
     public string DialogueTitle { get; set; } = "";

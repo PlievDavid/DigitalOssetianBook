@@ -1,0 +1,131 @@
+@model IronLanguage.Web.Models.CurriculumEditorModel
+@using System.Text.Json
+@using IronLanguage.Web.Services
+@{ var course = Model.Kind == "course"; ViewData["Title"] = course ? "Редактор курса" : "Конструктор урока"; }
+<section class="feature-shell curriculum curriculum-editor @(course ? "course-editor" : "lesson-editor")" id="curriculum-editor" data-kind="@Model.Kind">
+    <a class="back-link" href="/editor/curriculum?kind=@Model.Kind">← @(course ? "К моим курсам" : "К моим урокам")</a>
+    <noscript><p class="form-error" role="alert">Для работы конструктора и изменения карточек включите JavaScript. Без него список карточек и предпросмотр недоступны.</p></noscript>
+    <form method="post" enctype="multipart/form-data" action="/editor/curriculum/@Model.Kind/@Model.Id/edit" id="curriculum-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Stamp" value="@Model.Form.Stamp" />
+        <input type="hidden" name="StructureJson" id="curriculum-structure" value="@Model.Form.StructureJson" />
+        <header class="curriculum-editor-header">
+            @if (course) {
+                <div><div class="curriculum-heading"><h1>@ViewData["Title"]</h1><span class="curriculum-draft">Черновик</span></div><p>Соберите курс из своих уроков</p></div>
+            } else {
+                <div class="lesson-heading"><h1 class="visually-hidden">Редактор урока</h1><label class="lesson-title-field"><span class="visually-hidden">Название урока</span><input name="Title" aria-label="Название" maxlength="200" value="@Model.Form.Title" placeholder="Название урока" required /></label><span class="curriculum-draft">Черновик</span></div>
+            }
+            <div class="curriculum-save-controls"><span id="curriculum-save-state" role="status" aria-live="polite"></span><div class="curriculum-header-actions"><button class="button secondary" type="submit" name="action" value="preview">Сохранить и посмотреть</button><button class="button primary" type="submit" name="action" value="save">Сохранить черновик</button></div></div>
+        </header>
+        <div asp-validation-summary="All" class="form-error" role="alert"></div>
+        @if (TempData["CurriculumSaved"] is string saved) { <p class="curriculum-saved" role="status">@saved</p> }
+        @if (course) {
+            <h2 class="course-section-heading">О курсе</h2>
+            <div class="curriculum-meta">
+                <label class="curriculum-field">Название<input name="Title" maxlength="200" value="@Model.Form.Title" required /></label>
+                @await Html.PartialAsync("_CourseMarkdownField", ("Description", "Описание", Model.Form.Description, 4))
+            </div>
+            <div class="course-cover-field">
+                <label for="course-cover">Обложка курса</label>
+                <p id="course-cover-help">PNG, JPEG или WebP до 5 МБ. Используйте изображение, которое можете опубликовать.</p>
+                <input id="course-cover" aria-describedby="course-cover-help" type="file" name="coverImage" accept="image/png,image/jpeg,image/webp" />
+                <div class="course-cover-preview" id="course-cover-preview" @(string.IsNullOrEmpty(Model.Form.CoverPath) ? "hidden" : null)>
+                    <img id="course-cover-image" src="@Model.Form.CoverPath" alt="Предпросмотр обложки курса" />
+                    <label><input id="course-cover-remove" type="checkbox" name="removeCover" value="true" /> Удалить обложку</label>
+                </div>
+            </div>
+        } else {
+            <div class="lesson-identity">
+                <label class="curriculum-field">Что ученик сможет сделать после урока<input name="Goal" maxlength="300" value="@Model.Form.Goal" /></label>
+                <label class="curriculum-field">Примерное время, минут<input name="Minutes" type="number" min="1" max="180" value="@Model.Form.Minutes" /></label>
+                @if (ViewData["LessonWords"] is List<IronLanguage.Db.WordEntry> words && words.Count > 0)
+                {
+                    <details>
+                        <summary>Слова для повторения (@Model.Form.WordIds.Length)</summary>
+                        <label class="curriculum-field">Опубликованные слова и выражения
+                            <select name="WordIds" multiple size="6" aria-describedby="lesson-words-help">
+                                @foreach (var word in words)
+                                {
+                                    <option value="@word.Id" selected="@Model.Form.WordIds.Contains(word.Id)">@word.Ossetian — @word.Russian</option>
+                                }
+                            </select>
+                        </label>
+                        <p id="lesson-words-help" class="field-help">Выберите до 30 слов. Для выбора нескольких используйте Ctrl или Command.</p>
+                    </details>
+                }
+                <details class="lesson-description-settings" open="@(!string.IsNullOrWhiteSpace(Model.Form.Description))"><summary>Описание урока</summary><label class="curriculum-field"><span class="visually-hidden">Описание</span><textarea name="Description" aria-label="Описание" maxlength="2000" rows="2">@Model.Form.Description</textarea></label></details>
+            </div>
+        }
+        @if (course) {
+        <div class="course-details">
+            @await Html.PartialAsync("_CourseMarkdownField", ("Outcomes", "Чему научится ученик", Model.Form.Outcomes, 3))
+            @await Html.PartialAsync("_CourseMarkdownField", ("Audience", "Для кого курс", Model.Form.Audience, 3))
+        </div>
+        <input type="hidden" name="ModulesJson" id="curriculum-modules" value="@Model.Form.ModulesJson" />
+        <section class="course-lessons" aria-labelledby="course-lessons-title">
+            <h2 id="course-lessons-title">Уроки курса</h2>
+            <p class="field-help">Чтобы объединить уроки, укажите одинаковое название модуля. Порядок модулей определяется их первым уроком. Ученикам доступны все уроки.</p>
+            <div id="curriculum-cards"></div>
+            <div class="curriculum-actions"><button type="button" class="button secondary" id="curriculum-open-picker">Добавить мои уроки</button><a class="curriculum-text-action" href="/editor/curriculum/lesson/new" target="_blank" rel="noopener" aria-label="Создать урок в новой вкладке">+ Создать урок ↗</a></div>
+            <p id="curriculum-status" role="status"></p>
+            <dialog id="course-picker" class="course-picker" aria-labelledby="course-picker-title">
+                <div class="course-picker-heading"><h2 id="course-picker-title">Мои уроки</h2><button type="button" id="course-picker-close" aria-label="Закрыть выбор уроков">✕</button></div>
+                <label class="curriculum-field">Поиск урока<input type="search" id="course-picker-search" autocomplete="off" /></label>
+                <div id="course-picker-list" class="course-picker-list"></div><p id="course-picker-status" role="status"></p>
+                <div class="curriculum-actions"><button type="button" class="button primary" id="curriculum-add-lesson">Добавить выбранные</button><button type="button" id="curriculum-refresh">Обновить список</button><button type="button" id="course-picker-cancel">Отмена</button></div>
+            </dialog>
+        </section>
+        } else {
+        <section class="lesson-first-card" id="lesson-first-card" aria-labelledby="lesson-first-title">
+            <h2 id="lesson-first-title">С чего начнём урок?</h2><p>Добавьте объяснение или задание. Порядок можно изменить позже.</p>
+            <div class="lesson-first-options">
+                @foreach (var template in new[] { (Key: "text", Title: "Текст", Hint: "Объясните тему"), (Key: "rule", Title: "Правило", Hint: "Выделите главное"), (Key: "example", Title: "Пример", Hint: "Добавьте пояснение"), (Key: "comparison", Title: "Сравнение", Hint: "Сопоставьте два примера") }) {
+                    <button type="button" data-first-template="@template.Key"><span class="first-card-symbol" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "materials")</span><strong>@template.Title</strong><small>@template.Hint</small></button>
+                }
+            </div><button type="button" class="lesson-add-practice" id="lesson-first-practice">Добавить практическое задание →</button>
+        </section>
+        <div class="curriculum-workspace">
+            <div class="curriculum-sidebar"><div class="lesson-outline-heading"><h2>Карточки урока</h2>
+                <button type="button" class="curriculum-add" id="curriculum-open-card-picker">+ Добавить карточку</button>
+                </div><div id="curriculum-cards" aria-label="Порядок карточек"></div>
+                <p id="curriculum-status" role="status"></p>
+            </div>
+            <div class="curriculum-edit-panel" id="curriculum-editor-panel"></div>
+            <aside class="curriculum-canvas" aria-label="Предпросмотр карточек"><h2>Как увидит ученик</h2><p id="curriculum-preview-position"></p><div id="curriculum-canvas"></div></aside>
+        </div>
+        }
+    </form>
+    @if (!course) {
+    <dialog id="card-picker" class="curriculum-builder card-picker" aria-labelledby="card-picker-title">
+        <div class="course-picker-heading"><h2 id="card-picker-title">Добавить карточку</h2><button type="button" id="card-picker-close" aria-label="Закрыть выбор карточки">×</button></div>
+        <div class="lesson-picker-tabs" role="tablist" aria-label="Что добавить">
+            <button type="button" role="tab" id="picker-tab-theory" data-picker-tab="theory" aria-controls="picker-theory" aria-selected="true">Теория</button>
+            <button type="button" role="tab" id="picker-tab-ready" data-picker-tab="ready" aria-controls="picker-ready" aria-selected="false" tabindex="-1">Готовое задание</button>
+            <button type="button" role="tab" id="picker-tab-new" data-picker-tab="new" aria-controls="picker-new" aria-selected="false" tabindex="-1">Новое задание</button>
+        </div>
+        <div id="picker-theory" role="tabpanel" aria-labelledby="picker-tab-theory" class="lesson-picker-options">
+            <button type="button" data-picker-theory="text"><strong>Текст</strong><small>Объяснение или рассказ</small></button>
+            <button type="button" data-picker-theory="rule"><strong>Правило</strong><small>Важное языковое правило</small></button>
+            <button type="button" data-picker-theory="example"><strong>Пример с пояснением</strong><small>Пример и его разбор</small></button>
+            <button type="button" data-picker-theory="comparison"><strong>Сравнение</strong><small>Две колонки для сравнения</small></button>
+        </div>
+        <div id="picker-ready" role="tabpanel" aria-labelledby="picker-tab-ready" hidden>
+            <div class="lesson-picker-filters"><label>Поиск<input id="picker-search" type="search" placeholder="Название задания" /></label><label>Тип<select id="picker-kind"><option value="all">Все типы</option><option value="audio">Аудиопазл</option><option value="translation">Перевод фразы</option><option value="dialogue">Диалог</option><option value="listening">Аудирование</option></select></label></div>
+            <div id="picker-materials" class="lesson-picker-materials"></div>
+        </div>
+        <div id="picker-new" role="tabpanel" aria-labelledby="picker-tab-new" hidden>
+            <p>Сохраним черновик урока и откроем редактор задания. После публикации его можно добавить в этот урок.</p>
+            <div class="lesson-picker-options">
+                <button type="submit" form="curriculum-form" name="action" value="create-audio">Аудиопазл</button>
+                <button type="submit" form="curriculum-form" name="action" value="create-translation">Перевод фразы</button>
+                <button type="submit" form="curriculum-form" name="action" value="create-dialogue">Диалог</button>
+                <button type="submit" form="curriculum-form" name="action" value="create-listening">Аудирование</button>
+            </div>
+        </div>
+        <p id="picker-status" role="status" aria-live="polite"></p>
+    </dialog>
+    }
+    <script type="application/json" id="curriculum-choices">@Html.Raw(JsonSerializer.Serialize(Model.Choices, CurriculumService.JsonOptions))</script>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/course-cover.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/curriculum-editor-refined.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/lesson-editor.css" asp-append-version="true" /> }
+@section Scripts { <script src="~/js/course-markdown-editor.js" asp-append-version="true" defer></script> <script src="~/js/course-cover.js" asp-append-version="true" defer></script> <script src="~/js/lesson-material-picker.js" asp-append-version="true" defer></script><script src="~/js/curriculum-editor.js" asp-append-version="true" defer></script><script src="~/js/letter-keys.js" asp-append-version="true" defer></script> }

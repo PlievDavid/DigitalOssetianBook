@@ -9,10 +9,16 @@ public interface IAccountRepository
     Task<UserAccount?> FirstEditor(CancellationToken ct = default);
     Task<bool> Create(UserAccount user, CancellationToken ct = default);
     Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default);
+    Task<bool> SavePublicName(Guid id, string? name, CancellationToken ct = default);
 }
 
 public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
 {
+    public Task<bool> SavePublicName(Guid id, string? name, CancellationToken ct = default) => SaveName(id, name, ct);
+
+    private async Task<bool> SaveName(Guid id, string? name, CancellationToken ct) =>
+        await db.Users.Where(x => x.Id == id).ExecuteUpdateAsync(x => x.SetProperty(p => p.PublicName, name), ct) == 1;
+
     public async Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(avatarJson);
@@ -134,7 +140,7 @@ public interface IProgressRepository
 public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
 {
     public Task<ExerciseAttempt?> ActiveAttempt(Guid userId, Guid exerciseId, CancellationToken ct = default) =>
-        db.Attempts.AsNoTracking().Where(x => x.UserId == userId && x.ExerciseId == exerciseId && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
+        db.Attempts.AsNoTracking().Where(x => x.UserId == userId && x.ExerciseId == exerciseId && x.LessonRunId == null && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
     public Task<ExerciseAttempt?> Attempt(Guid userId, Guid attemptId, CancellationToken ct = default) =>
         db.Attempts.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Id == attemptId, ct);
     public async Task CreateAttempt(ExerciseAttempt attempt, CancellationToken ct = default) { db.Attempts.Add(attempt); await db.SaveChangesAsync(ct); }
@@ -188,7 +194,7 @@ public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
     public Task<List<Achievement>> Achievements(Guid userId, CancellationToken ct = default) => db.Achievements.AsNoTracking().Where(x => x.UserId == userId).ToListAsync(ct);
 
     public Task<DialogueSession?> ActiveSession(Guid userId, Guid dialogueId, CancellationToken ct = default) =>
-        db.DialogueSessions.AsNoTracking().Where(x => x.UserId == userId && x.DialogueId == dialogueId && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
+        db.DialogueSessions.AsNoTracking().Where(x => x.UserId == userId && x.DialogueId == dialogueId && x.LessonRunId == null && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
     public Task<DialogueSession?> Session(Guid userId, Guid sessionId, CancellationToken ct = default) =>
         db.DialogueSessions.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Id == sessionId, ct);
     public async Task CreateSession(DialogueSession session, CancellationToken ct = default)

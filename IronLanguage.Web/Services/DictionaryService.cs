@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Security.Cryptography;
 using IronLanguage.Db;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic.FileIO;
@@ -8,6 +9,35 @@ namespace IronLanguage.Web.Services;
 
 public sealed class DictionaryService(AdamDbContext db)
 {
+    public static DictionarySense? ReadWordleSource(string path, WordleWord word)
+    {
+        if (word.SourceRow < 3 || word.SourceColumn is < 4 or > 7 || !File.Exists(path)) return null;
+        using var parser = new TextFieldParser(path, Encoding.UTF8) { TextFieldType = FieldType.Delimited, HasFieldsEnclosedInQuotes = true };
+        parser.SetDelimiters(",");
+        var header = parser.ReadFields() ?? [];
+        if (header.Length < 8 || header[0].TrimStart('\uFEFF') != "rus" || header[4] != "ose") return null;
+        parser.ReadFields();
+        var headword = ""; var headnote = ""; var row = 2;
+        while (!parser.EndOfData)
+        {
+            var cells = parser.ReadFields() ?? []; row++;
+            if (!string.IsNullOrWhiteSpace(cells.ElementAtOrDefault(0)))
+            { headword = cells[0].Trim().Trim('\uFEFF'); headnote = cells.ElementAtOrDefault(1)?.Trim() ?? ""; }
+            if (row != word.SourceRow) continue;
+            var ossetian = cells.ElementAtOrDefault(word.SourceColumn)?.Trim() ?? "";
+            if (Key(ossetian) != Key(word.Word) || RussianAnswer(headword) != word.Russian) return null;
+            var rowNote = cells.ElementAtOrDefault(1)?.Trim() ?? "";
+            return new DictionarySense
+            {
+                Id = new Guid(SHA256.HashData(Encoding.UTF8.GetBytes($"adam-wordle-source:{row}:{word.SourceColumn}:{ossetian}:{headword}")).AsSpan(0, 16)),
+                SourceRow = row, SourceColumn = word.SourceColumn, Ossetian = ossetian, RussianHeadword = headword,
+                Russian = RussianAnswer(headword), Note = string.Join(" · ", new[] { headnote, rowNote == headnote ? "" : rowNote,
+                    cells.ElementAtOrDefault(3)?.Trim() ?? "" }.Where(value => value.Length > 0))
+            };
+        }
+        return null;
+    }
+
     public static (int Rows, int Meanings) InspectSource(string path)
     {
         using var parser = new TextFieldParser(path, Encoding.UTF8) { TextFieldType = FieldType.Delimited, HasFieldsEnclosedInQuotes = true };
