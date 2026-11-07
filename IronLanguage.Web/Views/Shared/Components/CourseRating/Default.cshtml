@@ -8,7 +8,13 @@
         <h2 id="course-rating-title">Оценки курса</h2>
         <p data-rating-summary>@(average is null ? "Пока без оценок" : $"★ {average} из 5 · оценок: {Model.Summary.Count}")</p>
     </div>
-    @if (User.Identity?.IsAuthenticated == true)
+    @if (User.Identity?.IsAuthenticated == true && Model.Eligibility is { Allowed: false } progress)
+    {
+        @if (own > 0) { <p>Ваша оценка: @own из 5</p> }
+        @if (progress.Total == 0) { <p>Оценка будет доступна, когда в курсе появятся уроки.</p> }
+        else { <p>Чтобы оценить курс, завершите не менее половины уроков: @progress.Completed из @progress.Required.</p> }
+    }
+    else if (User.Identity?.IsAuthenticated == true && Model.Eligibility is { Allowed: true })
     {
         <form method="post" action="/courses/@Model.CourseId/rating">
             @Html.AntiForgeryToken()
@@ -26,5 +32,5 @@
             <span data-rating-status role="status"></span>
         </form>
     }
-    else { <a href="/account/login?ReturnUrl=%2Fcourses%2F@Model.CourseId%2Fabout%23course-rating">Войти и оценить</a> }
+    else if (User.Identity?.IsAuthenticated != true) { <a href="/account/login?ReturnUrl=%2Fcourses%2F@Model.CourseId%2Fabout%23course-rating">Войти и оценить</a> }
 </section>

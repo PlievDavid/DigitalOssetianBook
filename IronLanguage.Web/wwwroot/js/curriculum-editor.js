@@ -17,7 +17,7 @@
   form.addEventListener("input", updateSaveState);
   form.addEventListener("change", updateSaveState);
   updateSaveState();
-  form.addEventListener("submit", () => { submitting = true; });
+  form.addEventListener("submit", event => { if (!event.defaultPrevented) submitting = true; });
   window.addEventListener("beforeunload", event => { if (!submitting && formState() !== initialState) { event.preventDefault(); event.returnValue = ""; } });
   if (course) {
     const picker = $("course-picker"), search = $("course-picker-search"), pickerList = $("course-picker-list"), pickerStatus = $("course-picker-status"), opener = $("curriculum-open-picker");

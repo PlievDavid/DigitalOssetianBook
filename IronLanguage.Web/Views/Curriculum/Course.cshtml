@@ -4,7 +4,7 @@
 <section class="feature-shell curriculum learner-curriculum course-overview">
     <a class="back-link" href="/courses">← К курсам</a>
     <div class="course-layout">
-        <h1 class="course-title">@Model.Course.Document.Title</h1>
+        <partial name="_CourseHeading" model="Model" />
         <partial name="_CourseSidebar" model="Model" />
         <div class="course-main">
             <h2>Содержание курса</h2>
@@ -24,8 +24,8 @@
                                 @if (!string.IsNullOrWhiteSpace(lesson.Document.Description)) { <span class="lesson-description">@lesson.Document.Description</span> }
                             </span>
                             <span class="course-lesson-progress">
-                                <span class="lesson-progress-circle" style="--lesson-progress: @percent%;" aria-hidden="true"></span>
-                                <span class="visually-hidden">Выполнено </span>@percent%
+                                <partial name="_LessonProgressCircle" model="percent" />
+                                <span><span class="visually-hidden">Выполнено </span>@percent%</span>
                             </span>
                         </button>
                     </form>
