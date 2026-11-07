@@ -8,6 +8,7 @@ public sealed class CurriculumDocument
     public string Description { get; set; } = "";
     public string Outcomes { get; set; } = "";
     public string Audience { get; set; } = "";
+    public string? CoverPath { get; set; }
     public Guid[] LessonIds { get; set; } = [];
     public CurriculumCard[] Cards { get; set; } = [];
 }
@@ -31,6 +32,7 @@ public sealed class CurriculumForm
     public string Outcomes { get; set; } = "";
     [System.ComponentModel.DataAnnotations.DisplayFormat(ConvertEmptyStringToNull = false)]
     public string Audience { get; set; } = "";
+    public string? CoverPath { get; set; }
     public string StructureJson { get; set; } = "[]";
     [System.ComponentModel.DataAnnotations.DisplayFormat(ConvertEmptyStringToNull = false)]
     public string Stamp { get; set; } = "";
@@ -49,4 +51,4 @@ public sealed record LessonPage(LessonRun Run, LessonSnapshot Snapshot, string? 
 
 public sealed record CurriculumCatalog(CurriculumItem[] Items, CurriculumItem[] Lessons, List<LessonRun> Runs, string Kind, string Query, string Filter, Dictionary<Guid, CurriculumAuthor>? Authors = null, Dictionary<Guid, CourseRatingSummary>? Ratings = null);
 
-public sealed record PublicAuthorPage(CurriculumAuthor Author, CurriculumItem[] Courses);
+public sealed record PublicAuthorPage(CurriculumAuthor Author, CurriculumItem[] Courses, AvatarOptions Avatar);

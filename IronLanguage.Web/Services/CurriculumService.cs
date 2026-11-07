@@ -29,7 +29,7 @@ public sealed class CurriculumService(ICurriculumRepository repository, ICatalog
         if ((form.Outcomes?.Length ?? 0) > 2000 || (form.Audience?.Length ?? 0) > 2000)
             throw new ArgumentException("Цели и аудитория: не более 2000 символов в каждом поле.");
         var document = new CurriculumDocument { Title = form.Title.Trim(), Description = form.Description?.Trim() ?? "",
-            Outcomes = form.Outcomes?.Trim() ?? "", Audience = form.Audience?.Trim() ?? "" };
+            Outcomes = form.Outcomes?.Trim() ?? "", Audience = form.Audience?.Trim() ?? "", CoverPath = kind == "course" ? form.CoverPath : null };
         var choices = await Choices(kind, editor, ct);
         try
         {
@@ -81,7 +81,7 @@ public sealed class CurriculumService(ICurriculumRepository repository, ICatalog
     public static CurriculumForm Form(ContentRevision revision)
     {
         var doc = Parse(revision);
-        return new CurriculumForm { Title = doc.Title, Description = doc.Description, Outcomes = doc.Outcomes, Audience = doc.Audience, Stamp = EfCurriculumRepository.Stamp(revision),
+        return new CurriculumForm { Title = doc.Title, Description = doc.Description, Outcomes = doc.Outcomes, Audience = doc.Audience, CoverPath = doc.CoverPath, Stamp = EfCurriculumRepository.Stamp(revision),
             StructureJson = revision.Kind == "course" ? JsonSerializer.Serialize(doc.LessonIds, JsonOptions) : JsonSerializer.Serialize(doc.Cards, JsonOptions) };
     }
 

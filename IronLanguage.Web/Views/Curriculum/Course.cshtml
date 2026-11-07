@@ -4,9 +4,9 @@
 <section class="feature-shell curriculum learner-curriculum course-overview">
     <a class="back-link" href="/courses">← К курсам</a>
     <div class="course-layout">
+        <h1 class="course-title">@Model.Course.Document.Title</h1>
         <partial name="_CourseSidebar" model="Model" />
         <div class="course-main">
-            <h1>@Model.Course.Document.Title</h1>
             <h2>Содержание курса</h2>
             @if (User.Identity?.IsAuthenticated != true) { <p class="course-note">Гостям доступны все уроки. Чтобы сохранять прогресс, <a href="/account/login">войдите</a>.</p> }
             <ol class="course-lesson-list">
@@ -15,7 +15,7 @@
                 var lesson = Model.Lessons[i];
                 var percent = CurriculumService.LessonProgress(Model.Runs, lesson);
                 <li>
-                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId">
+                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId&amp;firstStep=true">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="course-lesson-open">
                             <span class="lesson-number">@(i + 1)</span>

@@ -45,7 +45,6 @@
             summary.textContent = "★ " + format.format(result.average) + " из 5 · оценок: " + result.count;
             star.classList.remove("is-confirmed");
             requestAnimationFrame(() => star.classList.add("is-confirmed"));
-            status.textContent = "Сохранено";
         } catch {
             status.textContent = "Не удалось сохранить. Попробуйте ещё раз.";
         } finally {

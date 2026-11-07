@@ -18,7 +18,7 @@
                 var current = lesson.Revision.ContentId == Model.Run.LessonId;
                 var percent = CurriculumService.LessonProgress(course.Runs, lesson, current ? Model.Run : null);
                 <li>
-                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@courseId">
+                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@courseId&amp;firstStep=true">
                         @Html.AntiForgeryToken()
                         <button type="submit" aria-current="@(current ? "page" : null)">
                             <span>@lesson.Document.Title</span>

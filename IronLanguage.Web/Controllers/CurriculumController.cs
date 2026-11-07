@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public sealed class CurriculumController(ICurriculumRepository repository, CurriculumService curriculum, GuestLearningStore guests, ICourseRatingRepository ratings) : Controller
+public sealed class CurriculumController(ICurriculumRepository repository, CurriculumService curriculum, GuestLearningStore guests, ICourseRatingRepository ratings, AvatarService avatars) : Controller
 {
     private static string CourseQuery(Guid? id) => id.HasValue ? $"?courseId={id}" : "";
 
@@ -75,7 +75,9 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
         var authors = await repository.Authors(courses.Select(x => x.Revision.ContentId).ToArray(), ct);
         var author = authors.Values.FirstOrDefault(x => x.Id == id);
         if (author is null) return NotFound();
-        return View(new PublicAuthorPage(author, courses.Where(x => authors.TryGetValue(x.Revision.ContentId, out var owner) && owner.Id == id).OrderBy(x => x.Document.Title).ToArray()));
+        var authored = courses.Where(x => authors.TryGetValue(x.Revision.ContentId, out var owner) && owner.Id == id)
+            .OrderBy(x => x.Document.Title).ToArray();
+        return View(new PublicAuthorPage(author, authored, await avatars.ForUser(id, ct)));
     }
 
     [HttpGet("lessons/{id:guid}")]
@@ -87,12 +89,15 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
     }
 
     [HttpPost("lessons/{id:guid}/start")]
-    public async Task<IActionResult> Start(Guid id, CancellationToken ct, Guid? courseId = null)
+    public async Task<IActionResult> Start(Guid id, CancellationToken ct, Guid? courseId = null, bool firstStep = false)
     {
         try
         {
             var run = await curriculum.Start(User.UserId(), guests.Owner(HttpContext), id, ct);
-            return run is null ? NotFound() : Redirect($"/lessons/runs/{run.Id}{CourseQuery(courseId)}");
+            if (run is null) return NotFound();
+            var query = CourseQuery(courseId);
+            if (firstStep) query += courseId.HasValue ? "&step=0" : "?step=0";
+            return Redirect($"/lessons/runs/{run.Id}{query}");
         }
         catch (GuestCapacityException error) { return StatusCode(503, error.Message); }
         catch (ArgumentException error)

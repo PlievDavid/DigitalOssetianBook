@@ -1,6 +1,6 @@
 .editor-home .editor-section-nav { display: flex; gap: 24px; border-bottom: 1px solid #dfe3e8; margin-bottom: 28px; overflow-x: auto; }
-.editor-home .editor-section-nav a { color: #596476; padding: 12px 2px; white-space: nowrap; text-decoration: none; }
-.editor-home .editor-section-nav a[aria-current="page"] { color: var(--theme-ink); border-bottom: 2px solid var(--theme-ink); font-weight: 700; }
+.editor-home .editor-section-nav a { display: inline-flex; align-items: center; min-height: 44px; color: #596476; padding: 12px 2px; border-bottom: 3px solid transparent; white-space: nowrap; text-decoration: none; font-family: var(--theme-font); font-size: 16px; font-weight: 400; letter-spacing: normal; }
+.editor-home .editor-section-nav a[aria-current="page"] { color: var(--theme-ink); border-bottom-color: var(--theme-ink); font-weight: 600; }
 .editor-home .editor-library-intro { margin-bottom: 30px; }
 .editor-home .editor-library-intro h2 { margin: 0 0 8px; font-size: clamp(28px, 3vw, 36px); }
 .editor-home .editor-library-intro p { margin: 0; color: #596476; }
@@ -25,9 +25,8 @@
 @media (max-width: 760px) { .editor-home .editor-create-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } .editor-page .editor-home .editor-library-controls { grid-template-columns: 1fr 1fr; } .editor-home .editor-library-controls .editor-filter:first-child { grid-column: 1 / -1; } }
 @media (max-width: 480px) { .editor-home .editor-create-links { grid-template-columns: 1fr; } .editor-page .editor-home .editor-library-controls { grid-template-columns: 1fr; } .editor-home .editor-library-controls .editor-filter:first-child { grid-column: auto; } }
 
-.editor-home .editor-teaching-title { margin: 0 0 8px; color: var(--theme-ink); font-size: clamp(28px, 3vw, 36px); }
+.editor-home .editor-teaching-title { margin: 0 0 18px; color: var(--theme-ink); font-family: var(--theme-heading-font); font-size: 28px; font-weight: 700; line-height: 1.25; letter-spacing: normal; }
 .editor-home .editor-tabs button.is-active { color: var(--theme-ink); }
-.editor-home .editor-teaching-title { font-size: 32px; margin: 0 0 18px; }
 .editor-home .editor-library-intro h2 { font-size: 24px; }
 .editor-home .editor-create-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .editor-home .editor-create-groups > div:first-child { grid-column: 1 / -1; }
@@ -37,3 +36,9 @@
 .editor-page .editor-home .editor-tabs button:hover { color: var(--theme-ink); background: #f3f5f7; }
 @media (max-width: 480px) { .editor-home .editor-create-groups { grid-template-columns: 1fr; } }
 .editor-page .editor-home .editor-filter span { display: block; color: var(--theme-ink); }
+
+@media (max-width: 700px) {
+  .editor-home .editor-teaching-title { font-size: 24px; }
+  .editor-home .editor-section-nav { gap: 4px 14px; }
+  .editor-home .editor-section-nav a { font-size: 14px; }
+}
