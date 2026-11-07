@@ -18,3 +18,13 @@
 .markdown-tools button { min-width: 40px; min-height: 40px; padding: 4px 6px; border: 0; border-radius: 5px; background: none; color: var(--theme-ink); font: inherit; cursor: pointer; }
 .markdown-tools button:hover { background: #e8edf3; }
 .course-editor .markdown-input textarea { display: block; border: 0; border-radius: 0 0 8px 8px; }
+.course-cover-crop { display: grid; grid-template-columns: 160px minmax(0, 1fr); width: min(100%, 440px); align-items: start; gap: 16px; }
+.course-cover-crop[hidden] { display: none; }
+.course-cover-crop canvas { display: block; width: 160px; max-width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: 8px; background: #eef1f4; }
+.course-cover-controls { display: grid; gap: 10px; min-width: 0; }
+.course-cover-controls label { display: grid; gap: 4px; font-size: 14px; }
+.course-cover-controls input { width: 100%; accent-color: var(--theme-green); }
+#course-cover-error { color: #a62929; }
+@media (max-width: 600px) {
+    .course-cover-crop { grid-template-columns: minmax(0, 1fr); }
+}

@@ -22,7 +22,7 @@
                         @Html.AntiForgeryToken()
                         <button type="submit" aria-current="@(current ? "page" : null)">
                             <span>@lesson.Document.Title</span>
-                            <span class="lesson-progress-circle" style="--lesson-progress: @percent%;" aria-hidden="true"></span>
+                            <partial name="_LessonProgressCircle" model="percent" />
                             <span class="visually-hidden">Выполнено @percent%</span>
                         </button>
                     </form>

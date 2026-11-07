@@ -12,7 +12,7 @@
 .catalog-item { position: relative; box-sizing: border-box; display: flex; flex-direction: column; min-width: 0; min-height: 156px; padding: 17px; border: 1px solid #e1e5e9; border-radius: 10px; background: #fff; }
 .catalog-item:hover { border-color: #b9c2cc; box-shadow: 0 4px 16px #17283b0d; }
 .catalog-item-top { display: flex; flex-direction: row-reverse; align-items: flex-start; justify-content: space-between; gap: 12px; min-width: 0; }
-.catalog-emblem { display: grid; place-items: center; flex: none; width: 62px; height: 76px; border-radius: 7px; background: #edf1f5; color: #52657c; }
+.catalog-emblem { display: grid; place-items: center; flex: none; width: 62px; aspect-ratio: 4 / 5; border-radius: 7px; background: #edf1f5; color: #52657c; }
 .catalog-emblem svg { width: 36px; height: 36px; }
 .catalog-item-content { flex: 1; min-width: 0; }
 .catalog-item h2 { margin: 0; font-size: 16px; line-height: 1.35; font-weight: 600; }
