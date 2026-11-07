@@ -77,7 +77,12 @@ var progress = new EfProgressRepository(db);
 using var guests = new GuestLearningStore();
 var learning = new LearningService(catalog, progress, guests);
 var service = new CurriculumService(repository, catalog, progress, learning, guests);
-var sources = (await catalog.Exercises(ct: ct)).Where(x => x.Kind is "audio" or "translation").GroupBy(x => x.Kind).Select(g => g.First()).ToList();
+var webRoot = Path.Combine(root, "IronLanguage.Web", "wwwroot");
+var sources = (await catalog.Exercises(ct: ct))
+    .Where(x => x.Kind == "translation" ||
+        (x.Kind == "audio" && x.AudioPath is { } path && path.StartsWith("/media/", StringComparison.Ordinal) &&
+            File.Exists(Path.Combine(webRoot, "media", Path.GetFileName(path)))))
+    .GroupBy(x => x.Kind).Select(g => g.First()).ToList();
 var mediaPaths = new List<string>();
 if (!sources.Any(x => x.Kind == "audio") || !sources.Any(x => x.Kind == "translation"))
 {
