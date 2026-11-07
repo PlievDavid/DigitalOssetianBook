@@ -8,6 +8,25 @@
   try { items = JSON.parse(hidden.value); if (!Array.isArray(items)) throw new Error(); }
   catch { items = []; status.textContent = "Структура повреждена. Добавьте карточки заново."; }
   const form = $("curriculum-form");
+  const moduleField = $("curriculum-modules"), moduleNames = new Map();
+  if (moduleField) {
+    try {
+      for (const module of JSON.parse(moduleField.value)) {
+        for (const id of module.lessonIds) moduleNames.set(id, module.title);
+      }
+    } catch { status.textContent = "Не удалось загрузить модули."; }
+  }
+  function syncModules() {
+    const modules = new Map();
+    for (const id of items) {
+      const title = moduleNames.get(id)?.trim();
+      if (!title) continue;
+      if (!modules.has(title)) modules.set(title, []);
+      modules.get(title).push(id);
+    }
+    moduleField.value = JSON.stringify(Array.from(modules, ([title, lessonIds]) => ({ title, lessonIds })));
+  }
+  if (moduleField) syncModules();
   const formState = () => JSON.stringify([...new FormData(form)]
     .filter(([name]) => name !== "StructureJson")
     .map(([name, value]) => [name, value instanceof File ? [value.name, value.size, value.lastModified && value.name ? value.lastModified : 0] : value])) + JSON.stringify(items);
@@ -41,7 +60,7 @@
       } catch (error) { pickerStatus.textContent = error.message; }
     }
     function courseRender(focusIndex = -1, focusAction = "") {
-      hidden.value = JSON.stringify(items); cards.replaceChildren();
+      hidden.value = JSON.stringify(items); syncModules(); updateSaveState(); cards.replaceChildren();
       if (!items.length) { const empty = document.createElement("p"); empty.textContent = "Уроки ещё не добавлены."; cards.append(empty); return; }
       const list = document.createElement("ol"); list.className = "course-lesson-list";
       items.forEach((id, index) => {
@@ -50,6 +69,13 @@
         name.textContent = entry?.title || "Урок недоступен";
         const info = document.createElement("div"); info.className = "course-lesson-info"; info.append(name);
         if (entry?.published === false) { const badge = document.createElement("small"); badge.className = "curriculum-draft"; badge.textContent = "Черновик"; info.append(badge); }
+        const moduleLabel = document.createElement("label"), moduleInput = document.createElement("input");
+        moduleLabel.className = "curriculum-field";
+        moduleLabel.textContent = "Модуль";
+        moduleInput.type = "text"; moduleInput.maxLength = 120; moduleInput.value = moduleNames.get(id) || "";
+        moduleInput.setAttribute("aria-label", `Модуль урока «${name.textContent}»`);
+        moduleInput.addEventListener("input", () => { moduleNames.set(id, moduleInput.value); syncModules(); });
+        moduleLabel.append(moduleInput); info.append(moduleLabel);
         row.append(info);
         actions.className = "curriculum-actions";
         for (const [label, action, delta] of [["↑ Выше", "up", -1], ["↓ Ниже", "down", 1], ["Убрать из курса", "remove", 0]]) {
@@ -103,7 +129,7 @@
     });
     status.append(undo);
   }
-  const labels = { text: "Текст", rule: "Правило", example: "Пример", comparison: "Сравнение", audio: "Аудиопазл", translation: "Перевод фразы", dialogue: "Диалог", lesson: "Урок" };
+  const labels = { text: "Текст", rule: "Правило", example: "Пример", comparison: "Сравнение", audio: "Аудиопазл", translation: "Перевод фразы", dialogue: "Диалог", listening: "Аудирование", lesson: "Урок" };
   const iconPaths = { audio: "M4 14v-3a8 8 0 0 1 16 0v3 M4 12h3v8H4z M17 12h3v8h-3z", translation: "M4 6h12v9H9l-4 3v-3H4z M16 9h4v11l-4-3h-4", dialogue: "M4 4h16v12H9l-5 4z M8 8h8 M8 12h5", text: "M5 4h14v16H5z M8 8h8 M8 12h8 M8 16h5", rule: "M5 5h14v14H5z M8 9h8 M8 13h8 M8 17h5", example: "M5 5h14v14H5z M8 9h8 M8 13h5", comparison: "M4 5h16v14H4z M12 5v14 M7 9h2 M15 9h2" };
   function icon(name) { const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"), path = document.createElementNS("http://www.w3.org/2000/svg", "path"); svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "22"); svg.setAttribute("height", "22"); svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "1.5"); svg.setAttribute("aria-hidden", "true"); path.setAttribute("d", iconPaths[name] || iconPaths.text); svg.append(path); return svg; }
   const el = (tag, text, className) => { const node = document.createElement(tag); if (text) node.textContent = text; if (className) node.className = className; return node; };

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public sealed class CurriculumController(ICurriculumRepository repository, CurriculumService curriculum, GuestLearningStore guests, ICourseRatingRepository ratings, AvatarService avatars) : Controller
+public sealed class CurriculumController(ICurriculumRepository repository, CurriculumService curriculum, GuestLearningStore guests, ICourseRatingRepository ratings, AvatarService avatars, IProgressRepository progress, ICatalogRepository catalog) : Controller
 {
     private static string CourseQuery(Guid? id) => id.HasValue ? $"?courseId={id}" : "";
 
@@ -23,7 +23,7 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
         var lessons = kind == "lesson" ? items : (await repository.List("lesson", false, ct)).Select(x => new CurriculumItem(x, CurriculumService.Parse(x))).ToArray();
         var runs = User.UserId() is Guid user ? await repository.Runs(user, ct) : [];
         bool Complete(CurriculumItem item) => item.Document.LessonIds.Length > 0 && item.Document.LessonIds.All(id =>
-            lessons.Any(lesson => lesson.Revision.ContentId == id && runs.Any(run => run.LessonId == id && run.LessonVersion == lesson.Revision.Version && run.CompletedAt != null)));
+            lessons.Any(lesson => lesson.Revision.ContentId == id && runs.Any(run => CurriculumService.CountsForProgress(run, lesson) && run.CompletedAt != null)));
         filter = filter == "started" ? "started" : "all";
         items = items.Where(x => x.Document.Title.Contains(query, StringComparison.OrdinalIgnoreCase) &&
             (filter == "all" || filter == "started" && !Complete(x) && runs.Any(run => x.Document.LessonIds.Contains(run.LessonId))))
@@ -48,7 +48,9 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
         }
         var authors = await repository.Authors([id], ct);
         ViewData["CourseAbout"] = true;
-        return View("About", new CoursePage(new(course, document), lessons.ToArray(), User.UserId() is Guid user ? await repository.Runs(user, ct) : [], authors.GetValueOrDefault(id)));
+        var page = new CoursePage(new(course, document), lessons.ToArray(),
+            User.UserId() is Guid user ? await repository.Runs(user, ct) : [], authors.GetValueOrDefault(id));
+        return View("About", page with { Lessons = page.Sections().SelectMany(section => section.Lessons).ToArray() });
     }
 
     [HttpGet("courses/{id:guid}/contents")]
@@ -93,7 +95,7 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
     {
         try
         {
-            var run = await curriculum.Start(User.UserId(), guests.Owner(HttpContext), id, ct);
+            var run = await curriculum.Start(User.UserId(), guests.Owner(HttpContext), id, ct, courseId);
             if (run is null) return NotFound();
             var query = CourseQuery(courseId);
             if (firstStep) query += courseId.HasValue ? "&step=0" : "?step=0";
@@ -116,9 +118,30 @@ public sealed class CurriculumController(ICurriculumRepository repository, Curri
         if (courseId is Guid courseKey && await Course(courseKey, ct) is ViewResult { Model: CoursePage candidate } && candidate.Lessons.Any(x => x.Revision.ContentId == run.LessonId))
             course = candidate;
         var snapshot = CurriculumService.Snapshot(run);
+        if (snapshot.WordIds.Length > 0)
+        {
+            var words = new List<WordEntry>();
+            foreach (var wordId in snapshot.WordIds)
+                if (await catalog.Word(wordId, ct) is { } word) words.Add(word);
+            ViewData["LessonWords"] = words;
+        }
         var selected = step ?? Math.Min(run.Step, snapshot.Cards.Length - 1);
         if (selected < 0 || selected >= snapshot.Cards.Length) return NotFound();
         return View(new LessonPage(run, snapshot, TempData[$"LessonError:{id}"] as string, course, selected, CurriculumService.CompletedSteps(run, snapshot)));
+    }
+
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [HttpPost("lessons/runs/{id:guid}/words/{wordId:guid}")]
+    public async Task<IActionResult> SaveLessonWord(Guid id, Guid wordId, int? step, Guid? courseId, CancellationToken ct)
+    {
+        var user = User.UserId()!.Value;
+        var run = await repository.Run(user, id, ct);
+        if (run is null || !CurriculumService.Snapshot(run).WordIds.Contains(wordId) ||
+            await catalog.Word(wordId, ct) is not { } word || !await progress.AddWord(user, wordId, ct))
+            return NotFound();
+        TempData["LessonWordStatus"] = $"«{word.Ossetian}» сохранено в личный словарь.";
+        TempData["LessonWordSaved"] = true;
+        return RedirectToAction(nameof(Run), new { id, step, courseId });
     }
 
     [HttpPost("lessons/runs/{id:guid}/next")]

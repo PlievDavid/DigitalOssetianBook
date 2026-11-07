@@ -9,18 +9,24 @@
         <div class="course-main">
             <h2>Содержание курса</h2>
             @if (User.Identity?.IsAuthenticated != true) { <p class="course-note">Гостям доступны все уроки. Чтобы сохранять прогресс, <a href="/account/login">войдите</a>.</p> }
-            <ol class="course-lesson-list">
-            @for (var i = 0; i < Model.Lessons.Length; i++)
+            @{ var number = 0; }
+            @foreach (var section in Model.Sections())
             {
-                var lesson = Model.Lessons[i];
+            @if (section.Title is not null) { <h3>@(section.Title)</h3> }
+            <ol class="course-lesson-list" start="@(number + 1)">
+            @foreach (var lesson in section.Lessons)
+            {
                 var percent = CurriculumService.LessonProgress(Model.Runs, lesson);
                 <li>
                     <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId&amp;firstStep=true">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="course-lesson-open">
-                            <span class="lesson-number">@(i + 1)</span>
+                            <span class="lesson-number">@(++number)</span>
                             <span>
                                 <strong>@lesson.Document.Title</strong>
+                                @if (CurriculumService.NeedsReview(Model.Runs, lesson)) { <span class="lesson-description">Урок существенно обновился</span> }
+                                @if (!string.IsNullOrWhiteSpace(lesson.Document.Goal)) { <span class="lesson-description">@lesson.Document.Goal</span> }
+                                @if (lesson.Document.Minutes is int minutes) { <span class="lesson-description">@minutes мин.</span> }
                                 @if (!string.IsNullOrWhiteSpace(lesson.Document.Description)) { <span class="lesson-description">@lesson.Document.Description</span> }
                             </span>
                             <span class="course-lesson-progress">
@@ -32,6 +38,7 @@
                 </li>
             }
             </ol>
+            }
         </div>
     </div>
 </section>

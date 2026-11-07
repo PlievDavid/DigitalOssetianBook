@@ -27,7 +27,9 @@
         @foreach (var item in Model) {
             <article class="curriculum-library-row"><div><h2><a href="/editor/curriculum/@kind/@item.Revision.ContentId/edit">@item.Document.Title</a></h2><p><span class="teaching-status @(item.Revision.Published ? "is-published" : "")">@(item.Revision.Published ? "Опубликовано" : "Черновик")</span><span class="teaching-version">Версия @item.Revision.Version</span></p>
             @if (!item.Revision.Published && item.Revision.BaseVersion > 0) { <p>Ученикам доступна опубликованная версия.</p> }</div>
-            <div class="curriculum-actions"><a href="/editor/curriculum/@kind/@item.Revision.ContentId/edit">@(item.Revision.Published ? "Новая версия" : "Изменить")</a><a href="/editor/curriculum/@kind/@item.Revision.ContentId/preview">Предпросмотр</a></div></article>
+            <div class="curriculum-actions"><a href="/editor/curriculum/@kind/@item.Revision.ContentId/edit">@(item.Revision.Published ? "Новая версия" : "Изменить")</a><a href="/editor/curriculum/@kind/@item.Revision.ContentId/preview">Предпросмотр</a>
+                @if (course && (item.Revision.Published || item.Revision.BaseVersion > 0)) { <a href="/editor/curriculum/course/@item.Revision.ContentId/report">Отчёт по урокам</a> }
+            </div></article>
         }</div>
     </section>
 </section>

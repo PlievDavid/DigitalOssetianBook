@@ -1,0 +1,33 @@
+@model IronLanguage.Web.Models.CurriculumItem[]
+@{ ViewData["Title"] = "Использование материала"; }
+<section class="feature-shell curriculum">
+    <a class="back-link" href="/editor">← К материалам</a>
+    <h1>Использование материала</h1>
+    @if (Model.Length > 0)
+    {
+        <p>Перед снятием замените материал в этих уроках и опубликуйте новые версии.</p>
+        <ul>
+        @foreach (var lesson in Model)
+        {
+            <li>
+            @if (lesson.Revision.EditorId == (Guid?)ViewData["EditorId"])
+            {
+                <a href="/editor/curriculum/lesson/@lesson.Revision.ContentId/edit">@lesson.Document.Title</a>
+            }
+            else
+            {
+                <span>@lesson.Document.Title — обратитесь к автору урока</span>
+            }
+            </li>
+        }
+        </ul>
+    }
+    else
+    {
+        <p>Материал не используется в опубликованных уроках. После снятия он останется в архиве.</p>
+        <form method="post" action="@ViewData["ArchiveUrl"]">
+            @Html.AntiForgeryToken()
+            <button class="button secondary" type="submit">Убрать с сайта</button>
+        </form>
+    }
+</section>

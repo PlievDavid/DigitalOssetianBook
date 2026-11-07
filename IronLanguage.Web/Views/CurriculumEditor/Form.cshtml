@@ -36,6 +36,23 @@
             </div>
         } else {
             <div class="lesson-identity">
+                <label class="curriculum-field">Что ученик сможет сделать после урока<input name="Goal" maxlength="300" value="@Model.Form.Goal" /></label>
+                <label class="curriculum-field">Примерное время, минут<input name="Minutes" type="number" min="1" max="180" value="@Model.Form.Minutes" /></label>
+                @if (ViewData["LessonWords"] is List<IronLanguage.Db.WordEntry> words && words.Count > 0)
+                {
+                    <details>
+                        <summary>Слова для повторения (@Model.Form.WordIds.Length)</summary>
+                        <label class="curriculum-field">Опубликованные слова и выражения
+                            <select name="WordIds" multiple size="6" aria-describedby="lesson-words-help">
+                                @foreach (var word in words)
+                                {
+                                    <option value="@word.Id" selected="@Model.Form.WordIds.Contains(word.Id)">@word.Ossetian — @word.Russian</option>
+                                }
+                            </select>
+                        </label>
+                        <p id="lesson-words-help" class="field-help">Выберите до 30 слов. Для выбора нескольких используйте Ctrl или Command.</p>
+                    </details>
+                }
                 <details class="lesson-description-settings" open="@(!string.IsNullOrWhiteSpace(Model.Form.Description))"><summary>Описание урока</summary><label class="curriculum-field"><span class="visually-hidden">Описание</span><textarea name="Description" aria-label="Описание" maxlength="2000" rows="2">@Model.Form.Description</textarea></label></details>
             </div>
         }
@@ -44,8 +61,10 @@
             @await Html.PartialAsync("_CourseMarkdownField", ("Outcomes", "Чему научится ученик", Model.Form.Outcomes, 3))
             @await Html.PartialAsync("_CourseMarkdownField", ("Audience", "Для кого курс", Model.Form.Audience, 3))
         </div>
+        <input type="hidden" name="ModulesJson" id="curriculum-modules" value="@Model.Form.ModulesJson" />
         <section class="course-lessons" aria-labelledby="course-lessons-title">
             <h2 id="course-lessons-title">Уроки курса</h2>
+            <p class="field-help">Чтобы объединить уроки, укажите одинаковое название модуля. Порядок модулей определяется их первым уроком. Ученикам доступны все уроки.</p>
             <div id="curriculum-cards"></div>
             <div class="curriculum-actions"><button type="button" class="button secondary" id="curriculum-open-picker">Добавить мои уроки</button><a class="curriculum-text-action" href="/editor/curriculum/lesson/new" target="_blank" rel="noopener" aria-label="Создать урок в новой вкладке">+ Создать урок ↗</a></div>
             <p id="curriculum-status" role="status"></p>
@@ -91,7 +110,7 @@
             <button type="button" data-picker-theory="comparison"><strong>Сравнение</strong><small>Две колонки для сравнения</small></button>
         </div>
         <div id="picker-ready" role="tabpanel" aria-labelledby="picker-tab-ready" hidden>
-            <div class="lesson-picker-filters"><label>Поиск<input id="picker-search" type="search" placeholder="Название задания" /></label><label>Тип<select id="picker-kind"><option value="all">Все типы</option><option value="audio">Аудиопазл</option><option value="translation">Перевод фразы</option><option value="dialogue">Диалог</option></select></label></div>
+            <div class="lesson-picker-filters"><label>Поиск<input id="picker-search" type="search" placeholder="Название задания" /></label><label>Тип<select id="picker-kind"><option value="all">Все типы</option><option value="audio">Аудиопазл</option><option value="translation">Перевод фразы</option><option value="dialogue">Диалог</option><option value="listening">Аудирование</option></select></label></div>
             <div id="picker-materials" class="lesson-picker-materials"></div>
         </div>
         <div id="picker-new" role="tabpanel" aria-labelledby="picker-tab-new" hidden>
@@ -100,6 +119,7 @@
                 <button type="submit" form="curriculum-form" name="action" value="create-audio">Аудиопазл</button>
                 <button type="submit" form="curriculum-form" name="action" value="create-translation">Перевод фразы</button>
                 <button type="submit" form="curriculum-form" name="action" value="create-dialogue">Диалог</button>
+                <button type="submit" form="curriculum-form" name="action" value="create-listening">Аудирование</button>
             </div>
         </div>
         <p id="picker-status" role="status" aria-live="polite"></p>
