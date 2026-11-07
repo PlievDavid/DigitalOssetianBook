@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), AutoValidateAntiforgeryToken, Route("editor/curriculum")]
-public sealed class CurriculumEditorController(ICurriculumRepository repository, CurriculumService curriculum) : Controller
+public sealed class CurriculumEditorController(ICurriculumRepository repository, CurriculumService curriculum, IWebHostEnvironment environment) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index(string? kind, string? q, CancellationToken ct)
@@ -37,18 +37,46 @@ public sealed class CurriculumEditorController(ICurriculumRepository repository,
         return revision is null ? NotFound() : View("Form", new CurriculumEditorModel(kind, id, CurriculumService.Form(revision), await curriculum.Choices(kind, User.UserId()!.Value, ct)));
     }
 
-    [HttpPost("{kind}/{id:guid}/edit"), RequestSizeLimit(1_000_000)]
-    public async Task<IActionResult> Save(string kind, Guid id, CurriculumForm form, string? action, CancellationToken ct)
+    [HttpPost("{kind}/{id:guid}/edit"), RequestSizeLimit(6_000_000)]
+    public async Task<IActionResult> Save(string kind, Guid id, CurriculumForm form, string? action, IFormFile? coverImage, bool removeCover, CancellationToken ct)
     {
         if (!CurriculumService.IsKind(kind)) return NotFound();
         var existing = await repository.Get(kind, id, true, ct);
         if (existing is not null && await repository.GetOwned(kind, id, User.UserId()!.Value, ct) is null) return NotFound();
+        // Existing paths come only from the owned revision, never from the posted form.
+        form.CoverPath = kind == "course" && existing is not null ? CurriculumService.Parse(existing).CoverPath : null;
+        string? newCoverFile = null;
         try
         {
             var document = await curriculum.Validate(kind, form, User.UserId()!.Value, ct);
             if (!ModelState.IsValid) throw new ArgumentException("Проверьте заполнение полей.");
+            if (kind == "course" && coverImage is { Length: > 0 })
+            {
+                if (coverImage.Length > 5_000_000) throw new ArgumentException("Обложка должна быть не больше 5 МБ.");
+                var extension = Path.GetExtension(coverImage.FileName).ToLowerInvariant();
+                await using var stream = new MemoryStream();
+                await coverImage.CopyToAsync(stream, ct);
+                var bytes = stream.ToArray();
+                var valid = extension switch
+                {
+                    ".png" => bytes.Length >= 8 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
+                    ".jpg" or ".jpeg" => bytes.Length >= 3 && bytes[0] == 255 && bytes[1] == 216 && bytes[2] == 255,
+                    ".webp" => bytes.Length >= 12 && System.Text.Encoding.ASCII.GetString(bytes, 0, 4) == "RIFF" && System.Text.Encoding.ASCII.GetString(bytes, 8, 4) == "WEBP",
+                    _ => false
+                };
+                if (!valid) throw new ArgumentException("Выберите изображение PNG, JPEG или WebP.");
+                var folder = Path.Combine(environment.WebRootPath, "media", "courses");
+                Directory.CreateDirectory(folder);
+                var name = Guid.NewGuid().ToString("N") + extension;
+                newCoverFile = Path.Combine(folder, name);
+                await System.IO.File.WriteAllBytesAsync(newCoverFile, bytes, ct);
+                form.CoverPath = "/media/courses/" + name;
+            }
+            else if (removeCover) form.CoverPath = null;
+            document.CoverPath = form.CoverPath;
             if (!await repository.Save(kind, id, JsonSerializer.Serialize(document, CurriculumService.JsonOptions), User.UserId()!.Value, form.Stamp ?? "", ct))
             {
+                if (newCoverFile is not null) System.IO.File.Delete(newCoverFile);
                 Response.StatusCode = 409;
                 throw new ArgumentException("Материал изменился в другой вкладке. Скопируйте свои правки и откройте конструктор заново.");
             }
@@ -58,6 +86,7 @@ public sealed class CurriculumEditorController(ICurriculumRepository repository,
             return Redirect($"/editor/curriculum/{kind}/{id}/{(action == "preview" ? "preview" : "edit")}");
         }
         catch (ArgumentException error) { ModelState.AddModelError("", error.Message); }
+        form.CoverPath = kind == "course" && existing is not null ? CurriculumService.Parse(existing).CoverPath : null;
         return View("Form", new CurriculumEditorModel(kind, id, form, await curriculum.Choices(kind, User.UserId()!.Value, ct)));
     }
 

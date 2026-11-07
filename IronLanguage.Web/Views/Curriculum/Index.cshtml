@@ -31,21 +31,32 @@
             var href = course ? $"/courses/{item.Revision.ContentId}/about" : $"/lessons/{item.Revision.ContentId}";
             <article class="catalog-item">
                 <div class="catalog-item-top">
+                    @if (course && !string.IsNullOrEmpty(item.Document.CoverPath)) { <div class="catalog-emblem catalog-emblem--image"><img src="@item.Document.CoverPath" alt="" loading="lazy" /></div> }
+                    else {
                     <div class="catalog-emblem" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M24 37c-4-3-9-4-15-3V12c6-1 11 0 15 3m0 22c4-3 9-4 15-3V12c-6-1-11 0-15 3m0 22V15M13 18c3-.3 5 .1 7 1m-7 5c3-.3 5 .1 7 1m15-7c-3-.3-5 .1-7 1m7 5c-3-.3-5 .1-7 1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    }
                     <div class="catalog-item-content">
                         <h2><a href="@href">@item.Document.Title</a></h2>
-                        @if (!string.IsNullOrWhiteSpace(item.Document.Description)) { <p class="catalog-item-description">@item.Document.Description</p> }
+                        @if (course && Model.Authors?.GetValueOrDefault(item.Revision.ContentId) is { } author) { <a class="catalog-author" href="/authors/@author.Id">@author.Name</a> }
+                        @if (!string.IsNullOrWhiteSpace(item.Document.Description)) { <p class="catalog-item-description">@(Model.Kind == "course" ? IronLanguage.Web.Services.CourseMarkdown.Excerpt(item.Document.Description) : item.Document.Description)</p> }
                     </div>
                 </div>
                 <div class="catalog-item-footer">
                     @if (course) {
                         var rating = Model.Ratings?.GetValueOrDefault(item.Revision.ContentId);
-                        <span class="catalog-item-meta">@(rating?.Average is double average ? $"★ {average:0.0} ({rating.Count})" : "Пока без оценок")</span>
+                        <div class="catalog-item-meta">
+                            <span>Уроков: @total</span>
+                            <span>@(rating?.Average is double average ? $"★ {average:0.0} ({rating.Count})" : "Пока без оценок")</span>
+                        </div>
                     }
-                    @if (course) { <div class="catalog-item-meta"><span>Уроков: @total</span>@if (completed > 0) { <span>@(finished ? "Пройден" : $"{completed} из {total} пройдено")</span> }</div> }
-                    @if (course && Model.Authors?.GetValueOrDefault(item.Revision.ContentId) is { } author) { <a class="catalog-author" href="/authors/@author.Id">@author.Name</a> }
-                    @if (active is not null) { <a class="catalog-continue" href="/lessons/runs/@active.Id@(course ? $"?courseId={item.Revision.ContentId}" : "")">Продолжить</a> }
-
+                    @if (course && (completed > 0 || active is not null)) {
+                        <div class="catalog-item-progress">
+                            <span>@(finished ? "Пройден" : $"{completed} из {total} пройдено")</span>
+                            @if (active is not null) { <a class="catalog-continue" href="/lessons/runs/@active.Id?courseId=@item.Revision.ContentId">Продолжить</a> }
+                        </div>
+                    } else if (active is not null) {
+                        <a class="catalog-continue" href="/lessons/runs/@active.Id">Продолжить</a>
+                    }
                 </div>
             </article>
         }

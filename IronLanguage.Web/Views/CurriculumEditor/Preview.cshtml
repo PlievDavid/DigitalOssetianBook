@@ -4,10 +4,13 @@
 <section class="feature-shell curriculum">
     <a class="back-link" href="/editor/curriculum?kind=@Model.Kind">← @(Model.Kind == "course" ? "К моим курсам" : "К моим урокам")</a>
     <p class="eyebrow">@(Model.Kind == "course" ? "Курс" : "Урок") · версия @Model.Revision.Version · @(Model.Revision.Published ? "Опубликовано" : "Черновик")</p>
-    <h1>@Model.Document.Title</h1><p class="theory-copy">@Model.Document.Description</p>
+    <h1>@Model.Document.Title</h1>
+    @if (Model.Kind == "course" && !string.IsNullOrEmpty(Model.Document.CoverPath)) { <img class="course-cover-published-preview" src="@Model.Document.CoverPath" alt="Обложка курса" /> }
+    @if (Model.Kind == "course") { <partial name="_CourseMarkdown" model="Model.Document.Description" /> }
+    else { <p class="theory-copy">@Model.Document.Description</p> }
     @if (Model.Kind == "course") {
-        @if (!string.IsNullOrWhiteSpace(Model.Document.Outcomes)) { <h2>Чему научится ученик</h2><p class="theory-copy">@Model.Document.Outcomes</p> }
-        @if (!string.IsNullOrWhiteSpace(Model.Document.Audience)) { <h2>Для кого курс</h2><p class="theory-copy">@Model.Document.Audience</p> }
+        @if (!string.IsNullOrWhiteSpace(Model.Document.Outcomes)) { <h2>Чему научится ученик</h2><partial name="_CourseMarkdown" model="Model.Document.Outcomes" /> }
+        @if (!string.IsNullOrWhiteSpace(Model.Document.Audience)) { <h2>Для кого курс</h2><partial name="_CourseMarkdown" model="Model.Document.Audience" /> }
     }
     <a href="/editor/curriculum/@Model.Kind/@Model.Revision.ContentId/edit">Изменить</a>
     @if (Model.Kind == "course")
@@ -38,4 +41,4 @@
         </form>
     }
 </section>
-@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }
+@section Styles { <link rel="stylesheet" href="~/css/course-cover.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/course-markdown.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }

@@ -8,7 +8,9 @@
   try { items = JSON.parse(hidden.value); if (!Array.isArray(items)) throw new Error(); }
   catch { items = []; status.textContent = "Структура повреждена. Добавьте карточки заново."; }
   const form = $("curriculum-form");
-  const formState = () => JSON.stringify([...new FormData(form)].filter(([name]) => name !== "StructureJson")) + JSON.stringify(items);
+  const formState = () => JSON.stringify([...new FormData(form)]
+    .filter(([name]) => name !== "StructureJson")
+    .map(([name, value]) => [name, value instanceof File ? [value.name, value.size, value.lastModified && value.name ? value.lastModified : 0] : value])) + JSON.stringify(items);
   const initialState = formState(); let submitting = false;
   const saveState = $("curriculum-save-state");
   function updateSaveState() { if (saveState) saveState.textContent = formState() === initialState ? "Нет несохранённых изменений" : "Есть несохранённые изменения"; }
