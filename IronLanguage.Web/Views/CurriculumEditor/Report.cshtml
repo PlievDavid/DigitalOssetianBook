@@ -1,0 +1,37 @@
+@model IronLanguage.Web.Models.CourseReport
+@{ ViewData["Title"] = "Отчёт по урокам"; }
+<section class="feature-shell curriculum">
+    <a class="back-link" href="/editor/curriculum?kind=course">← К моим курсам</a>
+    <h1>Отчёт по урокам</h1>
+    <p>@Model.Title</p>
+    <p>Учитываются ученики, которые вошли в аккаунт и начали урок из этого курса. Карточки сгруппированы по версии урока. Для незавершённых попыток показана первая непройденная карточка.</p>
+    @foreach (var lesson in Model.Lessons)
+    {
+        <section class="feature-card">
+            <h2>@lesson.Title</h2>
+            <p>Начали — @lesson.Started · Завершили — @lesson.Completed</p>
+            @if (lesson.Cards.Length == 0) { <p>Пока нет попыток из этого курса.</p> }
+            else
+            {
+                <details>
+                    <summary>Подробности по карточкам</summary>
+                    @foreach (var version in lesson.Cards.GroupBy(card => card.Version))
+                    {
+                        <h3>Версия @version.Key</h3>
+                        <ol>
+                        @foreach (var card in version)
+                        {
+                            <li value="@card.Number">
+                                <strong>@card.Title</strong>
+                                <div>Остановились здесь — @card.Unfinished</div>
+                                @if (card.Answered > 0) { <div>Попытки с ошибками — @card.Incorrect из @card.Answered</div> }
+                            </li>
+                        }
+                        </ol>
+                    }
+                </details>
+            }
+        </section>
+    }
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }

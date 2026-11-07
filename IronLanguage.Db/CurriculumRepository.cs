@@ -12,12 +12,16 @@ public interface ICurriculumRepository
     Task<List<ContentRevision>> ListOwned(string kind, Guid editor, bool publishedOnly, CancellationToken ct);
     Task<ContentRevision?> GetOwned(string kind, Guid id, Guid editor, CancellationToken ct);
     Task<bool> Save(string kind, Guid id, string payload, Guid editor, string stamp, CancellationToken ct);
-    Task<bool> Publish(string kind, Guid id, Guid draftId, string stamp, Guid editor, CancellationToken ct);
+    Task<bool> Publish(string kind, Guid id, Guid draftId, string stamp, Guid editor, CancellationToken ct, bool preserveProgress = false);
+    Task<List<ContentRevision>> MaterialUsage(string kind, Guid id, CancellationToken ct);
+    Task<CourseLessonRunData> ReportData(Guid courseId, Guid[] lessonIds, CancellationToken ct);
     Task<LessonRun?> Run(Guid user, Guid id, CancellationToken ct);
     Task<List<LessonRun>> Runs(Guid user, CancellationToken ct);
     Task<LessonRun> Start(LessonRun run, List<ExerciseAttempt> attempts, List<DialogueSession> dialogs, CancellationToken ct);
     Task<bool> Advance(Guid user, Guid id, int step, int count, CancellationToken ct);
 }
+
+public sealed record CourseLessonRunData(List<LessonRun> Runs, Dictionary<Guid, bool> Incorrect);
 
 public sealed record CurriculumAuthor(Guid Id, string Name);
 
@@ -101,16 +105,85 @@ public sealed class EfCurriculumRepository(AdamDbContext db) : ICurriculumReposi
         return true;
     }
 
-    public async Task<bool> Publish(string kind, Guid id, Guid draftId, string stamp, Guid editor, CancellationToken ct)
+    public async Task<bool> Publish(string kind, Guid id, Guid draftId, string stamp, Guid editor, CancellationToken ct, bool preserveProgress = false)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await Lock(id, ct);
         var draft = await GetOwned(kind, id, editor, ct);
         if (draft is null || draft.Published || draft.Id != draftId || Stamp(draft) != stamp) return false;
+        var payload = draft.PayloadJson;
+        if (kind == "lesson")
+        {
+            await LockMaterials(db, ct);
+            var doc = JsonNode.Parse(payload)!.AsObject();
+            foreach (var card in doc["cards"]!.AsArray())
+            {
+                var cardKind = card!["kind"]!.GetValue<string>();
+                if (cardKind == "theory") continue;
+                var materialId = card["materialId"]!.GetValue<Guid>();
+                var available = cardKind == "dialogue"
+                    ? await db.Dialogues.AnyAsync(x => x.Id == materialId && x.Published && !x.Archived, ct)
+                    : await db.Exercises.AnyAsync(x => x.Id == materialId && x.Kind == cardKind && x.Published && !x.Archived, ct);
+                if (!available) throw new ArgumentException("Замените снятое с публикации задание.");
+            }
+            foreach (var word in doc["wordIds"]?.AsArray() ?? new JsonArray())
+            {
+                var wordId = word!.GetValue<Guid>();
+                if (!await db.Words.AnyAsync(x => x.Id == wordId && x.Published && !x.Archived, ct))
+                    throw new ArgumentException("Уберите из урока снятое с публикации слово.");
+            }
+            if (preserveProgress)
+            {
+                var previous = await Get("lesson", id, false, ct);
+                if (previous is null) throw new ArgumentException("У урока ещё нет опубликованной версии.");
+                var oldDoc = JsonNode.Parse(previous.PayloadJson)!;
+                if (!CardStructure(oldDoc).SequenceEqual(CardStructure(doc)))
+                    throw new ArgumentException("Смена состава, вида или порядка карточек требует существенного обновления.");
+                doc["progressFromVersion"] = oldDoc["progressFromVersion"]?.GetValue<int>() ?? previous.Version;
+            }
+            else doc["progressFromVersion"] = draft.Version;
+            payload = doc.ToJsonString();
+        }
         await db.ContentRevisions.Where(x => x.Id == draft.Id).ExecuteUpdateAsync(s => s
-            .SetProperty(x => x.Published, true).SetProperty(x => x.PublishedAt, DateTimeOffset.UtcNow), ct);
+            .SetProperty(x => x.PayloadJson, payload).SetProperty(x => x.Published, true).SetProperty(x => x.PublishedAt, DateTimeOffset.UtcNow), ct);
         await tx.CommitAsync(ct);
         return true;
+    }
+
+    private static IEnumerable<(string? Kind, string? Template, string? MaterialId)> CardStructure(JsonNode doc) =>
+        doc["cards"]!.AsArray().Select(card => (card?["kind"]?.GetValue<string>(),
+            card?["template"]?.GetValue<string>(), card?["materialId"]?.ToString()));
+
+    internal static Task LockMaterials(AdamDbContext db, CancellationToken ct) =>
+        db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(812734125)", ct);
+
+    public async Task<List<ContentRevision>> MaterialUsage(string kind, Guid id, CancellationToken ct)
+    {
+        if (kind is not ("audio" or "translation" or "listening" or "dialogue" or "word")) return [];
+        var lessons = await List("lesson", false, ct);
+        return lessons.Where(lesson =>
+        {
+            var doc = JsonNode.Parse(lesson.PayloadJson)!;
+            if (kind == "word")
+                return doc["wordIds"]?.AsArray().Any(word => word?.GetValue<Guid>() == id) == true;
+            return doc["cards"]?.AsArray().Any(card => card?["kind"]?.GetValue<string>() == kind &&
+                card["materialId"]?.GetValue<Guid>() == id) == true;
+        }).ToList();
+    }
+
+    public async Task<CourseLessonRunData> ReportData(Guid courseId, Guid[] lessonIds, CancellationToken ct)
+    {
+        var runs = await db.LessonRuns.FromSqlInterpolated(
+            $"SELECT * FROM \"LessonRuns\" WHERE \"SnapshotJson\"::jsonb ->> 'courseId' = {courseId.ToString()}")
+            .AsNoTracking().Where(run => lessonIds.Contains(run.LessonId)).ToListAsync(ct);
+        var runIds = runs.Select(run => run.Id).ToArray();
+        var attempts = await db.Attempts.AsNoTracking()
+            .Where(attempt => attempt.LessonRunId.HasValue && runIds.Contains(attempt.LessonRunId.Value) && attempt.Correct.HasValue)
+            .Select(attempt => new { attempt.Id, Incorrect = attempt.Correct == false }).ToListAsync(ct);
+        var dialogues = await db.DialogueSessions.AsNoTracking()
+            .Where(session => session.LessonRunId.HasValue && runIds.Contains(session.LessonRunId.Value) && (session.Attempts > 0 || session.Errors > 0))
+            .Select(session => new { session.Id, Incorrect = session.Errors > 0 }).ToListAsync(ct);
+        return new(runs, attempts.Concat(dialogues).ToDictionary(attempt => attempt.Id, attempt => attempt.Incorrect));
     }
 
     public Task<LessonRun?> Run(Guid user, Guid id, CancellationToken ct) =>

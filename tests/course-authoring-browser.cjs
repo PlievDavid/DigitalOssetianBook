@@ -40,8 +40,10 @@ const output = '.run-local/curriculum-qa';
     await add.click();
     await page.locator('#course-picker-list input').first().check();
     await page.getByRole('button', { name: 'Добавить выбранные', exact: true }).click();
+    await page.getByRole('textbox', { name: /^Модуль урока/ }).first().fill('Приветствие и знакомство');
     await page.getByRole('button', { name: 'Сохранить черновик', exact: true }).click();
     await page.waitForLoadState('networkidle');
+    assert.equal(await page.getByRole('textbox', { name: /^Модуль урока/ }).first().inputValue(), 'Приветствие и знакомство');
     for (const width of [360, 768, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Редактор курса: ${width}`);
@@ -55,6 +57,7 @@ const output = '.run-local/curriculum-qa';
     for (const [route, name] of [[`/courses/${id}/about`, 'about'], [`/courses/${id}/contents`, 'course'], ['/courses', 'catalog'], ['/editor/curriculum', 'author']]) {
       await page.goto(route);
       assert.equal(await page.locator('h1').count(), 1);
+      if (name === 'course') await page.getByRole('heading', { name: 'Приветствие и знакомство' }).waitFor();
       if (name === 'about') await page.getByText('Здесь автор описывает результаты обучения.', { exact: true }).waitFor();
       for (const width of [360, 1440]) {
         await page.setViewportSize({ width, height: 1000 });
@@ -62,6 +65,12 @@ const output = '.run-local/curriculum-qa';
         await page.screenshot({ path: `${output}/${name}-${width}.png`, fullPage: true });
       }
     }
+    await page.goto(`/editor/curriculum/course/${id}/report`);
+    await page.getByRole('heading', { name: 'Отчёт по урокам' }).waitFor();
+    await page.getByText('Пока нет попыток из этого курса.').first().waitFor();
+    const guest = await browser.newContext({ baseURL: base });
+    assert.equal((await guest.request.get(`/editor/curriculum/course/${id}/report`, { maxRedirects: 0 })).status(), 302);
+    await guest.close();
     assert.deepEqual(errors, []);
     console.log('Курс: пустой черновик, описание, свои уроки, поиск, удаление связи, публикация, клавиатура и адаптивность — OK.');
   } finally { await browser.close(); }
