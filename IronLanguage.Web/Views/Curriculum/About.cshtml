@@ -3,11 +3,9 @@
 <section class="feature-shell curriculum learner-curriculum course-overview">
     <a class="back-link" href="/courses">← К курсам</a>
     <div class="course-layout">
-        <h1 class="course-title">@Model.Course.Document.Title</h1>
+        <partial name="_CourseHeading" model="Model" />
         <partial name="_CourseSidebar" model="Model" />
         <div class="course-main course-about">
-            @if (!string.IsNullOrEmpty(Model.Course.Document.CoverPath)) { <img class="course-about-cover" src="@Model.Course.Document.CoverPath" alt="" /> }
-            @if (Model.Author is { } author) { <p class="course-author"><a href="/authors/@author.Id">@author.Name</a></p> }
             @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Description)) { <partial name="_CourseMarkdown" model="Model.Course.Document.Description" /> }
             @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Outcomes)) { <section class="course-about-section"><h2>Чему вы научитесь</h2><partial name="_CourseMarkdown" model="Model.Course.Document.Outcomes" /></section> }
             @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Audience)) { <section class="course-about-section"><h2>Для кого этот курс</h2><partial name="_CourseMarkdown" model="Model.Course.Document.Audience" /></section> }

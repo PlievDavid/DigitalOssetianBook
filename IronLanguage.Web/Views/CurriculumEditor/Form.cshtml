@@ -29,6 +29,15 @@
                 <label for="course-cover">Обложка курса</label>
                 <p id="course-cover-help">PNG, JPEG или WebP до 5 МБ. Используйте изображение, которое можете опубликовать.</p>
                 <input id="course-cover" aria-describedby="course-cover-help" type="file" name="coverImage" accept="image/png,image/jpeg,image/webp" />
+                <p id="course-cover-error" role="alert" hidden></p>
+                <div id="course-cover-crop" class="course-cover-crop" hidden>
+                    <canvas id="course-cover-canvas" width="400" height="500" aria-label="Предпросмотр кадрирования обложки"></canvas>
+                    <div class="course-cover-controls">
+                        <label>Масштаб <input id="course-cover-zoom" type="range" min="100" max="300" value="100" step="1" /></label>
+                        <label>По горизонтали <input id="course-cover-x" type="range" min="0" max="100" value="50" step="1" /></label>
+                        <label>По вертикали <input id="course-cover-y" type="range" min="0" max="100" value="50" step="1" /></label>
+                    </div>
+                </div>
                 <div class="course-cover-preview" id="course-cover-preview" @(string.IsNullOrEmpty(Model.Form.CoverPath) ? "hidden" : null)>
                     <img id="course-cover-image" src="@Model.Form.CoverPath" alt="Предпросмотр обложки курса" />
                     <label><input id="course-cover-remove" type="checkbox" name="removeCover" value="true" /> Удалить обложку</label>
