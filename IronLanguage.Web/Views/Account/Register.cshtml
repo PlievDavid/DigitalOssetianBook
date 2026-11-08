@@ -8,5 +8,7 @@
     <span asp-validation-for="PublicName" class="form-error"></span>
     <label>Электронная почта <input asp-for="Email" type="email" autocomplete="email" required /></label><span asp-validation-for="Email" class="form-error"></span>
     <label>Пароль <input asp-for="Password" type="password" autocomplete="new-password" minlength="8" required /></label><span asp-validation-for="Password" class="form-error"></span>
+    <label>Повторите пароль <input asp-for="ConfirmPassword" type="password" autocomplete="new-password" maxlength="128" required /></label>
+    <span asp-validation-for="ConfirmPassword" class="form-error"></span>
     <button class="button primary" type="submit">Зарегистрироваться</button>
 </form><p class="auth-switch">Уже есть аккаунт? <a asp-action="Login">Войти</a></p></section></div>
