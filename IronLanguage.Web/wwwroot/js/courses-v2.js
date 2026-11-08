@@ -55,6 +55,7 @@
     const grid = node('div', null, authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
     const search = field('Поиск по названию', query, value => { query = value; draw(); }, { type: 'search' });
+    search.querySelector('input').placeholder = 'Найти курс';
     const clear = button('Очистить поиск', () => { query = ''; search.querySelector('input').value = ''; draw(); search.querySelector('input').focus(); });
     const tools = append(node('div', null, 'cv-tools'), search, clear);
     if (!authored) tools.append(field('Уровень', level, value => { level = value; draw(); }, { values: [{ value: '', label: 'Все уровни' }, 'Начальный', 'Средний', 'Продвинутый'] }));
@@ -137,8 +138,9 @@
       area.append(link(state.preview ? '← В конструктор' : '← К программе курса', state.preview ? `/author/courses/${state.courseId}` : `/courses/${state.courseId}`, 'back-link'));
       if (state.preview) area.append(node('p', 'Предпросмотр. Прогресс и очки не сохраняются.', 'cv-notice'));
       else if (!window.AdamAuthenticated) area.append(node('p', 'Гостевое занятие. Войдите, чтобы сохранять прогресс между посещениями.', 'cv-notice'));
-      area.append(heading(state.title, state.block ? `Шаг ${state.viewStep + 1} из ${state.count}` : 'Урок завершён'));
-      if (!state.preview) area.append(field('Перейти к уроку', state.lessonId, async lessonId => {
+      const header = node('section', null, 'cv-player-header');
+      const top = append(node('div', null, 'cv-player-top'), heading(state.title, state.block ? `Шаг ${state.viewStep + 1} из ${state.count}` : 'Урок завершён'));
+      if (!state.preview) top.append(field('Перейти к уроку', state.lessonId, async lessonId => {
         if (lessonId === state.lessonId) return;
         try { const session = await post(`/courses/${state.courseId}/lessons/${lessonId}/sessions`); location.href = `/courses/sessions/${session.id}`; } catch (e) { showError(e); }
       }, { values: state.lessons.filter(l => l.available).map(l => ({ value: l.id, label: `${l.completed ? '✓ ' : ''}${l.module} · ${l.title}` })) }));
@@ -147,7 +149,7 @@
         const b = button(String(index + 1), e => run(e.currentTarget, () => refresh(step.id)), 'cv-step' + (step.completed ? ' is-complete' : ''));
         b.disabled = !step.available; b.title = `${step.title}${step.completed ? ' — пройден' : step.available ? '' : ' — сначала завершите предыдущие шаги'}`;
         b.setAttribute('aria-label', `Шаг ${index + 1}: ${step.title}${step.completed ? ', пройден' : ''}`); if (index === state.viewStep) b.setAttribute('aria-current', 'step'); steps.append(b);
-      }); area.append(steps);
+      }); header.append(top, steps); area.append(header);
       if (state.completed && !state.block) {
         area.append(empty('Урок пройден', 'Вы завершили все объяснения и задания этого урока.', link(state.preview ? 'Вернуться в конструктор' : 'Продолжить курс', state.preview ? `/author/courses/${state.courseId}` : `/courses/${state.courseId}`, 'button primary'))); return;
       }
@@ -171,7 +173,7 @@
           b.card.tokens.forEach((text, index) => { const t = button(text, () => { picked.push(index); renderTokens(); }, 'cv-token'); t.disabled = picked.includes(index); tokens.append(t); });
           check.disabled = !picked.length;
         }
-        if (!b.result) { renderTokens(); card.append(selected, tokens, check); next.disabled = true; }
+        if (!b.result) { renderTokens(); card.append(selected, tokens, check); next.disabled = true; next.hidden = true; }
         else card.append(append(node('div', null, `cv-result${b.result.correct ? '' : ' incorrect'}`), node('strong', b.result.correct ? 'Верно!' : 'Посмотрите правильный ответ'), node('p', b.result.expectedAnswer), b.result.explanation ? node('p', b.result.explanation) : null));
       }
       card.append(actions(next)); area.append(card);
