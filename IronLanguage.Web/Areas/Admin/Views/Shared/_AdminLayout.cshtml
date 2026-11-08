@@ -10,7 +10,6 @@
 <body>
 <a class="skip-link" href="#admin-main">К содержимому</a>
 <aside class="admin-sidebar">
-    <a class="admin-brand" href="/admin"><span aria-hidden="true">Ӕ</span> Адам <small>Управление</small></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="admin-navigation">Разделы панели</button>
     <nav id="admin-navigation" aria-label="Администрирование">
     @{ var path = Context.Request.Path.Value ?? ""; }
@@ -21,10 +20,9 @@
     }
     <a href="/" class="return-site">Вернуться на сайт</a>
     </nav>
-    <p class="sidebar-note">Ирон ӕвзаг<br />Обучение, которое объединяет</p>
 </aside>
 <main id="admin-main" class="admin-main" tabindex="-1">
-    <header class="admin-heading"><div><p>Платформа «Адам»</p><h1>@ViewData["Title"]</h1></div><span class="badge">Администратор</span></header>
+    <header class="admin-heading"><h1>@ViewData["Title"]</h1></header>
     @if (TempData["AdminSuccess"] is string message) { <p class="notice" role="status">@message</p> }
     @RenderBody()
 </main>

@@ -53,7 +53,7 @@ public sealed class EfAdminRepository(AdamDbContext db) : IAdminRepository
         role = role is "Admin" or "Editor" ? role : ""; status = status is "blocked" or "active" ? status : ""; sort = sort is "oldest" or "name" ? sort : "newest";
         var q = db.Users.AsNoTracking();
         if (query.Length > 0) { var search = query.ToLowerInvariant(); q = q.Where(u => (u.Email ?? "").ToLower().Contains(search) || (u.PublicName ?? "").ToLower().Contains(search)); }
-        if (role.Length > 0) q = q.Where(u => db.UserRoles.Any(ur => ur.UserId == u.Id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == role || (role == "Editor" && r.Name == "Admin")))));
+        if (role.Length > 0) q = q.Where(u => db.UserRoles.Any(ur => ur.UserId == u.Id && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == role)));
         if (status.Length > 0) q = q.Where(u => u.IsBlocked == (status == "blocked"));
         var total = await q.CountAsync(ct); page = Math.Clamp(page, 1, Math.Max(1, (total + 24) / 25));
         q = sort switch { "oldest" => q.OrderBy(u => u.CreatedAt).ThenBy(u => u.Id), "name" => q.OrderBy(u => u.PublicName).ThenBy(u => u.Id), _ => q.OrderByDescending(u => u.CreatedAt).ThenBy(u => u.Id) };

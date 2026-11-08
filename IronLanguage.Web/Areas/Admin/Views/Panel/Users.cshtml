@@ -2,7 +2,7 @@
 @{ ViewData["Title"] = "Пользователи"; }
 <form method="get" class="panel filters" novalidate>
 <div class="search-field"><label for="q">Имя или email</label><div><input id="q" name="q" value="@Model.Query" maxlength="254" type="search" /><button type="button" class="clear-search" aria-label="Очистить поиск" hidden="@(Model.Query.Length == 0)">×</button></div></div>
-<div><label for="role">Роль</label><select id="role" name="role"><option value="">Все роли</option><option value="Admin" selected="@(Model.Role == "Admin")">Admin</option><option value="Editor" selected="@(Model.Role == "Editor")">Editor, включая Admin</option></select></div>
+<div><label for="role">Роль</label><select id="role" name="role"><option value="">Все роли</option><option value="Admin" selected="@(Model.Role == "Admin")">Admin</option><option value="Editor" selected="@(Model.Role == "Editor")">Editor</option></select></div>
 <div><label for="status">Статус</label><select id="status" name="status"><option value="">Все</option><option value="active" selected="@(Model.Status == "active")">Активные</option><option value="blocked" selected="@(Model.Status == "blocked")">Заблокированные</option></select></div>
 <div><label for="sort">Порядок</label><select id="sort" name="sort"><option value="newest" selected="@(Model.Sort == "newest")">Сначала новые</option><option value="oldest" selected="@(Model.Sort == "oldest")">Сначала ранние</option><option value="name" selected="@(Model.Sort == "name")">По имени</option></select></div>
 <button class="primary" type="submit">Найти</button>
