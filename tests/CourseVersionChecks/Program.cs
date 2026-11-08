@@ -20,6 +20,14 @@ foreach (var invalid in new[] { draft with { Modules = [] }, draft with { Title 
 var module = draft.Modules[0];
 var lesson = module.Lessons[0];
 var block = lesson.Blocks[0];
+var rich = block with { RichText = JsonSerializer.SerializeToElement(new { ops = new[] { new { insert = "Ӕ ӕ\n", attributes = new { bold = true, color = "#173f32", size = "22px" } } } }) };
+Check(CourseRichText.PlainText(rich) == "Ӕ ӕ", "Форматирование потеряло осетинские символы");
+foreach (var unsafeJson in new[] { "{\"ops\":[{\"insert\":{\"image\":\"https://example.invalid/x\"}}]}", "{\"ops\":[{\"insert\":\"x\",\"attributes\":{\"link\":\"javascript:alert(1)\"}}]}", "{\"ops\":[{\"insert\":\"x\",\"attributes\":{\"color\":\"url(x)\"}}]}", "{\"ops\":[{\"delete\":1}]}" })
+{
+    var rejected = false;
+    try { CourseRichText.PlainText(block with { RichText = JsonSerializer.Deserialize<JsonElement>(unsafeJson) }); } catch (ArgumentException) { rejected = true; }
+    Check(rejected, "Опасное оформление прошло проверку");
+}
 foreach (var invalidBlock in new[] { block with { Kind = "unknown" }, block with { Id = Guid.Empty }, block with { Text = "" } })
 {
     var rejected = false;
@@ -105,6 +113,8 @@ try
     Check(!await runner.Advance(session.Id, Guid.NewGuid(), learner.Id, guestOwner, ct), "Зачтён чужой блок");
     Check(await runner.Advance(session.Id, block.Id, learner.Id, guestOwner, ct), "Теория не завершилась");
     Check(await runner.Advance(session.Id, block.Id, learner.Id, guestOwner, ct), "Повтор завершения не идемпотентен");
+    var reviewed = JsonSerializer.SerializeToElement(await runner.State(session.Id, learner.Id, guestOwner, ct, block.Id), CourseAuthoringService.JsonOptions);
+    Check(reviewed.GetProperty("viewStep").GetInt32() == 0 && reviewed.GetProperty("step").GetInt32() == 1 && reviewed.GetProperty("completed").GetBoolean(), "Повторный просмотр сбросил прогресс");
     Check((await runner.Completed(course.Id, first.Id, learner.Id, guestOwner, ct)).SetEquals([lesson.Id]), "Прогресс не сохранился");
     await using (var restored = new AdamDbContext(options))
         Check((await new EfCourseLearningRepository(restored).Session(learner.Id, session.Id, ct))?.CompletedAt != null, "Результат зависит от памяти процесса");

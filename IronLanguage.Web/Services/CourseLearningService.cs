@@ -83,27 +83,39 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         return version is null || version.Id != session.VersionId ? null : (session, version, false);
     }
 
-    public async Task<object?> State(Guid id, Guid? user, Guid owner, CancellationToken ct)
+    public async Task<object?> State(Guid id, Guid? user, Guid owner, CancellationToken ct, Guid? blockId = null)
     {
         if (await Find(id, user, owner, ct) is not { } found) return null;
         var (session, version, temporary) = found;
-        var lesson = Lesson(version, session.LessonId)!;
+        var draft = Read(version);
+        var lesson = draft.Modules.SelectMany(m => m.Lessons).Single(l => l.Id == session.LessonId);
+        var viewStep = blockId is Guid bid ? Array.FindIndex(lesson.Blocks, b => b.Id == bid) : session.Step;
+        if (viewStep < 0 || viewStep > session.Step) throw new ArgumentException("Сначала завершите предыдущие шаги.");
         object? blockData = null;
-        if (session.Step < lesson.Blocks.Length)
+        if (viewStep < lesson.Blocks.Length)
         {
-            var block = lesson.Blocks[session.Step];
+            var block = lesson.Blocks[viewStep];
             ExerciseCard? card = null; object? result = null;
-            if (Attempts(session)[session.Step] is Guid aid)
+            if (Attempts(session)[viewStep] is Guid aid)
             {
                 var attempt = temporary ? guests.Find<ExerciseAttempt>(owner, aid)?.Value : await progress.Attempt(user!.Value, aid, ct);
                 if (attempt is null) throw new ArgumentException("Занятие истекло. Откройте урок заново.");
                 card = await learning.SnapshotCard(block.Kind, attempt, ct);
                 if (attempt.CompletedAt is not null) result = new { correct = attempt.Correct, expectedAnswer = attempt.ExpectedAnswer, explanation = attempt.Explanation };
             }
-            blockData = new { block.Id, block.Kind, block.Title, block.Text, card, result };
+            blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, card, result };
         }
+        var preview = temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview;
+        var done = preview ? new HashSet<Guid>() : await Completed(session.CourseId, version.Id, user, owner, ct);
+        var unlocked = true;
+        var lessons = draft.Modules.SelectMany(m => m.Lessons.Select(l => {
+            var available = !draft.Sequential || unlocked;
+            if (!done.Contains(l.Id)) unlocked = false;
+            return new { l.Id, l.Title, module = m.Title, completed = done.Contains(l.Id), available };
+        })).ToArray();
         return new { session.Id, session.CourseId, session.LessonId, lesson.Title, session.Step, count = lesson.Blocks.Length,
-            completed = session.CompletedAt is not null, block = blockData, preview = temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview };
+            viewStep, steps = lesson.Blocks.Select((b, i) => new { b.Id, b.Title, completed = i < session.Step, available = i <= session.Step }).ToArray(), lessons,
+            completed = session.CompletedAt is not null, block = blockData, preview };
     }
 
     public async Task<AnswerResult?> Answer(Guid id, Guid blockId, int[] indices, Guid? user, Guid owner, CancellationToken ct)
