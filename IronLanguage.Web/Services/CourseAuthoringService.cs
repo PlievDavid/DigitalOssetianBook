@@ -17,6 +17,7 @@ public sealed record CourseDraftBlock(Guid Id, string Kind, string Title, string
 {
     public Guid? MaterialId { get; init; }
     public Exercise? PublishedExercise { get; init; }
+    public JsonElement? RichText { get; init; }
 }
 
 public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRepository? catalog = null)
@@ -58,7 +59,8 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
                     if (block.Kind is not ("theory" or "translation")) throw new ArgumentException("Этот тип блока ещё не поддерживается новой системой курсов.");
                     if (block.Kind == "translation" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
                         throw new ArgumentException("Выберите упражнение «Собери фразу».");
-                    if (block.Text is null || block.Text.Length > 20_000 || publishing && block.Kind == "theory" && string.IsNullOrWhiteSpace(block.Text))
+                    var text = CourseRichText.PlainText(block);
+                    if (text is null || text.Length > 20_000 || publishing && block.Kind == "theory" && string.IsNullOrWhiteSpace(text))
                         throw new ArgumentException("Заполните текст теории (до 20 000 символов).");
                 }
             }
@@ -109,6 +111,6 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
     }
 
     private static CourseDraft WithoutSnapshots(CourseDraft draft) => draft with { Modules = draft.Modules.Select(m => m with {
-        Lessons = m.Lessons.Select(l => l with { Blocks = l.Blocks.Select(b => b with { PublishedExercise = null }).ToArray() }).ToArray()
+        Lessons = m.Lessons.Select(l => l with { Blocks = l.Blocks.Select(b => b with { PublishedExercise = null, Text = CourseRichText.PlainText(b) }).ToArray() }).ToArray()
     }).ToArray() };
 }

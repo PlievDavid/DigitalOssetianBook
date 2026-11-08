@@ -1,6 +1,7 @@
 window.AdamCourseStudio = async function (ui) {
   'use strict';
   const { root, api, post, node, append, link, button, actions, field, confirm, run, showError, notice, message, setDirty } = ui;
+  await import('/js/course-rich-text.js'); await window.AdamCourseRichText.load();
   const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/css/course-studio.css'; document.head.append(style);
   const id = location.pathname.split('/').pop();
   const course = await api(`/author/courses/${id}`), materials = await api('/author/course-materials');
@@ -224,11 +225,11 @@ window.AdamCourseStudio = async function (ui) {
       card.append(append(node('div', null, 'cs-block-head'), append(node('span', null, 'cs-block-type'), icon(b.kind === 'theory' ? 'text' : 'tiles'), node('span', b.kind === 'theory' ? 'Объяснение' : 'Собери фразу'), node('small', String(bi + 1))), actions(editing ? null : action('Редактировать', () => { selectedBlock = b.id; drawLesson(); canvas.querySelector('.cs-block-edit input')?.focus(); }), iconButton('Действия с блоком ' + (bi + 1), () => blockMenu(lesson, b)))));
       if (editing) {
         card.append(field('Заголовок блока', b.title, v => { b.title = v; dirty(); }, { max: 150 }));
-        if (b.kind === 'theory') card.append(field('Текст объяснения', b.text, v => { b.text = v; dirty(); }, { multiline: true, max: 20000 }));
+        if (b.kind === 'theory') card.append(window.AdamCourseRichText.editor(b, (text, richText) => { b.text = text; b.richText = richText; dirty(); }));
         else card.append(field('Упражнение из библиотеки', b.materialId || '', v => { b.materialId = v; dirty(); }, { values: [{ value: '', label: 'Выберите упражнение' }, ...materials.map(m => ({ value: m.id, label: m.title }))] }), node('p', 'Правильный ответ и правила проверки берутся из опубликованного задания.', 'cs-help'));
         card.append(action('Готово', () => { selectedBlock = null; drawLesson(); save().catch(showError); }, 'check', 'cs-done'));
       } else {
-        card.append(node('h3', b.title), node('p', b.kind === 'theory' ? b.text || 'Добавьте текст объяснения' : materials.find(m => m.id === b.materialId)?.title || 'Выберите упражнение', 'cs-block-body'));
+        card.append(node('h3', b.title), b.kind === 'theory' ? window.AdamCourseRichText.render(b) : node('p', materials.find(m => m.id === b.materialId)?.title || 'Выберите упражнение', 'cs-block-body'));
       }
       canvas.append(card);
     });

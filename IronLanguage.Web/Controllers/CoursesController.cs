@@ -143,10 +143,10 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     }
 
     [HttpGet("api/v1/course-sessions/{id:guid}")]
-    public async Task<IActionResult> Session(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Session(Guid id, CancellationToken ct, [FromQuery] Guid? block = null)
     {
         if (!CanAccessSession(id)) return NotFound();
-        try { return await learning.State(id, User.UserId(), guests.Owner(HttpContext), ct) is { } state ? Json(state) : NotFound(); }
+        try { return await learning.State(id, User.UserId(), guests.Owner(HttpContext), ct, block) is { } state ? Json(state) : NotFound(); }
         catch (ArgumentException e) { return BadRequest(new { error = e.Message }); }
     }
 
