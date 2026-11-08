@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Управление Адам</title>
+    <link rel="icon" type="image/svg+xml" href="~/images/adam-mark.svg" />
+    <link rel="stylesheet" href="~/css/theme-green.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+</head>
+<body>
+<a class="skip-link" href="#admin-main">К содержимому</a>
+<aside class="admin-sidebar">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="admin-navigation">Разделы панели</button>
+    <nav id="admin-navigation" aria-label="Администрирование">
+    @{ var path = Context.Request.Path.Value ?? ""; }
+    @foreach (var item in new[] { ("/admin", "Обзор"), ("/admin/users", "Пользователи"), ("/admin/materials", "Материалы"), ("/admin/audit", "Журнал действий") })
+    {
+        var active = item.Item1 == "/admin" ? path == "/admin" || path == "/admin/" : path.StartsWith(item.Item1);
+        <a href="@item.Item1" aria-current="@(active ? "page" : null)">@item.Item2</a>
+    }
+    <a href="/" class="return-site">Вернуться на сайт</a>
+    </nav>
+</aside>
+<main id="admin-main" class="admin-main" tabindex="-1">
+    <header class="admin-heading"><h1>@ViewData["Title"]</h1></header>
+    @if (TempData["AdminSuccess"] is string message) { <p class="notice" role="status">@message</p> }
+    @RenderBody()
+</main>
+<script src="~/js/admin.js" asp-append-version="true" defer></script>
+</body>
+</html>

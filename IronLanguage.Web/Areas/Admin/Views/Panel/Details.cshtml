@@ -1,0 +1,24 @@
+@model AdminUserModel
+@{ ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Details.User.Name) ? "Карточка пользователя" : Model.Details.User.Name; var user = Model.Details.User; var invalid = !ViewData.ModelState.IsValid; }
+<a class="back-link" href="/admin/users">К списку пользователей</a>
+<section class="panel"><div class="section-bar"><h2>@user.Email</h2><span class="badge @(user.Blocked ? "warning" : "")">@(user.Blocked ? "Заблокирован" : "Активен")</span></div><dl class="profile-meta"><div><dt>Роли</dt><dd>@(user.Roles.Length == 0 ? "Ученик" : string.Join(", ", user.Roles))</dd></div><div><dt>Регистрация, UTC</dt><dd>@user.CreatedAt.UtcDateTime.ToString("dd.MM.yyyy HH:mm")</dd></div><div><dt>ID</dt><dd>@user.Id</dd></div></dl>
+@if (user.Roles.Contains("Admin")) { <p class="muted">Admin включает права редактора. Отдельная роль Editor сохраняет доступ к материалам после снятия Admin.</p> }
+</section>
+<section class="panel"><h2>Обучение за всё время</h2><dl class="profile-meta"><div><dt>Активных дней UTC</dt><dd>@Model.Details.ActiveDays</dd></div><div><dt>Очки</dt><dd>@Model.Details.Points</dd></div><div><dt>Упражнения</dt><dd>@Model.Details.Exercises</dd></div><div><dt>Диалоги</dt><dd>@Model.Details.Dialogues</dd></div><div><dt>Уроки</dt><dd>@Model.Details.Lessons</dd></div><div><dt>Сохранённые слова</dt><dd>@Model.Details.SavedWords</dd></div></dl></section>
+<section class="panel"><h2>Управление доступом</h2><p class="muted">Изменение прав или блокировка завершит текущие сеансы пользователя. Действие и причина останутся в журнале.</p>
+<form method="post" action="/admin/users/@user.Id" class="admin-change" novalidate data-target="@user.Email">
+@Html.AntiForgeryToken()<input type="hidden" name="Stamp" value="@Model.Stamp" />
+<div asp-validation-summary="All" id="change-errors" class="validation" role="alert" tabindex="-1"></div>
+<div class="field"><label for="action">Действие</label><select id="action" name="Action">
+@foreach (var action in AdminService.Actions) {
+if (action == "block" && user.Blocked || action == "unblock" && !user.Blocked) { continue; }
+if (action.StartsWith("grant-") && user.Roles.Contains(action == "grant-admin" ? "Admin" : "Editor")) { continue; }
+if (action.StartsWith("revoke-") && !user.Roles.Contains(action == "revoke-admin" ? "Admin" : "Editor")) { continue; }
+if (User.UserId() == user.Id && action is "block" or "revoke-admin") { continue; }
+<option value="@action">@AdminLabels.Action(action)</option>
+}
+</select></div>
+<div class="field"><label for="reason">Причина</label><textarea id="reason" name="Reason" rows="3" minlength="3" maxlength="500" aria-describedby="reason-hint change-errors" aria-invalid="@(invalid ? "true" : null)" required>@ViewData["Reason"]</textarea><small id="reason-hint">От 3 до 500 символов. Не указывайте пароли и другие секреты.</small></div>
+<button class="primary" type="submit">Проверить и подтвердить</button>
+</form></section>
+<dialog id="admin-confirm" aria-labelledby="confirm-title" aria-describedby="confirm-description"><h2 id="confirm-title">Подтвердите изменение доступа</h2><p id="confirm-description"></p><p>Текущие сеансы пользователя будут завершены. Изменение появится в журнале.</p><div class="dialog-actions"><button type="button" data-cancel autofocus>Отмена</button><button type="button" class="danger" data-confirm>Подтвердить</button></div></dialog>

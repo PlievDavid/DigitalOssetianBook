@@ -1,0 +1,1 @@
+{"name":"adam-reels","private":true,"scripts":{"render":"remotion render src/index.ts AdamReels out/adam-reels.mp4","studio":"remotion studio src/index.ts"},"dependencies":{"@remotion/cli":"4.0.484","react":"19.2.7","react-dom":"19.2.7","remotion":"4.0.484"},"devDependencies":{"@rspack/binding-win32-x64-msvc":"^2.2.9","@types/react":"19.2.17","typescript":"6.0.3"}}

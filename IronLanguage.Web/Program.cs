@@ -1,6 +1,6 @@
+using Microsoft.AspNetCore.Identity;
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -16,12 +16,22 @@ builder.Services.AddControllersWithViews();
 var connection = builder.Configuration.GetConnectionString("Adam")
     ?? throw new InvalidOperationException("Set ConnectionStrings:Adam to a PostgreSQL connection string.");
 builder.Services.AddDbContext<AdamDbContext>(options => options.UseNpgsql(connection));
+builder.Services.AddScoped<IAdminRepository, EfAdminRepository>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<IAnalyticsRepository, EfAnalyticsRepository>();
+builder.Services.AddSingleton<AnalyticsRecorder>();
+builder.Services.AddHostedService<AnalyticsWorker>();
 builder.Services.AddScoped<IAccountRepository, EfAccountRepository>();
 builder.Services.AddScoped<AvatarService>();
 builder.Services.AddScoped<ICatalogRepository, EfCatalogRepository>();
 builder.Services.AddScoped<IEditorRepository, EfEditorRepository>();
 builder.Services.AddScoped<IReadingLibraryRepository, EfReadingLibraryRepository>();
 builder.Services.AddScoped<ReadingSeedService>();
+builder.Services.AddScoped<ICurriculumRepository, EfCurriculumRepository>();
+builder.Services.AddScoped<ICourseRepository, EfCourseRepository>();
+builder.Services.AddScoped<CourseAuthoringService>();
+builder.Services.AddScoped<ICourseRatingRepository, EfCourseRatingRepository>();
+builder.Services.AddScoped<CurriculumService>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 builder.Services.AddScoped<LearningService>();
 builder.Services.AddScoped<ListeningService>();
@@ -41,19 +51,39 @@ builder.Services.AddScoped<WordleService>();
 builder.Services.AddScoped<IWordleRepository, EfWordleRepository>();
 builder.Services.AddScoped<DialogueSeedService>();
 builder.Services.AddScoped<ExerciseSeedService>();
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+builder.Services.AddIdentity<UserAccount, IdentityRole<Guid>>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+    options.User.AllowedUserNameCharacters = "";
+    options.Password.RequiredLength = 8;
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+}).AddEntityFrameworkStores<AdamDbContext>().AddSignInManager<AdamSignInManager>()
+    .AddClaimsPrincipalFactory<AdamClaimsFactory>().AddDefaultTokenProviders();
+builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
+builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/account/login";
     options.AccessDeniedPath = "/account/access-denied";
-    options.Cookie.Name = "Adam.Auth";
+    options.Cookie.Name = "Adam.Identity";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
     options.Events.OnRedirectToLogin = context =>
     {
-        if (context.Request.Path.StartsWithSegments("/api")) { context.Response.StatusCode = 401; return Task.CompletedTask; }
-        context.Response.Redirect(context.RedirectUri);
+        if (context.Request.Path.StartsWithSegments("/api")) context.Response.StatusCode = 401;
+        else context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api")) context.Response.StatusCode = 403;
+        else context.Response.Redirect(context.RedirectUri);
         return Task.CompletedTask;
     };
 });
@@ -62,6 +92,17 @@ Directory.CreateDirectory(keysPath);
 builder.Services.AddDataProtection().SetApplicationName("Adam").PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 var app = builder.Build();
+
+if (args.FirstOrDefault() == "admin-grant")
+{
+    if (args.Length != 3 || args[1] != "--email") throw new ArgumentException("Использование: admin-grant --email <email>");
+    using var scope = app.Services.CreateScope();
+    var users = scope.ServiceProvider.GetRequiredService<UserManager<UserAccount>>();
+    var user = await users.FindByEmailAsync(args[2].Trim()) ?? throw new ArgumentException("Существующий аккаунт не найден.");
+    await scope.ServiceProvider.GetRequiredService<AdminService>().Change(null, user.Id, "grant-admin", "Выдача Admin серверной командой", "", CancellationToken.None, bootstrap: true);
+    Console.WriteLine("Роль Admin назначена. Для доступа войдите заново.");
+    return;
+}
 
 if (args.Contains("reading-seed", StringComparer.OrdinalIgnoreCase))
 {
@@ -179,6 +220,14 @@ app.UseRouting();
 app.UseAuthentication();
 
 app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    await next();
+    if (HttpMethods.IsGet(context.Request.Method) && context.Response.StatusCode == 200 &&
+        context.Response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true &&
+        AnalyticsRecorder.PageSection(context.Request.Path.Value ?? "") is string section)
+        context.RequestServices.GetRequiredService<AnalyticsRecorder>().Record(section, "view");
+});
 
 app.UseStaticFiles(); // Uploaded media is added after build, outside the static asset manifest.
 app.MapStaticAssets();

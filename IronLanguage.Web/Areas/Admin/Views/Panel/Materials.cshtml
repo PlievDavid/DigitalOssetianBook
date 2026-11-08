@@ -1,0 +1,5 @@
+@model List<MaterialCount>
+@{ ViewData["Title"] = "Учебные материалы"; }
+<section class="panel"><div class="section-bar"><div><h2>Состояние библиотеки</h2><p class="muted">Материал может иметь публикацию и черновик новой версии одновременно.</p></div><a class="button primary" href="/editor/curriculum">Открыть редактор</a></div>
+<div class="table-wrap"><table><thead><tr><th>Тип</th><th>Опубликовано</th><th>Черновики</th><th>В архиве</th></tr></thead><tbody>@foreach (var row in Model) { <tr><th>@AdminLabels.Section(row.Kind)</th><td>@row.Published</td><td>@row.Draft</td><td>@row.Archived</td></tr> }</tbody></table></div>
+</section>

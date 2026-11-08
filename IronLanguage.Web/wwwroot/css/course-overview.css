@@ -1,0 +1,48 @@
+.course-overview .course-layout { display: block; margin: var(--space-4) 0 var(--space-6); }
+.green-theme .course-overview.feature-shell { padding-block-start: var(--space-5); }
+.course-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-4); min-height: 98px; margin-bottom: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--theme-radius-card); background: #edf3f9; }
+.course-overview .course-title { margin: 0; font-size: clamp(24px, 3vw, 30px); overflow-wrap: anywhere; }
+.course-heading-cover { display: block; width: 58px; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; }
+.course-heading-letter { color: #395b80; font: 650 52px/1 var(--theme-heading-font); }
+.course-overview .course-sidebar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; border: 0; border-bottom: 1px solid var(--curriculum-border); padding: 0 0 var(--space-2); margin-bottom: var(--space-5); }
+.course-overview .course-navigation { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; }
+.course-overview .course-navigation a { display: flex; align-items: center; min-height: 44px; padding: 6px 0; border: 0; border-bottom: 2px solid transparent; font-size: 14px; text-decoration: none; }
+.course-overview .course-navigation a[aria-current=page] { background: transparent; border-bottom-color: var(--theme-ink); font-weight: 600; }
+.course-overview .course-sidebar-progress { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.course-overview .course-sidebar-progress progress { width: 56px; }
+.course-overview .course-progress-label { margin: 0; font-size: 13px; }
+.course-overview .course-start { margin: 0; }
+.course-heading .course-author { display: inline-block; margin-top: 6px; font-size: 14px; color: var(--curriculum-muted); }
+.course-overview .course-main h2 { margin: 0 0 12px; font-size: 21px; }
+.course-overview .course-about { max-width: 76ch; }
+.course-overview .course-about-section { margin-top: 28px; }
+.course-overview .course-note { margin: 0 0 14px; }
+.course-overview .course-lesson-list { margin: 14px 0 0; border-top: 1px solid var(--curriculum-border); }
+.course-overview .course-lesson-open { padding: 16px 8px; }
+.course-overview .course-rating { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px 24px; margin-top: 28px; padding: 16px 18px; border-radius: 8px; background: #f5f6f8; }
+.course-rating form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.course-rating-summary h2 { margin: 0 0 4px; font-size: 16px; }
+.course-rating-summary p { margin: 0; color: var(--curriculum-muted); font-size: 14px; }
+.course-rating fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.course-rating legend { padding: 0 4px; font-size: 13px; color: var(--curriculum-muted); }
+.course-rating [data-rating-status] { color: var(--curriculum-muted); font-size: 13px; }
+.course-rating [data-rating-status]:empty { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+    .course-rating-stars .is-confirmed svg { animation: course-rating-confirm 260ms ease-out; }
+}
+@keyframes course-rating-confirm {
+    45% { transform: scale(1.19); }
+}
+.course-overview .course-lesson-open { grid-template-columns: 24px minmax(0, 1fr) auto; }
+.course-lesson-progress { display: grid; grid-template-columns: 20px 4.5ch; align-items: center; gap: 6px; font-size: 13px; color: var(--curriculum-muted); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+@media (max-width: 600px) {
+    .course-overview .course-lesson-open { grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; }
+}
+.course-rating-stars { display: flex; }
+.course-rating-stars button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; border: 0; border-radius: 6px; color: #a2aaa4; cursor: pointer; }
+.course-rating-stars svg { width: 28px; height: 28px; stroke: currentColor; stroke-width: 1.15; stroke-linejoin: round; fill: transparent; }
+.course-rating-stars .is-filled svg, .course-rating .is-previewing .is-preview svg { color: #ab7627; fill: #dfad57; }
+.course-rating .is-previewing .is-filled:not(.is-preview) svg { color: #a2aaa4; fill: transparent; }
+@media (prefers-reduced-motion: no-preference) {
+    .course-rating-stars svg { transition: fill 140ms ease, color 140ms ease; }
+}

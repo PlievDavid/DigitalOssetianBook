@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace IronLanguage.Db;
 
-public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbContext(options)
+public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : IdentityDbContext<UserAccount, IdentityRole<Guid>, Guid>(options)
 {
-    public DbSet<UserAccount> Users => Set<UserAccount>();
     public DbSet<WordEntry> Words => Set<WordEntry>();
     public DbSet<DictionarySense> DictionarySenses => Set<DictionarySense>();
     public DbSet<DictionaryForm> DictionaryForms => Set<DictionaryForm>();
@@ -26,9 +27,36 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
     public DbSet<CrosswordSolvedWord> CrosswordSolvedWords => Set<CrosswordSolvedWord>();
     public DbSet<WordleGame> WordleGames => Set<WordleGame>();
+    public DbSet<CourseRating> CourseRatings => Set<CourseRating>();
+    public DbSet<LessonRun> LessonRuns => Set<LessonRun>();
+    public DbSet<Course> Courses => Set<Course>();
+    public DbSet<CourseVersion> CourseVersions => Set<CourseVersion>();
+    public DbSet<CourseEnrollment> CourseEnrollments => Set<CourseEnrollment>();
+
+    public DbSet<AdminAudit> AdminAudits => Set<AdminAudit>();
+    public DbSet<DailyMetric> DailyMetrics => Set<DailyMetric>();
+    public DbSet<AnalyticsState> AnalyticsStates => Set<AnalyticsState>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        base.OnModelCreating(model);
+        model.Entity<Course>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<Course>().HasOne<CourseVersion>().WithMany().HasForeignKey(x => new { x.PublishedVersionId, x.Id })
+            .HasPrincipalKey(x => new { x.Id, x.CourseId }).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<CourseVersion>().HasOne<Course>().WithMany().HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<CourseVersion>().HasIndex(x => new { x.CourseId, x.Number }).IsUnique();
+        model.Entity<CourseVersion>().HasIndex(x => new { x.CourseId, x.SourceDraftStamp }).IsUnique();
+        model.Entity<CourseEnrollment>().HasIndex(x => new { x.UserId, x.CourseId }).IsUnique();
+        model.Entity<CourseEnrollment>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<CourseEnrollment>().HasOne<CourseVersion>().WithMany().HasForeignKey(x => new { x.VersionId, x.CourseId })
+            .HasPrincipalKey(x => new { x.Id, x.CourseId }).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<UserAccount>().ToTable("Users");
+        model.Entity<AdminAudit>().HasIndex(x => x.CreatedAt);
+        model.Entity<DailyMetric>().HasKey(x => new { x.Day, x.Section, x.Event });
+        model.Entity<AnalyticsState>().HasKey(x => x.Id);
+        model.Entity<CourseRating>().HasKey(x => new { x.CourseId, x.UserId });
+        model.Entity<CourseRating>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<CourseRating>().ToTable(t => t.HasCheckConstraint("CK_CourseRatings_Score", "\"Score\" >= 1 AND \"Score\" <= 5"));
         model.Entity<WordleGame>().HasKey(x => new { x.UserId, x.Day });
         model.Entity<WordleGame>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordleGame>().Property(x => x.ExpectedWord).HasMaxLength(5);
@@ -38,6 +66,8 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<CrosswordSolvedWord>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<UserAccount>().HasIndex(x => x.Email).IsUnique();
         model.Entity<UserAccount>().Property(x => x.AvatarJson).HasMaxLength(2048);
+        model.Entity<UserAccount>().Property(x => x.PublicName).HasMaxLength(100);
+        model.Entity<LessonRun>().HasIndex(x => new { x.UserId, x.LessonId }).IsUnique().HasFilter("\"CompletedAt\" IS NULL");
         model.Entity<WordEntry>().HasIndex(x => x.Ossetian);
         model.Entity<WordEntry>().HasIndex(x => x.DictionarySenseId).IsUnique();
         model.Entity<DictionarySense>().HasIndex(x => new { x.SourceRow, x.SourceColumn });

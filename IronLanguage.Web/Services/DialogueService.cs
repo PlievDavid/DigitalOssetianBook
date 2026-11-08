@@ -218,6 +218,12 @@ public static class DialogueScript
 
 public sealed class DialogueService(ICatalogRepository catalog, IProgressRepository progress, GuestLearningStore guests)
 {
+    public static DialogueSession CreateSnapshot(Dialogue dialogue, Guid userId)
+    {
+        var (index, consumed) = Advance(Material(dialogue), 1);
+        return new DialogueSession { UserId = userId, DialogueId = dialogue.Id, DialogueVersion = dialogue.Version,
+            DialogueTitle = dialogue.Title, ScriptJson = dialogue.ScriptJson, StateJson = Save(new DialogueState(index, consumed, 0)) };
+    }
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly Regex WordPattern = new(@"[\p{L}\p{M}]+", RegexOptions.Compiled);
 
@@ -312,6 +318,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
             {
                 if (session.CompletedAt is not null || session.Revision != revision) return Task.FromResult(false);
                 session.CompletedAt = DateTimeOffset.UtcNow;
+                guests.Completed(entry);
                 return Task.FromResult(true);
             });
         }
