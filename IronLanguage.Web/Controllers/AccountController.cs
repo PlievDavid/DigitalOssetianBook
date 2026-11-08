@@ -17,6 +17,9 @@ public sealed class RegistrationInput : AccountInput
 {
     [Required(ErrorMessage = "Введите имя."), MaxLength(100, ErrorMessage = "Имя должно содержать не более 100 символов.")]
     public string PublicName { get; set; } = "";
+
+    [Required(ErrorMessage = "Повторите пароль."), Compare(nameof(Password), ErrorMessage = "Пароли не совпадают."), MaxLength(128)]
+    public string ConfirmPassword { get; set; } = "";
 }
 
 [Route("account")]

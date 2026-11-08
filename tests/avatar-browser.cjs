@@ -23,7 +23,9 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     await p.goto(base + "/account/register");
     await p.locator("#PublicName").fill("Проверка аватара");
     await p.locator("#Email").fill("avatar-check-" + crypto.randomUUID() + "@example.invalid");
-    await p.locator("#Password").fill(crypto.randomBytes(18).toString("base64url"));
+    const password = crypto.randomBytes(18).toString("base64url");
+    await p.locator("#Password").fill(password);
+    await p.locator("#ConfirmPassword").fill(password);
     await Promise.all([p.waitForURL("**/profile/avatar?onboarding=true"), p.getByRole("button", { name: "Зарегистрироваться", exact: true }).click()]);
     return p;
   }
