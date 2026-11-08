@@ -95,9 +95,10 @@ public sealed class EfAdminRepository(AdamDbContext db) : IAdminRepository
             .Concat(db.Matchings.Select(x => new { Kind = "matching", x.Published, x.Archived, Draft = !x.Published || db.ContentRevisions.Any(r => r.Kind == "matching" && r.ContentId == x.Id && !r.Published) }))
             .Concat(db.PictureMatchings.Select(x => new { Kind = "picture", x.Published, x.Archived, Draft = !x.Published || db.ContentRevisions.Any(r => r.Kind == "picture" && r.ContentId == x.Id && !r.Published) }))
             .GroupBy(x => x.Kind).Select(g => new { Kind = g.Key, Published = g.Count(x => x.Published && !x.Archived), Draft = g.Count(x => x.Draft && !x.Archived), Archived = g.Count(x => x.Archived) }).ToListAsync(ct);
-        var revisions = await db.ContentRevisions.AsNoTracking().GroupBy(x => new { x.Kind, x.ContentId }).Select(g => new { g.Key.Kind, Published = g.Any(x => x.Published), Draft = g.Any(x => !x.Published) }).ToListAsync(ct);
         var result = rows.Select(x => new MaterialCount(x.Kind, x.Published, x.Draft, x.Archived)).ToList();
-        foreach (var kind in new[] { "course", "lesson" }) result.Add(new(kind, revisions.Count(x => x.Kind == kind && x.Published), revisions.Count(x => x.Kind == kind && x.Draft), 0));
+        result.Add(new("course", await db.Courses.CountAsync(x => !x.Archived && x.PublishedVersionId != null, ct),
+            await db.Courses.CountAsync(x => !x.Archived && !db.CourseVersions.Any(v => v.Id == x.PublishedVersionId && v.SourceDraftStamp == x.DraftStamp), ct),
+            await db.Courses.CountAsync(x => x.Archived, ct)));
         return result.OrderBy(x => x.Kind).ToList();
     }
     public async Task<AuditPage> Audit(int page, CancellationToken ct)

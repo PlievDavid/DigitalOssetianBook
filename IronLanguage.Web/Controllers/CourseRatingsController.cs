@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IronLanguage.Web.Controllers;
 
-[Authorize, AutoValidateAntiforgeryToken]
+[NonController, Authorize, AutoValidateAntiforgeryToken]
 public sealed class CourseRatingsController(ICourseRatingRepository ratings, ICurriculumRepository curriculum) : Controller
 {
     [HttpPost("courses/{id:guid}/rating")]

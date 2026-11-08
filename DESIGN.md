@@ -95,3 +95,7 @@ SVG можно импортировать в Figma через Place image либ
 | Scrollbar | admin.css, html и table-wrap | DESIGN.md | Документ и внутренний скролл таблицы | tests/admin-browser.cjs |
 | Toast | _AdminLayout, роль status | DESIGN.md | Успех; ошибка остаётся в форме | tests/admin-browser.cjs |
 | CRUD | PanelController и AdminService | DESIGN.md | Список, карточка, подтверждённое изменение; без удаления | tests/AdminChecks/Program.cs; tests/admin-browser.cjs |
+
+## Новый редактор курсов
+
+Две области: дерево модулей и выбранный урок. Постоянной третьей панели нет; настройки блока появляются по запросу. Общие свойства — во вкладке «О курсе». На телефоне программа раскрывается отдельно. Используются текущие theme-токены, Onest/Golos Text, AdamApi для CSRF, native dialog с возвратом фокуса и native select для выбора материала. Автосохранение показывает состояние; конфликт не перезаписывает другую версию.

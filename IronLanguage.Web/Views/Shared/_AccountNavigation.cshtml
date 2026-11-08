@@ -3,5 +3,7 @@
     @if (User.IsInRole("Admin")) { <a href="/admin">Панель администратора</a> }
     <a href="/profile" aria-current="@(path == "/profile" ? "page" : null)">@await Html.PartialAsync("_NavIcon", "profile")<span>Учётная запись</span></a>
     <a href="/progress" aria-current="@(path == "/progress" ? "page" : null)">@await Html.PartialAsync("_NavIcon", "progress")<span>Мои результаты</span></a>
+    <a href="/my-courses">Мои курсы</a>
+    @if (User.IsInRole("Editor")) { <a href="/author/courses">Мои авторские курсы</a> }
     @if (User.IsInRole("Editor")) { <a href="/editor">@await Html.PartialAsync("_NavIcon", "materials")<span>Редактор материалов</span></a> }
 </nav>

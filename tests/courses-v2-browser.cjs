@@ -1,0 +1,111 @@
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const base = process.env.ADAM_TEST_URL;
+assert(base && new URL(base).hostname === '127.0.0.1');
+const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
+(async () => {
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  let checks = 0; const errors = [];
+  const check = (value, message) => { assert(value, message); checks++; };
+  const out = path.resolve('.run-local/course-v2-checks'); fs.mkdirSync(out, { recursive: true });
+  const author = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const learner = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const guest = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await author.newPage(); page.on('pageerror', e => errors.push(e.message));
+  const student = await learner.newPage(); student.on('pageerror', e => errors.push(e.message));
+  async function login(p, email) {
+    await p.goto(base + '/account/login'); await p.locator('#Email').fill(email); await p.locator('#Password').fill(fixture.password);
+    await Promise.all([p.waitForURL(url => !url.pathname.startsWith('/account/login')), p.locator('form button[type=submit]').click()]);
+  }
+  async function api(p, url, method = 'GET', body) {
+    return p.evaluate(async ({ url, method, body }) => {
+      const token = document.querySelector('#api-antiforgery input')?.value;
+      const r = await fetch('/api/v1' + url, { method, headers: { 'Content-Type': 'application/json', RequestVerificationToken: token }, body: body === undefined ? undefined : JSON.stringify(body) });
+      const text = await r.text(); let data; try { data = JSON.parse(text); } catch { data = null; } return { status: r.status, data };
+    }, { url, method, body });
+  }
+  try {
+    const guestPage = await guest.newPage(); await guestPage.goto(base + '/courses');
+    await guestPage.getByRole('heading', { name: 'Курсы осетинского языка' }).waitFor(); check(true, 'Гостевой каталог');
+    await login(page, fixture.owner); await page.goto(base + '/author/courses');
+    await page.getByRole('button', { name: 'Создать курс', exact: true }).click(); await page.waitForURL(/author\/courses\/[0-9a-f-]+$/);
+    const id = new URL(page.url()).pathname.split('/').pop();
+    await page.getByLabel('Название курса', { exact: true }).fill('Проверка курса Ӕ/ӕ');
+    await page.getByLabel('Описание', { exact: true }).fill('Проверка конструктора, сохранения и опубликованной программы.');
+    await page.getByLabel('Результаты обучения', { exact: true }).fill('Познакомиться с устройством учебного курса.');
+    await page.getByRole('button', { name: 'Программа', exact: true }).click();
+    await page.getByRole('button', { name: 'Добавить модуль', exact: true }).first().click();
+    await page.getByLabel('Название модуля', { exact: true }).fill('Первый модуль');
+    await page.locator('dialog').getByRole('button', { name: 'Добавить модуль', exact: true }).click();
+    await page.getByLabel('Название урока', { exact: true }).fill('Первый урок');
+    await page.getByRole('button', { name: 'Добавить блок', exact: true }).click();
+    await page.locator('dialog').getByRole('button', { name: /Объяснение/ }).click();
+    await page.getByLabel('Текст объяснения', { exact: true }).fill('Прочитайте объяснение, затем выполните задание. Ӕ ӕ');
+    await page.getByRole('button', { name: 'Готово', exact: true }).click();
+    await page.getByRole('button', { name: 'Добавить блок', exact: true }).click();
+    await page.locator('dialog').getByRole('button', { name: /Собери фразу/ }).click();
+    await page.getByRole('button', { name: 'Готово', exact: true }).click();
+    await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+    await page.getByText('Все изменения сохранены', { exact: true }).waitFor();
+    check((await api(page, '/author/courses/' + id)).status === 200, 'Автор видит черновик');
+    await page.screenshot({ path: path.join(out, 'editor-wide.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Редактор выходит за мобильный экран');
+    await page.screenshot({ path: path.join(out, 'editor-phone.png'), fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const saved = (await api(page, '/author/courses/' + id)).data;
+    const draft = JSON.parse(saved.draftJson), lesson = draft.modules[0].lessons[0];
+    check(lesson.blocks.length === 2 && lesson.blocks[1].materialId === fixture.phraseId, 'Редактор не сохранил структуру');
+    const preview = await api(page, `/author/courses/${id}/preview/${lesson.id}`, 'POST', {});
+    check(preview.status === 200, 'Предпросмотр не запустился');
+    const previewState = (await api(page, `/course-sessions/${preview.data.id}`)).data;
+    check(previewState.preview === true, 'Предпросмотр стал реальным занятием');
+    await page.getByRole('button', { name: 'Опубликовать', exact: true }).click();
+    await page.getByText('Я проверил учебные тексты, переводы и права на материалы.', { exact: true }).click();
+    await page.getByRole('button', { name: 'Опубликовать курс', exact: true }).click();
+    await page.getByRole('heading', { name: 'Курс опубликован', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Продолжить редактирование', exact: true }).click();
+    await login(student, fixture.learner); await student.goto(base + '/courses/' + id);
+    await student.getByRole('heading', { name: 'Проверка курса Ӕ/ӕ' }).waitFor();
+    check((await api(student, '/author/courses/' + id)).status === 403, 'Ученик получил авторский доступ');
+    const noCsrf = await student.request.post(base + `/api/v1/courses/${id}/enroll`, { data: {} }); check(noCsrf.status() === 400, 'Нет CSRF-защиты');
+    await student.getByRole('button', { name: 'Начать курс', exact: true }).click(); await student.waitForURL(/courses\/sessions\//);
+    const sessionId = new URL(student.url()).pathname.split('/').pop();
+    await student.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await student.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();
+    await student.reload(); await student.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();
+    const resumed = (await api(student, `/course-sessions/${sessionId}`)).data;
+    check(resumed.step === 1 && resumed.block.result === null, 'Не восстановлен незавершённый блок');
+    check(!JSON.stringify(resumed).includes('expectedAnswer'), 'Эталон раскрыт до ответа');
+    const foreign = await api(page, `/course-sessions/${sessionId}`); check(foreign.status === 404, 'Чужая сессия доступна');
+    check(await student.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Урок выходит за мобильный экран');
+    await student.screenshot({ path: path.join(out, 'lesson-phone.png'), fullPage: true });
+    // A wrong answer is also a valid terminal exercise result; test the existing checker without inventing translations.
+    await student.locator('.cv-tokens button').first().click();
+    await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
+    await student.locator('.cv-result').waitFor();
+    const repeated = await api(student, `/course-sessions/${sessionId}/answers`, 'POST', { blockId: lesson.blocks[1].id, tokenIndices: [0] });
+    check(repeated.status === 200 && repeated.data.alreadySubmitted, 'Повтор ответа создал новый результат');
+    await student.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await student.getByRole('heading', { name: 'Урок пройден', exact: true }).waitFor();
+    await student.goto(base + '/my-courses'); await student.locator('.cv-card').filter({ has: student.getByRole('heading', { name: 'Проверка курса Ӕ/ӕ', exact: true }) }).getByText('1 из 1 уроков завершено', { exact: true }).waitFor(); check(true, 'Прогресс моих курсов');
+    // Save from two tabs: the stale draft must lose, while the published version remains pinned.
+    const stale = (await api(page, '/author/courses/' + id)).data;
+    const updated = JSON.parse(stale.draftJson); updated.title = 'Новая публикация';
+    const changed = await api(page, '/author/courses/' + id + '/draft', 'PATCH', { stamp: stale.draftStamp, draft: updated }); check(changed.status === 200, 'Изменение курса');
+    check((await api(page, '/author/courses/' + id + '/draft', 'PATCH', { stamp: stale.draftStamp, draft })).status === 409, 'Устаревшая вкладка перезаписала данные');
+    check((await api(page, '/author/courses/' + id + '/publish', 'POST', { stamp: changed.data.draftStamp, reviewed: true })).status === 200, 'Новая публикация');
+    check((await api(student, '/courses/' + id)).data.title === 'Проверка курса Ӕ/ӕ', 'Публикация изменила программу ученика');
+    await guestPage.goto(base + '/courses/' + id); await guestPage.getByRole('heading', { name: 'Новая публикация' }).waitFor();
+    await guestPage.getByRole('button', { name: 'Начать курс', exact: true }).click(); await guestPage.waitForURL(/courses\/sessions\//);
+    await guestPage.getByRole('button', { name: 'Продолжить', exact: true }).click(); await guestPage.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();
+    check(true, 'Гостевое прохождение');
+    await page.goto(base + '/courses'); await page.getByRole('heading', { name: 'Курсы осетинского языка' }).waitFor();
+    await page.keyboard.press('Tab'); check(await page.evaluate(() => document.activeElement !== document.body), 'Нет клавиатурного фокуса');
+    await page.screenshot({ path: path.join(out, 'catalog-wide.png'), fullPage: true });
+    check(errors.length === 0, 'Ошибки JavaScript: ' + errors.join('; '));
+    console.log(`Course browser checks: ${checks} passed.`);
+  } finally { await browser.close(); }
+})().catch(e => { console.error(e.message); process.exitCode = 1; });

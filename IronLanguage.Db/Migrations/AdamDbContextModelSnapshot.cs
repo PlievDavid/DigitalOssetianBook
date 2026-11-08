@@ -296,6 +296,48 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("CourseEnrollments");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.CourseLessonSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AttemptIdsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Step")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VersionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VersionId", "CourseId");
+
+                    b.HasIndex("UserId", "VersionId", "LessonId")
+                        .IsUnique()
+                        .HasFilter("\"CompletedAt\" IS NULL");
+
+                    b.ToTable("CourseLessonSessions");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.CourseRating", b =>
                 {
                     b.Property<Guid>("CourseId")
@@ -1222,6 +1264,22 @@ namespace IronLanguage.Db.Migrations
                 });
 
             modelBuilder.Entity("IronLanguage.Db.CourseEnrollment", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IronLanguage.Db.CourseVersion", null)
+                        .WithMany()
+                        .HasForeignKey("VersionId", "CourseId")
+                        .HasPrincipalKey("Id", "CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseLessonSession", b =>
                 {
                     b.HasOne("IronLanguage.Db.UserAccount", null)
                         .WithMany()

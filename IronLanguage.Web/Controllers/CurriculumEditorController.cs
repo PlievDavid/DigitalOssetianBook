@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IronLanguage.Web.Controllers;
 
-[Authorize(Roles = "Editor"), AutoValidateAntiforgeryToken, Route("editor/curriculum")]
+[NonController, Authorize(Roles = "Editor"), AutoValidateAntiforgeryToken, Route("editor/curriculum")]
 public sealed class CurriculumEditorController(ICurriculumRepository repository, CurriculumService curriculum, IWebHostEnvironment environment) : Controller
 {
     [HttpGet("")]
