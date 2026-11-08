@@ -30,6 +30,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
     public DbSet<CourseRating> CourseRatings => Set<CourseRating>();
     public DbSet<LessonRun> LessonRuns => Set<LessonRun>();
     public DbSet<Course> Courses => Set<Course>();
+    public DbSet<LibraryLesson> LibraryLessons => Set<LibraryLesson>();
     public DbSet<CourseVersion> CourseVersions => Set<CourseVersion>();
     public DbSet<CourseEnrollment> CourseEnrollments => Set<CourseEnrollment>();
     public DbSet<CourseLessonSession> CourseLessonSessions => Set<CourseLessonSession>();
@@ -41,6 +42,8 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
     protected override void OnModelCreating(ModelBuilder model)
     {
         base.OnModelCreating(model);
+        model.Entity<LibraryLesson>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<LibraryLesson>().HasIndex(x => new { x.OwnerId, x.SourceCourseId, x.SourceLessonId, x.SourceStamp }).IsUnique();
         model.Entity<CourseLessonSession>().HasIndex(x => new { x.UserId, x.VersionId, x.LessonId }).IsUnique().HasFilter("\"CompletedAt\" IS NULL");
         model.Entity<CourseLessonSession>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<CourseLessonSession>().HasOne<CourseVersion>().WithMany().HasForeignKey(x => new { x.VersionId, x.CourseId })
