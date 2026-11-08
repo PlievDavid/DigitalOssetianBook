@@ -31,6 +31,17 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         try { return visit.Value.Completed.ToHashSet(); } finally { visit.Gate.Release(); }
     }
 
+    public async Task<CourseLessonSession[]> Active(Guid course, Guid version, Guid? user, Guid owner, CancellationToken ct)
+    {
+        if (user is Guid uid) return (await repository.Sessions(uid, course, ct)).Where(s => s.VersionId == version && s.CompletedAt is null).ToArray();
+        var visit = guests.Find<CourseVisit>(owner, course);
+        if (visit is null || visit.Value.Version.Id != version) return [];
+        await visit.Gate.WaitAsync(ct);
+        try { return visit.Value.Active.Values.Select(id => guests.Find<GuestCourseSession>(owner, id)?.Value.Session)
+            .OfType<CourseLessonSession>().Where(s => s.CompletedAt is null).OrderByDescending(s => s.StartedAt).ToArray(); }
+        finally { visit.Gate.Release(); }
+    }
+
     public async Task<CourseLessonSession?> Start(Guid course, Guid lessonId, Guid? user, Guid owner, CancellationToken ct, CourseVersion? preview = null)
     {
         if (preview is null && user is Guid uid && await courses.Enroll(course, uid, ct) is null) return null;

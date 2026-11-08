@@ -93,26 +93,31 @@
   }
   async function details(id) {
     const c = await api(`/courses/${id}`); shell(false); root.append(link('← Каталог курсов', '/courses', 'back-link'));
+    root.classList.add('cv-course-detail');
     const lessons = c.modules.flatMap(m => m.lessons), completed = lessons.filter(l => l.completed).length;
-    const next = lessons.find(l => l.available && !l.completed) || lessons[0];
+    const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || lessons[0];
     const start = lesson => async e => run(e.currentTarget, async () => { const session = await post(`/courses/${id}/lessons/${lesson.id}/sessions`); location.href = `/courses/sessions/${session.id}`; });
-    root.append(heading(c.title, `${c.author || 'Автор курса'} · ${c.level}`));
-    const status = append(node('section', null, 'cv-course-status'), append(node('div'), node('strong', completed === lessons.length && lessons.length ? 'Курс пройден' : completed ? 'Продолжайте обучение' : 'Ваша следующая тема'), node('span', completed ? `Пройдено уроков: ${completed} из ${lessons.length}` : `Уроков в программе: ${lessons.length}`, 'cv-meta')));
-    if (next) status.append(button(completed === lessons.length ? 'Повторить курс' : completed ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
-    if (completed === lessons.length && lessons.length) status.classList.add('is-complete');
-    root.append(status);
-    const overview = node('div', null, 'cv-overview');
-    const main = append(node('div'), node('p', c.description, 'cv-prose'));
-    if (c.outcomes) main.append(node('h2', 'Чему вы научитесь'), node('p', c.outcomes, 'cv-prose'));
-    if (!window.AdamAuthenticated) main.append(node('p', 'Войдите, чтобы сохранить прогресс между посещениями.', 'cv-meta'));
-    append(overview, main); root.append(overview, node('h2', 'Программа курса'));
+    const hero = node('section', null, 'cv-material-hero');
+    hero.append(append(node('div', null, 'cv-course-chips'), node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'), node('p', c.description, 'cv-course-description'));
+    if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'), node('p', c.outcomes)));
+    const status = node('div', null, 'cv-course-status');
+    if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : completed === lessons.length ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
+    if (c.started) status.append(append(node('div'), node('strong', completed === lessons.length ? 'Курс пройден' : 'Обучение начато'), node('span', `Пройдено уроков: ${completed} из ${lessons.length}`, 'cv-meta')));
+    hero.append(status);
+    if (!window.AdamAuthenticated) hero.append(node('p', 'Войдите, чтобы сохранить прогресс между посещениями.', 'cv-meta'));
+    root.append(hero);
+    const program = append(node('section', null, 'cv-course-program'), node('h2', 'Программа курса'));
+    let number = 0;
     c.modules.forEach(m => {
-      const section = append(node('section', null, 'cv-module'), node('h2', m.title));
+      const section = append(node('section', null, 'cv-material-module'), node('h3', m.title));
       m.lessons.forEach(l => {
-        const b = button(l.completed ? 'Повторить' : 'Открыть урок', start(l)); b.disabled = !l.available;
-        section.append(append(node('div', null, 'cv-lesson-row'), append(node('div'), node('h3', l.title), node('span', l.completed ? 'Завершён' : l.available ? `Блоков: ${l.blocks}` : 'Сначала завершите предыдущий урок', 'cv-meta')), actions(b)));
-      }); root.append(section);
+        const b = button(l.started ? 'Продолжить урок' : l.completed ? 'Повторить' : 'Открыть урок', start(l), 'cv-lesson-action'); b.disabled = !l.available;
+        const marker = node('span', l.completed ? '✓' : String(++number), 'cv-lesson-marker' + (l.completed ? ' is-complete' : '')); marker.setAttribute('aria-hidden', 'true');
+        if (l.completed) number++;
+        section.append(append(node('div', null, 'cv-material-lesson'), marker, append(node('div', null, 'cv-lesson-copy'), node('h4', l.title), node('span', l.started ? 'Можно продолжить' : l.completed ? 'Завершён' : l.available ? 'Не начат' : 'Сначала завершите предыдущий урок', 'cv-meta')), b));
+      }); program.append(section);
     });
+    root.append(program);
   }
   async function studio() {
     await import('/js/course-studio.js');

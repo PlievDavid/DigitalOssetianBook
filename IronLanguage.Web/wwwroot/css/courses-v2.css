@@ -144,3 +144,38 @@
 .cv-course-status.is-complete strong:before { content:'✓'; margin-right:8px; }
 .cv-course-status > button { flex-shrink:0; }
 @media(max-width:600px) { .cv-course-status { align-items:flex-start; flex-direction:column; gap:14px; } .cv-course-status > button { width:100%; } }
+/* Material-inspired course overview, scoped to the course page. */
+.cv-course-detail > .back-link { display:inline-block; margin-bottom:24px; }
+.cv-material-hero { border-radius:28px; background:var(--theme-sage); padding:32px; margin-bottom:32px; }
+.cv-course-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.cv-course-chips > span { border:1px solid #bdcbbd; border-radius:8px; padding:5px 12px; color:var(--theme-green); font-size:13px; line-height:20px; }
+.cv-material-hero .cv-heading { margin:20px 0; }
+.green-theme .cv-material-hero .cv-heading h1 { font-size:36px; line-height:1.2; font-weight:600; margin-bottom:10px; }
+.cv-course-description,.cv-course-outcomes p { max-width:75ch; font-size:16px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; margin:0; }
+.cv-course-outcomes { margin-top:24px; }
+.cv-course-outcomes h2 { font-size:18px; line-height:1.4; margin:0 0 8px; }
+.cv-course-detail .cv-course-status { border:0; justify-content:flex-start; padding:0; margin:24px 0 0; gap:24px; }
+.cv-course-detail .cv-course-status > .button { border-radius:24px; min-height:48px; padding:12px 24px; box-shadow:none; }
+.cv-course-detail .cv-course-status strong { font-size:14px; }
+.cv-course-detail .cv-course-status .cv-meta { font-size:13px; }
+.cv-course-program > h2 { font-size:24px; margin:0 0 20px; }
+.cv-material-module { background:var(--theme-surface); border:1px solid var(--theme-border); border-radius:16px; overflow:hidden; margin-bottom:16px; }
+.cv-material-module > h3 { font-size:16px; font-weight:600; margin:0; padding:20px 24px 12px; }
+.cv-material-lesson { display:flex; align-items:center; gap:16px; padding:16px 24px; min-height:80px; box-sizing:border-box; }
+.cv-material-lesson + .cv-material-lesson { border-top:1px solid var(--theme-border); }
+.cv-lesson-marker { display:grid; place-items:center; flex:0 0 40px; height:40px; border-radius:50%; background:var(--theme-sage); color:var(--theme-green); font-size:16px; }
+.cv-lesson-marker.is-complete { background:var(--theme-green); color:white; }
+.cv-lesson-copy { min-width:0; flex:1; }
+.cv-lesson-copy h4 { font-size:16px; line-height:1.5; margin:0 0 4px; font-weight:600; overflow-wrap:anywhere; }
+.cv-lesson-action { border:0; border-radius:24px; padding:10px 16px; min-height:44px; background:transparent; color:var(--theme-green); font-weight:600; flex-shrink:0; }
+.cv-lesson-action:hover:not(:disabled) { background:var(--theme-sage); }
+@media(max-width:600px) {
+ .cv-material-hero { padding:24px 20px; border-radius:20px; }
+ .green-theme .cv-material-hero .cv-heading h1 { font-size:28px; }
+ .cv-course-detail .cv-course-status { align-items:flex-start; gap:16px; }
+ .cv-course-detail .cv-course-status > .button { width:auto; }
+ .cv-material-module > h3 { padding:16px 16px 8px; }
+ .cv-material-lesson { padding:12px 16px; gap:12px; flex-wrap:wrap; }
+ .cv-lesson-copy { flex-basis:calc(100% - 52px); }
+ .cv-lesson-action { margin-left:52px; }
+}
