@@ -6,8 +6,8 @@ public interface IAccountRepository
 {
     Task<UserAccount?> FindByEmail(string email, CancellationToken ct = default);
     Task<UserAccount?> FindById(Guid id, CancellationToken ct = default);
+    Task<bool> CanEdit(Guid id, CancellationToken ct = default);
     Task<UserAccount?> FirstEditor(CancellationToken ct = default);
-    Task<bool> Create(UserAccount user, CancellationToken ct = default);
     Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default);
     Task<bool> SavePublicName(Guid id, string? name, CancellationToken ct = default);
 }
@@ -32,16 +32,11 @@ public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
     public Task<UserAccount?> FindById(Guid id, CancellationToken ct = default) =>
         db.Users.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<UserAccount?> FirstEditor(CancellationToken ct = default) =>
-        db.Users.AsNoTracking().Where(x => x.IsEditor).OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(ct);
+    public Task<bool> CanEdit(Guid id, CancellationToken ct = default) => db.UserRoles.AnyAsync(ur => ur.UserId == id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == "Editor" || r.Name == "Admin")), ct);
 
-    public async Task<bool> Create(UserAccount user, CancellationToken ct = default)
-    {
-        if (await db.Users.AnyAsync(x => x.Email == user.Email, ct)) return false;
-        db.Users.Add(user);
-        try { await db.SaveChangesAsync(ct); return true; }
-        catch (DbUpdateException) { db.Entry(user).State = EntityState.Detached; return false; }
-    }
+    public Task<UserAccount?> FirstEditor(CancellationToken ct = default) =>
+        db.Users.AsNoTracking().Where(x => db.UserRoles.Any(ur => ur.UserId == x.Id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == "Editor" || r.Name == "Admin")))).OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(ct);
+
 }
 
 public interface ICatalogRepository

@@ -71,7 +71,7 @@ public sealed class WordleService(WordleCatalog catalog, IWordleRepository repos
         }
         var entry = Guest(guestOwner, day);
         await entry.Gate.WaitAsync(ct);
-        try { Advance(entry.Value, revision, guess); return State(entry.Value, false); }
+        try { Advance(entry.Value, revision, guess); var state = State(entry.Value, false); if (state.Finished) guests.Completed(entry); return state; }
         finally { entry.Gate.Release(); }
     }
 

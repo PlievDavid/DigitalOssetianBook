@@ -8,7 +8,7 @@ const output = '.run-local/curriculum-qa';
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
     const context = await browser.newContext({ baseURL: base });
-    await context.addCookies([{ name: 'Adam.Auth', value: fixture.cookie, url: base }]);
+    await context.addCookies([{ name: 'Adam.Identity', value: fixture.cookie, url: base }]);
     const page = await context.newPage();
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     for (const [route, name] of [['/courses', 'catalog'], ['/editor/curriculum', 'teaching'], ['/editor', 'materials'], ['/editor/curriculum/lesson/new', 'lesson-empty']]) {

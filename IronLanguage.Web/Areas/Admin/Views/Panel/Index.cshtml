@@ -1,0 +1,27 @@
+@model AdminOverview
+@{ ViewData["Title"] = "Обзор платформы"; var views = Model.Timeline.Sum(x => x.Views); }
+<div class="section-bar"><p class="muted">Как растёт сообщество и проходит обучение</p><nav class="periods" aria-label="Период статистики">@foreach (var days in new[] { 7, 30, 90 }) { <a href="?days=@days" aria-current="@(days == Model.Days ? "true" : null)">@days дней</a> }</nav></div>
+<div class="headline-stats">
+    <div><span>Пользователи</span><strong>@Model.Users.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))</strong><small>+@Model.Registrations за период</small></div>
+    <div><span>Активные ученики</span><strong>@Model.Active.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))</strong><small>Есть зачтённый день обучения</small></div>
+    <div><span>Просмотры страниц</span><strong>@(Model.AnalyticsStarted is null ? "—" : views.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("ru-RU")))</strong><small>Повторные открытия включены</small></div>
+</div>
+<section class="panel chart-panel"><div class="section-bar"><div><h2>Ритм обучения</h2><p class="muted">Активные ученики по дням · UTC</p></div><span class="badge">@Model.Days дней</span></div>
+@{ var max = Math.Max(1, Model.Timeline.Max(x => x.Active)); }
+<div class="bar-chart" role="img" aria-label="График активных учеников. Точные значения в таблице ниже.">@foreach (var day in Model.Timeline) { <span class="chart-column" title="@day.Day.ToString("dd.MM"): @day.Active"><i style="--height:@((100d * day.Active / max).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></i></span> }</div>
+<div class="chart-axis"><span>@Model.Timeline.First().Day.ToString("dd.MM.yyyy")</span><span>@Model.Timeline.Last().Day.ToString("dd.MM.yyyy")</span></div>
+</section>
+<div class="completion-stats"><div><strong>@Model.Exercises</strong><span>Завершено упражнений</span></div><div><strong>@Model.Dialogues</strong><span>Завершено диалогов</span></div><div><strong>@Model.Lessons</strong><span>Завершено уроков</span></div></div>
+<div class="chart-grid">
+@foreach (var chart in new[] { "Регистрации", "Просмотры" }) {
+var chartDays = chart == "Регистрации" ? Model.Timeline : Model.Timeline.Where(x => Model.AnalyticsStarted is { } started && x.Day >= DateOnly.FromDateTime(started.UtcDateTime)).ToList();
+var maximum = Math.Max(1L, chartDays.Select(x => chart == "Регистрации" ? x.Registrations : x.Views).DefaultIfEmpty().Max());
+<section class="panel"><h2>@chart</h2><div class="bar-chart small-chart" role="img" aria-label="@chart по дням UTC. Точные значения в таблице ниже.">@foreach (var day in chartDays) { var value = chart == "Регистрации" ? day.Registrations : day.Views; <span class="chart-column" title="@day.Day.ToString("dd.MM"): @value"><i style="--height:@((100d * value / maximum).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></i></span> }</div>@if (chartDays.Count == 0) { <p class="muted">Данные ещё не собирались.</p> } else { <div class="chart-axis"><span>@chartDays.First().Day.ToString("dd.MM.yyyy")</span><span>@chartDays.Last().Day.ToString("dd.MM.yyyy")</span></div> }</section>
+}
+</div>
+<section class="panel"><h2>Посещения и гостевое обучение</h2>
+<p class="muted">@(Model.AnalyticsStarted is { } started ? $"Сбор начат {started.UtcDateTime:dd.MM.yyyy} (UTC)." : "Сбор начнётся с первого посещения учебного раздела.") Уникальные посетители не определяются. Гостевые события — запуски и завершения сессий, без записи личного прогресса.</p>
+@if (Model.Metrics.Count == 0) { <p class="empty">За этот период посещения ещё не записаны.</p> }
+else { <div class="table-wrap"><table><thead><tr><th>Раздел</th><th>Просмотры</th><th>Гостевые запуски</th><th>Гостевые завершения</th></tr></thead><tbody>@foreach (var group in Model.Metrics.GroupBy(x => x.Section).OrderBy(x => x.Key)) { <tr><th>@AdminLabels.Section(group.Key)</th><td>@group.Where(x => x.Event == "view").Sum(x => x.Count)</td><td>@group.Where(x => x.Event == "start").Sum(x => x.Count)</td><td>@group.Where(x => x.Event == "complete").Sum(x => x.Count)</td></tr> }</tbody></table></div> }
+</section>
+<details class="panel"><summary>Точные значения по дням</summary><div class="table-wrap"><table><thead><tr><th>День UTC</th><th>Регистрации</th><th>Активные ученики</th><th>Просмотры</th></tr></thead><tbody>@foreach (var day in Model.Timeline) { <tr><td>@day.Day.ToString("dd.MM.yyyy")</td><td>@day.Registrations</td><td>@day.Active</td><td>@(Model.AnalyticsStarted is { } firstEvent && day.Day >= DateOnly.FromDateTime(firstEvent.UtcDateTime) ? day.Views.ToString() : "—")</td></tr> }</tbody></table></div></details>

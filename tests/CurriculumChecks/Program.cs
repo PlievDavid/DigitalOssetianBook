@@ -115,7 +115,9 @@ if (sourceDialog is null)
 }
 var dialogs = sourceDialog is null ? Array.Empty<Dialogue>() : new[] { JsonSerializer.Deserialize<Dialogue>(JsonSerializer.Serialize(sourceDialog, json), json)! };
 foreach (var d in dialogs) d.Id = Guid.NewGuid();
-var user = new UserAccount { Email = $"curriculum-{Guid.NewGuid():N}@example.invalid", IsEditor = true };
+var user = new UserAccount { Email = $"curriculum-{Guid.NewGuid():N}@example.invalid" };
+user.UserName = user.Email; user.NormalizedUserName = user.Email!.ToUpperInvariant(); user.NormalizedEmail = user.NormalizedUserName;
+db.UserRoles.Add(new Microsoft.AspNetCore.Identity.IdentityUserRole<Guid> { UserId = user.Id, RoleId = await db.Roles.Where(x => x.Name == "Editor").Select(x => x.Id).SingleAsync() });
 db.Users.Add(user); db.Exercises.AddRange(exercises); db.Dialogues.AddRange(dialogs); await db.SaveChangesAsync();
 var lessonId = Guid.NewGuid(); var courseId = Guid.NewGuid(); var concurrentLessonId = Guid.NewGuid();
 var fixture = new Fixture(user.Id, lessonId, courseId, concurrentLessonId, exercises.Select(x => x.Id).ToArray(), dialogs.Select(x => x.Id).ToArray(), "", dialogs.ToDictionary(x => x.Id, x => x.ScriptJson), mediaPaths.ToArray());
@@ -291,9 +293,9 @@ Check((await learning.AnswerGuest(owner, guestAttempt.Id, indices, ct))!.Already
 Check(await db.Attempts.CountAsync() == before && await db.LessonRuns.CountAsync() == beforeRuns, "Гостевой прогресс записан в БД");
 // Cookie нужен только локальному браузерному прогону. Он не выводится и не попадает в Git.
 var protection = DataProtectionProvider.Create(new DirectoryInfo(Environment.GetEnvironmentVariable("DataProtection__KeysDirectory") ?? Path.Combine(root, "IronLanguage.Web", ".data-protection-keys")), b => b.SetApplicationName("Adam"));
-var format = new TicketDataFormat(protection.CreateProtector("Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationMiddleware", "Cookies", "v2"));
-var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Name, user.Email), new Claim(ClaimTypes.Role, "Editor") }, "Cookies");
-var cookie = format.Protect(new AuthenticationTicket(new ClaimsPrincipal(identity), new AuthenticationProperties { ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1) }, "Cookies"));
+var format = new TicketDataFormat(protection.CreateProtector("Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationMiddleware", Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme, "v2"));
+var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Name, user.Email!), new Claim(ClaimTypes.Role, "Editor"), new Claim("AspNet.Identity.SecurityStamp", user.SecurityStamp!) }, Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme);
+var cookie = format.Protect(new AuthenticationTicket(new ClaimsPrincipal(identity), new AuthenticationProperties { ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1) }, Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme));
 await File.WriteAllTextAsync(fixturePath, JsonSerializer.Serialize(fixture with { Cookie = cookie }, json));
 Console.WriteLine($"Проверок: {checks}. Типы заданий в фикстуре: {string.Join(", ", cards.Where(c => c.Kind != "theory").Select(c => c.Kind))}. После браузерного прогона выполните --cleanup.");
 
