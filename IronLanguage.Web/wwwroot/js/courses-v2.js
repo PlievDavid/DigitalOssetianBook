@@ -43,6 +43,7 @@
   }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
+    if (!authored) root.classList.add('cv-material-catalog');
     if (authored) { root.replaceChildren(message); root.append(link('← Каталог курсов', '/courses', 'back-link')); } else shell();
     const create = button('Создать курс', e => run(e.currentTarget, async () => {
       const course = await post('/author/courses', { title: 'Новый курс', description: '', modules: [] });
