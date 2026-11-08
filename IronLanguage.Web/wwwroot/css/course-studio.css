@@ -34,6 +34,13 @@
 .cs-lesson span:last-child { overflow-wrap:anywhere; min-width:0; }
 .cs-lesson[aria-current="true"] { background:var(--theme-sage); color:var(--theme-green); font-weight:600; }
 .cs-lesson:hover { background:var(--theme-sage); }
+.cs-lesson-row { display:flex; align-items:center; gap:2px; }
+.cs-lesson-row .cs-lesson { flex:1; min-width:0; }
+.cs-lesson-menu { position:fixed; inset:auto; margin:0; padding:6px; width:240px; max-width:calc(100vw - 16px); max-height:calc(100dvh - 16px); overflow:auto; box-sizing:border-box; border:1px solid var(--theme-border); border-radius:12px; background:var(--theme-surface); color:var(--theme-ink); box-shadow:0 12px 36px #101b3426; }
+.cs-lesson-menu .cs-action { display:flex; width:100%; min-height:44px; justify-content:flex-start; text-align:left; }
+.cs-lesson-menu button:disabled { opacity:.45; cursor:default; }
+.cs-lesson-menu button:focus-visible { outline:2px solid var(--theme-green); outline-offset:-2px; background:var(--theme-sage); }
+.cs-lesson-menu .cs-danger { border-top:1px solid var(--theme-border); border-radius:0 0 6px 6px; margin-top:4px; }
 .cs-lesson-number { width:22px; height:22px; display:grid; place-items:center; border:1px solid var(--theme-border); border-radius:5px; font-size:12px; background:var(--theme-surface); flex-shrink:0; }
 .cs-add-lesson,.cs-add-module { display:flex; align-items:center; gap:8px; padding:10px 12px; font-size:13px; border:0; background:transparent; color:var(--theme-green); }
 .cs-add-module { border-top:1px solid var(--cs-line); border-radius:0; width:100%; padding-top:20px; }
