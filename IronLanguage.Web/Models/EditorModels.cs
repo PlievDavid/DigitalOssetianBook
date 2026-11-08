@@ -55,6 +55,14 @@ public sealed class EditorFormModel
     public string PictureMode { get; set; } = "choice";
     public string PictureDistractor1 { get; set; } = "";
     public string PictureDistractor2 { get; set; } = "";
+    public string GrammarTitle { get; set; } = "";
+    public string GrammarPrompt { get; set; } = "";
+    public string GrammarBlank { get; set; } = "___";
+    public string GrammarCorrect { get; set; } = "";
+    public string GrammarRule { get; set; } = "";
+    public string GrammarDistractor1 { get; set; } = "";
+    public string GrammarDistractor2 { get; set; } = "";
+    public string GrammarDistractor3 { get; set; } = "";
     public string? ExistingAudioPath { get; set; }
     public IFormFile? Audio { get; set; }
 
@@ -133,6 +141,19 @@ public sealed class EditorFormModel
             model.PictureDistractor2 = p.Distractors.ElementAtOrDefault(1) ?? "";
             model.WordIdsCsv = string.Join(',', p.WordIds);
         }
+        else if (kind == "grammar")
+        {
+            var p = JsonSerializer.Deserialize<GrammarMaterial>(json, options)!;
+            model.GrammarTitle = p.Title;
+            model.GrammarPrompt = p.Prompt;
+            model.GrammarBlank = p.Blank;
+            model.GrammarCorrect = p.Correct;
+            model.GrammarRule = p.Rule;
+            model.GrammarDistractor1 = p.Distractors.ElementAtOrDefault(0) ?? "";
+            model.GrammarDistractor2 = p.Distractors.ElementAtOrDefault(1) ?? "";
+            model.GrammarDistractor3 = p.Distractors.ElementAtOrDefault(2) ?? "";
+            model.WordIdsCsv = string.Join(',', p.WordIds);
+        }
         return model;
     }
 }
@@ -155,6 +176,7 @@ public sealed class EditorPreviewModel
     public DialogueMaterial? Dialogue { get; init; }
     public MatchingMaterial? Matching { get; init; }
     public PictureMaterial? Picture { get; init; }
+    public GrammarMaterial? Grammar { get; init; }
     public List<ContentRevision> History { get; init; } = [];
     public Dictionary<Guid, WordEntry> Words { get; init; } = [];
 }

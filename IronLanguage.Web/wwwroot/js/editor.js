@@ -72,7 +72,7 @@
     });
   }
 
-  if (kind === 'audio' || kind === 'translation' || kind === 'matching' || kind === 'picture') {
+  if (kind === 'audio' || kind === 'translation' || kind === 'matching' || kind === 'picture' || kind === 'grammar') {
     const search = document.getElementById('word-search'), results = document.getElementById('word-results');
     const selectedEl = document.getElementById('selected-words'), hidden = document.getElementById('WordIdsCsv');
     const selected = new Set((hidden.value || '').split(',').filter(Boolean));

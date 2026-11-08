@@ -178,6 +178,9 @@ sealed class MemoryCatalog : ICatalogRepository
         Task.FromResult(ExercisesList.FirstOrDefault(x => x.Id == id && (x.Published || includeDraft)));
     public Task<List<WordEntry>> Words(CancellationToken ct = default) => Task.FromResult(new List<WordEntry>());
     public Task<WordEntry?> Word(Guid id, CancellationToken ct = default) => Task.FromResult<WordEntry?>(null);
+    public Task<List<WordEntry>> WordsByIds(Guid[] ids, CancellationToken ct = default) => Task.FromResult(new List<WordEntry>());
+    public Task<List<Grammar>> Grammars(CancellationToken ct = default) => Task.FromResult(new List<Grammar>());
+    public Task<Grammar?> Grammar(Guid id, CancellationToken ct = default) => Task.FromResult<Grammar?>(null);
     public Task<List<Book>> Books(CancellationToken ct = default) => Task.FromResult(new List<Book>());
     public Task<Book?> Book(Guid id, CancellationToken ct = default) => Task.FromResult<Book?>(null);
     public Task<List<Dialogue>> Dialogues(CancellationToken ct = default) => Task.FromResult(new List<Dialogue>());
