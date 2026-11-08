@@ -79,14 +79,16 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
         if (v is null) return NotFound();
         var d = CourseLearningService.Read(v);
         var done = await learning.Completed(id, v.Id, User.UserId(), owner, ct);
+        var active = await learning.Active(id, v.Id, User.UserId(), owner, ct);
         var unlocked = true;
         var modules = d.Modules.Select(m => new { m.Id, m.Title, lessons = m.Lessons.Select(l => {
             var available = !d.Sequential || unlocked;
             if (!done.Contains(l.Id)) unlocked = false;
-            return new { l.Id, l.Title, blocks = l.Blocks.Length, completed = done.Contains(l.Id), available };
+            return new { l.Id, l.Title, blocks = l.Blocks.Length, completed = done.Contains(l.Id), started = active.Any(s => s.LessonId == l.Id), available };
         }).ToArray() }).ToArray();
         var author = (await repository.AuthorNames([id], ct)).GetValueOrDefault(id, "Автор курса");
-        return Json(new { id, d.Title, d.Description, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules });
+        return Json(new { id, d.Title, d.Description, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
+            started = active.Length > 0 || done.Count > 0, resumeLessonId = active.FirstOrDefault()?.LessonId });
     }
 
     [HttpGet("api/v1/author/courses"), Authorize(Roles = "Editor")]
