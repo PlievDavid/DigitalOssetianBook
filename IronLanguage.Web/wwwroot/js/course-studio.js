@@ -73,15 +73,54 @@ window.AdamCourseStudio = async function (ui) {
       }, null, 'cs-action cs-danger'));
     });
   }
+  function duplicateLesson(module, lesson) {
+    mutate(() => { const copy = structuredClone(lesson); copy.id = uuid(); copy.title = `${copy.title.slice(0, 138)} — копия`; copy.blocks.forEach(b => b.id = uuid()); module.lessons.splice(module.lessons.indexOf(lesson) + 1, 0, copy); selectedLesson = copy.id; selectedBlock = null; });
+  }
+  async function deleteLesson(module, lesson) {
+    if (await confirm('Удалить урок?', `«${lesson.title}» будет удалён только из черновика курса. Опубликованная версия сохранится.`, 'Удалить')) {
+      mutate(() => { const index = module.lessons.indexOf(lesson); module.lessons.splice(index, 1); if (selectedLesson === lesson.id) { selectedLesson = module.lessons[Math.min(index, module.lessons.length - 1)]?.id ?? draft.modules.flatMap(m => m.lessons)[0]?.id; selectedBlock = null; } });
+      sidebar.querySelector('.cs-lesson[aria-current="true"]')?.focus();
+    }
+  }
+  function lessonMenu(module, lesson, anchor, point) {
+    document.querySelector('.cs-lesson-menu')?.remove();
+    const menu = node('div', null, 'cs-lesson-menu'); menu.popover = 'auto';
+    menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', 'Действия с уроком ' + lesson.title);
+    anchor.setAttribute('aria-expanded', 'true');
+    const close = () => { menu.hidePopover(); if (anchor.isConnected) anchor.focus(); };
+    const item = (label, handler, danger = false) => {
+      const b = action(label, () => { close(); return handler(); }, null, 'cs-action' + (danger ? ' cs-danger' : ''));
+      b.setAttribute('role', 'menuitem'); b.tabIndex = -1; menu.append(b);
+    };
+    item('Переименовать / настройки', () => lessonSettings(module, lesson));
+    item('Дублировать', () => duplicateLesson(module, lesson));
+    item('Переместить выше', () => mutate(() => ordered(module.lessons, lesson, -1)));
+    menu.lastChild.disabled = module.lessons.indexOf(lesson) === 0;
+    item('Переместить ниже', () => mutate(() => ordered(module.lessons, lesson, 1)));
+    menu.lastChild.disabled = module.lessons.indexOf(lesson) === module.lessons.length - 1;
+    item('Удалить урок', () => deleteLesson(module, lesson), true);
+    menu.addEventListener('keydown', e => {
+      const items = [...menu.querySelectorAll('button:not(:disabled)')], index = items.indexOf(document.activeElement);
+      if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+        e.preventDefault(); items[e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : (index + (e.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length].focus();
+      } else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); close(); }
+    });
+    menu.addEventListener('toggle', e => { if (e.newState === 'closed') { anchor.setAttribute('aria-expanded', 'false'); menu.remove(); } });
+    document.body.append(menu); menu.showPopover();
+    const rect = anchor.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(point?.x ?? rect.left, innerWidth - menu.offsetWidth - 8)) + 'px';
+    menu.style.top = Math.max(8, Math.min(point?.y ?? rect.bottom, innerHeight - menu.offsetHeight - 8)) + 'px';
+    menu.querySelector('button:not(:disabled)').focus();
+  }
   function lessonSettings(module, lesson) {
     modal('Настройки урока', (d, close) => {
       let name = lesson.title;
       d.append(field('Название урока', name, v => name = v, { max: 150 }), action('Сохранить название', () => { if (!name.trim()) return; mutate(() => lesson.title = name.trim()); close(); }, null, 'cs-primary'));
       if (draft.modules.length > 1) d.append(field('Модуль', module.id, value => { const destination = draft.modules.find(m => m.id === value); mutate(() => { module.lessons = module.lessons.filter(l => l.id !== lesson.id); destination.lessons.push(lesson); }); close(); }, { values: draft.modules.map(m => ({ label: m.title, value: m.id })) }));
       d.append(node('hr'), actions(action('Выше', () => { mutate(() => ordered(module.lessons, lesson, -1)); close(); }), action('Ниже', () => { mutate(() => ordered(module.lessons, lesson, 1)); close(); }), action('Дублировать', () => {
-        mutate(() => { const copy = structuredClone(lesson); copy.id = uuid(); copy.title = `${copy.title.slice(0, 138)} — копия`; copy.blocks.forEach(b => b.id = uuid()); module.lessons.splice(module.lessons.indexOf(lesson) + 1, 0, copy); selectedLesson = copy.id; }); close();
+        duplicateLesson(module, lesson); close();
       })));
-      d.append(action('Удалить урок', async () => { close(); if (await confirm('Удалить урок?', 'Урок будет удалён только из черновика курса.', 'Удалить')) mutate(() => { module.lessons = module.lessons.filter(l => l.id !== lesson.id); selectedLesson = module.lessons[0]?.id; }); }, null, 'cs-action cs-danger'));
+      d.append(action('Удалить урок', async () => { close(); await deleteLesson(module, lesson); }, null, 'cs-action cs-danger'));
     });
   }
   function blockMenu(lesson, block) {
@@ -135,7 +174,12 @@ window.AdamCourseStudio = async function (ui) {
       section.append(append(node('div', null, 'cs-module-head'), append(node('div'), node('small', `Модуль ${mi + 1}`), node('strong', m.title)), iconButton('Настройки модуля ' + m.title, () => moduleSettings(m))));
       m.lessons.forEach((l, li) => {
         const b = button('', () => { selectedLesson = l.id; selectedBlock = null; showProgram = false; draw(); }, 'cs-lesson');
-        b.setAttribute('aria-current', String(l.id === selectedLesson)); b.append(node('span', String(li + 1), 'cs-lesson-number'), node('span', l.title)); section.append(b);
+        b.setAttribute('aria-current', String(l.id === selectedLesson)); b.append(node('span', String(li + 1), 'cs-lesson-number'), node('span', l.title));
+        const more = iconButton('Действия с уроком ' + l.title, () => lessonMenu(m, l, more)); more.setAttribute('aria-haspopup', 'menu'); more.setAttribute('aria-expanded', 'false');
+        const row = append(node('div', null, 'cs-lesson-row'), b, more);
+        row.addEventListener('contextmenu', e => { e.preventDefault(); lessonMenu(m, l, more, { x: e.clientX, y: e.clientY }); });
+        row.addEventListener('keydown', e => { if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { e.preventDefault(); lessonMenu(m, l, more); } });
+        section.append(row);
       });
       section.append(action('Добавить урок', () => newLesson(m), 'plus', 'cs-add-lesson')); sidebar.append(section);
     });
