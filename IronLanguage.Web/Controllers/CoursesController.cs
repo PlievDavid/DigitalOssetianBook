@@ -8,7 +8,7 @@ namespace IronLanguage.Web.Controllers;
 
 [AutoValidateAntiforgeryToken, RequestSizeLimit(1_000_000)]
 public sealed class CoursesController(ICourseRepository courses, ICourseLearningRepository repository, CourseLearningService learning,
-    ICatalogRepository catalog, GuestLearningStore guests) : Controller
+    ICatalogRepository catalog, GuestLearningStore guests, ILessonLibraryRepository library) : Controller
 {
     [HttpGet("courses")]
     [HttpGet("courses/{id:guid}")]
@@ -20,8 +20,30 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     public IActionResult MyCourses() => View("Workspace");
 
     [HttpGet("author/courses"), Authorize(Roles = "Editor")]
+    [HttpGet("courses/teaching"), Authorize(Roles = "Editor")]
     [HttpGet("author/courses/{id:guid}"), Authorize(Roles = "Editor")]
     public IActionResult Author() => View("Workspace");
+
+    [HttpGet("api/v1/author/lesson-library"), Authorize(Roles = "Editor")]
+    public async Task<IActionResult> LessonLibrary(CancellationToken ct) => Json((await library.Owned(User.UserId()!.Value, ct))
+        .Select(x => new { x.Id, x.CreatedAt, lesson = JsonSerializer.Deserialize<CourseDraftLesson>(x.LessonJson, CourseAuthoringService.JsonOptions) }));
+
+    public sealed record LibraryInput(long Stamp);
+    [HttpPost("api/v1/author/courses/{id:guid}/lessons/{lesson:guid}/library"), Authorize(Roles = "Editor")]
+    public async Task<IActionResult> SaveLibrary(Guid id, Guid lesson, [FromBody] LibraryInput input, CancellationToken ct)
+    {
+        if (input is null || !ModelState.IsValid) return BadRequest();
+        var course = await courses.Owned(id, User.UserId()!.Value, ct);
+        if (course is null) return NotFound();
+        if (course.DraftStamp != input.Stamp) return Conflict(new { error = "Урок изменился. Сохраните актуальную версию." });
+        var draft = JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, CourseAuthoringService.JsonOptions)!;
+        var selected = draft.Modules.SelectMany(m => m.Lessons).SingleOrDefault(l => l.Id == lesson);
+        if (selected is null) return NotFound();
+        selected = selected with { Blocks = selected.Blocks.Select(b => b with { PublishedExercise = null }).ToArray() };
+        var result = await library.Save(new LibraryLesson { OwnerId = User.UserId()!.Value, SourceCourseId = id, SourceLessonId = lesson,
+            SourceStamp = input.Stamp, LessonJson = JsonSerializer.Serialize(selected, CourseAuthoringService.JsonOptions) }, ct);
+        return Json(new { result.Id });
+    }
 
     [HttpGet("editor/curriculum"), Authorize(Roles = "Editor")]
     public IActionResult OldEditor() => Redirect("/author/courses");

@@ -157,6 +157,7 @@ try
         }
         var role = await db.Roles.FirstAsync(x => x.Name == "Editor");
         db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = owner.Id, RoleId = role.Id });
+        db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = other.Id, RoleId = role.Id });
         await db.SaveChangesAsync();
         var webRoot = Path.GetFullPath("IronLanguage.Web");
         var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0); listener.Start();

@@ -3,7 +3,8 @@
     var path = Context.Request.Path.Value?.ToLowerInvariant() ?? "/";
     var signedIn = User.Identity?.IsAuthenticated == true;
     var groups = new (string Title, string Icon, (string Label, string Url)[] Links)[] {
-        ("Задания", "home", [("Курсы и уроки", "/courses"), ("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar")]),
+        ("Курсы", "materials", User.IsInRole("Editor") ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses"), ("Преподавание", "/courses/teaching")] : signedIn ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses")] : [("Каталог курсов", "/courses")]),
+        ("Задания", "home", [("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar")]),
         ("Слова", "words", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
         ("Игры", "games", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
         ("Чтение", "books", [("Произведения", "/reading")])
@@ -37,7 +38,6 @@
             @if (signedIn) {
                 <a href="/profile" aria-current="@(path.StartsWith("/profile") ? "page" : null)">@await Html.PartialAsync("_NavIcon", "profile")Профиль</a>
                 <a href="/progress" aria-current="@(path == "/progress" ? "page" : null)">@await Html.PartialAsync("_NavIcon", "progress")Мои результаты</a>
-                @if (User.IsInRole("Editor")) { <a href="/editor/curriculum">@await Html.PartialAsync("_NavIcon", "materials")Преподавание</a> }
                 <form action="/account/logout" method="post">@Html.AntiForgeryToken()<button type="submit">Выйти</button></form>
             } else {
                 <a class="button primary" href="/account/login">Войти</a>

@@ -129,3 +129,6 @@
   .cs-dialog-head h2 { font-size:21px; }
   .cs-dialog-head .cs-action { padding-inline:4px; }
 }
+.cs-touch-menu { display:none; }
+.cs-library-choice { display:flex; width:100%; padding:14px; min-height:44px; margin-top:8px; gap:10px; text-align:left; align-items:center; border:1px solid var(--theme-border); border-radius:8px; background:var(--theme-surface); color:var(--theme-ink); cursor:pointer; }
+@media(max-width:700px), (pointer:coarse) { .cs-touch-menu { display:inline-flex; } }

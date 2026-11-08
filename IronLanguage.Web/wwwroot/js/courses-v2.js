@@ -34,20 +34,20 @@
   function shell() {
     root.replaceChildren();
     const nav = node('nav', null, 'cv-tabs'); nav.setAttribute('aria-label', 'Разделы курсов');
-    [['Каталог', '/courses'], ...(window.AdamAuthenticated ? [['Мои курсы', '/my-courses']] : []), ...(editor ? [['Мои авторские курсы', '/author/courses']] : [])].forEach(([t, href]) => {
+    [['Каталог', '/courses'], ...(window.AdamAuthenticated ? [['Мои курсы', '/my-courses']] : [])].forEach(([t, href]) => {
       const a = link(t, href, ''); if (path === href) a.setAttribute('aria-current', 'page'); nav.append(a);
     });
     root.append(nav, message);
   }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
-    shell();
+    if (authored) { root.replaceChildren(message); root.append(link('← Каталог курсов', '/courses', 'back-link')); } else shell();
     const create = button('Создать курс', e => run(e.currentTarget, async () => {
       const course = await post('/author/courses', { title: 'Новый курс', description: '', modules: [] });
       location.href = `/author/courses/${course.id}`;
     }), 'button primary');
-    root.append(heading(authored ? 'Мои авторские курсы' : mine ? 'Мои курсы' : 'Курсы осетинского языка', authored
-      ? 'От первого объяснения до целого курса. Создавайте уроки в своей последовательности.'
+    root.append(heading(authored ? 'Преподавание' : mine ? 'Мои курсы' : 'Курсы осетинского языка', authored
+      ? 'Ваши курсы и библиотека уроков для повторного использования.'
       : mine ? 'Возвращайтесь к своей программе и продолжайте с сохранённого места.' : 'Изучайте язык последовательно: объяснение, практика и новый шаг.', authored ? create : null));
     const grid = node('div', null, authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
@@ -56,6 +56,17 @@
     const tools = append(node('div', null, 'cv-tools'), search, clear);
     if (!authored) tools.append(field('Уровень', level, value => { level = value; draw(); }, { values: [{ value: '', label: 'Все уровни' }, 'Начальный', 'Средний', 'Продвинутый'] }));
     root.append(tools, grid);
+    if (authored) {
+      const library = node('section', null, 'cv-library');
+      const tabs = actions(button('Курсы', () => { tools.hidden = false; grid.hidden = false; library.hidden = true; courseTab.setAttribute('aria-current', 'true'); lessonTab.setAttribute('aria-current', 'false'); }), button('Библиотека уроков', async e => run(e.currentTarget, async () => {
+        const lessons = await api('/author/lesson-library'); tools.hidden = true; grid.hidden = true; library.hidden = false;
+        courseTab.setAttribute('aria-current', 'false'); lessonTab.setAttribute('aria-current', 'true'); library.replaceChildren(node('h2', 'Библиотека уроков'), node('p', 'Сохраните урок через его меню в конструкторе. Затем добавляйте его копию в любые свои курсы. Правки копий независимы.', 'cv-meta'));
+        if (!lessons.length) library.append(empty('Пока нет сохранённых уроков', 'В конструкторе нажмите правой кнопкой по уроку → «Сохранить в библиотеку».'));
+        lessons.forEach(x => library.append(append(node('article', null, 'cv-author-row'), append(node('div'), node('h3', x.lesson.title), node('p', `${x.lesson.blocks.length} блоков · Сохранён ${new Date(x.createdAt).toLocaleDateString('ru-RU')}`, 'cv-meta')))));
+      })), link('Материалы упражнений', '/editor'));
+      const [courseTab, lessonTab] = tabs.querySelectorAll('button'); courseTab.setAttribute('aria-current', 'true');
+      root.insertBefore(tabs, tools); library.hidden = true; root.append(library);
+    }
     function draw() {
       const url = new URL(location.href); query ? url.searchParams.set('q', query) : url.searchParams.delete('q'); level ? url.searchParams.set('level', level) : url.searchParams.delete('level'); history.replaceState(null, '', url);
       clear.hidden = !query; grid.replaceChildren();
@@ -150,7 +161,7 @@
   });
   (async () => {
     const parts = path.split('/').filter(Boolean);
-    if (path === '/author/courses') return catalog(false, true);
+    if (path === '/author/courses' || path === '/courses/teaching') return catalog(false, true);
     if (path === '/my-courses') return catalog(true);
     if (parts[0] === 'author' && parts[2]) return studio(parts[2]);
     if (parts[1] === 'sessions') return player(parts[2]);

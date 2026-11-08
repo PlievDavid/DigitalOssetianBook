@@ -842,6 +842,39 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("LessonRuns");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.LibraryLesson", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LessonJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceCourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceLessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("SourceStamp")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId", "SourceCourseId", "SourceLessonId", "SourceStamp")
+                        .IsUnique();
+
+                    b.ToTable("LibraryLessons");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.Matching", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1331,6 +1364,15 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Sense");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.LibraryLesson", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.SavedWord", b =>

@@ -53,6 +53,26 @@ window.AdamCourseStudio = async function (ui) {
     mutate(() => { const lesson = { id: uuid(), title: 'Новый урок', blocks: [] }; module.lessons.push(lesson); selectedLesson = lesson.id; selectedBlock = null; showProgram = false; });
     canvas.querySelector('[aria-label="Название урока"]')?.focus();
   }
+  async function saveToLibrary(lesson) {
+    try { await save(); await post(`/author/courses/${id}/lessons/${lesson.id}/library`, { stamp }); notice('Урок сохранён в библиотеке преподавания. Его можно добавить в другой курс.'); }
+    catch (e) { showError(e); }
+  }
+  async function fromLibrary(module) {
+    try {
+      const lessons = await api('/author/lesson-library');
+      modal('Добавить урок из библиотеки', (d, close) => {
+        d.append(node('p', 'Добавится независимая копия. Изменения в этом курсе не затронут библиотеку и другие курсы.', 'cs-help'));
+        const list = node('div');
+        const draw = query => { list.replaceChildren(); const found = lessons.filter(x => x.lesson.title.toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru')));
+          if (!found.length) list.append(node('p', lessons.length ? 'Уроки не найдены.' : 'Сначала сохраните урок в библиотеку через меню урока.', 'cs-help'));
+          found.forEach(x => list.append(action(`${x.lesson.title} · ${x.lesson.blocks.length} блоков`, () => {
+            mutate(() => { const copy = structuredClone(x.lesson); copy.id = uuid(); copy.blocks.forEach(b => b.id = uuid()); module.lessons.push(copy); selectedLesson = copy.id; selectedBlock = null; showProgram = false; }); close();
+          }, 'plus', 'cs-library-choice')));
+        };
+        d.append(field('Найти урок', '', draw), list); draw('');
+      });
+    } catch (e) { showError(e); }
+  }
   function newModule() {
     let name = 'Новый модуль';
     modal('Добавить модуль', (d, close) => {
@@ -94,6 +114,7 @@ window.AdamCourseStudio = async function (ui) {
     };
     item('Переименовать / настройки', () => lessonSettings(module, lesson));
     item('Дублировать', () => duplicateLesson(module, lesson));
+    item('Сохранить в библиотеку', () => saveToLibrary(lesson));
     item('Переместить выше', () => mutate(() => ordered(module.lessons, lesson, -1)));
     menu.lastChild.disabled = module.lessons.indexOf(lesson) === 0;
     item('Переместить ниже', () => mutate(() => ordered(module.lessons, lesson, 1)));
@@ -115,6 +136,7 @@ window.AdamCourseStudio = async function (ui) {
   function lessonSettings(module, lesson) {
     modal('Настройки урока', (d, close) => {
       let name = lesson.title;
+      d.append(action('Сохранить в библиотеку', async () => { close(); await saveToLibrary(lesson); }));
       d.append(field('Название урока', name, v => name = v, { max: 150 }), action('Сохранить название', () => { if (!name.trim()) return; mutate(() => lesson.title = name.trim()); close(); }, null, 'cs-primary'));
       if (draft.modules.length > 1) d.append(field('Модуль', module.id, value => { const destination = draft.modules.find(m => m.id === value); mutate(() => { module.lessons = module.lessons.filter(l => l.id !== lesson.id); destination.lessons.push(lesson); }); close(); }, { values: draft.modules.map(m => ({ label: m.title, value: m.id })) }));
       d.append(node('hr'), actions(action('Выше', () => { mutate(() => ordered(module.lessons, lesson, -1)); close(); }), action('Ниже', () => { mutate(() => ordered(module.lessons, lesson, 1)); close(); }), action('Дублировать', () => {
@@ -175,13 +197,14 @@ window.AdamCourseStudio = async function (ui) {
       m.lessons.forEach((l, li) => {
         const b = button('', () => { selectedLesson = l.id; selectedBlock = null; showProgram = false; draw(); }, 'cs-lesson');
         b.setAttribute('aria-current', String(l.id === selectedLesson)); b.append(node('span', String(li + 1), 'cs-lesson-number'), node('span', l.title));
-        const more = iconButton('Действия с уроком ' + l.title, () => lessonMenu(m, l, more)); more.setAttribute('aria-haspopup', 'menu'); more.setAttribute('aria-expanded', 'false');
+        const more = iconButton('Действия с уроком ' + l.title, () => lessonMenu(m, l, more)); more.classList.add('cs-touch-menu'); more.setAttribute('aria-haspopup', 'menu'); more.setAttribute('aria-expanded', 'false');
         const row = append(node('div', null, 'cs-lesson-row'), b, more);
-        row.addEventListener('contextmenu', e => { e.preventDefault(); lessonMenu(m, l, more, { x: e.clientX, y: e.clientY }); });
-        row.addEventListener('keydown', e => { if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { e.preventDefault(); lessonMenu(m, l, more); } });
+        b.setAttribute('aria-haspopup', 'menu');
+        row.addEventListener('contextmenu', e => { e.preventDefault(); lessonMenu(m, l, b, { x: e.clientX, y: e.clientY }); });
+        row.addEventListener('keydown', e => { if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { e.preventDefault(); lessonMenu(m, l, b); } });
         section.append(row);
       });
-      section.append(action('Добавить урок', () => newLesson(m), 'plus', 'cs-add-lesson')); sidebar.append(section);
+      section.append(action('Добавить урок', () => newLesson(m), 'plus', 'cs-add-lesson'), action('Из библиотеки', () => fromLibrary(m), 'book', 'cs-add-lesson')); sidebar.append(section);
     });
     sidebar.append(action('Добавить модуль', newModule, 'plus', 'cs-add-module'));
   }
@@ -227,7 +250,7 @@ window.AdamCourseStudio = async function (ui) {
     if (tab === 'settings') drawSettings(); else { drawTree(); drawLesson(); }
   }
   root.classList.add('course-studio'); root.replaceChildren();
-  const context = append(node('div', null, 'cs-context'), link('← Мои курсы', '/author/courses', 'cs-back'), status);
+  const context = append(node('div', null, 'cs-context'), link('← Преподавание', '/courses/teaching', 'cs-back'), status);
   const previewButton = action('Предпросмотр', preview, 'eye');
   previewButton.setAttribute('aria-label', 'Предпросмотр'); previewButton.title = 'Предпросмотр';
   const saveButton = action('Сохранить', e => run(e.currentTarget, save), null, 'cs-save-button');
