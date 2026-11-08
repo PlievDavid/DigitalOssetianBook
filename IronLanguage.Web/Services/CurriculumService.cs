@@ -273,7 +273,7 @@ public sealed class CurriculumService(ICurriculumRepository repository, ICatalog
             completed.Add(step);
             entry.Value.SnapshotJson = JsonSerializer.Serialize(current with { CompletedSteps = completed.Order().ToArray() }, JsonOptions);
             entry.Value.Step = Enumerable.Range(0, current.Cards.Length).FirstOrDefault(x => !completed.Contains(x), current.Cards.Length);
-            if (entry.Value.Step == current.Cards.Length) entry.Value.CompletedAt ??= DateTimeOffset.UtcNow;
+            if (entry.Value.Step == current.Cards.Length) { entry.Value.CompletedAt ??= DateTimeOffset.UtcNow; guests.Completed(entry); }
             return true;
         }
         finally { entry.Gate.Release(); }

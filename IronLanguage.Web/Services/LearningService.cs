@@ -133,6 +133,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
             attempt.SubmittedAnswer = answer;
             attempt.DraftIndicesJson = JsonSerializer.Serialize(tokenIndices);
             attempt.CompletedAt = DateTimeOffset.UtcNow;
+            guests.Completed(entry);
             return new AnswerResult(attempt.Correct.Value, attempt.ExpectedAnswer, attempt.Explanation, false);
         }
         finally { entry.Gate.Release(); }

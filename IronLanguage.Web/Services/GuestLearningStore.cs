@@ -5,6 +5,8 @@ namespace IronLanguage.Web.Services;
 // Only transient snapshots live here; guest activity never reaches the progress repositories.
 public sealed class GuestLearningStore : IDisposable
 {
+    private readonly AnalyticsRecorder? analytics;
+    public GuestLearningStore(AnalyticsRecorder analytics) : this() { this.analytics = analytics; }
     private readonly MemoryCache cache;
     public GuestLearningStore() : this(new MemoryCacheOptions { SizeLimit = 1024 }) { }
     public GuestLearningStore(MemoryCacheOptions options)
@@ -51,6 +53,12 @@ public sealed class GuestLearningStore : IDisposable
                 if (!cache.TryGetValue(key, out stored) || !ReferenceEquals(stored, entry)) throw new GuestCapacityException();
             }
         }
+        analytics?.Guest<T>("start");
+    }
+
+    public void Completed<T>(Entry<T> entry) where T : class
+    {
+        if (Interlocked.Exchange(ref entry.CompletionRecorded, 1) == 0) analytics?.Guest<T>("complete");
     }
 
     // A lesson and all of its attempts share one cache entry and one expiration.
@@ -89,6 +97,12 @@ public sealed class GuestLearningStore : IDisposable
                 groupKey = Store() ?? throw new GuestCapacityException();
             }
             foreach (var alias in group.Keys) groupAliases.Add(alias, groupKey);
+            analytics?.Guest<IronLanguage.Db.LessonRun>("start");
+            foreach (var alias in group.Keys)
+            {
+                if (alias.Type == typeof(IronLanguage.Db.ExerciseAttempt)) analytics?.Guest<IronLanguage.Db.ExerciseAttempt>("start");
+                if (alias.Type == typeof(IronLanguage.Db.DialogueSession)) analytics?.Guest<IronLanguage.Db.DialogueSession>("start");
+            }
         }
     }
 
@@ -142,6 +156,7 @@ public sealed class GuestLearningStore : IDisposable
 
     public sealed class Entry<T>(T value) where T : class
     {
+        internal int CompletionRecorded;
         public T Value { get; } = value;
         public SemaphoreSlim Gate { get; } = new(1, 1);
     }

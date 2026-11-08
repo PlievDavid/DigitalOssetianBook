@@ -10,7 +10,7 @@ fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
     const editor = await browser.newContext({ baseURL: base, viewport: { width: 1440, height: 1000 } });
-    await editor.addCookies([{ name: 'Adam.Auth', value: fixture.cookie, url: base }]);
+    await editor.addCookies([{ name: 'Adam.Identity', value: fixture.cookie, url: base }]);
     const page = await editor.newPage();
     const browserLessonTitle = `Браузерная проверка Ӕ ӕ ${Date.now()}`;
     const errors = []; page.on('pageerror', e => errors.push(e.message));

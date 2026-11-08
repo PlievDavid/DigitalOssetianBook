@@ -1,9 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 using IronLanguage.Db;
 using IronLanguage.Web.Services;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -23,9 +20,8 @@ public sealed class RegistrationInput : AccountInput
 }
 
 [Route("account")]
-public sealed class AccountController(IAccountRepository accounts, AvatarService avatars) : Controller
+public sealed class AccountController(IAccountRepository accounts, AvatarService avatars, UserManager<UserAccount> users, SignInManager<UserAccount> signIn) : Controller
 {
-    private readonly PasswordHasher<UserAccount> hasher = new();
 
     [HttpGet("login")]
     public IActionResult Login(string? returnUrl = null) { ViewData["ReturnUrl"] = returnUrl; return View(new AccountInput()); }
@@ -35,10 +31,9 @@ public sealed class AccountController(IAccountRepository accounts, AvatarService
     {
         ViewData["ReturnUrl"] = returnUrl;
         if (!ModelState.IsValid) return View(input);
-        var user = await accounts.FindByEmail(input.Email.Trim().ToLowerInvariant(), ct);
-        if (user is null || hasher.VerifyHashedPassword(user, user.PasswordHash, input.Password) == PasswordVerificationResult.Failed)
+        var user = await users.FindByEmailAsync(input.Email.Trim());
+        if (user is null || !(await signIn.PasswordSignInAsync(user, input.Password, isPersistent: false, lockoutOnFailure: true)).Succeeded)
         { ModelState.AddModelError("", "Неверный адрес или пароль."); return View(input); }
-        await SignIn(user);
         return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl! : "/");
     }
 
@@ -72,21 +67,15 @@ public sealed class AccountController(IAccountRepository accounts, AvatarService
     public async Task<IActionResult> Register(RegistrationInput input, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(input);
-        var user = new UserAccount { Email = input.Email.Trim().ToLowerInvariant(), PublicName = input.PublicName.Trim() };
-        user.PasswordHash = hasher.HashPassword(user, input.Password);
-        if (!await accounts.Create(user, ct))
+        var email = input.Email.Trim().ToLowerInvariant();
+        var user = new UserAccount { Email = email, UserName = email, PublicName = input.PublicName.Trim() };
+        if (!(await users.CreateAsync(user, input.Password)).Succeeded)
         { ModelState.AddModelError(nameof(input.Email), "Этот адрес уже зарегистрирован."); return View(input); }
-        await SignIn(user);
+        await signIn.SignInAsync(user, isPersistent: false);
         return Redirect("/profile/avatar?onboarding=true");
     }
 
     [Authorize, HttpPost("logout"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Logout() { await HttpContext.SignOutAsync(); return Redirect("/"); }
+    public async Task<IActionResult> Logout() { await signIn.SignOutAsync(); return Redirect("/"); }
 
-    private Task SignIn(UserAccount user)
-    {
-        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, user.Id.ToString()), new(ClaimTypes.Name, user.Email) };
-        if (user.IsEditor) claims.Add(new Claim(ClaimTypes.Role, "Editor"));
-        return HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
-    }
 }

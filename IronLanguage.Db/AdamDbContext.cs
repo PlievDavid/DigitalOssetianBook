@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace IronLanguage.Db;
 
-public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbContext(options)
+public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : IdentityDbContext<UserAccount, IdentityRole<Guid>, Guid>(options)
 {
-    public DbSet<UserAccount> Users => Set<UserAccount>();
     public DbSet<WordEntry> Words => Set<WordEntry>();
     public DbSet<DictionarySense> DictionarySenses => Set<DictionarySense>();
     public DbSet<DictionaryForm> DictionaryForms => Set<DictionaryForm>();
@@ -28,8 +29,17 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<CourseRating> CourseRatings => Set<CourseRating>();
     public DbSet<LessonRun> LessonRuns => Set<LessonRun>();
 
+    public DbSet<AdminAudit> AdminAudits => Set<AdminAudit>();
+    public DbSet<DailyMetric> DailyMetrics => Set<DailyMetric>();
+    public DbSet<AnalyticsState> AnalyticsStates => Set<AnalyticsState>();
+
     protected override void OnModelCreating(ModelBuilder model)
     {
+        base.OnModelCreating(model);
+        model.Entity<UserAccount>().ToTable("Users");
+        model.Entity<AdminAudit>().HasIndex(x => x.CreatedAt);
+        model.Entity<DailyMetric>().HasKey(x => new { x.Day, x.Section, x.Event });
+        model.Entity<AnalyticsState>().HasKey(x => x.Id);
         model.Entity<CourseRating>().HasKey(x => new { x.CourseId, x.UserId });
         model.Entity<CourseRating>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<CourseRating>().ToTable(t => t.HasCheckConstraint("CK_CourseRatings_Score", "\"Score\" >= 1 AND \"Score\" <= 5"));

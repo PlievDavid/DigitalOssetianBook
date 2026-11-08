@@ -1,0 +1,15 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["IronLanguage.Web/Areas/Admin", "IronLanguage.Web/wwwroot/css/admin.css", "IronLanguage.Web/wwwroot/js/admin.js"],
+  "locale": "ru-RU",
+  "canonicalMap": "DESIGN.md",
+  "requiredCapabilities": ["Select/Listbox", "Form", "Scrollbar", "Toast", "CRUD"],
+  "ownership": { "Select/Listbox": "native" },
+  "requiredCommands": ["build", "integration", "browser"],
+  "commands": {
+    "build": "dotnet build IronLanguage.slnx --no-restore -v:quiet",
+    "integration": "dotnet run --project tests/AdminChecks",
+    "browser": "dotnet run --project tests/AdminChecks -- --browser"
+  },
+  "evidence": { "crudFullFlow": "tests/admin-browser.cjs", "failurePaths": "tests/AdminChecks/Program.cs" }
+}

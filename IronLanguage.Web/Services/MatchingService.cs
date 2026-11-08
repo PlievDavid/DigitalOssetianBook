@@ -60,6 +60,7 @@ public sealed class MatchingService(ICatalogRepository catalog, GuestLearningSto
                 state.MatchedByLeft[leftIndex] = rightIndex;
                 state.RightLocked[rightIndex] = true;
                 state.Matched++;
+                if (state.Matched == state.Lefts.Length) guests.Completed(entry);
             }
             return new MatchingCheck(correct, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
         }

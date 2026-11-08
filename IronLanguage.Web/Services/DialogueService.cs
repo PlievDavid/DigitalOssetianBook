@@ -318,6 +318,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
             {
                 if (session.CompletedAt is not null || session.Revision != revision) return Task.FromResult(false);
                 session.CompletedAt = DateTimeOffset.UtcNow;
+                guests.Completed(entry);
                 return Task.FromResult(true);
             });
         }

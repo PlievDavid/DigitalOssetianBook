@@ -46,6 +46,7 @@ public sealed class PictureService(ICatalogRepository catalog, GuestLearningStor
                 ? CheckChoice(state, optionIndex)
                 : CheckFree(state, answer);
             state.Answered = true;
+            guests.Completed(entry);
             state.Correct = correct;
             return new PictureCheckResult(correct, state.CorrectWord, true, null, await Words(state.WordIds, ct));
         }

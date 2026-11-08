@@ -64,6 +64,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
             attempt.SubmittedAnswer = options[optionIndex];
             attempt.Correct = optionIndex == attempt.CorrectOption;
             attempt.CompletedAt = DateTimeOffset.UtcNow;
+            guests.Completed(entry);
             return Result(attempt);
         }
         finally { entry.Gate.Release(); }
