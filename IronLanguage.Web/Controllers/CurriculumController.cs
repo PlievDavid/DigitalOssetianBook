@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IronLanguage.Web.Controllers;
 
-[AutoValidateAntiforgeryToken]
+[NonController, AutoValidateAntiforgeryToken]
 public sealed class CurriculumController(ICurriculumRepository repository, CurriculumService curriculum, GuestLearningStore guests, ICourseRatingRepository ratings, AvatarService avatars, IProgressRepository progress, ICatalogRepository catalog) : Controller
 {
     private static string CourseQuery(Guid? id) => id.HasValue ? $"?courseId={id}" : "";

@@ -30,6 +30,8 @@ builder.Services.AddScoped<ReadingSeedService>();
 builder.Services.AddScoped<ICurriculumRepository, EfCurriculumRepository>();
 builder.Services.AddScoped<ICourseRepository, EfCourseRepository>();
 builder.Services.AddScoped<CourseAuthoringService>();
+builder.Services.AddScoped<ICourseLearningRepository, EfCourseLearningRepository>();
+builder.Services.AddScoped<CourseLearningService>();
 builder.Services.AddScoped<ICourseRatingRepository, EfCourseRatingRepository>();
 builder.Services.AddScoped<CurriculumService>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();

@@ -5,17 +5,28 @@ namespace IronLanguage.Web.Services;
 
 // The initial authoring contract supports theory. Exercise adapters are added separately;
 // unsupported blocks must never be silently published as theory.
-public sealed record CourseDraft(string Title, string Description, CourseDraftModule[] Modules);
+public sealed record CourseDraft(string Title, string Description, CourseDraftModule[] Modules)
+{
+    public string Level { get; init; } = "Начальный";
+    public string Outcomes { get; init; } = "";
+    public bool Sequential { get; init; }
+}
 public sealed record CourseDraftModule(Guid Id, string Title, CourseDraftLesson[] Lessons);
 public sealed record CourseDraftLesson(Guid Id, string Title, CourseDraftBlock[] Blocks);
-public sealed record CourseDraftBlock(Guid Id, string Kind, string Title, string Text);
+public sealed record CourseDraftBlock(Guid Id, string Kind, string Title, string Text)
+{
+    public Guid? MaterialId { get; init; }
+    public Exercise? PublishedExercise { get; init; }
+}
 
-public sealed class CourseAuthoringService(ICourseRepository courses)
+public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRepository? catalog = null)
 {
     public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public static void Validate(CourseDraft draft, bool publishing)
     {
+        if (draft.Level is not ("Начальный" or "Средний" or "Продвинутый") || draft.Outcomes is null || draft.Outcomes.Length > 3000)
+            throw new ArgumentException("Проверьте уровень и результаты обучения (до 3000 символов).");
         if (string.IsNullOrWhiteSpace(draft.Title) || draft.Title.Length > 150)
             throw new ArgumentException("Укажите название до 150 символов.");
         if (draft.Description is null || draft.Description.Length > 10_000 || publishing && string.IsNullOrWhiteSpace(draft.Description))
@@ -44,8 +55,10 @@ public sealed class CourseAuthoringService(ICourseRepository courses)
                 {
                     if (block is null) throw new ArgumentException("Пустой блок.");
                     Identity(block.Id, block.Title);
-                    if (block.Kind != "theory") throw new ArgumentException("Этот тип блока ещё не поддерживается новой системой курсов.");
-                    if (block.Text is null || block.Text.Length > 20_000 || publishing && string.IsNullOrWhiteSpace(block.Text))
+                    if (block.Kind is not ("theory" or "translation")) throw new ArgumentException("Этот тип блока ещё не поддерживается новой системой курсов.");
+                    if (block.Kind == "translation" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
+                        throw new ArgumentException("Выберите упражнение «Собери фразу».");
+                    if (block.Text is null || block.Text.Length > 20_000 || publishing && block.Kind == "theory" && string.IsNullOrWhiteSpace(block.Text))
                         throw new ArgumentException("Заполните текст теории (до 20 000 символов).");
                 }
             }
@@ -55,13 +68,13 @@ public sealed class CourseAuthoringService(ICourseRepository courses)
     public Task<Course> Create(Guid owner, CourseDraft draft, CancellationToken ct)
     {
         Validate(draft, false);
-        return courses.Create(owner, JsonSerializer.Serialize(draft, JsonOptions), ct);
+        return courses.Create(owner, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
     }
 
     public Task<Course?> Save(Guid id, Guid owner, long stamp, CourseDraft draft, CancellationToken ct)
     {
         Validate(draft, false);
-        return courses.Save(id, owner, stamp, JsonSerializer.Serialize(draft, JsonOptions), ct);
+        return courses.Save(id, owner, stamp, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
     }
 
     public async Task<CourseVersion?> Publish(Guid id, Guid owner, long stamp, bool reviewed, CancellationToken ct)
@@ -72,6 +85,30 @@ public sealed class CourseAuthoringService(ICourseRepository courses)
         var draft = JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, JsonOptions)
             ?? throw new ArgumentException("Не удалось прочитать черновик.");
         Validate(draft, true);
-        return await courses.Publish(id, owner, stamp, course.DraftJson, ct);
+        draft = WithoutSnapshots(draft);
+        var modules = new List<CourseDraftModule>();
+        foreach (var module in draft.Modules)
+        {
+            var lessons = new List<CourseDraftLesson>();
+            foreach (var lesson in module.Lessons)
+            {
+                var blocks = new List<CourseDraftBlock>();
+                foreach (var block in lesson.Blocks)
+                {
+                    if (block.Kind == "theory") { blocks.Add(block); continue; }
+                    var exercise = catalog is null ? null : await catalog.Exercise(block.MaterialId!.Value, ct: ct);
+                    if (exercise is null || exercise.Kind != block.Kind)
+                        throw new ArgumentException($"В уроке «{lesson.Title}» выберите доступное опубликованное упражнение.");
+                    blocks.Add(block with { PublishedExercise = exercise });
+                }
+                lessons.Add(lesson with { Blocks = blocks.ToArray() });
+            }
+            modules.Add(module with { Lessons = lessons.ToArray() });
+        }
+        return await courses.Publish(id, owner, stamp, JsonSerializer.Serialize(draft with { Modules = modules.ToArray() }, JsonOptions), ct);
     }
+
+    private static CourseDraft WithoutSnapshots(CourseDraft draft) => draft with { Modules = draft.Modules.Select(m => m with {
+        Lessons = m.Lessons.Select(l => l with { Blocks = l.Blocks.Select(b => b with { PublishedExercise = null }).ToArray() }).ToArray()
+    }).ToArray() };
 }
