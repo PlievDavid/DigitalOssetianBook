@@ -180,7 +180,7 @@
  .cv-lesson-action { margin-left:52px; }
 }
 /* Catalog and enrolled courses share the Material course-page treatment. */
-.cv-material-catalog .cv-tabs { gap:0; padding:0; border-bottom:1px solid var(--theme-border); }
+.cv-material-catalog .cv-tabs { gap:0; padding:0; border-bottom:0; }
 .cv-material-catalog .cv-tabs a { display:flex; align-items:center; justify-content:center; min-width:140px; min-height:52px; padding:12px 20px; box-sizing:border-box; color:var(--theme-muted); position:relative; }
 .cv-material-catalog .cv-tabs a:hover { background:var(--theme-sage); }
 .cv-material-catalog .cv-tabs a[aria-current="page"] { box-shadow:none; color:var(--theme-green); }
@@ -193,7 +193,7 @@
 .cv-material-catalog .cv-tools .cv-field > span { padding-left:16px; font-size:13px; font-weight:500; color:var(--theme-muted); }
 .cv-material-catalog .cv-tools .cv-field:has(select) { flex:0 1 220px; }
 .cv-material-catalog .cv-tools input { min-height:52px; border:1px solid transparent; border-radius:28px; padding:14px 20px; background:var(--theme-sage); }
-.cv-material-catalog .cv-tools select { min-height:52px; border-radius:16px; padding:12px 16px; }
+.cv-material-catalog .cv-tools select { min-height:52px; border:1px solid transparent; border-radius:28px; padding:12px 44px 12px 20px; background-color:var(--theme-sage); appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23173f32' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 18px center; cursor:pointer; }
 .cv-material-catalog .cv-tools .cv-button { border-radius:24px; min-height:48px; }
 .cv-material-catalog .cv-grid { gap:20px; grid-template-columns:repeat(auto-fill,minmax(260px,320px)); }
 .cv-material-catalog .cv-card { border-radius:16px; background:var(--theme-surface); border:1px solid var(--theme-border); box-shadow:0 1px 2px #173f3108; }
@@ -209,18 +209,18 @@
 .cv-material-catalog .cv-empty { grid-column:1/-1; border:0; background:var(--theme-sage); border-radius:20px; margin:0; }
 @media(max-width:600px) {
  .green-theme .cv-material-catalog .cv-heading h1 { font-size:28px; }
- .cv-material-catalog .cv-tabs a { min-width:0; flex:1; }
+ .cv-material-catalog .cv-tabs a { min-width:0; flex:0 1 auto; }
  .cv-material-catalog .cv-tools .cv-field,.cv-material-catalog .cv-tools .cv-field:has(select) { flex:1 1 100%; }
  .cv-material-catalog .cv-grid { grid-template-columns:minmax(0,1fr); gap:16px; }
 }
 /* Shared alignment and Material states for browsing and learning. */
-.cv-material-catalog .cv-tabs { justify-content:center; }
+.cv-material-catalog .cv-tabs { justify-content:flex-start; }
 .cv-material-catalog .cv-heading { justify-content:center; text-align:center; margin:32px 0; }
 .cv-material-catalog .cv-heading p { max-width:none; }
 .cv-material-catalog .cv-tools { width:100%; }
 .cv-material-catalog .cv-tools .cv-field { max-width:none; }
 .cv-material-catalog .cv-tools .cv-field:has(select) { flex:0 0 240px; }
-.cv-material-catalog .cv-grid { grid-template-columns:repeat(auto-fit,minmax(280px,360px)); justify-content:center; gap:24px; }
+.cv-material-catalog .cv-grid { grid-template-columns:repeat(auto-fill,minmax(280px,360px)); justify-content:start; gap:24px; }
 .cv-material-catalog .cv-card { box-shadow:none; }
 .cv-material-catalog :is(input,select):focus-visible,.cv-lesson-page select:focus-visible { outline:2px solid var(--theme-green); outline-offset:2px; }
 .cv-material-catalog .cv-tabs a:focus-visible { outline:2px solid var(--theme-green); outline-offset:-3px; border-radius:8px; }
