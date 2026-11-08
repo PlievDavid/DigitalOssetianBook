@@ -1,6 +1,7 @@
 (() => {
   const root = document.getElementById("dialog-app");
   if (!root) return;
+  const lessonUrl = root.dataset.startUrl;
   const $ = id => document.getElementById(id);
   const status = $("dialog-status");
   const list = $("dialog-list");
@@ -123,7 +124,7 @@
   async function start(id) {
     cancelPending();
     try {
-      session = await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
+      session = lessonUrl ? await AdamApi(lessonUrl) : await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
       hideSyncActions();
       list.hidden = true; if ($("dialog-history-block")) $("dialog-history-block").hidden = true; play.hidden = false;
       $("dialog-title").textContent = session.title;
@@ -276,7 +277,8 @@
     text.textContent = s
       ? `Диалог пройден. Ходов: ${s.turns}, ошибок: ${s.errors}, подсказок: ${s.hints}.`
       : "Диалог уже завершён.";
-    summaryBox.append(text,
+    summaryBox.append(text);
+    if (!lessonUrl) summaryBox.append(
       button("Пройти заново", () => start(session.dialogueId), "button primary"),
       button("К списку", back, "button secondary"));
   }
@@ -396,5 +398,5 @@
   input.addEventListener("keydown", event => { if (event.key === "Enter") send(input.value); });
   $("dialog-back-link").addEventListener("click", event => { event.preventDefault(); back(); });
   document.addEventListener("keydown", event => { if (event.key === "Escape") closeWord(); });
-  load();
+  if (lessonUrl) start(); else load();
 })();

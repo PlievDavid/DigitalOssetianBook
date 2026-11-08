@@ -1,0 +1,56 @@
+@model IronLanguage.Web.Models.CurriculumPreview
+@using IronLanguage.Db
+@{ ViewData["Title"] = "Предпросмотр: " + Model.Document.Title; }
+<section class="feature-shell curriculum">
+    <a class="back-link" href="/editor/curriculum?kind=@Model.Kind">← @(Model.Kind == "course" ? "К моим курсам" : "К моим урокам")</a>
+    <p class="eyebrow">@(Model.Kind == "course" ? "Курс" : "Урок") · версия @Model.Revision.Version · @(Model.Revision.Published ? "Опубликовано" : "Черновик")</p>
+    <h1>@Model.Document.Title</h1>
+    @if (Model.Kind == "course" && !string.IsNullOrEmpty(Model.Document.CoverPath)) { <img class="course-cover-published-preview" src="@Model.Document.CoverPath" alt="Обложка курса" /> }
+    @if (Model.Kind == "course") { <partial name="_CourseMarkdown" model="Model.Document.Description" /> }
+    else {
+        <p class="theory-copy">@Model.Document.Description</p>
+        @if (!string.IsNullOrWhiteSpace(Model.Document.Goal)) { <p><strong>Цель урока</strong> — @Model.Document.Goal</p> }
+        @if (Model.Document.Minutes is int minutes) { <p>Примерное время — @minutes мин.</p> }
+    }
+    @if (Model.Kind == "course") {
+        @if (!string.IsNullOrWhiteSpace(Model.Document.Outcomes)) { <h2>Чему научится ученик</h2><partial name="_CourseMarkdown" model="Model.Document.Outcomes" /> }
+        @if (!string.IsNullOrWhiteSpace(Model.Document.Audience)) { <h2>Для кого курс</h2><partial name="_CourseMarkdown" model="Model.Document.Audience" /> }
+    }
+    <a href="/editor/curriculum/@Model.Kind/@Model.Revision.ContentId/edit">Изменить</a>
+    @if (Model.Kind == "course")
+    {
+        <ol class="curriculum-list">@foreach (var id in Model.Document.LessonIds) { <li><a href="/editor/curriculum/lesson/@id/preview" target="_blank" rel="noopener">@(Model.Choices.FirstOrDefault(x => x.Id == id)?.Title ?? "Урок недоступен")</a></li> }</ol>
+    }
+    else
+    {
+        var number = 0;
+        @foreach (var card in Model.Document.Cards)
+        {
+            <p class="eyebrow">Карточка @(++number)</p>
+            @if (card.Kind == "theory") { <partial name="_TheoryCard" model="card" /> }
+            else
+            {
+                <article class="feature-card"><h2>@card.Title</h2><p>@(card.Kind switch { "audio" => "Аудиопазл", "dialogue" => "Диалог", "listening" => "Аудирование", _ => "Перевод фразы" })</p><a target="_blank" rel="noopener" href="/editor/@card.Kind/@card.MaterialId/preview">Проверить задание</a></article>
+            }
+        }
+    }
+    @if (Model.Error is not null) { <p class="form-error" role="alert">@Model.Error</p> }
+    @if (!Model.Revision.Published)
+    {
+        <form method="post" action="/editor/curriculum/@Model.Kind/@Model.Revision.ContentId/publish" class="feature-card">
+            @Html.AntiForgeryToken()<input type="hidden" name="draftId" value="@Model.Revision.Id" /><input type="hidden" name="stamp" value="@EfCurriculumRepository.Stamp(Model.Revision)" />
+            <label><input type="checkbox" name="reviewed" value="true" required /> Текст, задания и переводы проверены. Права на публикацию подтверждены.</label>
+            <p>После публикации материал будет доступен ученикам. Начатые уроки сохранят прежние условия.</p>
+            @if (ViewData["PreviousLesson"] is true)
+            {
+                <fieldset>
+                    <legend>Как изменился урок</legend>
+                    <label><input type="radio" name="preserveProgress" value="true" required /> Мелкая правка. Сохранить результат.</label>
+                    <label><input type="radio" name="preserveProgress" value="false" required /> Существенное обновление. Предложить пройти урок снова.</label>
+                </fieldset>
+            }
+            <button class="button primary" type="submit">Опубликовать</button>
+        </form>
+    }
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/course-cover.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/course-markdown.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }

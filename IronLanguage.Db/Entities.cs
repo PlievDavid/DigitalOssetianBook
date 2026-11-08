@@ -1,12 +1,13 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace IronLanguage.Db;
 
-public sealed class UserAccount
+public sealed class UserAccount : IdentityUser<Guid>
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string Email { get; set; } = "";
-    public string PasswordHash { get; set; } = "";
-    public bool IsEditor { get; set; }
+    public UserAccount() { Id = Guid.NewGuid(); SecurityStamp = Guid.NewGuid().ToString(); }
+    public bool IsBlocked { get; set; }
     public string? AvatarJson { get; set; }
+    public string? PublicName { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
@@ -107,6 +108,7 @@ public sealed class ExerciseAttempt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
+    public Guid? LessonRunId { get; set; }
     public Guid ExerciseId { get; set; }
     public int ExerciseVersion { get; set; }
     public string ExpectedAnswer { get; set; } = "";
@@ -217,6 +219,7 @@ public sealed class DialogueSession
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
+    public Guid? LessonRunId { get; set; }
     public Guid DialogueId { get; set; }
     public int DialogueVersion { get; set; }
     public string DialogueTitle { get; set; } = "";

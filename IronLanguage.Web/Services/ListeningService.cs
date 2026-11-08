@@ -15,9 +15,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
     public async Task<(ListeningCard Card, ExerciseAttempt Attempt)?> Start(Guid? userId, Guid exerciseId, CancellationToken ct)
     {
         var exercise = await catalog.Exercise(exerciseId, ct: ct);
-        if (exercise is null || !IsListening(exercise)) return null;
-        var options = ParseOptions(exercise.OptionsJson);
-        if (!IsValidOptions(options) || exercise.CorrectOption is < 0 or > 3) return null;
+        if (exercise is null || CreateSnapshot(exercise, userId ?? Guid.Empty) is not { } initial) return null;
 
         ExerciseAttempt? attempt = null;
         if (userId is Guid id)
@@ -25,8 +23,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
             attempt = await progress.ActiveAttempt(id, exerciseId, ct);
             if (attempt is null)
             {
-                attempt = Snapshot(exercise);
-                attempt.UserId = id;
+                attempt = initial;
                 await progress.CreateAttempt(attempt, ct);
             }
         }
@@ -38,10 +35,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
     public async Task<(ListeningCard Card, ExerciseAttempt Attempt)?> StartGuest(Guid owner, Guid exerciseId, CancellationToken ct)
     {
         var exercise = await catalog.Exercise(exerciseId, ct: ct);
-        if (exercise is null || !IsListening(exercise) || exercise.CorrectOption is < 0 or > 3) return null;
-        var options = ParseOptions(exercise.OptionsJson);
-        if (!IsValidOptions(options)) return null;
-        var attempt = Snapshot(exercise);
+        if (exercise is null || CreateSnapshot(exercise, Guid.Empty) is not { } attempt) return null;
         var card = Card(attempt);
         guests.Add(owner, attempt.Id, attempt);
         return (card, attempt);
@@ -70,6 +64,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
             attempt.SubmittedAnswer = options[optionIndex];
             attempt.Correct = optionIndex == attempt.CorrectOption;
             attempt.CompletedAt = DateTimeOffset.UtcNow;
+            guests.Completed(entry);
             return Result(attempt);
         }
         finally { entry.Gate.Release(); }
@@ -94,7 +89,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
         return Result(attempt);
     }
 
-    private static ListeningAnswerResult? Result(ExerciseAttempt attempt, bool alreadySubmitted = false)
+    internal static ListeningAnswerResult? Result(ExerciseAttempt attempt, bool alreadySubmitted = false)
     {
         if (attempt.CompletedAt is null || attempt.Correct is null) return null;
         var options = ParseOptions(attempt.OptionsJson);
@@ -103,8 +98,17 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
             attempt.Transcript, attempt.Explanation, alreadySubmitted);
     }
 
-    private static ListeningCard Card(ExerciseAttempt attempt) =>
+    internal static ListeningCard Card(ExerciseAttempt attempt) =>
         new(attempt.ExerciseId, attempt.RussianPrompt, attempt.AudioPath, ParseOptions(attempt.OptionsJson));
+
+    public static ExerciseAttempt? CreateSnapshot(Exercise exercise, Guid userId)
+    {
+        if (!IsListening(exercise) || exercise.CorrectOption is < 0 or > 3 || !IsValidOptions(ParseOptions(exercise.OptionsJson)))
+            return null;
+        var attempt = Snapshot(exercise);
+        attempt.UserId = userId;
+        return attempt;
+    }
 
     private static ExerciseAttempt Snapshot(Exercise exercise)
     {

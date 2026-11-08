@@ -416,6 +416,19 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
 
     public async Task<bool> SetArchived(string kind, Guid id, bool archived, CancellationToken ct = default)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        if (archived)
+        {
+            await EfCurriculumRepository.LockMaterials(db, ct);
+            if ((await new EfCurriculumRepository(db).MaterialUsage(kind, id, ct)).Count > 0) return false;
+        }
+        var changed = await UpdateArchived(kind, id, archived, ct);
+        await tx.CommitAsync(ct);
+        return changed;
+    }
+
+    private async Task<bool> UpdateArchived(string kind, Guid id, bool archived, CancellationToken ct)
+    {
         if (kind == "word")
             return await db.Words.Where(x => x.Id == id && x.Published && x.DictionarySenseId == null && x.Archived != archived)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.Archived, archived), ct) == 1;

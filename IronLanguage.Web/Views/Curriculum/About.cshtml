@@ -1,0 +1,17 @@
+@model IronLanguage.Web.Models.CoursePage
+@{ ViewData["Title"] = $"О курсе — {Model.Course.Document.Title}"; ViewData["CourseAbout"] = true; }
+<section class="feature-shell curriculum learner-curriculum course-overview">
+    <a class="back-link" href="/courses">← К курсам</a>
+    <div class="course-layout">
+        <partial name="_CourseHeading" model="Model" />
+        <partial name="_CourseSidebar" model="Model" />
+        <div class="course-main course-about">
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Description)) { <partial name="_CourseMarkdown" model="Model.Course.Document.Description" /> }
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Outcomes)) { <section class="course-about-section"><h2>Чему вы научитесь</h2><partial name="_CourseMarkdown" model="Model.Course.Document.Outcomes" /></section> }
+            @if (!string.IsNullOrWhiteSpace(Model.Course.Document.Audience)) { <section class="course-about-section"><h2>Для кого этот курс</h2><partial name="_CourseMarkdown" model="Model.Course.Document.Audience" /></section> }
+        </div>
+        @await Component.InvokeAsync("CourseRating", new { courseId = Model.Course.Revision.ContentId })
+    </div>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/course-markdown.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /><link rel="stylesheet" href="~/css/course-overview.css" asp-append-version="true" /> }
+@section Scripts { <script src="~/js/course-rating.js" asp-append-version="true" defer></script> }

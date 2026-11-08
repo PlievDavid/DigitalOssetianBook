@@ -2,6 +2,7 @@
   const root = document.getElementById("exercise-app");
   if (!root) return;
   const kind = root.dataset.kind;
+  const lessonUrl = root.dataset.startUrl;
   const audioFlow = kind === "audio";
   const $ = id => document.getElementById(id);
   const status = $("exercise-status");
@@ -54,7 +55,7 @@
   }
   async function start(id) {
     try {
-      const data = await AdamApi(`/exercises/${id}/attempts`, { method: "POST" });
+      const data = lessonUrl ? await AdamApi(lessonUrl.replace(/^\/api\/v1/, "")) : await AdamApi(`/exercises/${id}/attempts`, { method: "POST" });
       card = data.card; attemptId = data.attemptId; submitted = false;
       AdamAvatar.setEmotion($("exercise-avatar"), "Thinking");
       const draft = data.draftIndices || [];
@@ -68,8 +69,9 @@
       audio.hidden = !audioFlow; $("exercise-audio-error").hidden = true;
       if (audioFlow) { audio.src = card.audioPath; audio.load(); audio.play().catch(() => {}); }
       render();
+      if (data.completed && data.result) showAnswer(data.result);
       if (audioFlow && indices.length === card.tokens.length && indices.length && audio.readyState >= 2 && !audio.error) submitAnswer();
-    } catch (error) { status.textContent = error.message; }
+    } catch (error) { status.textContent = lessonUrl ? "Не удалось загрузить задание. Обновите страницу или вернитесь к содержанию курса." : error.message; }
   }
   function renderTiles() {
     picked.replaceChildren(); tiles.replaceChildren();
@@ -127,9 +129,10 @@
     if (!submitted && indices.length > 0 && indices.length === card.tokens.length) submitAnswer();
   });
   function saveDraft() {
-    if (!AdamAuthenticated) return;
+    if (!AdamAuthenticated && !lessonUrl) return;
     const current = [...indices], id = attemptId;
-    pendingDraft = pendingDraft.catch(() => {}).then(() => AdamApi(`/attempts/${id}/draft`, { method: "PUT", body: JSON.stringify({ tokenIndices: current }) }))
+    const draftUrl = AdamAuthenticated ? `/attempts/${id}/draft` : lessonUrl.replace(/\/exercise(?=\?|$)/, "/draft").replace(/^\/api\/v1/, "");
+    pendingDraft = pendingDraft.catch(() => {}).then(() => AdamApi(draftUrl, { method: "PUT", body: JSON.stringify({ tokenIndices: current }) }))
       .catch(error => { status.textContent = `Не удалось сохранить выбранные слова: ${error.message}`; });
   }
   async function submitAnswer() {
@@ -140,26 +143,7 @@
     try {
       await pendingDraft;
       const answer = await AdamApi(`/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ tokenIndices: indices }) });
-      submitted = true;
-      AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
-      submit.hidden = audioFlow; submit.textContent = "Проверить ответ"; submit.disabled = true;
-      hint.hidden = true; clear.hidden = true;
-      render();
-      result.className = answer.correct ? "exercise-feedback is-correct" : "exercise-feedback is-incorrect";
-      result.textContent = audioFlow
-        ? (answer.correct ? `Верно! ${answer.explanation || ""}`.trim() : `Пока неверно. Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`)
-        : `${answer.correct ? "Верно!" : "Пока неверно."} Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`;
-      result.append(button(audioFlow ? "К аудиопазлам" : "К заданию «Собери фразу»", back));
-      const words = $("exercise-words"); words.replaceChildren();
-      for (const word of card.words) {
-        const el = document.createElement("div"); el.className = "feature-card";
-        const title = document.createElement("h3"); title.textContent = `${word.ossetian} — ${word.russian}`;
-        el.append(title);
-        if (AdamAuthenticated) el.append(button("В мой словарь", async () => {
-          try { await AdamApi(`/vocabulary/${word.id}`, { method: "POST" }); status.textContent = "Слово сохранено."; }
-          catch (error) { status.textContent = error.message; }
-        })); words.append(el);
-      }
+      showAnswer(answer);
     } catch (error) {
       result.className = "";
       result.textContent = error.message;
@@ -171,6 +155,28 @@
       if (!submitted) render();
     }
   }
+  function showAnswer(answer) {
+      submitted = true;
+      AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
+      submit.hidden = audioFlow; submit.textContent = "Проверить ответ"; submit.disabled = true;
+      hint.hidden = true; clear.hidden = true;
+      render();
+      result.className = answer.correct ? "exercise-feedback is-correct" : "exercise-feedback is-incorrect";
+      result.textContent = audioFlow
+        ? (answer.correct ? `Верно! ${answer.explanation || ""}`.trim() : `Пока неверно. Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`)
+        : `${answer.correct ? "Верно!" : "Пока неверно."} Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`;
+      if (!lessonUrl) result.append(button(audioFlow ? "К аудиопазлам" : "К заданиям «Собери фразу»", back));
+      const words = $("exercise-words"); words.replaceChildren();
+      for (const word of card.words) {
+        const el = document.createElement("div"); el.className = "feature-card";
+        const title = document.createElement("h3"); title.textContent = `${word.ossetian} — ${word.russian}`;
+        el.append(title);
+        if (AdamAuthenticated) el.append(button("В мой словарь", async () => {
+          try { await AdamApi(`/vocabulary/${word.id}`, { method: "POST" }); status.textContent = "Слово сохранено."; }
+          catch (error) { status.textContent = error.message; }
+        })); words.append(el);
+      }
+  }
   submit.addEventListener("click", submitAnswer);
   function back() { audio.pause(); play.hidden = true; list.hidden = false; load(); }
   $("exercise-back").addEventListener("click", event => { event.preventDefault(); back(); });
@@ -179,5 +185,5 @@
     indices = []; hint.hidden = true;
     render(); saveDraft();
   });
-  load();
+  if (lessonUrl) start(); else load();
 })();

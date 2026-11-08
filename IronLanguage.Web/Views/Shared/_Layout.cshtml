@@ -31,6 +31,7 @@
                 <span class="brand-copy"><strong>Адам</strong><small>Осетинский язык для всех</small></span>
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
+            <a class="@(currentPath.StartsWith("/courses") || currentPath.StartsWith("/lessons") ? "is-current" : "")" href="/courses">Курсы</a>
             <div class="nav-menu nav-menu-section">
                 <a class="nav-section-link nav-menu-trigger @(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") || currentPath.StartsWith("/listening") || currentPath.StartsWith("/matching") || currentPath.StartsWith("/picture") || currentPath.StartsWith("/grammar") ? "is-current" : "")" href="/" aria-controls="practice-menu" aria-haspopup="true" aria-expanded="false">Задания</a>
                 <div id="practice-menu" class="nav-menu-panel">
@@ -60,6 +61,7 @@
                 </div>
             </div>
             <a class="@(currentPath.StartsWith("/reading") || currentPath.StartsWith("/books") ? "is-current" : "")" href="/reading">Чтение</a>
+            @if (User.IsInRole("Editor")) { <a class="@(currentPath.StartsWith("/editor") ? "is-current" : "")" href="/editor/curriculum">Преподавание</a> }
             @if (User.Identity?.IsAuthenticated != true) {
                 <div class="mobile-account-links"><a class="button primary" href="/account/login">Войти</a><a href="/account/register">Создать аккаунт</a></div>
             }

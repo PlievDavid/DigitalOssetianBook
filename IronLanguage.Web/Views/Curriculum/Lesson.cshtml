@@ -1,0 +1,9 @@
+@model IronLanguage.Web.Models.CurriculumItem
+@{ ViewData["Title"] = Model.Document.Title; var courseId = ViewData["CourseId"] as Guid?; var error = TempData["LessonError"] as string; }
+<section class="feature-shell curriculum lesson-opening">
+    @if (error is not null) { <h1>Не удалось открыть урок</h1><p role="alert">@error</p> }
+    else { <p role="status">Открываем урок…</p> }
+    <form method="post" action="/lessons/@Model.Revision.ContentId/start?courseId=@courseId" id="lesson-open" data-auto-open="@(error is null ? "true" : "false")">@Html.AntiForgeryToken()<button type="submit" class="button primary">Открыть урок</button></form>
+    <a href="@(courseId.HasValue ? $"/courses/{courseId}/contents" : "/courses")">Вернуться к курсу</a>
+</section>
+@section Scripts { <script src="~/js/lesson-open.js" asp-append-version="true" defer></script> }

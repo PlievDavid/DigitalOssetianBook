@@ -1,0 +1,22 @@
+@using IronLanguage.Web.Services
+@model IronLanguage.Web.Models.CoursePage
+@{
+    var completed = Model.Lessons.Count(lesson => Model.Runs.Any(x => CurriculumService.CountsForProgress(x, lesson) && x.CompletedAt != null));
+    var active = completed == Model.Lessons.Length ? null : Model.Lessons.Select(lesson => Model.Runs.FirstOrDefault(x => x.LessonId == lesson.Revision.ContentId && x.CompletedAt == null)).FirstOrDefault(x => x is not null);
+    var next = Model.Lessons.FirstOrDefault(lesson => !Model.Runs.Any(x => CurriculumService.CountsForProgress(x, lesson) && x.CompletedAt != null)) ?? Model.Lessons.FirstOrDefault();
+    var about = (bool?)ViewData["CourseAbout"] == true;
+}
+<aside class="course-sidebar">
+    <nav class="course-navigation" aria-label="Разделы курса">
+        <a href="/courses/@Model.Course.Revision.ContentId/about" aria-current="@(about ? "page" : null)">О курсе</a>
+        <a href="/courses/@Model.Course.Revision.ContentId/contents" aria-current="@(about ? null : "page")">Содержание</a>
+    </nav>
+    <div class="course-sidebar-progress">
+        @if (completed > 0) {
+            <p class="course-progress-label">@completed из @Model.Lessons.Length пройдено</p>
+            <progress value="@completed" max="@Model.Lessons.Length" aria-label="Прогресс курса"></progress>
+        }
+        @if (active is not null) { <a class="button primary course-start" href="/lessons/runs/@active.Id?courseId=@Model.Course.Revision.ContentId">Продолжить</a> }
+        else if (next is not null) { <form method="post" action="/lessons/@next.Revision.ContentId/start?courseId=@Model.Course.Revision.ContentId">@Html.AntiForgeryToken()<button class="button primary course-start" type="submit">@(completed == Model.Lessons.Length ? "Повторить курс" : completed > 0 ? "Продолжить курс" : "Начать курс")</button></form> }
+    </div>
+</aside>
