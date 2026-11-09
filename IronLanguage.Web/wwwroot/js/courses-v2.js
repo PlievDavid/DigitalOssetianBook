@@ -143,12 +143,18 @@
       if (!state.preview) {
         const drawer = node('dialog', null, 'cv-course-drawer');
         drawer.setAttribute('aria-label', 'Программа курса');
-        let closing = false;
+        let closing = false, mouseEntered = false, openedAt = 0;
         const closeDrawer = async () => { if (!drawer.open || closing) return; closing = true; if (!matchMedia('(prefers-reduced-motion: reduce)').matches) await drawer.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }], { duration: 180, easing: 'ease-in' }).finished; drawer.close(); closing = false; };
-        const toggle = button('Содержание ›', () => { drawer.showModal(); toggle.setAttribute('aria-expanded', 'true'); }, 'cv-content-tab');
+        const toggle = button('Содержание ›', () => { mouseEntered = false; openedAt = performance.now(); drawer.showModal(); document.addEventListener('pointermove', trackDrawerMouse); toggle.setAttribute('aria-expanded', 'true'); }, 'cv-content-tab');
         toggle.setAttribute('aria-haspopup', 'dialog'); toggle.setAttribute('aria-expanded', 'false');
         drawer.append(append(node('header'), node('h2', 'Программа курса')));
-        drawer.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') closeDrawer(); });
+                function trackDrawerMouse(e) {
+          if (e.pointerType !== 'mouse' || !drawer.open || closing || performance.now() - openedAt < 240) return;
+          const r = drawer.getBoundingClientRect();
+          const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+          if (inside) mouseEntered = true;
+          else if (mouseEntered) closeDrawer();
+        }
         drawer.addEventListener('cancel', e => { e.preventDefault(); closeDrawer(); });
         let moduleName, group;
         state.lessons.forEach(lesson => {
@@ -167,7 +173,7 @@
           if (!lesson.available) item.title = 'Сначала завершите предыдущие уроки';
           group.append(item);
         });
-        drawer.addEventListener('close', () => { toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); });
+        drawer.addEventListener('close', () => { document.removeEventListener('pointermove', trackDrawerMouse); toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); });
         drawer.addEventListener('click', e => { if (e.target === drawer) { const r = drawer.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeDrawer(); } });
         area.append(drawer, toggle);
       }
