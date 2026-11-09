@@ -8,7 +8,7 @@ namespace IronLanguage.Web.Controllers;
 
 [AutoValidateAntiforgeryToken, RequestSizeLimit(1_000_000)]
 public sealed class CoursesController(ICourseRepository courses, ICourseLearningRepository repository, CourseLearningService learning,
-    ICatalogRepository catalog, GuestLearningStore guests, ILessonLibraryRepository library) : Controller
+    ICatalogRepository catalog, GuestLearningStore guests, ILessonLibraryRepository library, IWebHostEnvironment environment) : Controller
 {
     [HttpGet("courses")]
     [HttpGet("courses/{id:guid}")]
@@ -28,6 +28,25 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     public async Task<IActionResult> LessonLibrary(CancellationToken ct) => Json((await library.Owned(User.UserId()!.Value, ct))
         .Select(x => new { x.Id, x.CreatedAt, lesson = JsonSerializer.Deserialize<CourseDraftLesson>(x.LessonJson, CourseAuthoringService.JsonOptions) }));
 
+    [HttpPost("api/v1/author/courses/{id:guid}/cover"), Authorize(Roles = "Editor"), RequestSizeLimit(6_000_000)]
+    public async Task<IActionResult> Cover(Guid id, IFormFile file, CancellationToken ct)
+    {
+        if (await courses.Owned(id, User.UserId()!.Value, ct) is null) return NotFound();
+        if (file is null || file.Length == 0 || file.Length > 5_000_000) return BadRequest(new { error = "Выберите изображение до 5 МБ." });
+        await using var buffer = new MemoryStream(); await file.CopyToAsync(buffer, ct);
+        var bytes = buffer.ToArray(); var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var valid = extension switch {
+            ".png" => bytes.Length >= 8 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
+            ".jpg" or ".jpeg" => bytes.Length >= 3 && bytes[0] == 255 && bytes[1] == 216 && bytes[2] == 255,
+            ".webp" => bytes.Length >= 12 && System.Text.Encoding.ASCII.GetString(bytes, 0, 4) == "RIFF" && System.Text.Encoding.ASCII.GetString(bytes, 8, 4) == "WEBP",
+            _ => false
+        };
+        if (!valid) return BadRequest(new { error = "Нужен PNG, JPEG или WebP." });
+        var folder = Path.Combine(environment.WebRootPath, "media", "course-covers"); Directory.CreateDirectory(folder);
+        var name = Guid.NewGuid().ToString("N") + extension;
+        await System.IO.File.WriteAllBytesAsync(Path.Combine(folder, name), bytes, ct);
+        return Json(new { path = "/media/course-covers/" + name });
+    }
     public sealed record LibraryInput(long Stamp);
     [HttpPost("api/v1/author/courses/{id:guid}/lessons/{lesson:guid}/library"), Authorize(Roles = "Editor")]
     public async Task<IActionResult> SaveLibrary(Guid id, Guid lesson, [FromBody] LibraryInput input, CancellationToken ct)
@@ -53,7 +72,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     {
         var versions = await repository.Published(ct);
         var authors = await repository.AuthorNames(versions.Select(v => v.CourseId).ToArray(), ct);
-        return Json(versions.Select(v => { var d = CourseLearningService.Read(v); return new { id = v.CourseId, d.Title, d.Description, d.Level,
+        return Json(versions.Select(v => { var d = CourseLearningService.Read(v); return new { id = v.CourseId, d.Title, d.Description, d.CoverPath, d.Theme, d.Level,
             author = authors.GetValueOrDefault(v.CourseId, "Автор курса"), lessons = d.Modules.Sum(x => x.Lessons.Length), version = v.Number }; }));
     }
 
@@ -66,7 +85,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
             {
                 var d = CourseLearningService.Read(v);
                 var done = await learning.Completed(e.CourseId, v.Id, User.UserId(), guests.Owner(HttpContext), ct);
-                list.Add(new { id = e.CourseId, d.Title, d.Description, d.Level, lessons = d.Modules.Sum(x => x.Lessons.Length), completed = done.Count, version = v.Number });
+                list.Add(new { id = e.CourseId, d.Title, d.Description, d.CoverPath, d.Theme, d.Level, lessons = d.Modules.Sum(x => x.Lessons.Length), completed = done.Count, version = v.Number });
             }
         return Json(list);
     }
@@ -87,7 +106,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
             return new { l.Id, l.Title, blocks = l.Blocks.Length, completed = done.Contains(l.Id), started = active.Any(s => s.LessonId == l.Id), available };
         }).ToArray() }).ToArray();
         var author = (await repository.AuthorNames([id], ct)).GetValueOrDefault(id, "Автор курса");
-        return Json(new { id, d.Title, d.Description, d.DescriptionRichText, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
+        return Json(new { id, d.Title, d.Description, d.DescriptionRichText, d.CoverPath, d.Theme, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
             started = active.Length > 0 || done.Count > 0, resumeLessonId = active.FirstOrDefault()?.LessonId });
     }
 

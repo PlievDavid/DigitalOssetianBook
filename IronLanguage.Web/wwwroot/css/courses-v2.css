@@ -278,3 +278,7 @@
 .cv-material-catalog .cv-card,.cv-material-catalog .cv-card-content { min-width:0; }
 .cv-material-catalog .cv-card h2 { overflow-wrap:anywhere; }
 .cv-material-catalog .cv-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr)); }
+[data-theme="sky"] { --theme-sage:#e8f0f7; }
+[data-theme="sand"] { --theme-sage:#f5eddf; }
+.cv-course-image { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
+.cv-hero-image { display:block; width:100%; max-height:360px; aspect-ratio:16/9; object-fit:cover; border-radius:18px; margin-bottom:24px; }

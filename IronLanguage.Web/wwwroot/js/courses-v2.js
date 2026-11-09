@@ -94,7 +94,8 @@
           const body = append(node('div'), node('span', state, 'cv-author-status'), node('h2', c.title), node('p', `${c.modules || 0} модулей · ${c.lessons || 0} уроков`, 'cv-meta'));
           row.append(body, link('Редактировать курс', `/author/courses/${c.id}`, 'cv-button')); grid.append(row); return;
         }
-        const card = node('article', null, 'cv-card');
+        const card = node('article', null, 'cv-card'); card.dataset.theme = c.theme || 'sage';
+        if (c.coverPath) { const img = node('img', null, 'cv-course-image'); img.src = c.coverPath; img.alt = ''; img.loading = 'lazy'; card.append(img); }
         card.append(append(node('div', null, 'cv-cover'), node('strong', 'Ӕ'), node('span', authored ? c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик' : c.level)));
         const body = append(node('div', null, 'cv-card-content'), node('h2', c.title), node('p', c.description.length > 180 ? c.description.slice(0, 180) + '…' : c.description || 'Добавьте описание курса.'));
         if (!authored) body.append(node('span', mine ? `${c.completed} из ${c.lessons} уроков завершено` : `Уроков: ${c.lessons}`, 'cv-meta'));
@@ -112,6 +113,8 @@
     const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || lessons[0];
     const start = lesson => async e => run(e.currentTarget, async () => { const session = await post(`/courses/${id}/lessons/${lesson.id}/sessions`); location.href = `/courses/sessions/${session.id}`; });
     const hero = node('section', null, 'cv-material-hero');
+    hero.dataset.theme = c.theme || 'sage';
+    if (c.coverPath) { const img = node('img', null, 'cv-hero-image'); img.src = c.coverPath; img.alt = ''; hero.append(img); }
     hero.append(append(node('div', null, 'cv-course-chips'), node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'), window.AdamCourseRichText.render({ text: c.description, richText: c.descriptionRichText }));
     if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'), node('p', c.outcomes)));
     const status = node('div', null, 'cv-course-status');
