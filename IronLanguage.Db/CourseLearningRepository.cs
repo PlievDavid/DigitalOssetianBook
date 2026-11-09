@@ -11,6 +11,7 @@ public sealed class CourseLessonSession
     public Guid LessonId { get; set; }
     public string AttemptIdsJson { get; set; } = "[]";
     public int Step { get; set; }
+    public int[] CompletedSteps { get; set; } = [];
     public DateTimeOffset StartedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? CompletedAt { get; set; }
 }
@@ -62,10 +63,18 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
     {
         if (step < 0 || step >= count) return false;
         if (attempt is Guid aid && !await db.Attempts.AnyAsync(x => x.Id == aid && x.UserId == user && x.CompletedAt != null, ct)) return false;
-        var changed = await db.CourseLessonSessions.Where(x => x.UserId == user && x.Id == id && x.Step == step && x.CompletedAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Step, step + 1)
-                .SetProperty(x => x.CompletedAt, step + 1 == count ? DateTimeOffset.UtcNow : (DateTimeOffset?)null), ct);
-        return changed == 1 || await db.CourseLessonSessions.AnyAsync(x => x.UserId == user && x.Id == id && x.Step > step, ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-progress:{id}"}, 0))", ct);
+        var current = await Session(user, id, ct);
+        if (current is null) return false;
+        var completed = current.CompletedSteps.Concat(Enumerable.Range(0, current.Step)).Append(step).Distinct().Order().ToArray();
+        var frontier = 0;
+        while (completed.Contains(frontier) && frontier < count) frontier++;
+        await db.CourseLessonSessions.Where(x => x.UserId == user && x.Id == id)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.CompletedSteps, completed).SetProperty(x => x.Step, frontier)
+                .SetProperty(x => x.CompletedAt, frontier == count ? current.CompletedAt ?? DateTimeOffset.UtcNow : null), ct);
+        await tx.CommitAsync(ct);
+        return true;
     }
     public async Task<bool> Archive(Guid course, Guid owner, CancellationToken ct) =>
         await db.Courses.Where(x => x.Id == course && x.OwnerId == owner).ExecuteUpdateAsync(s => s.SetProperty(x => x.Archived, true), ct) == 1;

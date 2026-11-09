@@ -309,6 +309,10 @@ namespace IronLanguage.Db.Migrations
                     b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.PrimitiveCollection<int[]>("CompletedSteps")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
                     b.Property<Guid>("CourseId")
                         .HasColumnType("uuid");
 

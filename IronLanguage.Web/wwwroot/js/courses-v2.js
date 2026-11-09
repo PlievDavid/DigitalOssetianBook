@@ -142,6 +142,11 @@
     shell(false); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
     async function refresh(blockId = null) {
       state = await api(`/course-sessions/${id}${blockId ? '?block=' + encodeURIComponent(blockId) : ''}`); picked = [];
+      if (state.block?.kind === 'theory' && !state.steps[state.viewStep].completed) {
+        blockId = state.block.id;
+        await post(`/course-sessions/${id}/next`, { blockId });
+        state = await api(`/course-sessions/${id}?block=${blockId}`);
+      }
       const url = new URL(location.href); blockId ? url.searchParams.set('block', blockId) : url.searchParams.delete('block'); history.replaceState(null, '', url); draw();
     }
     function draw() {
@@ -203,8 +208,8 @@
       }
       const b = state.block, card = append(node('section', null, 'cv-player-card'), node('h2', b.title));
       const next = button('Продолжить', e => run(e.currentTarget, async () => {
-        if (state.viewStep < state.step) { await refresh(state.steps[state.viewStep + 1]?.id ?? null); return; }
-        await post(`/course-sessions/${id}/next`, { blockId: b.id }); await refresh();
+        if (state.steps[state.viewStep].completed) { await refresh(state.steps[state.viewStep + 1]?.id ?? null); return; }
+        await post(`/course-sessions/${id}/next`, { blockId: b.id }); await refresh(state.steps[state.viewStep + 1]?.id ?? null);
       }), 'button primary');
       if (b.kind === 'theory') card.append(window.AdamCourseRichText.render(b));
       else {
@@ -212,7 +217,7 @@
         const selected = node('div', null, 'cv-picked'), tokens = node('div', null, 'cv-tokens');
         selected.setAttribute('aria-label', 'Собранная фраза'); tokens.setAttribute('aria-label', 'Доступные слова');
         const check = button('Проверить ответ', e => run(e.currentTarget, async () => {
-          await post(`/course-sessions/${id}/answers`, { blockId: b.id, tokenIndices: picked }); await refresh();
+          await post(`/course-sessions/${id}/answers`, { blockId: b.id, tokenIndices: picked }); await refresh(b.id);
         }), 'button primary');
         function renderTokens() {
           selected.replaceChildren(); tokens.replaceChildren();

@@ -105,6 +105,16 @@ try
     var learning = new LearningService(catalog, progress, guests);
     var lessons = new EfCourseLearningRepository(db);
     var runner = new CourseLearningService(repo, lessons, progress, learning, guests);
+    var unordered = await lessons.Start(new CourseLessonSession { UserId = learner.Id, CourseId = course.Id, VersionId = first.Id, LessonId = Guid.NewGuid() }, [], ct);
+    Check(await lessons.Advance(learner.Id, unordered.Id, 2, 3, null, ct), "Не сохранён просмотр последнего блока");
+    var unorderedState = (await lessons.Session(learner.Id, unordered.Id, ct))!;
+    Check(unorderedState.Step == 0 && unorderedState.CompletedAt is null && unorderedState.CompletedSteps.Contains(2), "Просмотр последнего блока завершил весь урок");
+    Check(!await lessons.Advance(other.Id, unordered.Id, 0, 3, null, ct), "Чужой прогресс изменён");
+    await lessons.Advance(learner.Id, unordered.Id, 0, 3, null, ct);
+    await lessons.Advance(learner.Id, unordered.Id, 1, 3, null, ct);
+    Check((await lessons.Session(learner.Id, unordered.Id, ct))!.Step == 3, "Не учтён ранее просмотренный блок");
+    Check(await lessons.Advance(learner.Id, unordered.Id, 2, 3, null, ct), "Повтор просмотра не идемпотентен");
+    await db.CourseLessonSessions.Where(s => s.Id == unordered.Id).ExecuteDeleteAsync(ct);
     var guestOwner = Guid.NewGuid();
     var session = (await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!;
     Check(session.VersionId == first.Id, "Урок не использует закреплённую версию");
