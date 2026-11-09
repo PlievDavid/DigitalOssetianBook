@@ -18,6 +18,7 @@ public sealed class CourseLessonSession
 
 public interface ICourseLearningRepository
 {
+    Task<CourseVersion?> Snapshot(Guid version, CancellationToken ct);
     Task<List<Course>> Owned(Guid user, CancellationToken ct);
     Task<List<CourseVersion>> Published(CancellationToken ct);
     Task<CourseVersion?> Version(Guid course, Guid? user, CancellationToken ct);
@@ -32,6 +33,7 @@ public interface ICourseLearningRepository
 
 public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearningRepository
 {
+    public Task<CourseVersion?> Snapshot(Guid version, CancellationToken ct) => db.CourseVersions.AsNoTracking().SingleOrDefaultAsync(v => v.Id == version, ct);
     public Task<Dictionary<Guid, string>> AuthorNames(Guid[] courses, CancellationToken ct) =>
         (from c in db.Courses.AsNoTracking() join u in db.Users.AsNoTracking() on c.OwnerId equals u.Id
          where courses.Contains(c.Id) select new { c.Id, Name = u.PublicName ?? "Автор курса" }).ToDictionaryAsync(x => x.Id, x => x.Name, ct);
@@ -40,10 +42,9 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
         .Where(v => db.Courses.Any(c => c.Id == v.CourseId && c.PublishedVersionId == v.Id && !c.Archived)).OrderByDescending(v => v.PublishedAt).ToListAsync(ct);
     public async Task<CourseVersion?> Version(Guid course, Guid? user, CancellationToken ct)
     {
-        if (user is Guid uid && await db.CourseEnrollments.AsNoTracking().SingleOrDefaultAsync(x => x.CourseId == course && x.UserId == uid, ct) is { } enrollment)
-            return await db.CourseVersions.AsNoTracking().SingleOrDefaultAsync(x => x.Id == enrollment.VersionId, ct);
+        var enrolled = user is Guid uid && await db.CourseEnrollments.AnyAsync(e => e.CourseId == course && e.UserId == uid, ct);
         return await db.CourseVersions.AsNoTracking().SingleOrDefaultAsync(v => v.CourseId == course &&
-            db.Courses.Any(c => c.Id == course && !c.Archived && c.PublishedVersionId == v.Id), ct);
+            db.Courses.Any(c => c.Id == course && (!c.Archived || enrolled) && c.PublishedVersionId == v.Id), ct);
     }
     public Task<List<CourseEnrollment>> Enrollments(Guid user, CancellationToken ct) => db.CourseEnrollments.AsNoTracking().Where(x => x.UserId == user).ToListAsync(ct);
     public Task<List<CourseLessonSession>> Sessions(Guid user, Guid course, CancellationToken ct) => db.CourseLessonSessions.AsNoTracking()
@@ -53,7 +54,7 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-session:{session.UserId}:{session.VersionId}:{session.LessonId}"}, 0))", ct);
-        var active = await db.CourseLessonSessions.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == session.UserId && x.VersionId == session.VersionId && x.LessonId == session.LessonId && x.CompletedAt == null, ct);
+        var active = await db.CourseLessonSessions.AsNoTracking().Where(x => x.UserId == session.UserId && x.VersionId == session.VersionId && x.LessonId == session.LessonId && (x.CompletedAt == null || session.CompletedAt != null)).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
         if (active is not null) return active;
         db.CourseLessonSessions.Add(session); db.Attempts.AddRange(attempts);
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
