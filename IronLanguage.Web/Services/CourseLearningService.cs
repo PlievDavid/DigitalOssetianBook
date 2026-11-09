@@ -124,7 +124,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
             if (!done.Contains(l.Id)) unlocked = false;
             return new { l.Id, l.Title, module = m.Title, completed = done.Contains(l.Id), available };
         })).ToArray();
-        return new { session.Id, session.CourseId, session.LessonId, lesson.Title, session.Step, count = lesson.Blocks.Length,
+        return new { draft.Theme, session.Id, session.CourseId, session.LessonId, lesson.Title, session.Step, count = lesson.Blocks.Length,
             viewStep, steps = lesson.Blocks.Select((b, i) => new { b.Id, b.Title, completed = i < session.Step || session.CompletedSteps.Contains(i), available = true }).ToArray(), lessons,
             completed = session.CompletedAt is not null, block = blockData, preview };
     }
