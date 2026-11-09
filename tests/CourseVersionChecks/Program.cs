@@ -129,7 +129,7 @@ try
     Check(await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Аудирование не завершилось");
     var guestOwner = Guid.NewGuid();
     var session = (await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!;
-    Check(session.VersionId == first.Id, "Урок не использует закреплённую версию");
+    Check(session.VersionId == second.Id, "Урок не обновился до опубликованной версии");
     Check((await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!.Id == session.Id, "Повтор запуска создал сессию");
     Check(await runner.State(session.Id, other.Id, guestOwner, ct) is null, "Чужая сессия доступна");
     Check(!await runner.Advance(session.Id, Guid.NewGuid(), learner.Id, guestOwner, ct), "Зачтён чужой блок");
@@ -167,6 +167,27 @@ try
     Check(await repo.Enroll(orderedCourse.Id, other.Id, ct) is null, "Архивный курс принимает новых учеников");
     Check(await runner.Start(orderedCourse.Id, lesson.Id, null, Guid.NewGuid(), ct) is null, "Гость начал архивный курс");
     Check(await runner.Start(orderedCourse.Id, following.Id, learner.Id, guestOwner, ct) is not null, "Архив удалил доступ записанного ученика");
+    var evolving = await service.Create(owner.Id, draft, ct);
+    await service.Publish(evolving.Id, owner.Id, 0, true, ct);
+    var evolvingSession = (await runner.Start(evolving.Id, lesson.Id, learner.Id, guestOwner, ct))!;
+    await runner.Advance(evolvingSession.Id, block.Id, learner.Id, guestOwner, ct);
+    var guestEvolution = (await runner.Start(evolving.Id, lesson.Id, null, guestOwner, ct))!;
+    await runner.Advance(guestEvolution.Id, block.Id, null, guestOwner, ct);
+    var extra = new CourseDraftBlock(Guid.NewGuid(), "theory", "Добавленный блок", "Новый текст");
+    var revised = draft with { Modules = [module with { Lessons = [lesson with { Blocks = [block, extra] }] }] };
+    await service.Save(evolving.Id, owner.Id, 0, revised, ct);
+    var latest = (await service.Publish(evolving.Id, owner.Id, 1, true, ct))!;
+    var counts = await runner.BlockProgress(evolving.Id, latest, learner.Id, guestOwner, ct);
+    Check(counts.Completed == 1 && counts.Total == 2, "Добавленный блок не изменил знаменатель прогресса");
+    var refreshed = JsonSerializer.SerializeToElement(await runner.State(evolvingSession.Id, learner.Id, guestOwner, ct), CourseAuthoringService.JsonOptions);
+    Check(refreshed.GetProperty("count").GetInt32() == 2 && refreshed.GetProperty("steps")[0].GetProperty("completed").GetBoolean() && !refreshed.GetProperty("steps")[1].GetProperty("completed").GetBoolean(), "Старая ссылка не обновила программу и прогресс");
+    var refreshedGuest = JsonSerializer.SerializeToElement(await runner.State(guestEvolution.Id, null, guestOwner, ct), CourseAuthoringService.JsonOptions);
+    Check(refreshedGuest.GetProperty("count").GetInt32() == 2 && refreshedGuest.GetProperty("steps")[0].GetProperty("completed").GetBoolean(), "Гостевая программа не обновилась");
+    var altered = revised with { Modules = [module with { Lessons = [lesson with { Blocks = [block with { Text = "Изменённый текст" }, extra] }] }] };
+    await service.Save(evolving.Id, owner.Id, 1, altered, ct);
+    var alteredVersion = (await service.Publish(evolving.Id, owner.Id, 2, true, ct))!;
+    Check((await runner.BlockProgress(evolving.Id, alteredVersion, learner.Id, guestOwner, ct)).Completed == 0, "Изменённый блок сохранил зачёт");
+    Check(await runner.State(evolvingSession.Id, other.Id, guestOwner, ct) is null, "Обновление открыло чужую попытку");
     if (args.Contains("--browser"))
     {
         // Copy only a confirmed, already published phrase into our isolated fixture.

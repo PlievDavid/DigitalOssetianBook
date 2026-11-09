@@ -98,7 +98,7 @@
         if (c.coverPath) { const img = node('img', null, 'cv-course-image'); img.src = c.coverPath; img.alt = ''; img.loading = 'lazy'; card.append(img); }
         card.append(append(node('div', null, 'cv-cover'), node('span', authored ? c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик' : c.level)));
         const body = append(node('div', null, 'cv-card-content'), node('h2', c.title), node('p', c.description.length > 180 ? c.description.slice(0, 180) + '…' : c.description || 'Добавьте описание курса.'));
-        if (!authored) body.append(node('span', mine ? `${c.completed} из ${c.lessons} уроков завершено` : `Уроков: ${c.lessons}`, 'cv-meta'));
+        if (!authored) body.append(node('span', mine ? `${c.completedBlocks} из ${c.totalBlocks} блоков завершено` : `Уроков: ${c.lessons}`, 'cv-meta'));
         if (c.author) body.append(node('span', c.author, 'cv-meta'));
         body.append(actions(enrolled.has(c.id) ? button('Продолжить', e => run(e.currentTarget, () => continueCourse(c.id)), 'button primary') : link('Открыть курс', `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
       });
@@ -118,8 +118,8 @@
     hero.append(append(node('div', null, 'cv-course-chips'), node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'), window.AdamCourseRichText.render({ text: c.description, richText: c.descriptionRichText }));
     if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'), node('p', c.outcomes)));
     const status = node('div', null, 'cv-course-status');
-    if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : completed === lessons.length ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
-    if (c.started) status.append(append(node('div'), node('strong', completed === lessons.length ? 'Курс пройден' : 'Обучение начато'), node('span', `Пройдено уроков: ${completed} из ${lessons.length}`, 'cv-meta')));
+    if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : c.completedBlocks === c.totalBlocks ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
+    if (c.started) status.append(append(node('div'), node('strong', c.completedBlocks === c.totalBlocks ? 'Курс пройден' : 'Обучение начато'), node('span', `Пройдено блоков: ${c.completedBlocks} из ${c.totalBlocks}`, 'cv-meta')));
     hero.append(status);
     if (!window.AdamAuthenticated) hero.append(node('p', 'Войдите, чтобы сохранить прогресс между посещениями.', 'cv-meta'));
     root.append(hero);
@@ -146,6 +146,8 @@
     shell(false); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
     async function refresh(blockId = null) {
       state = await api(`/course-sessions/${id}${blockId ? '?block=' + encodeURIComponent(blockId) : ''}`); picked = [];
+      if (state.updateRequired) { state = await post(`/course-sessions/${id}/update`); blockId = state.block?.id ?? null; }
+      if (state.id !== id) { id = state.id; history.replaceState(null, '', '/courses/sessions/' + id); }
       if (state.block?.kind === 'theory' && !state.steps[state.viewStep].completed) {
         blockId = state.block.id;
         await post(`/course-sessions/${id}/next`, { blockId });

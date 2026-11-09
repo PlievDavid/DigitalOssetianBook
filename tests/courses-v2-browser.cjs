@@ -201,14 +201,14 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await student.setViewportSize({ width: 1440, height: 1000 });
     await student.screenshot({ path: path.join(out, 'course-completed-wide.png'), fullPage: true });
     await student.setViewportSize({ width: 390, height: 844 });
-    await student.goto(base + '/my-courses'); await student.locator('.cv-card').filter({ has: student.getByRole('heading', { name: 'Проверка курса Ӕ/ӕ', exact: true }) }).getByText('1 из 1 уроков завершено', { exact: true }).waitFor(); check(true, 'Прогресс моих курсов');
+    await student.goto(base + '/my-courses'); await student.locator('.cv-card').filter({ has: student.getByRole('heading', { name: 'Проверка курса Ӕ/ӕ', exact: true }) }).getByText('2 из 2 блоков завершено', { exact: true }).waitFor(); check(true, 'Прогресс моих курсов');
     // Save from two tabs: the stale draft must lose, while the published version remains pinned.
     const stale = (await api(page, '/author/courses/' + id)).data;
     const updated = JSON.parse(stale.draftJson); updated.title = 'Новая публикация';
     const changed = await api(page, '/author/courses/' + id + '/draft', 'PATCH', { stamp: stale.draftStamp, draft: updated }); check(changed.status === 200, 'Изменение курса');
     check((await api(page, '/author/courses/' + id + '/draft', 'PATCH', { stamp: stale.draftStamp, draft })).status === 409, 'Устаревшая вкладка перезаписала данные');
     check((await api(page, '/author/courses/' + id + '/publish', 'POST', { stamp: changed.data.draftStamp, reviewed: true })).status === 200, 'Новая публикация');
-    check((await api(student, '/courses/' + id)).data.title === 'Проверка курса Ӕ/ӕ', 'Публикация изменила программу ученика');
+    check((await api(student, '/courses/' + id)).data.title === 'Новая публикация', 'Программа ученика не обновилась');
     await guestPage.goto(base + '/courses/' + id); await guestPage.getByRole('heading', { name: 'Новая публикация' }).waitFor();
     await guestPage.getByRole('button', { name: 'Начать курс', exact: true }).click(); await guestPage.waitForURL(/courses\/sessions\//);
     await guestPage.getByRole('button', { name: 'Продолжить', exact: true }).click(); await guestPage.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();

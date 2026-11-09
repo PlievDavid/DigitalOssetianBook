@@ -85,7 +85,8 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
             {
                 var d = CourseLearningService.Read(v);
                 var done = await learning.Completed(e.CourseId, v.Id, User.UserId(), guests.Owner(HttpContext), ct);
-                list.Add(new { id = e.CourseId, d.Title, d.Description, d.CoverPath, d.Theme, d.Level, lessons = d.Modules.Sum(x => x.Lessons.Length), completed = done.Count, version = v.Number });
+                var blocks = await learning.BlockProgress(e.CourseId, v, User.UserId(), guests.Owner(HttpContext), ct);
+                list.Add(new { totalBlocks = blocks.Total, completedBlocks = blocks.Completed, id = e.CourseId, d.Title, d.Description, d.CoverPath, d.Theme, d.Level, lessons = d.Modules.Sum(x => x.Lessons.Length), completed = done.Count, version = v.Number });
             }
         return Json(list);
     }
@@ -105,8 +106,9 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
             if (!done.Contains(l.Id)) unlocked = false;
             return new { l.Id, l.Title, blocks = l.Blocks.Length, completed = done.Contains(l.Id), started = active.Any(s => s.LessonId == l.Id), available };
         }).ToArray() }).ToArray();
+        var blocks = await learning.BlockProgress(id, v, User.UserId(), owner, ct);
         var author = (await repository.AuthorNames([id], ct)).GetValueOrDefault(id, "Автор курса");
-        return Json(new { id, d.Title, d.Description, d.DescriptionRichText, d.CoverPath, d.Theme, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
+        return Json(new { totalBlocks = blocks.Total, completedBlocks = blocks.Completed, id, d.Title, d.Description, d.DescriptionRichText, d.CoverPath, d.Theme, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
             started = active.Length > 0 || done.Count > 0, resumeLessonId = active.FirstOrDefault()?.LessonId });
     }
 
@@ -167,10 +169,17 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     public async Task<IActionResult> Session(Guid id, CancellationToken ct, [FromQuery] Guid? block = null)
     {
         if (!CanAccessSession(id)) return NotFound();
-        try { return await learning.State(id, User.UserId(), guests.Owner(HttpContext), ct, block) is { } state ? Json(state) : NotFound(); }
+        try { return await learning.State(id, User.UserId(), guests.Owner(HttpContext), ct, block, upgrade: false) is { } state ? Json(state) : NotFound(); }
         catch (ArgumentException e) { return BadRequest(new { error = e.Message }); }
     }
 
+    [HttpPost("api/v1/course-sessions/{id:guid}/update")]
+    public async Task<IActionResult> UpdateSession(Guid id, CancellationToken ct)
+    {
+        if (!CanAccessSession(id)) return NotFound();
+        try { return await learning.State(id, User.UserId(), guests.Owner(HttpContext), ct) is { } state ? Json(state) : NotFound(); }
+        catch (ArgumentException e) { return BadRequest(new { error = e.Message }); }
+    }
     public sealed record StepInput(Guid BlockId);
     public sealed record AnswerInput(Guid BlockId, int[] TokenIndices);
     [HttpPost("api/v1/course-sessions/{id:guid}/answers")]
