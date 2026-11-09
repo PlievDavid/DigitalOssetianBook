@@ -49,7 +49,7 @@
       const course = await post('/author/courses', { title: 'Новый курс', description: '', modules: [] });
       location.href = `/author/courses/${course.id}`;
     }), 'button primary');
-    root.append(heading(authored ? 'Преподавание' : mine ? 'Мои курсы' : 'Курсы осетинского языка', authored
+    if (authored) root.append(heading(authored ? 'Преподавание' : mine ? 'Мои курсы' : 'Курсы осетинского языка', authored
       ? 'Ваши курсы и библиотека уроков для повторного использования.'
       : mine ? 'Возвращайтесь к своей программе и продолжайте с сохранённого места.' : 'Изучайте язык последовательно: объяснение, практика и новый шаг.', authored ? create : null));
     const grid = node('div', null, authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
@@ -143,11 +143,12 @@
       if (!state.preview) {
         const drawer = node('dialog', null, 'cv-course-drawer');
         drawer.setAttribute('aria-label', 'Программа курса');
-        const closeDrawer = async () => { if (!drawer.open) return; if (!matchMedia('(prefers-reduced-motion: reduce)').matches) await drawer.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }], { duration: 180, easing: 'ease-in' }).finished; drawer.close(); };
+        let closing = false;
+        const closeDrawer = async () => { if (!drawer.open || closing) return; closing = true; if (!matchMedia('(prefers-reduced-motion: reduce)').matches) await drawer.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }], { duration: 180, easing: 'ease-in' }).finished; drawer.close(); closing = false; };
         const toggle = button('Содержание ›', () => { drawer.showModal(); toggle.setAttribute('aria-expanded', 'true'); }, 'cv-content-tab');
         toggle.setAttribute('aria-haspopup', 'dialog'); toggle.setAttribute('aria-expanded', 'false');
-        drawer.append(append(node('header'), node('h2', 'Программа курса'), button('‹', closeDrawer, 'cv-drawer-collapse')));
-        drawer.querySelector('.cv-drawer-collapse').setAttribute('aria-label', 'Свернуть содержание');
+        drawer.append(append(node('header'), node('h2', 'Программа курса')));
+        drawer.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') closeDrawer(); });
         drawer.addEventListener('cancel', e => { e.preventDefault(); closeDrawer(); });
         let moduleName, group;
         state.lessons.forEach(lesson => {
