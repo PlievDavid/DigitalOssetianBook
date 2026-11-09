@@ -1,6 +1,7 @@
 window.AdamCourseStudio = async function (ui) {
   'use strict';
   const { root, api, post, node, append, link, button, actions, field, confirm, run, showError, notice, message, setDirty } = ui;
+  await import('/js/course-cover-crop.js');
   await import('/js/course-rich-text.js'); await window.AdamCourseRichText.load();
   const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/css/course-studio.css'; document.head.append(style);
   const id = location.pathname.split('/').pop();
@@ -255,6 +256,7 @@ window.AdamCourseStudio = async function (ui) {
     heading.append(node('p', '* Обязательно для публикации. Черновик можно сохранить с пустым описанием.', 'cs-required-note'));
     const options = node('div', null, 'cs-settings-options');
     options.append(field('Уровень', draft.level || 'Начальный', v => { draft.level = v; dirty(); }, { values: ['Начальный', 'Средний', 'Продвинутый'] }), field('Порядок уроков', draft.sequential ? 'sequential' : 'free', v => { draft.sequential = v === 'sequential'; dirty(); }, { values: [{ value: 'free', label: 'Любой урок' }, { value: 'sequential', label: 'Строго по порядку' }] })); form.append(options);
+    canvas.dataset.theme = draft.theme || 'sage';
     const cover = node('section', null, 'cs-cover-settings'); cover.append(node('h3', 'Обложка курса'));
     if (draft.coverPath) { const img = node('img'); img.src = draft.coverPath; img.alt = 'Обложка курса'; cover.append(img); }
     const upload = node('input'); upload.type = 'file'; upload.accept = 'image/png,image/jpeg,image/webp'; upload.setAttribute('aria-label', 'Загрузить обложку курса');
@@ -263,16 +265,17 @@ window.AdamCourseStudio = async function (ui) {
       if (file.size > 5000000) { showError(new Error('Обложка должна быть не больше 5 МБ.')); return; }
       upload.disabled = true;
       try {
-        const data = new FormData(); data.append('file', file);
+        const data = new FormData(); const cropped = await window.AdamCropCover(file); if (!cropped) return; data.append('file', cropped, 'cover.jpg');
         const token = document.querySelector('#api-antiforgery input').value;
         const response = await fetch(`/api/v1/author/courses/${id}/cover`, { method: 'POST', body: data, headers: { RequestVerificationToken: token } });
         const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Не удалось загрузить обложку.');
         draft.coverPath = result.path; dirty(); drawSettings();
       } catch (e) { showError(e); } finally { upload.disabled = false; }
     });
-    cover.append(upload, node('p', 'PNG, JPEG или WebP до 5 МБ. Рекомендуемые пропорции — 16:9.', 'cs-help'));
+    upload.hidden = true; const choose = action(draft.coverPath ? 'Заменить обложку' : 'Выбрать изображение', () => upload.click(), 'plus', 'button primary');
+    cover.append(choose, upload, node('p', 'PNG, JPEG или WebP до 5 МБ. После выбора настройте кадр 16:9.', 'cs-help'));
     if (draft.coverPath) cover.append(action('Убрать обложку', () => { draft.coverPath = null; dirty(); drawSettings(); }));
-    cover.append(field('Оформление страницы', draft.theme || 'sage', v => { draft.theme = v; dirty(); cover.dataset.theme = v; }, { values: [{ value: 'sage', label: 'Шалфей' }, { value: 'sky', label: 'Небо' }, { value: 'sand', label: 'Песок' }] }));
+    cover.append(field('Оформление страницы', draft.theme || 'sage', v => { draft.theme = v; dirty(); canvas.dataset.theme = v; }, { values: [{ value: 'sage', label: 'Шалфей' }, { value: 'sky', label: 'Небо' }, { value: 'sand', label: 'Песок' }] }));
     form.prepend(cover);
     canvas.append(heading, form);
   }

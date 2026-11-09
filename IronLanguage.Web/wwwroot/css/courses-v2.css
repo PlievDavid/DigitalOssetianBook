@@ -282,3 +282,7 @@
 [data-theme="sand"] { --theme-sage:#f5eddf; }
 .cv-course-image { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
 .cv-hero-image { display:block; width:100%; max-height:360px; aspect-ratio:16/9; object-fit:cover; border-radius:18px; margin-bottom:24px; }
+[data-theme="sky"] { --theme-green:#245777; --theme-green-hover:#1b4560; --theme-green-active:#14384f; --theme-sage:#e8f0f7; --theme-border:#ccdce7; }
+[data-theme="sand"] { --theme-green:#6c4b27; --theme-green-hover:#563a1b; --theme-green-active:#402a13; --theme-sage:#f5eddf; --theme-border:#e5d9c7; }
+.cv-hero-image { max-height:none; }
+.cv-player-header .cv-step.is-complete,.cv-lesson-marker.is-complete { background:var(--theme-success); }

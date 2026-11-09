@@ -146,3 +146,13 @@
 .cs-cover-settings { margin-bottom:28px; }
 .cs-cover-settings img { width:100%; max-height:260px; object-fit:cover; border-radius:16px; margin-bottom:16px; }
 .cs-cover-settings input[type="file"] { max-width:100%; }
+.cs-workspace[data-tab="settings"] { margin-top:24px; }
+.cs-cover-settings > .button { border-radius:24px; min-height:48px; margin:12px 0; }
+.cs-cover-settings img { aspect-ratio:16/9; max-height:none; }
+.cs-crop-dialog { width:min(640px,calc(100vw - 32px)); box-sizing:border-box; border:0; border-radius:28px; padding:24px; color:var(--theme-ink); max-height:90dvh; overflow:auto; }
+.cs-crop-dialog::backdrop { background:#10241c88; }
+.cs-crop-dialog canvas { width:100%; aspect-ratio:16/9; display:block; border-radius:12px; background:#eee; }
+.cs-crop-dialog label { display:grid; gap:8px; margin:16px 0; }
+.cs-crop-dialog input { width:100%; accent-color:var(--theme-green); }
+.cs-crop-dialog .button { border-radius:24px; }
+.cs-crop-dialog :focus-visible { outline:2px solid var(--theme-green); outline-offset:3px; }
