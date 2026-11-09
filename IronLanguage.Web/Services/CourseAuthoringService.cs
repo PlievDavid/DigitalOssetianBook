@@ -7,6 +7,8 @@ namespace IronLanguage.Web.Services;
 // unsupported blocks must never be silently published as theory.
 public sealed record CourseDraft(string Title, string Description, CourseDraftModule[] Modules)
 {
+    public string? CoverPath { get; init; }
+    public string Theme { get; init; } = "sage";
     public JsonElement? DescriptionRichText { get; init; }
     public string Level { get; init; } = "Начальный";
     public string Outcomes { get; init; } = "";
@@ -27,6 +29,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
 
     public static void Validate(CourseDraft draft, bool publishing)
     {
+        if (draft.Theme is not ("sage" or "sky" or "sand") || draft.CoverPath is not null && !System.Text.RegularExpressions.Regex.IsMatch(draft.CoverPath, @"^/media/course-covers/[a-f0-9]{32}\.(png|jpg|jpeg|webp)$")) throw new ArgumentException("Проверьте обложку и оформление курса.");
         if (draft.Level is not ("Начальный" or "Средний" or "Продвинутый") || draft.Outcomes is null || draft.Outcomes.Length > 3000)
             throw new ArgumentException("Проверьте уровень и результаты обучения (до 3000 символов).");
         if (string.IsNullOrWhiteSpace(draft.Title) || draft.Title.Length > 150)
