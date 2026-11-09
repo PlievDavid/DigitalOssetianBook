@@ -105,13 +105,14 @@
     draw();
   }
   async function details(id) {
+    await import('/js/course-rich-text.js');
     const c = await api(`/courses/${id}`); shell(false); root.append(link('← Каталог курсов', '/courses', 'back-link'));
     root.classList.add('cv-course-detail');
     const lessons = c.modules.flatMap(m => m.lessons), completed = lessons.filter(l => l.completed).length;
     const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || lessons[0];
     const start = lesson => async e => run(e.currentTarget, async () => { const session = await post(`/courses/${id}/lessons/${lesson.id}/sessions`); location.href = `/courses/sessions/${session.id}`; });
     const hero = node('section', null, 'cv-material-hero');
-    hero.append(append(node('div', null, 'cv-course-chips'), node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'), node('p', c.description, 'cv-course-description'));
+    hero.append(append(node('div', null, 'cv-course-chips'), node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'), window.AdamCourseRichText.render({ text: c.description, richText: c.descriptionRichText }));
     if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'), node('p', c.outcomes)));
     const status = node('div', null, 'cv-course-status');
     if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : completed === lessons.length ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
