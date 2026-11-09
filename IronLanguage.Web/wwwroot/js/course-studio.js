@@ -240,6 +240,13 @@ window.AdamCourseStudio = async function (ui) {
     const heading = append(node('header', null, 'cs-settings-heading'), node('h2', 'О курсе'), node('p', 'Помогите ученику понять, чему он научится и подойдёт ли ему ваша программа.', 'cs-help'));
     const form = node('div', null, 'cs-settings-form');
     form.append(field('Название курса', draft.title, v => { draft.title = v; title.textContent = v || 'Новый курс'; dirty(); }, { max: 150 }), field('Описание', draft.description, v => { draft.description = v; dirty(); }, { multiline: true, max: 10000 }), field('Результаты обучения', draft.outcomes || '', v => { draft.outcomes = v; dirty(); }, { multiline: true, max: 3000 }));
+    form.querySelectorAll(':scope > .cv-field').forEach((label, index) => {
+      if (index > 1) return;
+      const marker = node('span', ' *', 'cs-required'); marker.setAttribute('aria-hidden', 'true');
+      label.querySelector('span').append(marker);
+      label.querySelector('input,textarea').setAttribute('aria-required', 'true');
+    });
+    heading.append(node('p', '* Обязательно для публикации. Черновик можно сохранить с пустым описанием.', 'cs-required-note'));
     const options = node('div', null, 'cs-settings-options');
     options.append(field('Уровень', draft.level || 'Начальный', v => { draft.level = v; dirty(); }, { values: ['Начальный', 'Средний', 'Продвинутый'] }), field('Порядок уроков', draft.sequential ? 'sequential' : 'free', v => { draft.sequential = v === 'sequential'; dirty(); }, { values: [{ value: 'free', label: 'Любой урок' }, { value: 'sequential', label: 'Строго по порядку' }] })); form.append(options);
     canvas.append(heading, form);
