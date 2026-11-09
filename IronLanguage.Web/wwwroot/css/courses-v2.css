@@ -274,3 +274,7 @@
 @keyframes cv-drawer-enter { from { transform:translateX(-100%); } to { transform:translateX(0); } }
 @media(prefers-reduced-motion:reduce) { .cv-course-drawer[open] { animation:none; } }
 @media(max-width:700px) { .cv-lesson-page { padding-left:28px; } .cv-content-tab { padding:16px 6px; } }
+.cv-material-catalog > .cv-tabs { margin-bottom:28px; }
+.cv-material-catalog .cv-card,.cv-material-catalog .cv-card-content { min-width:0; }
+.cv-material-catalog .cv-card h2 { overflow-wrap:anywhere; }
+.cv-material-catalog .cv-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr)); }

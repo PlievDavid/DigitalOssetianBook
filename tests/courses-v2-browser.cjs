@@ -28,7 +28,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
   }
   try {
     const guestPage = await guest.newPage(); await guestPage.goto(base + '/courses');
-    await guestPage.getByRole('heading', { name: 'Курсы осетинского языка' }).waitFor(); check(true, 'Гостевой каталог');
+    await guestPage.getByLabel('Поиск по названию', { exact: true }).waitFor(); check(true, 'Гостевой каталог');
     await login(page, fixture.owner); await page.goto(base + '/author/courses');
     await page.getByRole('button', { name: 'Создать курс', exact: true }).click(); await page.waitForURL(/author\/courses\/[0-9a-f-]+$/);
     const id = new URL(page.url()).pathname.split('/').pop();
@@ -210,7 +210,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await guestPage.locator('.cv-course-status').getByRole('button', { name: 'Продолжить', exact: true }).click();
     await guestPage.waitForURL(guestSessionUrl); check(true, 'Гость продолжает начатую сессию');
     check(true, 'Гостевое прохождение');
-    await page.goto(base + '/courses'); await page.getByRole('heading', { name: 'Курсы осетинского языка' }).waitFor();
+    await page.goto(base + '/courses'); await page.getByLabel('Поиск по названию', { exact: true }).waitFor();
     // Switching lessons within a free-order course preserves the unfinished session.
     const secondDraft = (await api(page, '/author/courses/' + second.id)).data;
     const nextDraft = JSON.parse(secondDraft.draftJson), nextLesson = { id: require('node:crypto').randomUUID(), title: 'Следующее занятие', blocks: [{ id: require('node:crypto').randomUUID(), kind: 'theory', title: 'Объяснение', text: 'Текст проверки' }] };
@@ -221,7 +221,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await student.getByRole('button', { name: 'Содержание ›', exact: true }).waitFor(); const firstSessionUrl = student.url();
     await student.getByRole('button', { name: 'Содержание ›', exact: true }).click(); await student.locator('.cv-drawer-lesson').filter({ hasText: nextLesson.title }).click();
     await student.getByRole('heading', { name: 'Следующее занятие', exact: true }).waitFor();
-    await student.getByRole('button', { name: 'Содержание ›', exact: true }).click(); await student.keyboard.press('Escape'); await student.locator('.cv-course-drawer').waitFor({ state: 'hidden' }); check(await student.locator('.cv-course-drawer').evaluate(e => !e.open), 'Панель не закрывается Escape'); await student.getByRole('button', { name: 'Содержание ›', exact: true }).click(); await student.locator('.cv-drawer-lesson').first().click();
+    await student.getByRole('button', { name: 'Содержание ›', exact: true }).click(); await student.locator('.cv-course-drawer').hover(); await student.mouse.move(900, 300); await student.locator('.cv-course-drawer').waitFor({ state: 'hidden' }); check(true, 'Панель закрылась при уходе мыши'); await student.getByRole('button', { name: 'Содержание ›', exact: true }).click(); await student.keyboard.press('Escape'); await student.locator('.cv-course-drawer').waitFor({ state: 'hidden' }); check(await student.locator('.cv-course-drawer').evaluate(e => !e.open), 'Панель не закрывается Escape'); await student.getByRole('button', { name: 'Содержание ›', exact: true }).click(); await student.locator('.cv-drawer-lesson').first().click();
     await student.waitForURL(firstSessionUrl); check(true, 'Переход вернул сохранённую сессию');
     await student.setViewportSize({ width: 1440, height: 1000 });
     await student.getByRole('heading', { name: 'Изменённая копия', exact: true }).waitFor();
