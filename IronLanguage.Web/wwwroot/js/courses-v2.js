@@ -140,10 +140,36 @@
       else if (!window.AdamAuthenticated) area.append(node('p', 'Гостевое занятие. Войдите, чтобы сохранять прогресс между посещениями.', 'cv-notice'));
       const header = node('section', null, 'cv-player-header');
       const top = append(node('div', null, 'cv-player-top'), heading(state.title, state.block ? `Шаг ${state.viewStep + 1} из ${state.count}` : 'Урок завершён'));
-      if (!state.preview) top.append(field('Перейти к уроку', state.lessonId, async lessonId => {
-        if (lessonId === state.lessonId) return;
-        try { const session = await post(`/courses/${state.courseId}/lessons/${lessonId}/sessions`); location.href = `/courses/sessions/${session.id}`; } catch (e) { showError(e); }
-      }, { values: state.lessons.filter(l => l.available).map(l => ({ value: l.id, label: `${l.completed ? '✓ ' : ''}${l.module} · ${l.title}` })) }));
+      if (!state.preview) {
+        const drawer = node('dialog', null, 'cv-course-drawer');
+        drawer.setAttribute('aria-label', 'Программа курса');
+        const closeDrawer = async () => { if (!drawer.open) return; if (!matchMedia('(prefers-reduced-motion: reduce)').matches) await drawer.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }], { duration: 180, easing: 'ease-in' }).finished; drawer.close(); };
+        const toggle = button('Содержание ›', () => { drawer.showModal(); toggle.setAttribute('aria-expanded', 'true'); }, 'cv-content-tab');
+        toggle.setAttribute('aria-haspopup', 'dialog'); toggle.setAttribute('aria-expanded', 'false');
+        drawer.append(append(node('header'), node('h2', 'Программа курса'), button('‹', closeDrawer, 'cv-drawer-collapse')));
+        drawer.querySelector('.cv-drawer-collapse').setAttribute('aria-label', 'Свернуть содержание');
+        drawer.addEventListener('cancel', e => { e.preventDefault(); closeDrawer(); });
+        let moduleName, group;
+        state.lessons.forEach(lesson => {
+          if (!group || moduleName !== lesson.module) {
+            moduleName = lesson.module;
+            group = node('section'); group.append(node('h3', moduleName)); drawer.append(group);
+          }
+          const item = button(`${lesson.completed ? '✓ ' : ''}${lesson.title}`, e => run(e.currentTarget, async () => {
+            if (lesson.id === state.lessonId) { await closeDrawer(); return; }
+            const session = await post(`/courses/${state.courseId}/lessons/${lesson.id}/sessions`);
+            location.href = `/courses/sessions/${session.id}`;
+          }), 'cv-drawer-lesson');
+          item.disabled = !lesson.available;
+          if (lesson.completed) item.setAttribute('aria-label', `${lesson.title}, пройден`);
+          if (lesson.id === state.lessonId) item.setAttribute('aria-current', 'page');
+          if (!lesson.available) item.title = 'Сначала завершите предыдущие уроки';
+          group.append(item);
+        });
+        drawer.addEventListener('close', () => { toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); });
+        drawer.addEventListener('click', e => { if (e.target === drawer) { const r = drawer.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeDrawer(); } });
+        area.append(drawer, toggle);
+      }
       const steps = node('nav', null, 'cv-steps'); steps.setAttribute('aria-label', 'Шаги урока');
       state.steps.forEach((step, index) => {
         const b = button(String(index + 1), e => run(e.currentTarget, () => refresh(step.id)), 'cv-step' + (step.completed ? ' is-complete' : ''));
