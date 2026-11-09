@@ -7,6 +7,7 @@ namespace IronLanguage.Web.Services;
 // unsupported blocks must never be silently published as theory.
 public sealed record CourseDraft(string Title, string Description, CourseDraftModule[] Modules)
 {
+    public JsonElement? DescriptionRichText { get; init; }
     public string Level { get; init; } = "Начальный";
     public string Outcomes { get; init; } = "";
     public bool Sequential { get; init; }
@@ -30,6 +31,8 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
             throw new ArgumentException("Проверьте уровень и результаты обучения (до 3000 символов).");
         if (string.IsNullOrWhiteSpace(draft.Title) || draft.Title.Length > 150)
             throw new ArgumentException("Укажите название до 150 символов.");
+        var description = CourseRichText.PlainText(new CourseDraftBlock(Guid.Empty, "theory", "", draft.Description) { RichText = draft.DescriptionRichText });
+        if (description is null || description.Length > 10_000 || publishing && string.IsNullOrWhiteSpace(description)) throw new ArgumentException("Заполните описание до 10 000 символов.");
         if (draft.Description is null || draft.Description.Length > 10_000 || publishing && string.IsNullOrWhiteSpace(draft.Description))
             throw new ArgumentException("Для публикации нужно описание до 10 000 символов.");
         if (draft.Modules is null || draft.Modules.Length > 50 || publishing && draft.Modules.Length == 0)
@@ -110,7 +113,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
         return await courses.Publish(id, owner, stamp, JsonSerializer.Serialize(draft with { Modules = modules.ToArray() }, JsonOptions), ct);
     }
 
-    private static CourseDraft WithoutSnapshots(CourseDraft draft) => draft with { Modules = draft.Modules.Select(m => m with {
+    private static CourseDraft WithoutSnapshots(CourseDraft draft) => draft with { Description = CourseRichText.PlainText(new CourseDraftBlock(Guid.Empty, "theory", "", draft.Description) { RichText = draft.DescriptionRichText }), Modules = draft.Modules.Select(m => m with {
         Lessons = m.Lessons.Select(l => l with { Blocks = l.Blocks.Select(b => b with { PublishedExercise = null, Text = CourseRichText.PlainText(b) }).ToArray() }).ToArray()
     }).ToArray() };
 }

@@ -87,7 +87,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
             return new { l.Id, l.Title, blocks = l.Blocks.Length, completed = done.Contains(l.Id), started = active.Any(s => s.LessonId == l.Id), available };
         }).ToArray() }).ToArray();
         var author = (await repository.AuthorNames([id], ct)).GetValueOrDefault(id, "Автор курса");
-        return Json(new { id, d.Title, d.Description, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
+        return Json(new { id, d.Title, d.Description, d.DescriptionRichText, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
             started = active.Length > 0 || done.Count > 0, resumeLessonId = active.FirstOrDefault()?.LessonId });
     }
 

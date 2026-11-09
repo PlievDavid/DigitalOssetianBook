@@ -246,6 +246,12 @@ window.AdamCourseStudio = async function (ui) {
       label.querySelector('span').append(marker);
       label.querySelector('input,textarea').setAttribute('aria-required', 'true');
     });
+    const descriptionEditor = window.AdamCourseRichText.editor({ text: draft.description, richText: draft.descriptionRichText }, (text, richText) => { draft.description = text; draft.descriptionRichText = richText; dirty(); });
+    descriptionEditor.querySelector('.cr-label').textContent = 'Описание';
+    descriptionEditor.querySelector('.cr-label').append(node('span', ' *', 'cs-required'));
+    descriptionEditor.querySelector('[role="textbox"]').setAttribute('aria-label', 'Описание');
+    descriptionEditor.querySelector('[role="textbox"]').setAttribute('aria-required', 'true');
+    form.children[1].replaceWith(descriptionEditor);
     heading.append(node('p', '* Обязательно для публикации. Черновик можно сохранить с пустым описанием.', 'cs-required-note'));
     const options = node('div', null, 'cs-settings-options');
     options.append(field('Уровень', draft.level || 'Начальный', v => { draft.level = v; dirty(); }, { values: ['Начальный', 'Средний', 'Продвинутый'] }), field('Порядок уроков', draft.sequential ? 'sequential' : 'free', v => { draft.sequential = v === 'sequential'; dirty(); }, { values: [{ value: 'free', label: 'Любой урок' }, { value: 'sequential', label: 'Строго по порядку' }] })); form.append(options);
