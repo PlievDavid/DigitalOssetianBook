@@ -101,7 +101,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         var draft = Read(version);
         var lesson = draft.Modules.SelectMany(m => m.Lessons).Single(l => l.Id == session.LessonId);
         var viewStep = blockId is Guid bid ? Array.FindIndex(lesson.Blocks, b => b.Id == bid) : session.Step;
-        if (viewStep < 0 || viewStep > session.Step) throw new ArgumentException("Сначала завершите предыдущие шаги.");
+        if (viewStep < 0 || viewStep > lesson.Blocks.Length) throw new ArgumentException("Сначала завершите предыдущие шаги.");
         object? blockData = null;
         if (viewStep < lesson.Blocks.Length)
         {
@@ -125,7 +125,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
             return new { l.Id, l.Title, module = m.Title, completed = done.Contains(l.Id), available };
         })).ToArray();
         return new { session.Id, session.CourseId, session.LessonId, lesson.Title, session.Step, count = lesson.Blocks.Length,
-            viewStep, steps = lesson.Blocks.Select((b, i) => new { b.Id, b.Title, completed = i < session.Step, available = i <= session.Step }).ToArray(), lessons,
+            viewStep, steps = lesson.Blocks.Select((b, i) => new { b.Id, b.Title, completed = i < session.Step || session.CompletedSteps.Contains(i), available = true }).ToArray(), lessons,
             completed = session.CompletedAt is not null, block = blockData, preview };
     }
 
@@ -134,7 +134,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         if (await Find(id, user, owner, ct) is not { } found) return null;
         var lesson = Lesson(found.Version, found.Session.LessonId)!;
         var index = Array.FindIndex(lesson.Blocks, b => b.Id == blockId);
-        if (index < 0 || index > found.Session.Step || Attempts(found.Session)[index] is not Guid attemptId) return null;
+        if (index < 0 || Attempts(found.Session)[index] is not Guid attemptId) return null;
         return found.Temporary ? await learning.AnswerGuest(owner, attemptId, indices, ct) : await learning.Answer(user!.Value, attemptId, indices, ct);
     }
 
@@ -143,7 +143,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         if (await Find(id, user, owner, ct) is not { } found) return false;
         var lesson = Lesson(found.Version, found.Session.LessonId)!;
         var index = Array.FindIndex(lesson.Blocks, x => x.Id == blockId);
-        if (index < 0 || index > found.Session.Step) return false;
+        if (index < 0) return false;
         var aid = Attempts(found.Session)[index];
         if (!found.Temporary) return await repository.Advance(user!.Value, id, index, lesson.Blocks.Length, aid, ct);
         var entry = guests.Find<GuestCourseSession>(owner, id);
@@ -153,7 +153,9 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         {
             if (entry.Value.Session.Step > index) return true;
             if (aid is Guid attemptId && guests.Find<ExerciseAttempt>(owner, attemptId)?.Value.CompletedAt is null) return false;
-            entry.Value.Session.Step++;
+                        var completed = entry.Value.Session.CompletedSteps.Concat(Enumerable.Range(0, entry.Value.Session.Step)).Append(index).Distinct().ToArray();
+            entry.Value.Session.CompletedSteps = completed;
+            while (completed.Contains(entry.Value.Session.Step) && entry.Value.Session.Step < lesson.Blocks.Length) entry.Value.Session.Step++;
             if (entry.Value.Session.Step == lesson.Blocks.Length)
             {
                 entry.Value.Session.CompletedAt = DateTimeOffset.UtcNow;
