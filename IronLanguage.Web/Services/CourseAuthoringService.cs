@@ -62,8 +62,8 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
                 {
                     if (block is null) throw new ArgumentException("Пустой блок.");
                     Identity(block.Id, block.Title);
-                    if (block.Kind is not ("theory" or "translation")) throw new ArgumentException("Этот тип блока ещё не поддерживается новой системой курсов.");
-                    if (block.Kind == "translation" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
+                    if (block.Kind is not ("theory" or "translation" or "listening")) throw new ArgumentException("Этот тип блока ещё не поддерживается новой системой курсов.");
+                    if (block.Kind != "theory" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
                         throw new ArgumentException("Выберите упражнение «Собери фразу».");
                     var text = CourseRichText.PlainText(block);
                     if (text is null || text.Length > 20_000 || publishing && block.Kind == "theory" && string.IsNullOrWhiteSpace(text))

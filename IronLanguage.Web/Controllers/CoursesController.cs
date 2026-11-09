@@ -117,7 +117,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     }));
 
     [HttpGet("api/v1/author/course-materials"), Authorize(Roles = "Editor")]
-    public async Task<IActionResult> Materials(CancellationToken ct) => Json((await catalog.Exercises(ct: ct)).Where(x => x.Kind == "translation")
+    public async Task<IActionResult> Materials(CancellationToken ct) => Json((await catalog.Exercises(ct: ct)).Where(x => x.Kind is "translation" or "listening")
         .Select(x => new { x.Id, title = x.RussianPrompt, x.Kind }));
 
     [HttpPost("api/v1/author/courses/{id:guid}/archive"), Authorize(Roles = "Editor")]
@@ -151,7 +151,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
             {
                 if (block.Kind == "theory") { blocks.Add(block); continue; }
                 var exercise = await catalog.Exercise(block.MaterialId!.Value, ct: ct);
-                if (exercise is null || exercise.Kind != "translation") throw new ArgumentException("Выберите доступное упражнение.");
+                if (exercise is null || exercise.Kind != block.Kind) throw new ArgumentException("Выберите доступное упражнение.");
                 blocks.Add(block with { PublishedExercise = exercise });
             }
             var preview = new CourseVersion { CourseId = id, SnapshotJson = JsonSerializer.Serialize(draft with {

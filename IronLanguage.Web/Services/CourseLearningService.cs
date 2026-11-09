@@ -61,8 +61,9 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         {
             var block = lesson.Blocks[i];
             if (block.Kind == "theory") continue;
-            if (block.PublishedExercise is not { Kind: "translation" } exercise) throw new ArgumentException("Упражнение недоступно в этой версии курса.");
-            var attempt = LearningService.CreateSnapshot(exercise, session.UserId);
+            if (block.PublishedExercise is not { } exercise || exercise.Kind is not ("translation" or "listening")) throw new ArgumentException("Упражнение недоступно в этой версии курса.");
+            var attempt = exercise.Kind == "listening" ? ListeningService.CreateSnapshot(exercise, session.UserId) ?? throw new ArgumentException("Некорректное аудирование.") : LearningService.CreateSnapshot(exercise, session.UserId);
+            if (exercise.Kind == "listening") attempt.TokensJson = attempt.OptionsJson;
             attempts.Add(attempt); ids[i] = attempt.Id;
         }
         session.AttemptIdsJson = JsonSerializer.Serialize(ids);
@@ -135,6 +136,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         var lesson = Lesson(found.Version, found.Session.LessonId)!;
         var index = Array.FindIndex(lesson.Blocks, b => b.Id == blockId);
         if (index < 0 || Attempts(found.Session)[index] is not Guid attemptId) return null;
+        if (lesson.Blocks[index].Kind == "listening" && indices.Length != 1) throw new ArgumentException("Выберите один ответ.");
         return found.Temporary ? await learning.AnswerGuest(owner, attemptId, indices, ct) : await learning.Answer(user!.Value, attemptId, indices, ct);
     }
 
