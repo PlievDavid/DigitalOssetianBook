@@ -41,8 +41,19 @@
     });
     root.append(nav, message);
   }
+  async function continueCourse(courseId, lessonId = null) {
+    if (!lessonId) {
+      const course = await api(`/courses/${courseId}`);
+      const lessons = course.modules.flatMap(m => m.lessons);
+      lessonId = course.resumeLessonId || lessons.find(l => l.available && !l.completed)?.id || lessons.find(l => l.available)?.id;
+    }
+    if (!lessonId) { location.href = `/courses/${courseId}`; return; }
+    const session = await post(`/courses/${courseId}/lessons/${lessonId}/sessions`);
+    location.href = `/courses/sessions/${session.id}`;
+  }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
+    const enrolled = new Set(!authored && window.AdamAuthenticated ? (mine ? rows : await api('/me/courses')).map(c => c.id) : []);
     if (!authored) root.classList.add('cv-material-catalog');
     if (authored) { root.replaceChildren(message); root.append(link('← Каталог курсов', '/courses', 'back-link')); } else shell();
     const create = button('Создать курс', e => run(e.currentTarget, async () => {
@@ -88,7 +99,7 @@
         const body = append(node('div', null, 'cv-card-content'), node('h2', c.title), node('p', c.description.length > 180 ? c.description.slice(0, 180) + '…' : c.description || 'Добавьте описание курса.'));
         if (!authored) body.append(node('span', mine ? `${c.completed} из ${c.lessons} уроков завершено` : `Уроков: ${c.lessons}`, 'cv-meta'));
         if (c.author) body.append(node('span', c.author, 'cv-meta'));
-        body.append(actions(link(authored ? 'Редактировать' : mine ? 'Продолжить' : 'Открыть курс', authored ? `/author/courses/${c.id}` : `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
+        body.append(actions(enrolled.has(c.id) ? button('Продолжить', e => run(e.currentTarget, () => continueCourse(c.id)), 'button primary') : link('Открыть курс', `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
       });
     }
     draw();
@@ -184,7 +195,11 @@
         b.setAttribute('aria-label', `Шаг ${index + 1}: ${step.title}${step.completed ? ', пройден' : ''}`); if (index === state.viewStep) b.setAttribute('aria-current', 'step'); steps.append(b);
       }); header.append(top, steps); area.append(header);
       if (state.completed && !state.block) {
-        area.append(empty('Урок пройден', 'Вы завершили все объяснения и задания этого урока.', link(state.preview ? 'Вернуться в конструктор' : 'Продолжить курс', state.preview ? `/author/courses/${state.courseId}` : `/courses/${state.courseId}`, 'button primary'))); return;
+        const nextLesson = state.lessons.slice(state.lessons.findIndex(l => l.id === state.lessonId) + 1).find(l => l.available);
+        const action = state.preview ? link('Вернуться в конструктор', `/author/courses/${state.courseId}`, 'button primary')
+          : nextLesson ? button('Продолжить курс', e => run(e.currentTarget, () => continueCourse(state.courseId, nextLesson.id)), 'button primary')
+          : link('К программе курса', `/courses/${state.courseId}`, 'button primary');
+        area.append(empty('Урок пройден', nextLesson ? 'Переходите к следующему уроку программы.' : 'Вы завершили все уроки курса.', action)); return;
       }
       const b = state.block, card = append(node('section', null, 'cv-player-card'), node('h2', b.title));
       const next = button('Продолжить', e => run(e.currentTarget, async () => {
