@@ -217,7 +217,10 @@
       }), 'button primary');
       if (b.kind === 'theory') card.append(window.AdamCourseRichText.render(b));
       else {
-        card.append(node('p', b.card.russianPrompt, 'cv-prose'), node('p', 'Соберите осетинский перевод из слов.', 'cv-meta'));
+        if (b.kind === 'listening') {
+          const audio = node('audio'); audio.controls = true; audio.src = b.card.audioPath; audio.preload = 'metadata'; card.append(audio);
+        }
+        card.append(node('p', b.card.russianPrompt, 'cv-prose'), node('p', b.kind === 'listening' ? 'Прослушайте запись и выберите один ответ.' : 'Соберите осетинский перевод из слов.', 'cv-meta'));
         const selected = node('div', null, 'cv-picked'), tokens = node('div', null, 'cv-tokens');
         selected.setAttribute('aria-label', 'Собранная фраза'); tokens.setAttribute('aria-label', 'Доступные слова');
         const check = button('Проверить ответ', e => run(e.currentTarget, async () => {
@@ -227,7 +230,7 @@
           selected.replaceChildren(); tokens.replaceChildren();
           if (!picked.length) selected.append(node('span', 'Выберите слова ниже', 'cv-meta'));
           picked.forEach((index, position) => selected.append(button(b.card.tokens[index], () => { picked.splice(position, 1); renderTokens(); }, 'cv-token')));
-          b.card.tokens.forEach((text, index) => { const t = button(text, () => { picked.push(index); renderTokens(); }, 'cv-token'); t.disabled = picked.includes(index); tokens.append(t); });
+          b.card.tokens.forEach((text, index) => { const t = button(text, () => { if (b.kind === 'listening') picked = [index]; else picked.push(index); renderTokens(); }, 'cv-token'); t.disabled = picked.includes(index); tokens.append(t); });
           check.disabled = !picked.length;
         }
         if (!b.result) { renderTokens(); card.append(selected, tokens, check); next.disabled = true; next.hidden = true; }

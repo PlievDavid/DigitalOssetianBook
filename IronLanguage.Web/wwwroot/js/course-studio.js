@@ -159,12 +159,13 @@ window.AdamCourseStudio = async function (ui) {
     modal('Что добавить в урок?', (d, close) => {
       d.append(node('p', 'Чередуйте объяснения с практикой. Порядок можно изменить в любой момент.', 'cs-help'));
       const choice = (label, description, kind, glyph) => {
-        const b = button('', () => { mutate(() => { const block = { id: uuid(), kind, title: label, text: '', materialId: kind === 'translation' ? materials[0]?.id : null }; lesson.blocks.push(block); selectedBlock = block.id; }); close(); canvas.querySelector('.cs-block-edit input')?.focus(); }, 'cs-block-choice');
+        const b = button('', () => { mutate(() => { const block = { id: uuid(), kind, title: label, text: '', materialId: kind !== 'theory' ? materials.find(m => m.kind === kind)?.id : null }; lesson.blocks.push(block); selectedBlock = block.id; }); close(); canvas.querySelector('.cs-block-edit input')?.focus(); }, 'cs-block-choice');
         b.append(icon(glyph), append(node('span'), node('strong', label), node('small', description))); return b;
       };
       d.append(choice('Объяснение', 'Правило, пример или короткая инструкция', 'theory', 'text'));
-      const exercise = choice('Собери фразу', 'Практика с проверкой ответа из вашей библиотеки', 'translation', 'tiles'); exercise.disabled = !materials.length; d.append(exercise);
-      if (!materials.length) d.append(node('p', 'Сначала опубликуйте задание «Собери фразу» в библиотеке материалов.', 'cs-help'), link('Открыть библиотеку', '/editor', 'cs-text-link'));
+      const exercise = choice('Собери фразу', 'Практика с проверкой ответа из вашей библиотеки', 'translation', 'tiles'); exercise.disabled = !materials.some(m => m.kind === 'translation'); d.append(exercise);
+      const listening = choice('Аудирование', 'Запись, вопрос и выбор одного ответа', 'listening', 'tiles'); listening.disabled = !materials.some(m => m.kind === 'listening'); d.append(listening);
+      if (!materials.length) d.append(node('p', 'Сначала опубликуйте нужное задание в библиотеке материалов.', 'cs-help'), link('Открыть библиотеку', '/editor', 'cs-text-link'));
     });
   }
   async function openPublication() {
@@ -223,11 +224,11 @@ window.AdamCourseStudio = async function (ui) {
     lesson.blocks.forEach((b, bi) => {
       const editing = selectedBlock === b.id;
       const card = node('article', null, `cs-block${editing ? ' cs-block-edit' : ''}`);
-      card.append(append(node('div', null, 'cs-block-head'), append(node('span', null, 'cs-block-type'), icon(b.kind === 'theory' ? 'text' : 'tiles'), node('span', b.kind === 'theory' ? 'Объяснение' : 'Собери фразу'), node('small', String(bi + 1))), actions(editing ? null : action('Редактировать', () => { selectedBlock = b.id; drawLesson(); canvas.querySelector('.cs-block-edit input')?.focus(); }), iconButton('Действия с блоком ' + (bi + 1), () => blockMenu(lesson, b)))));
+      card.append(append(node('div', null, 'cs-block-head'), append(node('span', null, 'cs-block-type'), icon(b.kind === 'theory' ? 'text' : 'tiles'), node('span', b.kind === 'theory' ? 'Объяснение' : b.kind === 'listening' ? 'Аудирование' : 'Собери фразу'), node('small', String(bi + 1))), actions(editing ? null : action('Редактировать', () => { selectedBlock = b.id; drawLesson(); canvas.querySelector('.cs-block-edit input')?.focus(); }), iconButton('Действия с блоком ' + (bi + 1), () => blockMenu(lesson, b)))));
       if (editing) {
         card.append(field('Заголовок блока', b.title, v => { b.title = v; dirty(); }, { max: 150 }));
         if (b.kind === 'theory') card.append(window.AdamCourseRichText.editor(b, (text, richText) => { b.text = text; b.richText = richText; dirty(); }));
-        else card.append(field('Упражнение из библиотеки', b.materialId || '', v => { b.materialId = v; dirty(); }, { values: [{ value: '', label: 'Выберите упражнение' }, ...materials.map(m => ({ value: m.id, label: m.title }))] }), node('p', 'Правильный ответ и правила проверки берутся из опубликованного задания.', 'cs-help'));
+        else card.append(field('Упражнение из библиотеки', b.materialId || '', v => { b.materialId = v; dirty(); }, { values: [{ value: '', label: 'Выберите упражнение' }, ...materials.filter(m => m.kind === b.kind).map(m => ({ value: m.id, label: m.title }))] }), node('p', 'Правильный ответ и правила проверки берутся из опубликованного задания.', 'cs-help'));
         card.append(action('Готово', () => { selectedBlock = null; drawLesson(); save().catch(showError); }, 'check', 'cs-done'));
       } else {
         card.append(node('h3', b.title), b.kind === 'theory' ? window.AdamCourseRichText.render(b) : node('p', materials.find(m => m.id === b.materialId)?.title || 'Выберите упражнение', 'cs-block-body'));

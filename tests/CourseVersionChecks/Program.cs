@@ -115,6 +115,18 @@ try
     Check((await lessons.Session(learner.Id, unordered.Id, ct))!.Step == 3, "Не учтён ранее просмотренный блок");
     Check(await lessons.Advance(learner.Id, unordered.Id, 2, 3, null, ct), "Повтор просмотра не идемпотентен");
     await db.CourseLessonSessions.Where(s => s.Id == unordered.Id).ExecuteDeleteAsync(ct);
+    var audioExercise = new Exercise { Kind = "listening", Published = true, RussianPrompt = "Тестовый вопрос", AudioPath = "/media/test.mp3", OptionsJson = "[\"Вариант 1\",\"Вариант 2\",\"Вариант 3\",\"Вариант 4\"]", CorrectOption = 2 };
+    db.Exercises.Add(audioExercise); await db.SaveChangesAsync(ct);
+    var audioBlock = new CourseDraftBlock(Guid.NewGuid(), "listening", "Аудирование", "") { MaterialId = audioExercise.Id };
+    var audioLesson = new CourseDraftLesson(Guid.NewGuid(), "Урок", [audioBlock]);
+    var audioAuthor = new CourseAuthoringService(repo, catalog);
+    var audioCourse = await audioAuthor.Create(owner.Id, new CourseDraft("Проверка аудирования", "Описание", [new(Guid.NewGuid(), "Модуль", [audioLesson])]), ct);
+    await audioAuthor.Publish(audioCourse.Id, owner.Id, audioCourse.DraftStamp, true, ct);
+    var audioSession = (await runner.Start(audioCourse.Id, audioLesson.Id, learner.Id, Guid.NewGuid(), ct))!;
+    Check(!await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Аудирование зачтено без ответа");
+    Check((await runner.Answer(audioSession.Id, audioBlock.Id, [2], learner.Id, Guid.Empty, ct))!.Correct, "Аудирование не проверено");
+    Check((await runner.Answer(audioSession.Id, audioBlock.Id, [0], learner.Id, Guid.Empty, ct))!.AlreadySubmitted, "Повтор аудирования изменил результат");
+    Check(await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Аудирование не завершилось");
     var guestOwner = Guid.NewGuid();
     var session = (await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!;
     Check(session.VersionId == first.Id, "Урок не использует закреплённую версию");

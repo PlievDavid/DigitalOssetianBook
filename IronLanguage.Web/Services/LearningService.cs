@@ -90,7 +90,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         var tokens = ParseTokens(attempt.TokensJson);
         ValidateIndices(tokenIndices, tokens.Length);
         var answer = string.Join(' ', tokenIndices.Select(i => tokens[i]));
-        var correct = IsCorrect(attempt, answer);
+        var correct = attempt.OptionsJson is { Length: > 2 } ? tokenIndices.Length == 1 && tokenIndices[0] == attempt.CorrectOption : IsCorrect(attempt, answer);
         var saved = await progress.CompleteAttempt(userId, attemptId, answer, correct, ct);
         if (!saved)
         {
@@ -129,7 +129,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
             var tokens = ParseTokens(attempt.TokensJson);
             ValidateIndices(tokenIndices, tokens.Length);
             var answer = string.Join(' ', tokenIndices.Select(i => tokens[i]));
-            attempt.Correct = IsCorrect(attempt, answer);
+            attempt.Correct = attempt.OptionsJson is { Length: > 2 } ? tokenIndices.Length == 1 && tokenIndices[0] == attempt.CorrectOption : IsCorrect(attempt, answer);
             attempt.SubmittedAnswer = answer;
             attempt.DraftIndicesJson = JsonSerializer.Serialize(tokenIndices);
             attempt.CompletedAt = DateTimeOffset.UtcNow;
