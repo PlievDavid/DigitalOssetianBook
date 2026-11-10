@@ -27,6 +27,7 @@ public interface ICourseLearningRepository
     Task<CourseLessonSession> Start(CourseLessonSession session, List<ExerciseAttempt> attempts, CancellationToken ct);
     Task<bool> Advance(Guid user, Guid id, int step, int count, Guid? attempt, CancellationToken ct);
     Task<bool> Archive(Guid course, Guid owner, CancellationToken ct);
+    Task<bool> Retry(Guid user, Guid session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct);
     Task<List<CourseEnrollment>> Enrollments(Guid user, CancellationToken ct);
     Task<Dictionary<Guid, string>> AuthorNames(Guid[] courses, CancellationToken ct);
 }
@@ -63,7 +64,7 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
     public async Task<bool> Advance(Guid user, Guid id, int step, int count, Guid? attempt, CancellationToken ct)
     {
         if (step < 0 || step >= count) return false;
-        if (attempt is Guid aid && !await db.Attempts.AnyAsync(x => x.Id == aid && x.UserId == user && x.CompletedAt != null, ct)) return false;
+        if (attempt is Guid aid && !await db.Attempts.AnyAsync(x => x.Id == aid && x.UserId == user && x.CompletedAt != null && x.Correct == true, ct)) return false;
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-progress:{id}"}, 0))", ct);
         var current = await Session(user, id, ct);
@@ -79,4 +80,23 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
     }
     public async Task<bool> Archive(Guid course, Guid owner, CancellationToken ct) =>
         await db.Courses.Where(x => x.Id == course && x.OwnerId == owner).ExecuteUpdateAsync(s => s.SetProperty(x => x.Archived, true), ct) == 1;
+
+    public async Task<bool> Retry(Guid user, Guid session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-progress:{session}"}, 0))", ct);
+        var current = await Session(user, session, ct);
+        if (current is null) return false;
+        var ids = System.Text.Json.JsonSerializer.Deserialize<Guid?[]>(current.AttemptIdsJson)!;
+        if (index < 0 || index >= ids.Length) return false;
+        if (ids[index] != expectedAttempt) return true; // A duplicate retry must not replace the new attempt.
+        if (!await db.Attempts.AnyAsync(a => a.Id == expectedAttempt && a.UserId == user && a.CompletedAt != null && a.Correct == false, ct)) return false;
+        ids[index] = replacement.Id;
+        db.Attempts.Add(replacement);
+        await db.SaveChangesAsync(ct);
+        var json = System.Text.Json.JsonSerializer.Serialize(ids);
+        await db.CourseLessonSessions.Where(s => s.Id == session && s.UserId == user).ExecuteUpdateAsync(s => s.SetProperty(x => x.AttemptIdsJson, json), ct);
+        await tx.CommitAsync(ct);
+        return true;
+    }
 }

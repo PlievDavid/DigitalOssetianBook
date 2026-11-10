@@ -161,7 +161,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
                 card = await learning.SnapshotCard(block.Kind, attempt, ct);
                 if (attempt.CompletedAt is not null) result = new { correct = attempt.Correct, expectedAnswer = attempt.ExpectedAnswer, explanation = attempt.Explanation };
             }
-            blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, card, result };
+            blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, attemptId = Attempts(session)[viewStep], card, result };
         }
         var preview = temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview;
         var done = preview ? new HashSet<Guid>() : await Completed(session.CourseId, version.Id, user, owner, ct);
@@ -176,14 +176,41 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
             completed = session.CompletedAt is not null, block = blockData, preview };
     }
 
-    public async Task<AnswerResult?> Answer(Guid id, Guid blockId, int[] indices, Guid? user, Guid owner, CancellationToken ct)
+    public async Task<AnswerResult?> Answer(Guid id, Guid blockId, int[] indices, Guid? user, Guid owner, CancellationToken ct, Guid? expectedAttempt = null)
     {
         if (await Find(id, user, owner, ct) is not { } found) return null;
         var lesson = Lesson(found.Version, found.Session.LessonId)!;
         var index = Array.FindIndex(lesson.Blocks, b => b.Id == blockId);
         if (index < 0 || Attempts(found.Session)[index] is not Guid attemptId) return null;
+        if (expectedAttempt is Guid expected && expected != attemptId) throw new ArgumentException("Попытка уже обновлена. Откройте блок заново.");
         if (lesson.Blocks[index].Kind == "listening" && indices.Length != 1) throw new ArgumentException("Выберите один ответ.");
         return found.Temporary ? await learning.AnswerGuest(owner, attemptId, indices, ct) : await learning.Answer(user!.Value, attemptId, indices, ct);
+    }
+
+    public async Task<bool> Retry(Guid id, Guid blockId, Guid expectedAttempt, Guid? user, Guid owner, CancellationToken ct)
+    {
+        if (await Find(id, user, owner, ct) is not { } found) return false;
+        var lesson = Lesson(found.Version, found.Session.LessonId)!;
+        var index = Array.FindIndex(lesson.Blocks, b => b.Id == blockId);
+        if (index < 0 || lesson.Blocks[index].PublishedExercise is not { } exercise) return false;
+        var replacement = exercise.Kind == "listening" ? ListeningService.CreateSnapshot(exercise, found.Session.UserId) : LearningService.CreateSnapshot(exercise, found.Session.UserId);
+        if (replacement is null) return false;
+        if (exercise.Kind == "listening") replacement.TokensJson = replacement.OptionsJson;
+        if (!found.Temporary) return await repository.Retry(user!.Value, id, index, expectedAttempt, replacement, ct);
+        var entry = guests.Find<GuestCourseSession>(owner, id);
+        if (entry is null) return false;
+        await entry.Gate.WaitAsync(ct);
+        try
+        {
+            var ids = Attempts(entry.Value.Session);
+            if (ids[index] != expectedAttempt) return true;
+            if (guests.Find<ExerciseAttempt>(owner, expectedAttempt)?.Value is not { CompletedAt: not null, Correct: false }) return false;
+            guests.Add(owner, replacement.Id, replacement);
+            ids[index] = replacement.Id;
+            entry.Value.Session.AttemptIdsJson = JsonSerializer.Serialize(ids);
+            return true;
+        }
+        finally { entry.Gate.Release(); }
     }
 
     public async Task<bool> Advance(Guid id, Guid blockId, Guid? user, Guid owner, CancellationToken ct)
@@ -200,7 +227,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         try
         {
             if (entry.Value.Session.Step > index) return true;
-            if (aid is Guid attemptId && guests.Find<ExerciseAttempt>(owner, attemptId)?.Value.CompletedAt is null) return false;
+            if (aid is Guid attemptId && guests.Find<ExerciseAttempt>(owner, attemptId)?.Value is not { CompletedAt: not null, Correct: true }) return false;
                         var completed = entry.Value.Session.CompletedSteps.Concat(Enumerable.Range(0, entry.Value.Session.Step)).Append(index).Distinct().ToArray();
             entry.Value.Session.CompletedSteps = completed;
             while (completed.Contains(entry.Value.Session.Step) && entry.Value.Session.Step < lesson.Blocks.Length) entry.Value.Session.Step++;

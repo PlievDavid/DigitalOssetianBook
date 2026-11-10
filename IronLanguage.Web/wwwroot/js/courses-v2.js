@@ -226,7 +226,7 @@
         const selected = node('div', null, 'cv-picked'), tokens = node('div', null, 'cv-tokens');
         selected.setAttribute('aria-label', 'Собранная фраза'); tokens.setAttribute('aria-label', 'Доступные слова');
         const check = button('Проверить ответ', e => run(e.currentTarget, async () => {
-          await post(`/course-sessions/${id}/answers`, { blockId: b.id, tokenIndices: picked }); await refresh(b.id);
+          await post(`/course-sessions/${id}/answers`, { blockId: b.id, attemptId: b.attemptId, tokenIndices: picked }); await refresh(b.id);
         }), 'button primary');
         function renderTokens() {
           selected.replaceChildren(); tokens.replaceChildren();
@@ -236,7 +236,16 @@
           check.disabled = !picked.length;
         }
         if (!b.result) { renderTokens(); card.append(selected, tokens, check); next.disabled = true; next.hidden = true; }
-        else card.append(append(node('div', null, `cv-result${b.result.correct ? '' : ' incorrect'}`), node('strong', b.result.correct ? 'Верно!' : 'Посмотрите правильный ответ'), node('p', b.result.expectedAnswer), b.result.explanation ? node('p', b.result.explanation) : null));
+        else {
+          card.append(append(node('div', null, `cv-result${b.result.correct ? '' : ' incorrect'}`), node('strong', b.result.correct ? 'Верно!' : 'Пока неверно. Попробуйте ещё раз'), node('p', b.result.expectedAnswer), b.result.explanation ? node('p', b.result.explanation) : null));
+          if (!b.result.correct) {
+            next.hidden = true; next.disabled = true;
+            card.append(button('Попробовать снова', e => run(e.currentTarget, async () => {
+              await post(`/course-sessions/${id}/retry`, { blockId: b.id, attemptId: b.attemptId }); await refresh(b.id);
+              area.querySelector('.cv-token')?.focus();
+            }), 'button primary'));
+          }
+        }
       }
       card.append(actions(next)); area.append(card);
     }
