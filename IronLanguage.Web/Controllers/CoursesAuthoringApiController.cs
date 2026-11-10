@@ -36,6 +36,16 @@ public sealed class CoursesAuthoringApiController(ICourseRepository courses, Cou
     }
 
     public sealed record SaveInput(long Stamp, CourseDraft Draft);
+    public sealed record DeleteInput(long Stamp);
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, DeleteInput input, CancellationToken ct) =>
+        (await courses.Delete(id, User.UserId()!.Value, input.Stamp, ct)) switch
+        {
+            true => NoContent(),
+            false => Conflict(new { error = "Черновик изменился. Обновите страницу перед удалением." }),
+            null => NotFound()
+        };
 
     [HttpGet("{id:guid}/access")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]

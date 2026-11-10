@@ -27,8 +27,14 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     public IActionResult Author() => View("Workspace");
 
     [HttpGet("api/v1/author/lesson-library"), Authorize(Roles = "Editor")]
-    public async Task<IActionResult> LessonLibrary(CancellationToken ct) => Json((await library.Owned(User.UserId()!.Value, ct))
-        .Select(x => new { x.Id, x.CreatedAt, x.SourceCourseId, x.SourceLessonId, x.SourceStamp, lesson = JsonSerializer.Deserialize<CourseDraftLesson>(x.LessonJson, CourseAuthoringService.JsonOptions) }));
+    public async Task<IActionResult> LessonLibrary(CancellationToken ct)
+    {
+        var owner = User.UserId()!.Value;
+        var lessons = await library.Owned(owner, ct);
+        var sources = (await courses.OwnedIds(owner, lessons.Select(x => x.SourceCourseId).Distinct().ToArray(), ct)).ToHashSet();
+        return Json(lessons.Select(x => new { x.Id, x.CreatedAt, x.SourceCourseId, x.SourceLessonId, x.SourceStamp,
+            sourceAvailable = sources.Contains(x.SourceCourseId), lesson = JsonSerializer.Deserialize<CourseDraftLesson>(x.LessonJson, CourseAuthoringService.JsonOptions) }));
+    }
 
     [HttpGet("api/v1/author/lesson-library/{id:guid}/uses"), Authorize(Roles = "Editor")]
     public async Task<IActionResult> LibraryUses(Guid id, CancellationToken ct)

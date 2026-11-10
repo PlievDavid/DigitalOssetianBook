@@ -366,6 +366,7 @@ window.AdamCourseStudio = async function (ui) {
           await save();
           const source = (await api('/author/lesson-library')).find(x => x.id === lesson.libraryVersionId);
           if (!source) throw new Error('Версия урока недоступна.');
+          if (!source.sourceAvailable) throw new Error('Исходный курс удалён. Сохранённая версия урока доступна в библиотеке.');
           location.href = `/author/courses/${source.sourceCourseId}?lesson=${source.sourceLessonId}`;
         })), link('Обновить из библиотеки', '/courses/teaching?library=1', 'cs-action'),
         action('Сделать независимой копией', () => mutate(() => { lesson.libraryVersionId = null; }))));
@@ -467,6 +468,41 @@ window.AdamCourseStudio = async function (ui) {
   const previewButton = action('Предпросмотр', preview, 'eye');
   previewButton.setAttribute('aria-label', 'Предпросмотр'); previewButton.title = 'Предпросмотр';
   const saveButton = action('Сохранить', e => run(e.currentTarget, save), null, 'cs-save-button');
+  function confirmCourseDeletion() {
+    modal('Удалить курс навсегда?', (dialog, close) => {
+      dialog.classList.add('cs-delete-dialog');
+      const feedback = node('p', null, 'cs-form-error');
+      feedback.setAttribute('role', 'alert');
+      const cancel = action('Отмена', close);
+      const remove = action('Удалить навсегда', e => run(e.currentTarget, async () => {
+        feedback.textContent = '';
+        cancel.disabled = true;
+        clearTimeout(timer);
+        try {
+          await saving?.catch(() => {});
+          await api(`/author/courses/${id}`, { method: 'DELETE', body: JSON.stringify({ stamp }) });
+          clearTimeout(timer);
+          abortTheoryUpload?.();
+          setDirty(false);
+          location.href = '/courses/teaching';
+        } catch (error) {
+          feedback.textContent = error.status === 404 ? 'Курс уже удалён или недоступен.' : error.message;
+          if (changed !== saved && !conflict) timer = setTimeout(() => save().catch(showError), 900);
+          cancel.disabled = false;
+        }
+      }), null, 'cs-primary cs-delete-course');
+      dialog.querySelector('.cs-dialog-head button').remove();
+      cancel.autofocus = true;
+      dialog.addEventListener('cancel', event => {
+        if (!remove.disabled) return;
+        event.stopImmediatePropagation();
+        event.preventDefault();
+      }, { capture: true });
+      dialog.append(node('p', `«${draft.title}» будет удалён вместе с черновиком, всеми публикациями и прогрессом учеников по этому курсу.`),
+        node('p', 'Восстановить курс не получится. Уроки из библиотеки и самостоятельные упражнения останутся.', 'cs-help'),
+        feedback, actions(cancel, remove));
+    });
+  }
   const courseMenu = iconButton('Действия с курсом', () => modal('Действия с курсом', (d, close) => {
     d.append(action('Сохранить изменения', async e => { await run(e.currentTarget, save); close(); }));
     if (course.publishedVersionId) d.append(link('Открыть опубликованный курс', `/courses/${id}`, 'cs-action'));
@@ -475,7 +511,7 @@ window.AdamCourseStudio = async function (ui) {
       close(); if (await confirm('Архивировать курс?', 'Курс исчезнет из каталога. Записанные ученики смогут продолжить обучение.', 'Архивировать')) {
         try { await save(); await post(`/author/courses/${id}/archive`); location.href = '/author/courses'; } catch (e) { showError(e); }
       }
-    }, null, 'cs-action cs-danger'));
+    }), action('Удалить курс', () => { close(); confirmCourseDeletion(); }, null, 'cs-action cs-danger'));
   }));
   const head = append(node('header', null, 'cs-header'), append(node('div'), title, accessBadge), actions(saveButton, previewButton, publish, courseMenu));
   const tabs = node('nav', null, 'cs-tabs'); tabs.setAttribute('aria-label', 'Редактирование курса');

@@ -19,6 +19,9 @@
 .cs-save-button { border-color:var(--cs-line,var(--theme-border)); }
 .cs-icon { width:44px; min-height:44px!important; padding:11px; flex-shrink:0; }
 .cs-danger { color:var(--theme-error); }
+.cs-delete-course { background:var(--theme-error); }
+.cs-delete-course:hover { background:color-mix(in srgb,var(--theme-error) 88%,black); }
+.cs-delete-dialog p { overflow-wrap:anywhere; }
 .cs-tabs { display:flex; align-items:center; gap:24px; border-bottom:1px solid var(--cs-line); margin-bottom:0; }
 .cs-tabs > button { border-radius:0; padding:16px 0; color:var(--theme-muted); }
 .cs-tabs > button[aria-current="true"] { color:var(--theme-green); box-shadow:inset 0 -3px var(--theme-green); }

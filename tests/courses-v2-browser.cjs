@@ -127,7 +127,6 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await login(colleaguePage, fixture.other);
     check((await api(colleaguePage, '/author/lesson-library')).data.length === 0, 'Другому автору видна чужая библиотека');
     check((await api(colleaguePage, `/author/courses/${id}/lessons/${lesson.id}/library`, 'POST', { stamp: saved.draftStamp })).status === 404, 'Другой автор сохранил чужой урок');
-    await colleague.close();
     await page.goto(base + '/courses/teaching');
     await page.getByRole('heading', { name: 'Преподавание', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Библиотека уроков', exact: true }).click();
@@ -426,6 +425,39 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.waitForFunction(() => document.querySelector('.cs-header .cs-primary')?.disabled === false);
     check(await publishButton.isEnabled(), 'После снятия блокировки нельзя опубликовать курс');
     await admin.close();
+
+    const deleteBody = { stamp: withAudio.data.draftStamp };
+    check((await api(colleaguePage, mediaAuthorUrl, 'DELETE', deleteBody)).status === 404, 'Другой преподаватель может удалить курс');
+    await colleague.close();
+    const deleteWithoutCsrf = await author.request.delete(base + '/api/v1' + mediaAuthorUrl, { data: deleteBody });
+    check(deleteWithoutCsrf.status() === 400, 'Удаление не защищено от CSRF');
+    check((await api(page, mediaAuthorUrl, 'DELETE', { stamp: deleteBody.stamp + 1 })).status === 409, 'Курс удаляется из устаревшей вкладки');
+    const savedLesson = await api(page, mediaAuthorUrl + '/lessons/' + mediaLesson.id + '/library', 'POST', deleteBody);
+    check(savedLesson.status === 200, 'Урок не сохранён в личной библиотеке');
+    const courseActions = page.getByRole('button', { name: 'Действия с курсом', exact: true });
+    const deleteAction = page.getByRole('button', { name: 'Удалить курс', exact: true });
+    const confirmDeletion = page.getByRole('dialog', { name: 'Удалить курс навсегда?' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await courseActions.click();
+    await deleteAction.click();
+    check(await confirmDeletion.getByRole('button', { name: 'Отмена', exact: true }).evaluate(el => el === document.activeElement), 'Подтверждение не ставит фокус на отмену');
+    await confirmDeletion.screenshot({ path: path.join(out, 'delete-course-phone.png') });
+    await page.keyboard.press('Escape');
+    await confirmDeletion.waitFor({ state: 'hidden' });
+    check((await api(page, mediaAuthorUrl)).status === 200, 'Отмена удалила курс');
+    await courseActions.click();
+    await deleteAction.click();
+    await confirmDeletion.getByRole('button', { name: 'Удалить навсегда', exact: true }).click();
+    await page.waitForURL(base + '/courses/teaching');
+    check((await api(guestPage, '/courses/' + mediaCourse.id)).status === 404 &&
+        (await api(student, '/course-sessions/' + mediaStart.data.id)).status === 404 &&
+        (await learner.request.get(base + streamUrl)).status() === 404, 'Старые ссылки открывают удалённый курс, урок или запись');
+    for (const [viewer, list] of [[page, '/author/courses'], [student, '/me/courses'], [guestPage, '/courses']]) {
+      check(!(await api(viewer, list)).data.some(course => course.id === mediaCourse.id), 'Удалённый курс остался в списке ' + list);
+    }
+    const libraryAfterDeletion = (await api(page, '/author/lesson-library')).data.find(entry => entry.id === savedLesson.data.id);
+    check(libraryAfterDeletion?.sourceAvailable === false && libraryAfterDeletion.lesson.title === mediaLesson.title, 'Удаление затронуло сохранённый урок библиотеки');
+    await page.setViewportSize({ width: 1440, height: 1000 });
 
     await require('./course-theory-media.cjs')({ api, base, page, student, author, learner, guest, browser, login, fixture, check, out });
     check(errors.length === 0, 'Ошибки JavaScript: ' + errors.join('; '));

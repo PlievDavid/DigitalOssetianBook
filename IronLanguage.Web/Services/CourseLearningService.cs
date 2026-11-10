@@ -203,7 +203,8 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
     {
         if (guests.Find<GuestCourseSession>(owner, id) is { } temporary)
         {
-            if (temporary.Value.Preview && (user is null || user != temporary.Value.PreviewUserId)) return null;
+            if (temporary.Value.Preview && (user is not Guid editor || editor != temporary.Value.PreviewUserId ||
+                await courses.OwnedAccess(temporary.Value.Session.CourseId, editor, ct) is null)) return null;
             if (!temporary.Value.Preview && await repository.Version(temporary.Value.Session.CourseId, null, ct) is null &&
                 await repository.BlockReason(temporary.Value.Session.CourseId, ct) is null) return null;
             return (temporary.Value.Session, temporary.Value.Version, true);
@@ -324,7 +325,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         if (!await CanUse(found.Session.CourseId, lesson.Blocks[index], found.Temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview, ct)) return false;
         var replacement = CreateAttempt(exercise, found.Session.UserId);
         replacement.LessonRunId = found.Session.Id;
-        if (!found.Temporary) return await repository.Retry(user!.Value, id, index, expectedAttempt, replacement, ct);
+        if (!found.Temporary) return await repository.Retry(found.Session, index, expectedAttempt, replacement, ct);
         var entry = guests.Find<GuestCourseSession>(owner, id);
         if (entry is null) return false;
         await entry.Gate.WaitAsync(ct);
