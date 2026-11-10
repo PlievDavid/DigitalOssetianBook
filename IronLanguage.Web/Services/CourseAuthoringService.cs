@@ -29,7 +29,7 @@ public sealed record CourseDraftBlock(Guid Id, string Kind, string Title, string
 public sealed record CoursePublicationIssue(string Message, Guid? LessonId = null, Guid? BlockId = null);
 
 public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMaterialRepository? materials = null, ICourseLearningRepository? publications = null,
-    IEditorRepository? editor = null, ILessonLibraryRepository? library = null)
+    IEditorRepository? editor = null, ILessonLibraryRepository? library = null, IWebHostEnvironment? environment = null)
 {
     public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -150,6 +150,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
         var draft = JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, JsonOptions)
             ?? throw new ArgumentException("Не удалось прочитать черновик.");
         Validate(draft, true);
+        CheckFile(draft.CoverPath, "Обложка курса", required: false);
         await CheckLinks(draft, owner, ct);
         draft = await Resolve(course, draft, ct);
         return await courses.Publish(id, owner, stamp, JsonSerializer.Serialize(draft, JsonOptions), ct);
@@ -159,8 +160,9 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
     {
         var draft = JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, JsonOptions)!;
         var issues = new List<CoursePublicationIssue>();
+        var published = await PublishedBlocks(course, ct);
         var placeholder = new CourseDraftModule(Guid.NewGuid(), "Проверка", [new(Guid.NewGuid(), "Проверка", [new(Guid.NewGuid(), "theory", "Проверка", "Проверка")])]);
-        try { Validate(draft with { Modules = [placeholder] }, true); }
+        try { Validate(draft with { Modules = [placeholder] }, true); CheckFile(draft.CoverPath, "Обложка курса", required: false); }
         catch (ArgumentException error) { issues.Add(new(error.Message)); }
         if (draft.Modules.Length == 0) issues.Add(new("Добавьте хотя бы один модуль."));
         foreach (var module in draft.Modules)
@@ -176,7 +178,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
                     try
                     {
                         Validate(single, true);
-                        await Resolve(course, single, ct);
+                        await ResolveBlock(block, course.OwnerId, published, ct);
                     }
                     catch (ArgumentException error) { issues.Add(new(error.Message, lesson.Id, block.Id)); }
                 }
@@ -199,32 +201,52 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
             {
                 var blocks = new List<CourseDraftBlock>();
                 foreach (var block in lesson.Blocks)
-                {
-                    if (block.Kind == "theory") { blocks.Add(block); continue; }
-                    if (CoursePractice.Supports(block.Kind))
-                    {
-                        var materialId = block.MaterialId!.Value;
-                        var available = materials is not null && await materials.Available(course.OwnerId, block.Kind, materialId, ct);
-                        var activity = available && editor is not null ? await editor.Material(block.Kind, materialId, ct) : null;
-                        if (activity is null && materials is not null && (await materials.Access(block.Kind, materialId, ct))?.Blocked != true)
-                            activity = Previous(block, published)?.PublishedActivity;
-                        if (activity is not { Published: true })
-                            throw new ArgumentException($"В уроке «{lesson.Title}» выберите доступное опубликованное упражнение.");
-                        blocks.Add(block with { PublishedActivity = activity });
-                        continue;
-                    }
-                    var exercise = materials is null ? null : await materials.Exercise(course.OwnerId, block.Kind, block.MaterialId!.Value, ct);
-                    if (exercise is null && materials is not null && (await materials.Access(block.Kind, block.MaterialId!.Value, ct))?.Blocked != true)
-                        exercise = Previous(block, published)?.PublishedExercise;
-                    if (exercise is null || exercise.Kind != block.Kind)
-                        throw new ArgumentException($"В уроке «{lesson.Title}» выберите доступное опубликованное упражнение.");
-                    blocks.Add(block with { PublishedExercise = exercise });
-                }
+                    blocks.Add(await ResolveBlock(block, course.OwnerId, published, ct));
                 lessons.Add(lesson with { Blocks = blocks.ToArray() });
             }
             modules.Add(module with { Lessons = lessons.ToArray() });
         }
         return draft with { Modules = modules.ToArray() };
+    }
+
+    private async Task<CourseDraftBlock> ResolveBlock(CourseDraftBlock block, Guid owner, Dictionary<Guid, CourseDraftBlock> published, CancellationToken ct)
+    {
+        if (block.Kind == "theory") return block;
+        var materialId = block.MaterialId!.Value;
+        var previous = Previous(block, published);
+        var unavailable = $"В блоке «{block.Title}» выберите доступное опубликованное упражнение.";
+        if (CoursePractice.Supports(block.Kind))
+        {
+            var available = materials is not null && await materials.Available(owner, block.Kind, materialId, ct);
+            var activity = available && editor is not null ? await editor.Material(block.Kind, materialId, ct) : null;
+            if (activity is null && previous?.PublishedActivity is { } stored &&
+                materials is not null && (await materials.Access(block.Kind, materialId, ct))?.Blocked != true)
+                activity = stored;
+            if (activity is not { Published: true }) throw new ArgumentException(unavailable);
+            if (block.Kind == "picture")
+            {
+                var picture = JsonSerializer.Deserialize<PictureMaterial>(activity.PayloadJson, JsonOptions);
+                CheckFile(picture?.PicturePath, $"Изображение блока «{block.Title}»", required: true);
+            }
+            return block with { PublishedActivity = activity };
+        }
+        var exercise = materials is null ? null : await materials.Exercise(owner, block.Kind, materialId, ct);
+        if (exercise is null && previous?.PublishedExercise is { } storedExercise &&
+            materials is not null && (await materials.Access(block.Kind, materialId, ct))?.Blocked != true)
+            exercise = storedExercise;
+        if (exercise is null || exercise.Kind != block.Kind) throw new ArgumentException(unavailable);
+        CheckFile(exercise.AudioPath, $"Запись блока «{block.Title}»", required: exercise.Kind is "audio" or "listening");
+        return block with { PublishedExercise = exercise };
+    }
+
+    private void CheckFile(string? path, string label, bool required)
+    {
+        if (path is null && !required) return;
+        if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("/media/", StringComparison.Ordinal) ||
+            path.Contains('\\') || path.Split('/').Any(part => part is "." or ".."))
+            throw new ArgumentException($"{label} недоступна. Выберите или загрузите файл заново.");
+        if (environment is not null && environment.WebRootFileProvider.GetFileInfo(path.TrimStart('/')) is not { Exists: true, IsDirectory: false })
+            throw new ArgumentException($"{label} недоступна. Выберите или загрузите файл заново.");
     }
 
     public Task<Course?> Restore(Guid id, Guid owner, long stamp, CourseVersion version, CancellationToken ct) =>

@@ -250,7 +250,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
         var path = await learning.Media(id, block, User.UserId(), guests.Owner(HttpContext), ct);
         if (path is null || !path.StartsWith("/media/", StringComparison.Ordinal) || path.Contains('\\') ||
             path.Split('/').Any(part => part is "." or "..")) return NotFound();
-        var file = environment.WebRootFileProvider.GetFileInfo(path);
+        var file = environment.WebRootFileProvider.GetFileInfo(path.TrimStart('/'));
         if (!file.Exists || file.IsDirectory || !new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider().TryGetContentType(path, out var type)) return NotFound();
         return File(file.CreateReadStream(), type, enableRangeProcessing: true);
     }

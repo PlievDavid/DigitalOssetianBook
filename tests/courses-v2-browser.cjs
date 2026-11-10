@@ -284,6 +284,38 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.setViewportSize({ width: 390, height: 844 });
     check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Материалы выходят за экран');
     await page.screenshot({ path: path.join(out, 'materials-phone.png'), fullPage: true });
+
+    const uuid = require('node:crypto').randomUUID;
+    const mediaBlock = { id: uuid(), kind: 'listening', title: 'Запись', text: '', materialId: fixture.missingAudioId };
+    const mediaLesson = { id: uuid(), title: 'Аудирование', blocks: [mediaBlock] };
+    const mediaDraft = { title: 'Курс с записью', description: 'Проверка медиа', modules: [{ id: uuid(), title: 'Программа', lessons: [mediaLesson] }],
+      coverPath: '/media/course-covers/' + uuid().replaceAll('-', '') + '.png' };
+    const mediaCourse = (await api(page, '/author/courses', 'POST', mediaDraft)).data;
+    const mediaAuthorUrl = '/author/courses/' + mediaCourse.id;
+    const publicationIssues = await api(page, mediaAuthorUrl + '/publication-issues');
+    check(publicationIssues.status === 200 && publicationIssues.data.some(issue => issue.message.includes('Обложка')), 'Проверка пропустила отсутствующую обложку');
+    check(publicationIssues.data.some(issue => issue.blockId === mediaBlock.id && issue.lessonId === mediaLesson.id), 'Проверка не указала блок с отсутствующей записью');
+    mediaDraft.coverPath = null;
+    const withoutCover = await api(page, mediaAuthorUrl + '/draft', 'PATCH', { stamp: mediaCourse.draftStamp, draft: mediaDraft });
+    check(withoutCover.status === 200 && (await api(page, mediaAuthorUrl + '/publish', 'POST', { stamp: withoutCover.data.draftStamp, reviewed: true })).status === 400, 'Курс опубликовался с отсутствующей записью');
+    check((await api(guestPage, '/courses/' + mediaCourse.id)).status === 404, 'Неудачная публикация открыла черновик');
+
+    mediaBlock.materialId = fixture.playableAudioId;
+    const withAudio = await api(page, mediaAuthorUrl + '/draft', 'PATCH', { stamp: withoutCover.data.draftStamp, draft: mediaDraft });
+    check(withAudio.status === 200 && (await api(page, mediaAuthorUrl + '/publish', 'POST', { stamp: withAudio.data.draftStamp, reviewed: true })).status === 200, 'Курс с существующей записью не опубликовался');
+    check((await author.request.get(base + fixture.audioPath)).status() === 200, 'Автор не может открыть свою запись');
+    check((await guest.request.get(base + fixture.audioPath)).status() === 404 && (await learner.request.get(base + fixture.audioPath)).status() === 404, 'Прямая ссылка открывает личную запись');
+    const mediaStart = await api(student, `/courses/${mediaCourse.id}/lessons/${mediaLesson.id}/sessions`, 'POST', {});
+    check(mediaStart.status === 200, 'Ученик не может начать аудирование');
+    await student.goto(base + '/courses/sessions/' + mediaStart.data.id);
+    await student.locator('audio').waitFor();
+    await student.waitForFunction(() => document.querySelector('audio')?.readyState >= 1);
+    const streamUrl = await student.locator('audio').getAttribute('src');
+    check(streamUrl.startsWith('/api/v1/course-sessions/') && streamUrl !== fixture.audioPath, 'Плеер использует прямую ссылку вместо защищённой');
+    const range = await learner.request.get(base + streamUrl, { headers: { Range: 'bytes=0-43' } });
+    check(range.status() === 206 && (await range.body()).subarray(0, 4).toString() === 'RIFF', 'Плеер не может загружать запись по частям');
+    check((await guest.request.get(base + streamUrl)).status() === 404 && (await author.request.get(base + streamUrl)).status() === 404, 'Чужая сессия открывает запись');
+
     check(errors.length === 0, 'Ошибки JavaScript: ' + errors.join('; '));
     console.log(`Course browser checks: ${checks} passed.`);
   } catch (e) {
