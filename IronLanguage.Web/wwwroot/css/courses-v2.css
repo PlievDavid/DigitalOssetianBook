@@ -291,3 +291,9 @@
 .cv-report-table table { width: 100%; border-collapse: collapse; }
 .cv-report-table th, .cv-report-table td { text-align: start; padding: .75rem; border-bottom: 1px solid var(--line, #dce4df); overflow-wrap: anywhere; }
 .cv-report-student { color: var(--theme-green); text-decoration: underline; text-underline-offset: .2em; }
+.cv-theory-media { margin: 16px 0 0; min-width: 0; }
+.cv-theory-media img, .cv-theory-media video { display: block; max-width: 100%; max-height: min(70vh, 640px); border-radius: 12px; object-fit: contain; }
+.cv-theory-media video { width: 100%; background: #18221e; }
+.cv-theory-media figcaption { margin-top: 8px; color: var(--theme-muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.cv-theory-media-error { color: var(--theme-error); }
+.cv-theory-media [hidden] { display: none; }

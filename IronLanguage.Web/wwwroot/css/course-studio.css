@@ -161,4 +161,11 @@
 .cs-material-item { min-width: 0; padding: .85rem; border: 1px solid var(--line, #dce4df); border-radius: .75rem; overflow-wrap: anywhere; }
 .cs-material-item details { margin-block: .5rem; }
 .cs-material-item img, .cs-material-item audio { max-width: 100%; }
+.cs-theory-media { display: grid; gap: 10px; margin-block: 16px; padding: 16px; border: 1px solid var(--cv-line, var(--theme-border)); border-radius: 12px; background: var(--theme-surface); min-width: 0; }
+.cs-theory-media h3, .cs-theory-media p, .cs-theory-media figure { margin: 0; }
+.cs-theory-media .cv-actions { flex-wrap: wrap; }
+.cs-theory-media progress { width: 100%; max-width: 360px; accent-color: var(--theme-green); }
+.cs-theory-media-feedback { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.cs-theory-media-feedback:empty, .cs-theory-media-fields:empty, .cs-theory-media [hidden] { display: none; }
+.cs-theory-media-fields { display: grid; gap: 10px; }
 .cs-dialog .cs-action[aria-pressed="true"] { background: var(--course-tonal, #edf2e7); }

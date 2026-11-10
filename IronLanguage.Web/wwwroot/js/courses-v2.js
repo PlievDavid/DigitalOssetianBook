@@ -232,6 +232,7 @@
   }
   async function player(id) {
     await import('/js/course-rich-text.js');
+    const { renderTheoryMedia } = await import('/js/course-theory-media.js');
     let selected = new URLSearchParams(location.search).get('block'), state, picked = [], practiceFeedback = '', refreshing = false;
     shell(false); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
     async function refresh(blockId = null) {
@@ -392,7 +393,7 @@
         card.append(node('p', 'Материал недоступен. Вы можете открыть другой блок урока.', 'cv-notice'));
         next.hidden = true;
       }
-      else if (b.kind === 'theory') card.append(window.AdamCourseRichText.render(b));
+      else if (b.kind === 'theory') append(card, window.AdamCourseRichText.render(b), renderTheoryMedia(b.theoryMedia, node));
       else if (b.practice) {
         practiceBlock(card, b);
         next.hidden = !b.practice.complete; next.disabled = next.hidden;
