@@ -36,7 +36,7 @@ public sealed class CourseBlockActivity
     public bool? Correct { get; set; }
 }
 
-public sealed record CourseLearner(Guid Id, string Name, string? AvatarJson, DateTimeOffset EnrolledAt);
+public sealed record CourseLearner(Guid Id, string Name);
 
 public interface ICourseLearningRepository
 {
@@ -96,7 +96,7 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
         (from enrollment in db.CourseEnrollments
          join account in db.Users on enrollment.UserId equals account.Id
          where enrollment.CourseId == course
-         select new CourseLearner(account.Id, account.PublicName ?? "Ученик", account.AvatarJson, enrollment.CreatedAt)).ToArrayAsync(ct);
+         select new CourseLearner(account.Id, account.PublicName ?? "Ученик")).ToArrayAsync(ct);
     public Task<CourseBlockActivity[]> Activity(Guid course, CancellationToken ct) =>
         db.CourseBlockActivities.AsNoTracking().Where(x => x.CourseId == course).OrderBy(x => x.At).ToArrayAsync(ct);
     public Task Record(CourseLessonSession session, Guid block, string key, bool? correct, CancellationToken ct) =>

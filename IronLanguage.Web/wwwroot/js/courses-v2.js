@@ -94,8 +94,10 @@
       filtered.forEach(c => {
         if (authored) {
           const row = node('article', null, 'cv-author-row');
-          const state = c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик';
-          const body = append(node('div'), node('span', state, 'cv-author-status'), node('h2', c.title), node('p', `${c.modules || 0} модулей · ${c.lessons || 0} уроков`, 'cv-meta'));
+          const state = c.blockReason ? 'Заблокирован' : c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик';
+          const body = append(node('div'), node('span', state, c.blockReason ? 'cv-author-status cv-blocked-status' : 'cv-author-status'),
+            node('h2', c.title), node('p', `${c.modules || 0} модулей · ${c.lessons || 0} уроков`, 'cv-meta'),
+            c.blockReason ? node('p', 'Причина: ' + c.blockReason, 'cv-blocked-status') : null);
           row.append(body, actions(link('Редактировать курс', `/author/courses/${c.id}`, 'cv-button'),
             c.published ? link('Результаты учеников', `/author/courses/${c.id}/analytics`, 'cv-button') : null)); grid.append(row); return;
         }
@@ -140,9 +142,14 @@
   }
   async function analytics(id) {
     shell(false);
-    root.append(link('← Преподавание', '/courses/teaching', 'back-link'));
     const params = new URLSearchParams(location.search);
     const report = await api(`/author/courses/${id}/analytics?` + params);
+    const overviewParams = new URLSearchParams(params);
+    overviewParams.delete('learner');
+    const overviewUrl = `/author/courses/${id}/analytics` + (overviewParams.size ? '?' + overviewParams : '');
+    root.append(report.student
+      ? link('← Результаты курса', overviewUrl, 'back-link')
+      : link('← Преподавание', '/courses/teaching', 'back-link'));
     const date = value => value ? new Date(value).toLocaleString('ru-RU') : '—';
     function table(labels, rows) {
       const head = append(node('thead'), append(node('tr'), ...labels.map(label => node('th', label))));
@@ -152,7 +159,7 @@
       return append(scroll, append(node('table'), head, body));
     }
     if (report.student) {
-      root.append(link('← Результаты курса', `/author/courses/${id}/analytics`), heading(report.student.name, report.title),
+      root.append(heading(report.student.name, report.title),
         node('p', `${report.student.status} · ${report.student.counts.completedBlocks} из ${report.student.counts.totalBlocks} блоков`));
       if (report.student.finishedAt) root.append(node('p', 'Первое завершение: ' + date(report.student.finishedAt), 'cv-meta'));
       report.modules.forEach(module => {
@@ -173,8 +180,9 @@
     root.append(node('h2', 'Ученики'));
     if (!report.students.length) root.append(node('p', 'Курс пока никто не начал.'));
     else root.append(table(['Ученик', 'Прогресс', 'Статус', 'Начало', 'Активность'], report.students.map(student => {
-      const avatar = node('img', null, 'cv-report-avatar'); avatar.src = student.avatar; avatar.alt = ''; avatar.width = 32; avatar.height = 32;
-      const name = append(node('span', null, 'cv-report-student'), avatar, link(student.name, `?learner=${student.id}`, ''));
+      const target = new URLSearchParams(overviewParams);
+      target.set('learner', student.id);
+      const name = link(student.name, '?' + target, 'cv-report-student');
       return [name, `${student.counts.completedBlocks}/${student.counts.totalBlocks} · ${student.counts.percent}%`, student.status, date(student.startedAt), date(student.lastActive)];
     })));
     const page = Number(params.get('page')) || 1;

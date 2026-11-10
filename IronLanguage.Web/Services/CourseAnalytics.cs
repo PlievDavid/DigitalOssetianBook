@@ -1,5 +1,4 @@
 using IronLanguage.Db;
-using IronLanguage.Web.Models;
 
 namespace IronLanguage.Web.Services;
 
@@ -34,7 +33,7 @@ public sealed class CourseAnalytics(ICourseRepository courses, ICourseLearningRe
             var finishedAt = CourseLearningService.FirstCompletion(sessions, versions);
             var lastActive = byActivity[e.Id].Select(a => a.At).Concat(sessions.Select(s => s.CompletedAt ?? s.StartedAt)).Max();
             var startedAt = sessions.Min(s => s.StartedAt);
-            return new { e.Id, e.Name, avatar = AvatarRenderer.Url(AvatarOptions.Read(e.AvatarJson)), startedAt, lastActive, finishedAt, counts,
+            return new { e.Id, e.Name, startedAt, lastActive, finishedAt, counts,
                 status = counts.Percent == 100 ? "Завершён" : finishedAt is not null ? "Есть новые блоки" : "В процессе" };
         }).OrderByDescending(s => s.lastActive).ThenBy(s => s.Id).ToArray();
 

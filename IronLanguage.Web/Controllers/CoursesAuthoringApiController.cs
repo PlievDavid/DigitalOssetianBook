@@ -36,6 +36,12 @@ public sealed class CoursesAuthoringApiController(ICourseRepository courses, Cou
     }
 
     public sealed record SaveInput(long Stamp, CourseDraft Draft);
+
+    [HttpGet("{id:guid}/access")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Access(Guid id, CancellationToken ct) =>
+        await courses.OwnedAccess(id, User.UserId()!.Value, ct) is { } access ? Ok(access) : NotFound();
+
     [HttpPatch("{id:guid}/draft")]
     public async Task<IActionResult> Save(Guid id, SaveInput input, CancellationToken ct)
     {
@@ -87,7 +93,8 @@ public sealed class CoursesAuthoringApiController(ICourseRepository courses, Cou
     [HttpPost("{id:guid}/publish")]
     public async Task<IActionResult> Publish(Guid id, PublishInput input, CancellationToken ct)
     {
-        if (await courses.Owned(id, User.UserId()!.Value, ct) is null) return NotFound();
+        if (await courses.OwnedAccess(id, User.UserId()!.Value, ct) is not { } access) return NotFound();
+        if (access.BlockReason is { } reason) return Conflict(new { error = "Администратор заблокировал курс. Причина: " + reason });
         try
         {
             var version = await authoring.Publish(id, User.UserId()!.Value, input.Stamp, input.Reviewed, ct);

@@ -180,7 +180,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
     [HttpGet("api/v1/author/courses"), Authorize(Roles = "Editor")]
     public async Task<IActionResult> Owned(CancellationToken ct) => Json((await repository.Owned(User.UserId()!.Value, ct)).Select(c => {
         var d = JsonSerializer.Deserialize<CourseDraft>(c.DraftJson, CourseAuthoringService.JsonOptions)!;
-        return new { c.Id, d.Title, d.Description, c.Archived, published = c.PublishedVersionId != null, c.DraftStamp, modules = d.Modules.Length, lessons = d.Modules.Sum(m => m.Lessons.Length) };
+        return new { c.Id, d.Title, d.Description, c.Archived, c.BlockReason, published = c.PublishedVersionId != null, c.DraftStamp, modules = d.Modules.Length, lessons = d.Modules.Sum(m => m.Lessons.Length) };
     }));
 
     [HttpGet("api/v1/author/course-materials"), Authorize(Roles = "Editor")]

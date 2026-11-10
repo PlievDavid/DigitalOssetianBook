@@ -1,5 +1,8 @@
 @model AvatarOptions
-@{ ViewData["Title"] = "Профиль"; }
+@{
+    ViewData["Title"] = "Профиль";
+    var nameError = TempData["PublicNameError"] as string;
+}
 <div class="account-layout mobile-profile-layout">
     @await Html.PartialAsync("_AccountNavigation")
 <section class="feature-shell profile-shell">
@@ -9,14 +12,16 @@
         <span class="profile-avatar profile-avatar-large" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel(Model, true))</span>
         <div><span class="profile-caption">@(User.IsInRole("Editor") ? "Редактор материалов" : "Учётная запись")</span><strong>@User.Identity?.Name</strong></div>
     </div>
-    <form action="/profile/name" method="post" class="profile-public-name">
+    <form action="/profile/name" method="post" class="profile-public-name" novalidate>
         @Html.AntiForgeryToken()
         <label for="public-name">Публичное имя</label>
-        <p>Имя увидят ученики на страницах ваших курсов. Поле можно оставить пустым.</p>
-        <input id="public-name" name="publicName" maxlength="100" value="@ViewData["PublicName"]" />
-        <button type="submit">Сохранить имя</button>
+        <div class="profile-name-controls">
+            <input id="public-name" name="publicName" required maxlength="100" autocomplete="nickname" value="@ViewData["PublicName"]"
+                   aria-invalid="@(nameError is null ? null : "true")" aria-describedby="@(nameError is null ? null : "public-name-error")" />
+            <button class="button primary" type="submit">Сохранить имя</button>
+        </div>
         @if (TempData["PublicNameSaved"] is true) { <p role="status">Имя сохранено.</p> }
-        @if (TempData["PublicNameError"] is string error) { <p role="alert">@error</p> }
+        @if (nameError is not null) { <p id="public-name-error" role="alert">@nameError</p> }
     </form>
     <section class="mobile-profile-results" id="progress-app" aria-labelledby="profile-results-title">
         <h2 id="profile-results-title">Мои результаты</h2>
