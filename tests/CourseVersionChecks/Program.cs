@@ -54,6 +54,7 @@ await using var control = new NpgsqlConnection(connection);
 await control.OpenAsync();
 await using (var command = new NpgsqlCommand($"CREATE SCHEMA \"{schema}\"", control)) await command.ExecuteNonQueryAsync();
 Process? site = null;
+string? browserAudioFile = null;
 try
 {
     var isolated = new NpgsqlConnectionStringBuilder(connection) { SearchPath = schema }.ConnectionString;
@@ -116,7 +117,7 @@ try
     Check((await lessons.Session(learner.Id, unordered.Id, ct))!.Step == 3, "Не учтён ранее просмотренный блок");
     Check(await lessons.Advance(learner.Id, unordered.Id, 2, 3, null, ct), "Повтор просмотра не идемпотентен");
     await db.CourseLessonSessions.Where(s => s.Id == unordered.Id).ExecuteDeleteAsync(ct);
-    var audioExercise = new Exercise { Kind = "listening", Published = true, RussianPrompt = "Тестовый вопрос", AudioPath = "/media/test.mp3", OptionsJson = "[\"Вариант 1\",\"Вариант 2\",\"Вариант 3\",\"Вариант 4\"]", CorrectOption = 2 };
+    var audioExercise = new Exercise { Kind = "listening", Published = true, RussianPrompt = "Тестовый вопрос", AudioPath = $"/media/{Guid.NewGuid():N}.wav", OptionsJson = "[\"Вариант 1\",\"Вариант 2\",\"Вариант 3\",\"Вариант 4\"]", CorrectOption = 2 };
     db.Exercises.Add(audioExercise); await db.SaveChangesAsync(ct);
     db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = audioExercise.Kind, MaterialId = audioExercise.Id, OwnerId = owner.Id });
     await db.SaveChangesAsync(ct);
@@ -124,8 +125,8 @@ try
     var audioLesson = new CourseDraftLesson(Guid.NewGuid(), "Урок", [audioBlock]);
     var materialAccess = new EfCourseMaterialRepository(db);
     Check(await catalog.Exercise(audioExercise.Id, ct: ct) is null, "Личное упражнение доступно в общем каталоге");
-    Check(!await materialAccess.CanReadMedia("/media/test.mp3", null, ct), "Аудио личного материала выдаётся напрямую");
-    Check(await materialAccess.CanReadMedia("/media/test.mp3", owner.Id, ct), "Автор не может прослушать свой материал");
+    Check(!await materialAccess.CanReadMedia(audioExercise.AudioPath!, null, ct), "Аудио личного материала выдаётся напрямую");
+    Check(await materialAccess.CanReadMedia(audioExercise.AudioPath!, owner.Id, ct), "Автор не может прослушать свой материал");
     Check((await materialAccess.Search(owner.Id, "listening", "вопрос", true, 1, ct)).Items.Single().Id == audioExercise.Id, "Свое упражнение не найдено");
     Check((await materialAccess.Search(other.Id, "listening", null, false, 1, ct)).Items.Length == 0, "Другой преподаватель видит личное упражнение");
     Check(!await materialAccess.Configure(other.Id, "listening", audioExercise.Id, true, true, ct), "Чужой преподаватель поменял права");
@@ -316,6 +317,26 @@ try
         db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = other.Id, RoleId = role.Id });
         await db.SaveChangesAsync();
         var webRoot = Path.GetFullPath("IronLanguage.Web");
+        var playable = new Exercise
+        {
+            Kind = "listening", Published = true, RussianPrompt = "Проверка записи",
+            AudioPath = $"/media/{Guid.NewGuid():N}.wav", OptionsJson = audioExercise.OptionsJson, CorrectOption = audioExercise.CorrectOption
+        };
+        db.Exercises.Add(playable);
+        db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = playable.Kind, MaterialId = playable.Id, OwnerId = owner.Id });
+        await db.SaveChangesAsync(ct);
+        var mediaFolder = Path.Combine(webRoot, "wwwroot", "media");
+        Directory.CreateDirectory(mediaFolder);
+        var audioFile = Path.Combine(mediaFolder, Path.GetFileName(playable.AudioPath));
+        using (var writer = new BinaryWriter(new FileStream(audioFile, FileMode.CreateNew)))
+        {
+            browserAudioFile = audioFile;
+            // A tenth of a second of silent, mono PCM at 8 kHz.
+            writer.Write("RIFF"u8); writer.Write(1636); writer.Write("WAVEfmt "u8); writer.Write(16);
+            writer.Write((short)1); writer.Write((short)1); writer.Write(8000); writer.Write(16000);
+            writer.Write((short)2); writer.Write((short)16); writer.Write("data"u8); writer.Write(1600);
+            writer.Write(new byte[1600]);
+        }
         var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0); listener.Start();
         var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port; listener.Stop();
         var url = $"http://127.0.0.1:{port}";
@@ -329,7 +350,8 @@ try
         Check(ready, "Тестовый сайт не запустился");
         var browser = new ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         browser.ArgumentList.Add("tests/courses-v2-browser.cjs"); browser.Environment["ADAM_TEST_URL"] = url;
-        browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer });
+        browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer,
+            missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
         using var process = Process.Start(browser)!;
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync(); Console.Write(await output); Console.Error.Write(await error); Check(process.ExitCode == 0, "Браузерная проверка не прошла");
@@ -339,6 +361,7 @@ try
 finally
 {
     if (site is { HasExited: false }) { site.Kill(entireProcessTree: true); await site.WaitForExitAsync(); }
+    if (browserAudioFile is not null) File.Delete(browserAudioFile);
     NpgsqlConnection.ClearAllPools();
     await using var cleanup = new NpgsqlCommand($"DROP SCHEMA \"{schema}\" CASCADE", control);
     await cleanup.ExecuteNonQueryAsync();
