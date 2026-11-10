@@ -38,9 +38,11 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
             e.AlternativesJson, e.DistractorsJson, e.OptionsJson, e.CorrectOption, e.Transcript, e.WordIdsJson, e.Explanation, e.AudioPath },
         activity = b.PublishedActivity?.PayloadJson
     }, CourseAuthoringService.JsonOptions);
-    private async Task<Dictionary<Guid, (bool Done, Guid? Attempt)>> Credits(Guid course, CourseVersion version, Guid? user, Guid owner, CancellationToken ct)
+    private async Task<Dictionary<Guid, (bool Done, Guid? Attempt)>> Credits(Guid course, CourseVersion version, Guid? user, Guid owner, CancellationToken ct) =>
+        await Credits(version, await History(course, user, owner, ct), ct);
+
+    private async Task<Dictionary<Guid, (bool Done, Guid? Attempt)>> Credits(CourseVersion version, List<CourseLessonSession> sessions, CancellationToken ct)
     {
-        var sessions = await History(course, user, owner, ct);
         var snapshots = await repository.Snapshots(sessions.Select(s => s.VersionId).Distinct().ToArray(), ct);
         return CalculateCredits(version, sessions, snapshots.ToDictionary(x => x.Id));
     }
@@ -278,18 +280,22 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
             blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, theoryMedia,
                 attemptId = Attempts(session)[viewStep], card, result, practice, unavailable };
         }
-        var preview = temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview;
-        var done = preview ? new HashSet<Guid>() : await Completed(session.CourseId, version.Id, user, owner, ct);
-        var opened = preview ? new HashSet<Guid>() : (await Opened(session.CourseId, user, owner, ct)).Select(x => x.LessonId).ToHashSet();
+        var history = isPreview ? [] : await History(session.CourseId, user, owner, ct);
+        var credits = isPreview ? [] : await Credits(version, history, ct);
+        var opened = history.Select(x => x.LessonId).ToHashSet();
         var unlocked = true;
         var lessons = draft.Modules.SelectMany(m => m.Lessons.Select(l => {
             var available = !draft.Sequential || unlocked || opened.Contains(l.Id);
-            if (!done.Contains(l.Id)) unlocked = false;
-            return new { l.Id, l.Title, module = m.Title, completed = done.Contains(l.Id), available };
+            var completedBlocks = l.Blocks.Count(b => credits.TryGetValue(b.Id, out var credit) && credit.Done);
+            var totalBlocks = l.Blocks.Length;
+            var completed = completedBlocks == totalBlocks;
+            if (!completed) unlocked = false;
+            return new { l.Id, l.Title, moduleId = m.Id, module = m.Title, completed, available, completedBlocks, totalBlocks };
         })).ToArray();
+        var courseProgress = new { completedBlocks = lessons.Sum(l => l.completedBlocks), totalBlocks = lessons.Sum(l => l.totalBlocks) };
         return new { draft.Theme, session.Id, session.CourseId, session.LessonId, lesson.Title, session.Step, count = lesson.Blocks.Length,
             viewStep, steps = lesson.Blocks.Select((b, i) => new { b.Id, b.Title, completed = i < session.Step || session.CompletedSteps.Contains(i), available = true }).ToArray(), lessons,
-            completed = session.CompletedAt is not null, block = blockData, preview };
+            courseProgress, completed = session.CompletedAt is not null, block = blockData, preview = isPreview };
     }
 
     public async Task<AnswerResult?> Answer(Guid id, Guid blockId, int[] indices, Guid? user, Guid owner, CancellationToken ct, Guid? expectedAttempt = null)

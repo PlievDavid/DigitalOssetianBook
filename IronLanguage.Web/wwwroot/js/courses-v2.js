@@ -8,6 +8,16 @@
   const append = (parent, ...children) => { parent.append(...children.filter(Boolean)); return parent; };
   const link = (text, href, cls = 'cv-button') => { const a = node('a', text, cls); a.href = href; return a; };
   const button = (text, action, cls = 'cv-button') => { const b = node('button', text, cls); b.type = 'button'; b.addEventListener('click', action); return b; };
+  const icon = path => {
+    const namespace = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(namespace, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    const line = document.createElementNS(namespace, 'path');
+    line.setAttribute('d', path);
+    svg.append(line);
+    return svg;
+  };
   const actions = (...items) => append(node('div', null, 'cv-actions'), ...items);
   const message = node('div', null, 'cv-notice'); message.setAttribute('role', 'status');
   const showError = e => { message.className = 'cv-notice error'; message.textContent = e.message || 'Не удалось выполнить действие.'; message.scrollIntoView({ block: 'nearest' }); };
@@ -51,6 +61,91 @@
     const session = await post(`/courses/${courseId}/lessons/${lessonId}/sessions`);
     location.href = `/courses/sessions/${session.id}`;
   }
+  const courseLevels = ['', 'Начальный', 'Средний', 'Продвинутый'];
+  function levelFilter(level, onChange) {
+    const label = node('span', 'Уровень');
+    label.id = 'cv-level-label';
+    const value = node('span');
+    value.id = 'cv-level-value';
+    const menu = node('div', null, 'cv-level-menu');
+    menu.id = 'cv-level-menu';
+    menu.popover = 'auto';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-labelledby', label.id);
+    const trigger = button(null, () => {
+      if (menu.matches(':popover-open')) menu.hidePopover();
+      else open();
+    }, 'cv-level-trigger');
+    trigger.setAttribute('aria-labelledby', label.id + ' ' + value.id);
+    trigger.setAttribute('aria-haspopup', 'menu');
+    trigger.setAttribute('aria-controls', menu.id);
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.append(value, icon('m6 9 6 6 6-6'));
+    const items = courseLevels.map(option => {
+      const item = button(null, () => {
+        update(option);
+        menu.hidePopover();
+        trigger.focus();
+        onChange(option);
+      }, 'cv-level-option');
+      item.append(node('span', option || 'Все уровни'), icon('m5 12 4 4L19 6'));
+      item.setAttribute('role', 'menuitemradio');
+      item.tabIndex = -1;
+      return item;
+    });
+    menu.append(...items);
+    function update(option) {
+      level = option;
+      value.textContent = option || 'Все уровни';
+      items.forEach((item, index) => item.setAttribute('aria-checked', String(courseLevels[index] === option)));
+    }
+    function position() {
+      const rect = trigger.getBoundingClientRect();
+      const below = innerHeight - rect.bottom - 16;
+      const above = rect.top - 16;
+      const flip = below < menu.scrollHeight && above > below;
+      menu.style.width = rect.width + 'px';
+      menu.style.maxHeight = Math.max(0, flip ? above : below) + 'px';
+      menu.style.left = rect.left + 'px';
+      menu.style.top = (flip ? rect.top - menu.offsetHeight - 8 : rect.bottom + 8) + 'px';
+      menu.classList.toggle('is-above', flip);
+    }
+    function open(index = courseLevels.indexOf(level)) {
+      menu.showPopover({ source: trigger });
+      position();
+      trigger.setAttribute('aria-expanded', 'true');
+      items[index].focus();
+    }
+    menu.addEventListener('toggle', event => {
+      if (event.newState === 'open') {
+        window.addEventListener('resize', position);
+        window.addEventListener('scroll', position);
+      } else {
+        window.removeEventListener('resize', position);
+        window.removeEventListener('scroll', position);
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+    trigger.addEventListener('keydown', event => {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      event.preventDefault();
+      open(event.key === 'ArrowUp' ? items.length - 1 : 0);
+    });
+    menu.addEventListener('keydown', event => {
+      const index = items.indexOf(document.activeElement);
+      const next = { ArrowDown: (index + 1) % items.length, ArrowUp: (index + items.length - 1) % items.length, Home: 0, End: items.length - 1 }[event.key];
+      if (typeof next === 'number') {
+        event.preventDefault();
+        items[next].focus();
+      } else if (event.key === 'Escape' || event.key === 'Tab') {
+        if (event.key === 'Escape') event.preventDefault();
+        menu.hidePopover();
+        trigger.focus();
+      }
+    });
+    update(level);
+    return append(node('div', null, 'cv-field cv-level-filter'), label, trigger, menu);
+  }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
     const enrolled = new Set(!authored && window.AdamAuthenticated ? (mine ? rows : await api('/me/courses')).map(c => c.id) : []);
@@ -65,12 +160,40 @@
       : mine ? 'Возвращайтесь к своей программе и продолжайте с сохранённого места.' : 'Изучайте язык последовательно: объяснение, практика и новый шаг.', authored ? create : null));
     const grid = node('div', null, authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
-    const search = field('Поиск по названию', query, value => { query = value; draw(); }, { type: 'search' });
-    search.querySelector('input').placeholder = 'Найти курс';
-    const clear = button('Очистить поиск', () => { query = ''; search.querySelector('input').value = ''; draw(); search.querySelector('input').focus(); });
-    const tools = append(node('div', null, 'cv-tools'), search, clear);
-    if (!authored) tools.append(field('Уровень', level, value => { level = value; draw(); }, { values: [{ value: '', label: 'Все уровни' }, 'Начальный', 'Средний', 'Продвинутый'] }));
-    root.append(tools, grid);
+    if (authored || !courseLevels.includes(level)) level = '';
+    let searchTimer, displayed, resultMotion;
+    const input = node('input');
+    input.type = 'search';
+    input.id = 'cv-catalog-query';
+    input.value = query;
+    input.placeholder = 'Найти курс';
+    input.addEventListener('input', () => {
+      query = input.value;
+      syncClear();
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(draw, 160);
+    });
+    const clear = button(null, () => {
+      input.focus();
+      input.value = query = '';
+      syncClear();
+      draw();
+    }, 'cv-search-clear');
+    clear.setAttribute('aria-label', 'Очистить поиск');
+    clear.title = 'Очистить поиск';
+    clear.append(icon('m6 6 12 12M18 6 6 18'));
+    function syncClear() { clear.inert = !query; }
+    syncClear();
+    // Keep the clear action outside the input label while reserving its space inside the field.
+    const searchField = node('div', null, 'cv-field cv-catalog-search');
+    const searchLabel = node('label', 'Поиск по названию');
+    searchLabel.htmlFor = input.id;
+    searchField.append(searchLabel, append(node('div', null, 'cv-search-control'), input, clear));
+    const tools = append(node('div', null, 'cv-tools'), searchField);
+    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }));
+    const resultsStatus = node('div', null, 'cv-results-status');
+    resultsStatus.setAttribute('role', 'status');
+    root.append(tools, resultsStatus, grid);
     if (authored) {
       const library = node('section', null, 'cv-library');
       const tabs = actions(button('Курсы', () => { tools.hidden = false; grid.hidden = false; library.hidden = true; courseTab.setAttribute('aria-current', 'true'); lessonTab.setAttribute('aria-current', 'false'); }), button('Библиотека уроков', async e => run(e.currentTarget, async () => {
@@ -87,9 +210,19 @@
       if (params.has('library')) lessonTab.click();
     }
     function draw() {
+      clearTimeout(searchTimer);
       const url = new URL(location.href); query ? url.searchParams.set('q', query) : url.searchParams.delete('q'); level ? url.searchParams.set('level', level) : url.searchParams.delete('level'); history.replaceState(null, '', url);
-      clear.hidden = !query; grid.replaceChildren();
-      const filtered = rows.filter(x => x.title.toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru')) && (!level || x.level === level));
+      const term = query.trim().toLocaleLowerCase('ru');
+      const filtered = rows.filter(x => x.title.toLocaleLowerCase('ru').includes(term) && (!level || x.level === level));
+      if (displayed?.length === filtered.length && displayed.every((row, index) => row === filtered[index])) return;
+      if (displayed) {
+        resultsStatus.textContent = filtered.length ? `Курсов найдено: ${filtered.length}` : 'Курсы не найдены';
+        resultMotion?.cancel();
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+          resultMotion = grid.animate([{ opacity: 0.45, transform: 'translateY(5px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 200, easing: 'ease-out' });
+      }
+      displayed = filtered;
+      grid.replaceChildren();
       if (!filtered.length) { grid.append(empty(rows.length ? 'Курсы не найдены' : authored ? 'Здесь появится ваш первый курс' : mine ? 'Вы ещё не записались на курс' : 'Курсы готовятся', rows.length ? 'Измените запрос или сбросьте фильтры.' : authored ? 'Начните с названия, затем добавьте модули и уроки.' : 'Выберите опубликованный курс в каталоге.', mine ? link('Открыть каталог', '/courses') : null)); return; }
       filtered.forEach(c => {
         if (authored) {
@@ -331,7 +464,6 @@
       area.append(link(state.preview ? '← В конструктор' : '← К программе курса', state.preview ? `/author/courses/${state.courseId}` : `/courses/${state.courseId}`, 'back-link'));
       if (state.preview) area.append(node('p', 'Предпросмотр. Прогресс и очки не сохраняются.', 'cv-notice'));
       else if (!window.AdamAuthenticated) area.append(node('p', 'Гостевое занятие. Войдите, чтобы сохранять прогресс между посещениями.', 'cv-notice'));
-      else area.append(node('p', 'Автор курса видит ваше имя и учебные результаты по этому курсу.', 'cv-notice'));
       const header = node('section', null, 'cv-player-header');
       const top = append(node('div', null, 'cv-player-top'), heading(state.title, state.block ? `Шаг ${state.viewStep + 1} из ${state.count}` : 'Урок завершён'));
       if (!state.preview) {
@@ -339,10 +471,21 @@
         drawer.setAttribute('aria-label', 'Программа курса');
         let closing = false, mouseEntered = false, openedAt = 0;
         const closeDrawer = async () => { if (!drawer.open || closing) return; closing = true; if (!matchMedia('(prefers-reduced-motion: reduce)').matches) await drawer.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }], { duration: 180, easing: 'ease-in' }).finished; drawer.close(); closing = false; };
-        const toggle = button('Содержание ›', () => { mouseEntered = false; openedAt = performance.now(); drawer.showModal(); document.addEventListener('pointermove', trackDrawerMouse); toggle.setAttribute('aria-expanded', 'true'); }, 'cv-content-tab');
+        const toggle = button(null, () => { mouseEntered = false; openedAt = performance.now(); drawer.showModal(); document.addEventListener('pointermove', trackDrawerMouse); toggle.setAttribute('aria-expanded', 'true'); }, 'cv-content-tab');
+        toggle.append(node('span', 'Содержание'), icon('m9 5 7 7-7 7'));
         toggle.setAttribute('aria-haspopup', 'dialog'); toggle.setAttribute('aria-expanded', 'false');
         drawer.append(append(node('header'), node('h2', 'Программа курса')));
-                function trackDrawerMouse(e) {
+        if (state.courseProgress) {
+          const { completedBlocks, totalBlocks } = state.courseProgress;
+          const progress = node('progress', null, 'cv-drawer-course-progress');
+          progress.max = totalBlocks || 1;
+          progress.value = completedBlocks;
+          progress.setAttribute('aria-label', 'Прогресс по курсу');
+          progress.setAttribute('aria-valuetext', `Пройдено ${completedBlocks} из ${totalBlocks} блоков`);
+          const summary = append(node('div', null, 'cv-drawer-progress-summary'), node('span', 'Пройдено блоков'), node('strong', `${completedBlocks} / ${totalBlocks}`));
+          drawer.append(append(node('div', null, 'cv-drawer-progress'), summary, progress));
+        }
+        function trackDrawerMouse(e) {
           if (e.pointerType !== 'mouse' || !drawer.open || closing || performance.now() - openedAt < 240) return;
           const r = drawer.getBoundingClientRect();
           const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
@@ -350,19 +493,30 @@
           else if (mouseEntered) closeDrawer();
         }
         drawer.addEventListener('cancel', e => { e.preventDefault(); closeDrawer(); });
-        let moduleName, group;
+        let moduleId, group;
         state.lessons.forEach(lesson => {
-          if (!group || moduleName !== lesson.module) {
-            moduleName = lesson.module;
-            group = node('section'); group.append(node('h3', moduleName)); drawer.append(group);
+          const moduleKey = lesson.moduleId ?? lesson.module;
+          if (!group || moduleId !== moduleKey) {
+            moduleId = moduleKey;
+            group = node('section'); group.append(node('h3', lesson.module)); drawer.append(group);
           }
-          const item = button(`${lesson.completed ? '✓ ' : ''}${lesson.title}`, e => run(e.currentTarget, async () => {
+          const item = button(null, e => run(e.currentTarget, async () => {
             if (lesson.id === state.lessonId) { await closeDrawer(); return; }
             const session = await post(`/courses/${state.courseId}/lessons/${lesson.id}/sessions`);
             location.href = `/courses/sessions/${session.id}`;
           }), 'cv-drawer-lesson');
+          item.append(node('span', lesson.title, 'cv-drawer-lesson-name'));
+          if (lesson.totalBlocks != null) {
+            const meter = node('span', null, 'cv-drawer-lesson-meter');
+            meter.style.setProperty('--cv-lesson-fill', (lesson.totalBlocks ? 100 * lesson.completedBlocks / lesson.totalBlocks : 0) + '%');
+            meter.setAttribute('aria-hidden', 'true');
+            const count = node('span', `${lesson.completedBlocks}/${lesson.totalBlocks}`, 'cv-drawer-lesson-count');
+            count.setAttribute('aria-hidden', 'true');
+            item.prepend(meter);
+            item.append(count);
+            item.setAttribute('aria-label', `${lesson.title}. Пройдено ${lesson.completedBlocks} из ${lesson.totalBlocks} блоков`);
+          }
           item.disabled = !lesson.available;
-          if (lesson.completed) item.setAttribute('aria-label', `${lesson.title}, пройден`);
           if (lesson.id === state.lessonId) item.setAttribute('aria-current', 'page');
           if (!lesson.available) item.title = 'Сначала завершите предыдущие уроки';
           group.append(item);
