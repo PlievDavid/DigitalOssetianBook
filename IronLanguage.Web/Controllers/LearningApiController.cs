@@ -52,7 +52,7 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     public async Task<IActionResult> Attempt(Guid id, CancellationToken ct)
     {
         var attempt = await progress.Attempt(User.UserId()!.Value, id, ct);
-        return attempt is null ? NotFound() : Ok(new { attempt.Id, attempt.ExerciseId, attempt.StartedAt, attempt.CompletedAt, attempt.Correct, attempt.SubmittedAnswer });
+        return attempt is null || attempt.LessonRunId is not null ? NotFound() : Ok(new { attempt.Id, attempt.ExerciseId, attempt.StartedAt, attempt.CompletedAt, attempt.Correct, attempt.SubmittedAnswer });
     }
 
     [HttpPost("attempts/{id:guid}/answer")]

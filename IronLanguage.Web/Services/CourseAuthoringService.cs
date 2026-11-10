@@ -15,15 +15,21 @@ public sealed record CourseDraft(string Title, string Description, CourseDraftMo
     public bool Sequential { get; init; }
 }
 public sealed record CourseDraftModule(Guid Id, string Title, CourseDraftLesson[] Lessons);
-public sealed record CourseDraftLesson(Guid Id, string Title, CourseDraftBlock[] Blocks);
+public sealed record CourseDraftLesson(Guid Id, string Title, CourseDraftBlock[] Blocks)
+{
+    public Guid? LibraryVersionId { get; init; }
+}
 public sealed record CourseDraftBlock(Guid Id, string Kind, string Title, string Text)
 {
     public Guid? MaterialId { get; init; }
     public Exercise? PublishedExercise { get; init; }
+    public EditorMaterial? PublishedActivity { get; init; }
     public JsonElement? RichText { get; init; }
 }
+public sealed record CoursePublicationIssue(string Message, Guid? LessonId = null, Guid? BlockId = null);
 
-public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRepository? catalog = null)
+public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMaterialRepository? materials = null, ICourseLearningRepository? publications = null,
+    IEditorRepository? editor = null, ILessonLibraryRepository? library = null)
 {
     public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -62,9 +68,9 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
                 {
                     if (block is null) throw new ArgumentException("Пустой блок.");
                     Identity(block.Id, block.Title);
-                    if (block.Kind is not ("theory" or "translation" or "listening")) throw new ArgumentException("Этот тип блока ещё не поддерживается новой системой курсов.");
-                    if (block.Kind != "theory" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
-                        throw new ArgumentException("Выберите упражнение «Собери фразу».");
+                    if (block.Kind != "theory" && !EfCourseMaterialRepository.Supports(block.Kind)) throw new ArgumentException("Этот тип блока ещё не поддерживается новой системой курсов.");
+                    if (publishing && block.Kind != "theory" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
+                        throw new ArgumentException("Выберите упражнение из библиотеки.");
                     var text = CourseRichText.PlainText(block);
                     if (text is null || text.Length > 20_000 || publishing && block.Kind == "theory" && string.IsNullOrWhiteSpace(text))
                         throw new ArgumentException("Заполните текст теории (до 20 000 символов).");
@@ -73,16 +79,67 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
         }
     }
 
-    public Task<Course> Create(Guid owner, CourseDraft draft, CancellationToken ct)
+    public async Task<Course> Create(Guid owner, CourseDraft draft, CancellationToken ct)
     {
         Validate(draft, false);
-        return courses.Create(owner, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
+        await CheckLinks(draft, owner, ct);
+        await CheckMaterials(draft, owner, [], ct);
+        return await courses.Create(owner, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
     }
 
-    public Task<Course?> Save(Guid id, Guid owner, long stamp, CourseDraft draft, CancellationToken ct)
+    public async Task<Course?> Save(Guid id, Guid owner, long stamp, CourseDraft draft, CancellationToken ct)
     {
         Validate(draft, false);
-        return courses.Save(id, owner, stamp, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
+        var course = await courses.Owned(id, owner, ct);
+        if (course is null || course.DraftStamp != stamp) return null;
+        await CheckLinks(draft, owner, ct);
+        await CheckMaterials(draft, owner, await PublishedBlocks(course, ct), ct);
+        return await courses.Save(id, owner, stamp, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
+    }
+
+    public static CourseDraftLesson Include(LibraryLesson source, Guid inclusion)
+    {
+        var original = JsonSerializer.Deserialize<CourseDraftLesson>(source.LessonJson, JsonOptions)!;
+        Guid InclusionBlock(Guid block)
+        {
+            var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes($"{inclusion:D}/{block:D}"));
+            return new Guid(bytes.AsSpan(0, 16));
+        }
+        return original with { Id = inclusion, LibraryVersionId = source.Id,
+            Blocks = original.Blocks.Select(b => b with { Id = InclusionBlock(b.Id), PublishedActivity = null, PublishedExercise = null }).ToArray() };
+    }
+
+    private async Task CheckLinks(CourseDraft draft, Guid owner, CancellationToken ct)
+    {
+        var links = draft.Modules.SelectMany(m => m.Lessons).Where(l => l.LibraryVersionId.HasValue).ToArray();
+        if (links.Length == 0) return;
+        if (library is null) throw new ArgumentException("Библиотека уроков недоступна.");
+        var sources = (await library.Owned(owner, ct)).ToDictionary(x => x.Id);
+        foreach (var lesson in links)
+        {
+            if (!sources.TryGetValue(lesson.LibraryVersionId!.Value, out var source) ||
+                JsonSerializer.Serialize(Include(source, lesson.Id), JsonOptions) != JsonSerializer.Serialize(lesson, JsonOptions))
+                throw new ArgumentException($"Связанный урок «{lesson.Title}» изменён. Отделите копию или обновите его из библиотеки.");
+        }
+    }
+
+    private async Task<Dictionary<Guid, CourseDraftBlock>> PublishedBlocks(Course course, CancellationToken ct) =>
+        course.PublishedVersionId is Guid version && publications is not null && await publications.Snapshot(version, ct) is { } published
+            ? CourseLearningService.Read(published).Modules.SelectMany(m => m.Lessons).SelectMany(l => l.Blocks).ToDictionary(b => b.Id)
+            : [];
+
+    private static CourseDraftBlock? Previous(CourseDraftBlock block, Dictionary<Guid, CourseDraftBlock> published) =>
+        published.TryGetValue(block.Id, out var previous) && previous.Kind == block.Kind && previous.MaterialId == block.MaterialId ? previous : null;
+
+    private async Task CheckMaterials(CourseDraft draft, Guid owner, Dictionary<Guid, CourseDraftBlock> published, CancellationToken ct)
+    {
+        foreach (var block in draft.Modules.SelectMany(m => m.Lessons).SelectMany(l => l.Blocks))
+        {
+            if (block.Kind == "theory" || block.MaterialId is not Guid id) continue;
+            if (Previous(block, published) is not null) continue;
+            if (materials is null || !await materials.Available(owner, block.Kind, id, ct))
+                throw new ArgumentException($"Упражнение в блоке «{block.Title}» недоступно. Выберите материал из библиотеки.");
+        }
     }
 
     public async Task<CourseVersion?> Publish(Guid id, Guid owner, long stamp, bool reviewed, CancellationToken ct)
@@ -93,7 +150,47 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
         var draft = JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, JsonOptions)
             ?? throw new ArgumentException("Не удалось прочитать черновик.");
         Validate(draft, true);
+        await CheckLinks(draft, owner, ct);
+        draft = await Resolve(course, draft, ct);
+        return await courses.Publish(id, owner, stamp, JsonSerializer.Serialize(draft, JsonOptions), ct);
+    }
+
+    public async Task<CoursePublicationIssue[]> PublicationIssues(Course course, CancellationToken ct)
+    {
+        var draft = JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, JsonOptions)!;
+        var issues = new List<CoursePublicationIssue>();
+        var placeholder = new CourseDraftModule(Guid.NewGuid(), "Проверка", [new(Guid.NewGuid(), "Проверка", [new(Guid.NewGuid(), "theory", "Проверка", "Проверка")])]);
+        try { Validate(draft with { Modules = [placeholder] }, true); }
+        catch (ArgumentException error) { issues.Add(new(error.Message)); }
+        if (draft.Modules.Length == 0) issues.Add(new("Добавьте хотя бы один модуль."));
+        foreach (var module in draft.Modules)
+        {
+            if (module.Lessons.Length == 0) issues.Add(new($"Добавьте урок в модуль «{module.Title}»."));
+            foreach (var lesson in module.Lessons)
+            {
+                if (lesson.Blocks.Length == 0) issues.Add(new($"Добавьте блоки в урок «{lesson.Title}».", lesson.Id));
+                foreach (var block in lesson.Blocks)
+                {
+                    var single = draft with { Title = "Проверка", Description = "Проверка", DescriptionRichText = null,
+                        Modules = [module with { Lessons = [lesson with { Blocks = [block] }] }] };
+                    try
+                    {
+                        Validate(single, true);
+                        await Resolve(course, single, ct);
+                    }
+                    catch (ArgumentException error) { issues.Add(new(error.Message, lesson.Id, block.Id)); }
+                }
+            }
+        }
+        try { await CheckLinks(draft, course.OwnerId, ct); }
+        catch (ArgumentException error) { issues.Add(new(error.Message)); }
+        return issues.Distinct().ToArray();
+    }
+
+    public async Task<CourseDraft> Resolve(Course course, CourseDraft draft, CancellationToken ct)
+    {
         draft = WithoutSnapshots(draft);
+        var published = await PublishedBlocks(course, ct);
         var modules = new List<CourseDraftModule>();
         foreach (var module in draft.Modules)
         {
@@ -104,7 +201,21 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
                 foreach (var block in lesson.Blocks)
                 {
                     if (block.Kind == "theory") { blocks.Add(block); continue; }
-                    var exercise = catalog is null ? null : await catalog.Exercise(block.MaterialId!.Value, ct: ct);
+                    if (CoursePractice.Supports(block.Kind))
+                    {
+                        var materialId = block.MaterialId!.Value;
+                        var available = materials is not null && await materials.Available(course.OwnerId, block.Kind, materialId, ct);
+                        var activity = available && editor is not null ? await editor.Material(block.Kind, materialId, ct) : null;
+                        if (activity is null && materials is not null && (await materials.Access(block.Kind, materialId, ct))?.Blocked != true)
+                            activity = Previous(block, published)?.PublishedActivity;
+                        if (activity is not { Published: true })
+                            throw new ArgumentException($"В уроке «{lesson.Title}» выберите доступное опубликованное упражнение.");
+                        blocks.Add(block with { PublishedActivity = activity });
+                        continue;
+                    }
+                    var exercise = materials is null ? null : await materials.Exercise(course.OwnerId, block.Kind, block.MaterialId!.Value, ct);
+                    if (exercise is null && materials is not null && (await materials.Access(block.Kind, block.MaterialId!.Value, ct))?.Blocked != true)
+                        exercise = Previous(block, published)?.PublishedExercise;
                     if (exercise is null || exercise.Kind != block.Kind)
                         throw new ArgumentException($"В уроке «{lesson.Title}» выберите доступное опубликованное упражнение.");
                     blocks.Add(block with { PublishedExercise = exercise });
@@ -113,10 +224,39 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICatalogRe
             }
             modules.Add(module with { Lessons = lessons.ToArray() });
         }
-        return await courses.Publish(id, owner, stamp, JsonSerializer.Serialize(draft with { Modules = modules.ToArray() }, JsonOptions), ct);
+        return draft with { Modules = modules.ToArray() };
+    }
+
+    public Task<Course?> Restore(Guid id, Guid owner, long stamp, CourseVersion version, CancellationToken ct) =>
+        courses.Save(id, owner, stamp, JsonSerializer.Serialize(WithoutSnapshots(CourseLearningService.Read(version)), JsonOptions), ct);
+
+    public static object VersionSummary(CourseVersion version, CourseVersion? previous)
+    {
+        static Dictionary<Guid, string> Elements(CourseDraft draft)
+        {
+            var elements = new Dictionary<Guid, string>();
+            foreach (var module in draft.Modules)
+            {
+                elements.Add(module.Id, module.Title);
+                foreach (var lesson in module.Lessons)
+                {
+                    elements.Add(lesson.Id, lesson.Title);
+                    foreach (var block in lesson.Blocks) elements.Add(block.Id, JsonSerializer.Serialize(block, JsonOptions));
+                }
+            }
+            return elements;
+        }
+        var draft = CourseLearningService.Read(version);
+        var current = Elements(draft);
+        var before = previous is null ? new Dictionary<Guid, string>() : Elements(CourseLearningService.Read(previous));
+        return new { version.Id, version.Number, version.PublishedAt, draft.Title,
+            added = current.Keys.Except(before.Keys).Count(),
+            removed = before.Keys.Except(current.Keys).Count(),
+            changed = current.Count(x => before.TryGetValue(x.Key, out var value) && value != x.Value),
+            lessons = draft.Modules.SelectMany(m => m.Lessons).Select(l => new { l.Id, l.Title }) };
     }
 
     private static CourseDraft WithoutSnapshots(CourseDraft draft) => draft with { Description = CourseRichText.PlainText(new CourseDraftBlock(Guid.Empty, "theory", "", draft.Description) { RichText = draft.DescriptionRichText }), Modules = draft.Modules.Select(m => m with {
-        Lessons = m.Lessons.Select(l => l with { Blocks = l.Blocks.Select(b => b with { PublishedExercise = null, Text = CourseRichText.PlainText(b) }).ToArray() }).ToArray()
+        Lessons = m.Lessons.Select(l => l with { Blocks = l.Blocks.Select(b => b with { PublishedExercise = null, PublishedActivity = null, Text = CourseRichText.PlainText(b) }).ToArray() }).ToArray()
     }).ToArray() };
 }

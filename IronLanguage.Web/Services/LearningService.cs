@@ -81,10 +81,10 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         return steps;
     }
 
-    public async Task<AnswerResult?> Answer(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct)
+    public async Task<AnswerResult?> Answer(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct, bool withinLesson = false)
     {
         var attempt = await progress.Attempt(userId, attemptId, ct);
-        if (attempt is null) return null;
+        if (attempt is null || !withinLesson && attempt.LessonRunId is not null) return null;
         if (attempt.CompletedAt is not null)
             return new AnswerResult(attempt.Correct ?? false, attempt.ExpectedAnswer, attempt.Explanation, true);
         var tokens = ParseTokens(attempt.TokensJson);
@@ -116,7 +116,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         return (card, attempt);
     }
 
-    public async Task<AnswerResult?> AnswerGuest(Guid owner, Guid attemptId, int[] tokenIndices, CancellationToken ct)
+    public async Task<AnswerResult?> AnswerGuest(Guid owner, Guid attemptId, int[] tokenIndices, CancellationToken ct, bool withinLesson = false)
     {
         var entry = guests.Find<ExerciseAttempt>(owner, attemptId);
         if (entry is null) return null;
@@ -124,6 +124,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         try
         {
             var attempt = entry.Value;
+            if (!withinLesson && attempt.LessonRunId is not null) return null;
             if (attempt.CompletedAt is not null)
                 return new AnswerResult(attempt.Correct ?? false, attempt.ExpectedAnswer, attempt.Explanation, true);
             var tokens = ParseTokens(attempt.TokensJson);
@@ -152,7 +153,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
     public async Task<bool?> SaveDraft(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct)
     {
         var attempt = await progress.Attempt(userId, attemptId, ct);
-        if (attempt is null) return null;
+        if (attempt is null || attempt.LessonRunId is not null) return null;
         if (attempt.CompletedAt is not null) return false;
         var length = ParseTokens(attempt.TokensJson).Length;
         if (tokenIndices.Length > length || tokenIndices.Distinct().Count() != tokenIndices.Length || tokenIndices.Any(i => i < 0 || i >= length))

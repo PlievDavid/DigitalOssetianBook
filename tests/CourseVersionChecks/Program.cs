@@ -1,5 +1,6 @@
 using IronLanguage.Db;
 using IronLanguage.Web.Services;
+using IronLanguage.Web.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Diagnostics;
@@ -117,14 +118,35 @@ try
     await db.CourseLessonSessions.Where(s => s.Id == unordered.Id).ExecuteDeleteAsync(ct);
     var audioExercise = new Exercise { Kind = "listening", Published = true, RussianPrompt = "Тестовый вопрос", AudioPath = "/media/test.mp3", OptionsJson = "[\"Вариант 1\",\"Вариант 2\",\"Вариант 3\",\"Вариант 4\"]", CorrectOption = 2 };
     db.Exercises.Add(audioExercise); await db.SaveChangesAsync(ct);
+    db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = audioExercise.Kind, MaterialId = audioExercise.Id, OwnerId = owner.Id });
+    await db.SaveChangesAsync(ct);
     var audioBlock = new CourseDraftBlock(Guid.NewGuid(), "listening", "Аудирование", "") { MaterialId = audioExercise.Id };
     var audioLesson = new CourseDraftLesson(Guid.NewGuid(), "Урок", [audioBlock]);
-    var audioAuthor = new CourseAuthoringService(repo, catalog);
+    var materialAccess = new EfCourseMaterialRepository(db);
+    Check(await catalog.Exercise(audioExercise.Id, ct: ct) is null, "Личное упражнение доступно в общем каталоге");
+    Check(!await materialAccess.CanReadMedia("/media/test.mp3", null, ct), "Аудио личного материала выдаётся напрямую");
+    Check(await materialAccess.CanReadMedia("/media/test.mp3", owner.Id, ct), "Автор не может прослушать свой материал");
+    Check((await materialAccess.Search(owner.Id, "listening", "вопрос", true, 1, ct)).Items.Single().Id == audioExercise.Id, "Свое упражнение не найдено");
+    Check((await materialAccess.Search(other.Id, "listening", null, false, 1, ct)).Items.Length == 0, "Другой преподаватель видит личное упражнение");
+    Check(!await materialAccess.Configure(other.Id, "listening", audioExercise.Id, true, true, ct), "Чужой преподаватель поменял права");
+    var audioAuthor = new CourseAuthoringService(repo, materialAccess, lessons);
     var audioCourse = await audioAuthor.Create(owner.Id, new CourseDraft("Проверка аудирования", "Описание", [new(Guid.NewGuid(), "Модуль", [audioLesson])]), ct);
     await audioAuthor.Publish(audioCourse.Id, owner.Id, audioCourse.DraftStamp, true, ct);
+    var borrowedDraft = CourseLearningService.Read((await lessons.Version(audioCourse.Id, null, ct))!);
+    await materialAccess.Configure(owner.Id, "listening", audioExercise.Id, false, true, ct);
+    var borrowed = await audioAuthor.Create(other.Id, borrowedDraft, ct);
+    Check(await audioAuthor.Publish(borrowed.Id, other.Id, 0, true, ct) is not null, "Разрешённое упражнение не опубликовано");
+    await materialAccess.Configure(owner.Id, "listening", audioExercise.Id, false, false, ct);
+    await audioAuthor.Save(borrowed.Id, other.Id, 0, borrowedDraft with { Title = "Изменено описание курса" }, ct);
+    Check(await audioAuthor.Publish(borrowed.Id, other.Id, 1, true, ct) is not null, "Отзыв уничтожил опубликованное включение");
+    var newInclusionRejected = false;
+    try { await audioAuthor.Create(other.Id, borrowedDraft, ct); }
+    catch (ArgumentException) { newInclusionRejected = true; }
+    Check(newInclusionRejected, "Отозванный материал добавлен в новый курс");
     var audioSession = (await runner.Start(audioCourse.Id, audioLesson.Id, learner.Id, Guid.NewGuid(), ct))!;
     Check(!await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Аудирование зачтено без ответа");
     var failedAttempt = JsonSerializer.Deserialize<Guid?[]>(audioSession.AttemptIdsJson)![0]!.Value;
+    Check(await learning.Answer(learner.Id, failedAttempt, [2], ct) is null, "Упражнение курса доступно через общий API ответов");
     Check(!(await runner.Answer(audioSession.Id, audioBlock.Id, [0], learner.Id, Guid.Empty, ct))!.Correct, "Неверный ответ принят");
     Check(!await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Неверный ответ завершил блок");
     Check(!await runner.Retry(audioSession.Id, audioBlock.Id, failedAttempt, other.Id, Guid.Empty, ct), "Чужая попытка заменена");
@@ -146,6 +168,68 @@ try
     Check(!await runner.Advance(guestAudio.Id, audioBlock.Id, null, guestOwner, ct), "Гостю зачтён неверный ответ");
     Check(await runner.Retry(guestAudio.Id, audioBlock.Id, guestAttempt, null, guestOwner, ct), "Гостевая повторная попытка недоступна");
     Check((await runner.Answer(guestAudio.Id, audioBlock.Id, [2], null, guestOwner, ct))!.Correct && await runner.Advance(guestAudio.Id, audioBlock.Id, null, guestOwner, ct), "Гость не завершил повторную попытку");
+    var materialEditor = new EfEditorRepository(db);
+    var kinds = new (string Kind, object Payload)[]
+    {
+        ("audio", new ExerciseMaterial("audio", "Проверка", "Ӕ ӕ", ["Ӕ", "ӕ"], [], "", [], "/media/test.mp3", [["А", "Б"], ["В", "Г"]])),
+        ("matching", new MatchingMaterial("Пары", [new("А", "Б"), new("В", "Г")], [], [])),
+        ("picture", new PictureMaterial("Картинка", "/media/test.png", "Ӕ", "free", [], [])),
+        ("grammar", new GrammarMaterial("Форма", "А ___", "___", "ӕ", "Правило", ["А", "Б"], [])),
+        ("dialogue", new DialogueMaterial("Диалог", "iron", 1, [new("npc", "Собеседник", "#203F34")],
+            [new(1, "npc", "Ӕ"), new(2, "student", "")], [new(2, "choice", ["ӕ"], ["ӕ", "Б"], 2, false)]))
+    };
+    var practiceBlocks = new List<CourseDraftBlock>();
+    foreach (var (kind, payload) in kinds)
+    {
+        var material = await materialEditor.Create(kind, JsonSerializer.Serialize(payload, CourseAuthoringService.JsonOptions), ct, owner.Id);
+        Check(await materialEditor.PublishDraft(kind, material, owner.Id, ct), "Не опубликована тестовая версия " + kind);
+        practiceBlocks.Add(new(Guid.NewGuid(), kind, kind, "") { MaterialId = material });
+    }
+    var practiceAuthor = new CourseAuthoringService(repo, materialAccess, lessons, materialEditor, new EfLessonLibraryRepository(db));
+    var practiceLesson = lesson with { Id = Guid.NewGuid(), Blocks = practiceBlocks.ToArray() };
+    var practiceCourse = await practiceAuthor.Create(owner.Id, draft with { Modules = [module with { Lessons = [practiceLesson] }] }, ct);
+    Check(await practiceAuthor.Publish(practiceCourse.Id, owner.Id, 0, true, ct) is not null, "Новые типы не опубликованы в курсе");
+    var practiceSession = (await runner.Start(practiceCourse.Id, practiceLesson.Id, learner.Id, guestOwner, ct))!;
+    foreach (var exercise in practiceBlocks)
+    {
+        Check(!await runner.Advance(practiceSession.Id, exercise.Id, learner.Id, guestOwner, ct), "Блок зачтён без ответа: " + exercise.Kind);
+        var exerciseState = JsonSerializer.SerializeToElement(await runner.State(practiceSession.Id, learner.Id, guestOwner, ct, exercise.Id), CourseAuthoringService.JsonOptions).GetProperty("block");
+        if (exercise.Kind == "audio")
+        {
+            var deck = exerciseState.GetProperty("card").GetProperty("tokens").EnumerateArray().Select(x => x.GetString()).ToArray();
+            Check((await runner.Answer(practiceSession.Id, exercise.Id, [Array.IndexOf(deck, "Ӕ"), Array.IndexOf(deck, "ӕ")], learner.Id, guestOwner, ct))!.Correct, "Аудиопазл не проверен");
+        }
+        else
+        {
+            var board = exerciseState.GetProperty("practice").GetProperty("board");
+            var input = new CoursePracticeInput(exercise.Id, 0, null, null, null);
+            if (exercise.Kind == "matching")
+            {
+                int Right(string word) => board.GetProperty("right").EnumerateArray().Single(x => x.GetProperty("text").GetString() == word).GetProperty("index").GetInt32();
+                await runner.PracticeAnswer(practiceSession.Id, input with { Pair = new(0, Right("Б")) }, learner.Id, guestOwner, ct);
+                Check(!await runner.Advance(practiceSession.Id, exercise.Id, learner.Id, guestOwner, ct), "Одна пара завершила соотнесение");
+                input = input with { Revision = 1, Pair = new(1, Right("Г")) };
+            }
+            else if (exercise.Kind == "picture") input = input with { Choice = new(null, "Ӕ") };
+            else if (exercise.Kind == "grammar")
+            {
+                var answerOptions = board.GetProperty("options").EnumerateArray().Select(x => x.GetString()).ToArray();
+                input = input with { Choice = new(Array.IndexOf(answerOptions, "ӕ"), null) };
+            }
+            else input = input with { Dialogue = new DialogueAnswerInput(2, "ӕ", false) };
+            Check(await runner.PracticeAnswer(practiceSession.Id, input, other.Id, guestOwner, ct) is null, "Чужое упражнение приняло ответ");
+            await runner.PracticeAnswer(practiceSession.Id, input, learner.Id, guestOwner, ct);
+        }
+        Check(await runner.Advance(practiceSession.Id, exercise.Id, learner.Id, guestOwner, ct), "Успешный ответ не зачёл " + exercise.Kind);
+    }
+    var analytics = new CourseAnalytics(repo, lessons);
+    Check(await analytics.Report(practiceCourse.Id, other.Id, null, 30, 1, ct) is null, "Чужой автор видит отчёт");
+    Check(await analytics.Report(practiceCourse.Id, owner.Id, learner.Id, 30, 1, ct) is not null, "Автор не видит результат ученика");
+    var administration = new EfCourseAdministrationRepository(db);
+    Check(await administration.ChangeCourse(owner.Id, practiceCourse.Id, true, "Проверка блокировки", ct), "Курс не заблокирован");
+    Check(await lessons.Version(practiceCourse.Id, learner.Id, ct) is null, "Записанный ученик видит заблокированный курс");
+    Check(!await runner.Advance(practiceSession.Id, practiceBlocks[0].Id, learner.Id, guestOwner, ct), "Старая ссылка обошла блокировку курса");
+    Check(await administration.ChangeCourse(owner.Id, practiceCourse.Id, false, "Проверка разблокировки", ct), "Курс не разблокирован");
     var session = (await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!;
     Check(session.VersionId == second.Id, "Урок не обновился до опубликованной версии");
     Check((await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!.Id == session.Id, "Повтор запуска создал сессию");
@@ -220,6 +304,7 @@ try
                 TokensJson = JsonSerializer.Serialize(tokens), OssetianAnswer = string.Join(' ', tokens) };
         }
         phrase.Id = Guid.NewGuid(); phrase.WordIdsJson = "[]"; db.Exercises.Add(phrase);
+        db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = phrase.Kind, MaterialId = phrase.Id, OwnerId = owner.Id });
         var password = "aA1!" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
         foreach (var u in new[] { owner, other, learner })
         {

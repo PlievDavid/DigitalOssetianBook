@@ -7,6 +7,7 @@ public sealed class Course
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid OwnerId { get; set; }
     public bool Archived { get; set; }
+    public string? BlockReason { get; set; }
     public Guid? PublishedVersionId { get; set; }
     public long DraftStamp { get; set; }
     public string DraftJson { get; set; } = "{}";
@@ -40,6 +41,7 @@ public interface ICourseRepository
     Task<CourseVersion?> Publish(Guid id, Guid owner, long stamp, string snapshot, CancellationToken ct);
     Task<CourseEnrollment?> Enroll(Guid id, Guid user, CancellationToken ct);
     Task<CourseVersion?> ForLearner(Guid id, Guid user, CancellationToken ct);
+    Task<CourseVersion[]> History(Guid id, Guid owner, CancellationToken ct);
 }
 
 public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
@@ -58,6 +60,10 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
     public Task<Course?> Owned(Guid id, Guid owner, CancellationToken ct) =>
         db.Courses.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.OwnerId == owner, ct);
 
+    public Task<CourseVersion[]> History(Guid id, Guid owner, CancellationToken ct) =>
+        db.CourseVersions.AsNoTracking().Where(v => v.CourseId == id && db.Courses.Any(c => c.Id == id && c.OwnerId == owner))
+            .OrderByDescending(v => v.Number).ToArrayAsync(ct);
+
     public async Task<Course?> Save(Guid id, Guid owner, long stamp, string draft, CancellationToken ct)
     {
         var changed = await db.Courses.Where(x => x.Id == id && x.OwnerId == owner && x.DraftStamp == stamp)
@@ -71,7 +77,7 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await Lock(id, ct);
         var course = await Owned(id, owner, ct);
-        if (course is null || course.DraftStamp != stamp || course.Archived) return null;
+        if (course is null || course.DraftStamp != stamp || course.Archived || course.BlockReason != null) return null;
         var existing = await db.CourseVersions.AsNoTracking().SingleOrDefaultAsync(
             x => x.CourseId == id && x.SourceDraftStamp == stamp, ct);
         if (existing is not null) return existing;
@@ -80,7 +86,7 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
         db.CourseVersions.Add(version);
         await db.SaveChangesAsync(ct);
         // A concurrent save must not publish data validated against an older draft.
-        var changed = await db.Courses.Where(x => x.Id == id && x.OwnerId == owner && x.DraftStamp == stamp && !x.Archived)
+        var changed = await db.Courses.Where(x => x.Id == id && x.OwnerId == owner && x.DraftStamp == stamp && !x.Archived && x.BlockReason == null)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.PublishedVersionId, version.Id), ct);
         if (changed != 1) return null;
         await tx.CommitAsync(ct);
@@ -91,10 +97,11 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await Lock(id, ct);
+        var course = await db.Courses.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.BlockReason == null, ct);
+        if (course is null) return null;
         var existing = await db.CourseEnrollments.AsNoTracking().SingleOrDefaultAsync(x => x.CourseId == id && x.UserId == user, ct);
         if (existing is not null) return existing;
-        var course = await db.Courses.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && !x.Archived, ct);
-        if (course?.PublishedVersionId is not Guid versionId) return null;
+        if (course.Archived || course.PublishedVersionId is not Guid versionId) return null;
         var enrollment = new CourseEnrollment { CourseId = id, UserId = user, VersionId = versionId };
         db.CourseEnrollments.Add(enrollment);
         await db.SaveChangesAsync(ct);

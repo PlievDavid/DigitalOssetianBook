@@ -13,7 +13,7 @@
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="admin-navigation">Разделы панели</button>
     <nav id="admin-navigation" aria-label="Администрирование">
     @{ var path = Context.Request.Path.Value ?? ""; }
-    @foreach (var item in new[] { ("/admin", "Обзор"), ("/admin/users", "Пользователи"), ("/admin/materials", "Материалы"), ("/admin/audit", "Журнал действий") })
+    @foreach (var item in new[] { ("/admin", "Обзор"), ("/admin/users", "Пользователи"), ("/admin/courses", "Курсы"), ("/admin/materials", "Материалы"), ("/admin/audit", "Журнал действий") })
     {
         var active = item.Item1 == "/admin" ? path == "/admin" || path == "/admin/" : path.StartsWith(item.Item1);
         <a href="@item.Item1" aria-current="@(active ? "page" : null)">@item.Item2</a>

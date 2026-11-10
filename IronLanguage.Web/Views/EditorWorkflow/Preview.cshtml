@@ -1,3 +1,4 @@
+@using IronLanguage.Db
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
     var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", _ => "Произведение" };
@@ -195,6 +196,19 @@
                 <form method="post" action="/editor/published/@Model.Kind/@Model.ContentId/revise">@Html.AntiForgeryToken()<button class="button primary" type="submit">Создать новую версию</button></form>
             }
         </div>
+    }
+    @if (Model.Published && !Model.Historical && ViewData["MaterialAccess"] is CourseMaterialAccess access)
+    {
+        <section>
+            <h2>Доступ к упражнению</h2>
+            <form method="post" action="/editor/published/@Model.Kind/@Model.ContentId/access">
+                @Html.AntiForgeryToken()
+                <label><input type="checkbox" name="inCatalog" value="true" checked="@access.InCatalog" /> Показывать в общем разделе упражнений</label>
+                <label><input type="checkbox" name="shared" value="true" checked="@access.Shared" /> Разрешить другим преподавателям добавлять в свои курсы</label>
+                <p>При отзыве разрешения ранее опубликованные включения сохраняются.</p>
+                <button class="button primary" type="submit">Сохранить доступ</button>
+            </form>
+        </section>
     }
     @if (Model.History.Count > 0)
     {

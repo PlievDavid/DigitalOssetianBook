@@ -156,3 +156,8 @@
 .cs-crop-dialog input { width:100%; accent-color:var(--theme-green); }
 .cs-crop-dialog .button { border-radius:24px; }
 .cs-crop-dialog :focus-visible { outline:2px solid var(--theme-green); outline-offset:3px; }
+.cs-material-results { display: grid; gap: .75rem; margin-block: .75rem; }
+.cs-material-item { min-width: 0; padding: .85rem; border: 1px solid var(--line, #dce4df); border-radius: .75rem; overflow-wrap: anywhere; }
+.cs-material-item details { margin-block: .5rem; }
+.cs-material-item img, .cs-material-item audio { max-width: 100%; }
+.cs-dialog .cs-action[aria-pressed="true"] { background: var(--course-tonal, #edf2e7); }

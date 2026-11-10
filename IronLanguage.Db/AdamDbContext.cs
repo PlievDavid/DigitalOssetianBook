@@ -34,6 +34,9 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
     public DbSet<CourseVersion> CourseVersions => Set<CourseVersion>();
     public DbSet<CourseEnrollment> CourseEnrollments => Set<CourseEnrollment>();
     public DbSet<CourseLessonSession> CourseLessonSessions => Set<CourseLessonSession>();
+    public DbSet<CourseMaterialAccess> CourseMaterialAccesses => Set<CourseMaterialAccess>();
+    public DbSet<CoursePracticeRun> CoursePracticeRuns => Set<CoursePracticeRun>();
+    public DbSet<CourseBlockActivity> CourseBlockActivities => Set<CourseBlockActivity>();
 
     public DbSet<AdminAudit> AdminAudits => Set<AdminAudit>();
     public DbSet<DailyMetric> DailyMetrics => Set<DailyMetric>();
@@ -42,6 +45,12 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
     protected override void OnModelCreating(ModelBuilder model)
     {
         base.OnModelCreating(model);
+        model.Entity<CourseMaterialAccess>().HasKey(x => new { x.Kind, x.MaterialId });
+        model.Entity<CoursePracticeRun>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<CourseBlockActivity>().HasKey(x => new { x.UserId, x.VersionId, x.BlockId, x.Key });
+        model.Entity<CourseBlockActivity>().HasIndex(x => new { x.CourseId, x.At });
+        model.Entity<CourseBlockActivity>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<CourseMaterialAccess>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<LibraryLesson>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<LibraryLesson>().HasIndex(x => new { x.OwnerId, x.SourceCourseId, x.SourceLessonId, x.SourceStamp }).IsUnique();
         model.Entity<CourseLessonSession>().HasIndex(x => new { x.UserId, x.VersionId, x.LessonId }).IsUnique().HasFilter("\"CompletedAt\" IS NULL");

@@ -8,7 +8,7 @@ namespace IronLanguage.Web.Controllers;
 [ApiController, Authorize(Roles = "Editor"), AutoValidateAntiforgeryToken]
 [Route("api/v1/author/courses")]
 [RequestSizeLimit(1_000_000)]
-public sealed class CoursesAuthoringApiController(ICourseRepository courses, CourseAuthoringService authoring) : ControllerBase
+public sealed class CoursesAuthoringApiController(ICourseRepository courses, CourseAuthoringService authoring, ICourseLearningRepository publications, CourseAnalytics analytics) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create(CourseDraft draft, CancellationToken ct)
@@ -39,6 +39,41 @@ public sealed class CoursesAuthoringApiController(ICourseRepository courses, Cou
     }
 
     public sealed record PublishInput(long Stamp, bool Reviewed);
+    [HttpGet("{id:guid}/publication-issues")]
+    public async Task<IActionResult> PublicationIssues(Guid id, CancellationToken ct)
+    {
+        if (await courses.Owned(id, User.UserId()!.Value, ct) is not { } course) return NotFound();
+        return Ok(await authoring.PublicationIssues(course, ct));
+    }
+    public sealed record RestoreInput(long Stamp);
+
+    [HttpGet("{id:guid}/analytics")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Analytics(Guid id, CancellationToken ct, Guid? learner = null, int days = 30, int page = 1)
+    {
+        if (days is < 1 or > 365 || page is < 1 or > 10_000) return BadRequest();
+        return await analytics.Report(id, User.UserId()!.Value, learner, days, page, ct) is { } report ? Ok(report) : NotFound();
+    }
+
+    [HttpGet("{id:guid}/versions")]
+    public async Task<IActionResult> Versions(Guid id, CancellationToken ct)
+    {
+        var owner = User.UserId()!.Value;
+        if (await courses.Owned(id, owner, ct) is null) return NotFound();
+        var versions = await courses.History(id, owner, ct);
+        var names = await publications.AuthorNames([id], ct);
+        return Ok(new { author = names.GetValueOrDefault(id, "Автор курса"),
+            versions = versions.Select((v, i) => CourseAuthoringService.VersionSummary(v, versions.ElementAtOrDefault(i + 1))) });
+    }
+
+    [HttpPost("{id:guid}/versions/{version:guid}/restore")]
+    public async Task<IActionResult> Restore(Guid id, Guid version, RestoreInput input, CancellationToken ct)
+    {
+        var owner = User.UserId()!.Value;
+        if (await courses.Owned(id, owner, ct) is null || await publications.Snapshot(version, ct) is not { } snapshot || snapshot.CourseId != id) return NotFound();
+        return await authoring.Restore(id, owner, input.Stamp, snapshot, ct) is { } course
+            ? Ok(course) : Conflict(new { error = "Черновик изменился. Загрузите актуальную версию." });
+    }
     [HttpPost("{id:guid}/publish")]
     public async Task<IActionResult> Publish(Guid id, PublishInput input, CancellationToken ct)
     {

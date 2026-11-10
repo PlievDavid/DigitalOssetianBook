@@ -4,14 +4,47 @@ using IronLanguage.Web.Models;
 using IronLanguage.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), Route("editor")]
-public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment, ICurriculumRepository curriculum) : Controller
+public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment, ICurriculumRepository curriculum, ICourseMaterialRepository materials) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "grammar", "book", "dialogue", "matching", "picture"];
+
+    public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        if (context.ActionArguments.TryGetValue("id", out var argument) && argument is Guid id)
+        {
+            context.ActionArguments.TryGetValue("kind", out var kindArgument);
+            var kind = kindArgument as string;
+            if (kind is null && await editor.Revision(id, HttpContext.RequestAborted) is { } revision)
+            {
+                kind = revision.Kind;
+                id = revision.ContentId;
+            }
+            if (kind is not null && EfCourseMaterialRepository.Supports(kind))
+            {
+                var access = await materials.Access(kind, id, HttpContext.RequestAborted);
+                if (access?.OwnerId != User.UserId() && !(access?.OwnerId is null && User.IsInRole("Admin")))
+                {
+                    context.Result = NotFound();
+                    return;
+                }
+                ViewData["MaterialAccess"] = access;
+            }
+        }
+        await next();
+    }
+
+    [HttpPost("published/{kind}/{id:guid}/access"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfigureAccess(string kind, Guid id, bool inCatalog, bool shared, CancellationToken ct)
+    {
+        if (!await materials.Configure(User.UserId()!.Value, kind, id, inCatalog, shared, ct)) return NotFound();
+        return Redirect($"/editor/{kind}/{id}/preview");
+    }
 
     [HttpGet("new/{kind}")]
     public async Task<IActionResult> New(string kind, Guid? lessonId, CancellationToken ct)
@@ -33,7 +66,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.Kind = kind;
         var payload = await BuildPayload(model, null, null, ct);
         if (payload is null) return View("Form", model);
-        var id = await editor.Create(kind, payload, ct);
+        var id = await editor.Create(kind, payload, ct, User.UserId());
         return Redirect($"/editor/{kind}/{id}/preview{LessonQuery(lessonId)}");
     }
 

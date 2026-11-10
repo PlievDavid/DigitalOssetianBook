@@ -64,6 +64,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.getByRole('button', { name: 'Готово', exact: true }).click();
     await page.getByRole('button', { name: 'Добавить блок', exact: true }).click();
     await page.locator('dialog').getByRole('button', { name: /Собери фразу/ }).click();
+    await page.getByRole('dialog', { name: 'Библиотека упражнений' }).getByRole('button', { name: 'Добавить', exact: true }).click();
     await page.getByRole('button', { name: 'Готово', exact: true }).click();
     await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
     // Context actions target the clicked lesson, including when another lesson is selected.
@@ -100,7 +101,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check(await page.locator('.cs-touch-menu:visible').count() === 0, 'На компьютере остались кнопки меню строк');
     await page.locator('.cs-lesson').first().click({ button: 'right' });
     await page.getByRole('menuitem', { name: 'Сохранить в библиотеку', exact: true }).click();
-    await page.getByText('Урок сохранён в библиотеке преподавания. Его можно добавить в другой курс.', { exact: true }).waitFor();
+    await page.getByText('Версия урока сохранена. Обновления можно применить в библиотеке преподавания.', { exact: true }).waitFor();
     const library = (await api(page, '/author/lesson-library')).data;
     check(library.length === 1 && library[0].lesson.blocks.length === 2, 'Библиотека не сохранила урок');
     await api(page, `/author/courses/${id}/lessons/${lesson.id}/library`, 'POST', { stamp: saved.draftStamp });
@@ -108,7 +109,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const second = (await api(page, '/author/courses', 'POST', { title: 'Другой курс', description: '', modules: [{ id: require('node:crypto').randomUUID(), title: 'Модуль', lessons: [] }] })).data;
     await page.goto(base + '/author/courses/' + second.id);
     await page.getByRole('button', { name: 'Из библиотеки', exact: true }).click();
-    await page.locator('dialog').getByRole('button', { name: 'Первый урок · 2 блоков', exact: true }).click();
+    await page.locator('dialog').getByRole('button', { name: 'Независимая копия', exact: true }).click();
     await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
     await page.getByText('Все изменения сохранены', { exact: true }).waitFor();
     const reused = JSON.parse((await api(page, '/author/courses/' + second.id)).data.draftJson).modules[0].lessons[0];
@@ -215,6 +216,40 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check((await api(page, '/author/courses/' + id + '/draft', 'PATCH', { stamp: stale.draftStamp, draft })).status === 409, 'Устаревшая вкладка перезаписала данные');
     check((await api(page, '/author/courses/' + id + '/publish', 'POST', { stamp: changed.data.draftStamp, reviewed: true })).status === 200, 'Новая публикация');
     check((await api(student, '/courses/' + id)).data.title === 'Новая публикация', 'Программа ученика не обновилась');
+    const versions = (await api(page, `/author/courses/${id}/versions`)).data.versions;
+    check(versions.length === 2 && versions[0].title === 'Новая публикация', 'Не видна история публикаций');
+    const historic = await api(page, `/author/courses/${id}/preview/${lesson.id}?version=${versions[1].id}`, 'POST', {});
+    check(historic.status === 200 && (await api(page, `/course-sessions/${historic.data.id}`)).data.preview, 'Исторический предпросмотр не открылся');
+    check((await api(page, `/author/courses/${id}/versions/${versions[1].id}/restore`, 'POST', { stamp: changed.data.draftStamp })).status === 200, 'Версия не восстановлена');
+    check((await api(student, '/courses/' + id)).data.title === 'Новая публикация', 'Восстановление изменило публикацию');
+    const restored = (await api(page, `/author/courses/${id}`)).data;
+    const linkedVersion = (await api(page, `/author/courses/${id}/lessons/${lesson.id}/library`, 'POST', { stamp: restored.draftStamp })).data;
+    const linkedCourses = [];
+    for (let i = 0; i < 2; i++) {
+      const inclusion = (await api(page, `/author/lesson-library/${library[0].id}/inclusion`)).data;
+      const response = await api(page, '/author/courses', 'POST', { title: 'Связанный курс ' + i, description: 'Проверка', modules: [
+        { id: require('node:crypto').randomUUID(), title: 'Модуль', lessons: [inclusion] }
+      ] });
+      check(response.status === 201, 'Связанный урок не сохранён');
+      linkedCourses.push(response.data);
+    }
+    const changes = await api(page, `/author/lesson-library/${linkedVersion.id}/update`, 'POST', { courses: [{ courseId: linkedCourses[0].id, stamp: 0 }] });
+    check(changes.status === 200 && changes.data[0].saved, 'Связанный черновик не обновился');
+    const included = async course => JSON.parse((await api(page, `/author/courses/${course.id}`)).data.draftJson).modules[0].lessons[0];
+    const firstLink = await included(linkedCourses[0]); const secondLink = await included(linkedCourses[1]);
+    check(firstLink.libraryVersionId === linkedVersion.id && secondLink.libraryVersionId === library[0].id && firstLink.blocks[0].id !== secondLink.blocks[0].id, 'Обновились чужие включения или совпали ID блоков');
+    check((await api(student, `/author/courses/${id}/analytics`)).status === 403, 'Ученик видит отчёт автора');
+    await page.goto(base + `/author/courses/${id}/analytics`);
+    await page.getByRole('heading', { name: 'Результаты учеников', exact: true }).waitFor();
+    await page.locator('.cv-report-student a').first().waitFor();
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Отчёт переполняет экран шириной ' + width);
+    }
+    await page.screenshot({ path: path.join(out, 'analytics-wide.png'), fullPage: true });
+    await page.locator('.cv-report-student a').first().focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('link', { name: '← Результаты курса', exact: true }).waitFor();
     await guestPage.goto(base + '/courses/' + id); await guestPage.getByRole('heading', { name: 'Новая публикация' }).waitFor();
     await guestPage.getByRole('button', { name: 'Начать курс', exact: true }).click(); await guestPage.waitForURL(/courses\/sessions\//);
     await guestPage.getByRole('button', { name: 'Продолжить', exact: true }).click(); await guestPage.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();

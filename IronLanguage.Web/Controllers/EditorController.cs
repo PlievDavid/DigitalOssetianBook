@@ -8,10 +8,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), Route("editor")]
-public sealed class EditorController(ICatalogRepository catalog, IEditorRepository editor, IWebHostEnvironment environment, ICurriculumRepository curriculum) : Controller
+public sealed class EditorController(ICatalogRepository catalog, IEditorRepository editor, IWebHostEnvironment environment, ICurriculumRepository curriculum, ICourseMaterialRepository materials) : Controller
 {
     [HttpGet("")]
-    public async Task<IActionResult> Index(CancellationToken ct) => View(new EditorIndexModel(await editor.Items(ct)));
+    public async Task<IActionResult> Index(CancellationToken ct)
+    {
+        var items = await editor.Items(ct);
+        var owned = await materials.Editable(User.UserId()!.Value, ct);
+        return View(new EditorIndexModel(items.Where(x => !EfCourseMaterialRepository.Supports(x.Kind) || owned.Contains(x.Id)).ToList()));
+    }
 
     [HttpPost("exercise"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
     public async Task<IActionResult> Exercise(string kind, string russianPrompt, string ossetianAnswer, string tokens, string? alternatives, string? explanation, string? wordIds, IFormFile? audio, CancellationToken ct)
@@ -27,7 +32,7 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
         var audioPath = audio is null ? null : await SaveAudio(audio, ct);
         await catalog.AddExercise(new Exercise { Kind = kind, RussianPrompt = russianPrompt.Trim(), OssetianAnswer = ossetianAnswer.Trim(),
             TokensJson = JsonSerializer.Serialize(pieces), WordIdsJson = JsonSerializer.Serialize(linkedWords.Select(Guid.Parse)),
-            AlternativesJson = "[]", Explanation = (explanation ?? "").Trim(), AudioPath = audioPath }, ct);
+            AlternativesJson = "[]", Explanation = (explanation ?? "").Trim(), AudioPath = audioPath }, ct, User.UserId());
         return RedirectToAction(nameof(Index));
     }
 
@@ -73,6 +78,11 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
         if (lessonId is Guid lesson && (kind is not ("audio" or "translation" or "dialogue") || await curriculum.GetOwned("lesson", lesson, User.UserId()!.Value, ct) is null)) return NotFound();
         if (!confirmReviewed) return BadRequest("Подтвердите проверку материала и прав на публикацию.");
         if (kind == "exercise") kind = (await catalog.Exercise(id, true, ct))?.Kind ?? kind;
+        if (EfCourseMaterialRepository.Supports(kind))
+        {
+            var access = await materials.Access(kind, id, ct);
+            if (access?.OwnerId != User.UserId() && !(access?.OwnerId is null && User.IsInRole("Admin"))) return NotFound();
+        }
         if (kind is "audio" or "translation" or "listening")
         {
             var exercise = await catalog.Exercise(id, true, ct);

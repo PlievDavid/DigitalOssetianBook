@@ -44,6 +44,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
     public async Task<ListeningAnswerResult?> Answer(Guid userId, Guid attemptId, int optionIndex, CancellationToken ct)
     {
         var attempt = await progress.Attempt(userId, attemptId, ct);
+        if (attempt?.LessonRunId is not null) return null;
         if (attempt is null) return null;
         return await Complete(attempt, optionIndex, ct);
     }
@@ -56,6 +57,7 @@ public sealed class ListeningService(ICatalogRepository catalog, IProgressReposi
         try
         {
             var attempt = entry.Value;
+            if (attempt.LessonRunId is not null) return null;
             var options = ParseOptions(attempt.OptionsJson);
             if (!IsValidOptions(options)) return null;
             var result = Result(attempt, true);
