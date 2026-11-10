@@ -24,6 +24,8 @@ public sealed class CourseVersion
     public DateTimeOffset PublishedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+public sealed record CourseAccessState(bool Archived, string? BlockReason);
+
 public sealed class CourseEnrollment
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -37,6 +39,7 @@ public interface ICourseRepository
 {
     Task<Course> Create(Guid owner, string draft, CancellationToken ct);
     Task<Course?> Owned(Guid id, Guid owner, CancellationToken ct);
+    Task<CourseAccessState?> OwnedAccess(Guid id, Guid owner, CancellationToken ct);
     Task<Course?> Save(Guid id, Guid owner, long stamp, string draft, CancellationToken ct);
     Task<CourseVersion?> Publish(Guid id, Guid owner, long stamp, string snapshot, CancellationToken ct);
     Task<CourseEnrollment?> Enroll(Guid id, Guid user, CancellationToken ct);
@@ -59,6 +62,10 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
 
     public Task<Course?> Owned(Guid id, Guid owner, CancellationToken ct) =>
         db.Courses.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.OwnerId == owner, ct);
+
+    public Task<CourseAccessState?> OwnedAccess(Guid id, Guid owner, CancellationToken ct) =>
+        db.Courses.Where(x => x.Id == id && x.OwnerId == owner)
+            .Select(x => new CourseAccessState(x.Archived, x.BlockReason)).SingleOrDefaultAsync(ct);
 
     public Task<CourseVersion[]> History(Guid id, Guid owner, CancellationToken ct) =>
         db.CourseVersions.AsNoTracking().Where(v => v.CourseId == id && db.Courses.Any(c => c.Id == id && c.OwnerId == owner))

@@ -23,7 +23,25 @@ window.AdamCourseStudio = async function (ui) {
   const canvas = node('div', null, 'cs-canvas'), sidebar = node('aside', null, 'cs-program'), content = node('div', null, 'cs-workspace');
   const title = node('h1', draft.title, 'cs-course-title');
   const recovery = node('div', null, 'cv-notice error'); recovery.hidden = true;
-  const publish = action('Опубликовать', openPublication, null, 'cs-primary'); publish.disabled = course.archived;
+  const publish = action('Опубликовать', openPublication, null, 'cs-primary');
+  const accessBadge = node('span', null, 'cs-badge');
+  const accessNotice = node('div', null, 'cv-notice error');
+  accessNotice.setAttribute('role', 'alert');
+  function renderAccess() {
+    publish.disabled = course.archived || Boolean(course.blockReason);
+    accessBadge.textContent = course.blockReason ? 'Заблокирован' : course.archived ? 'В архиве' : course.publishedVersionId ? 'Есть опубликованная версия' : 'Черновик';
+    accessBadge.classList.toggle('cv-blocked-status', Boolean(course.blockReason));
+    const warning = course.blockReason ? 'Администратор заблокировал курс. Причина: ' + course.blockReason : '';
+    if (accessNotice.textContent !== warning) accessNotice.textContent = warning;
+  }
+  let accessRequest;
+  function refreshAccess() {
+    return accessRequest ??= api(`/author/courses/${id}/access`).then(result => {
+      course.archived = result.archived;
+      course.blockReason = result.blockReason;
+      renderAccess();
+    }).catch(() => { /* A temporary failure leaves the last confirmed status visible. */ }).finally(() => { accessRequest = null; });
+  }
   const dirty = () => {
     changed++; setDirty(true); status.textContent = 'Сохраняем изменения…'; status.dataset.state = 'pending';
     clearTimeout(timer); timer = setTimeout(() => save().catch(showError), 900);
@@ -239,6 +257,8 @@ window.AdamCourseStudio = async function (ui) {
     });
   }
   async function openPublication() {
+    await refreshAccess();
+    if (publish.disabled) return;
     let issues;
     try {
       await save();
@@ -270,9 +290,9 @@ window.AdamCourseStudio = async function (ui) {
         e.currentTarget.disabled = true;
         try {
           const version = await post(`/author/courses/${id}/publish`, { stamp, reviewed: true });
-          course.publishedVersionId = version.id; close(); notice(`Версия ${version.number} опубликована.`);
+          course.publishedVersionId = version.id; renderAccess(); close(); notice(`Версия ${version.number} опубликована.`);
           modal('Курс опубликован', (success, done) => { success.append(node('p', 'Теперь ученики могут открыть вашу программу и начать обучение.', 'cs-help'), actions(link('Посмотреть курс', `/courses/${id}`, 'cs-primary'), action('Продолжить редактирование', done))); });
-        } catch (e) { error.textContent = e.message; commit.disabled = false; }
+        } catch (e) { error.textContent = e.message; await refreshAccess(); commit.disabled = publish.disabled; }
       }, null, 'cs-primary'); d.append(commit);
     });
   }
@@ -439,11 +459,15 @@ window.AdamCourseStudio = async function (ui) {
       }
     }, null, 'cs-action cs-danger'));
   }));
-  const head = append(node('header', null, 'cs-header'), append(node('div'), title, node('span', course.archived ? 'В архиве' : course.publishedVersionId ? 'Есть опубликованная версия' : 'Черновик', 'cs-badge')), actions(saveButton, previewButton, publish, courseMenu));
+  const head = append(node('header', null, 'cs-header'), append(node('div'), title, accessBadge), actions(saveButton, previewButton, publish, courseMenu));
   const tabs = node('nav', null, 'cs-tabs'); tabs.setAttribute('aria-label', 'Редактирование курса');
   [['program', 'Программа'], ['settings', 'О курсе']].forEach(([key, label]) => { const b = action(label, () => { tab = key; draw(); }); b.dataset.tab = key; tabs.append(b); });
   const programButton = action('Модули и уроки', () => { showProgram = !showProgram; draw(); }, 'book', 'cs-program-toggle'); tabs.append(programButton);
-  notice(''); root.append(context, head, tabs, message);
+  notice(''); root.append(context, head, accessNotice, tabs, message);
+  renderAccess();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAccess(); });
+  window.addEventListener('focus', refreshAccess);
+  setInterval(() => { if (!document.hidden) refreshAccess(); }, 30_000);
   recovery.append(node('p', 'Этот курс изменён в другой вкладке. Скачайте свои правки перед загрузкой актуальной версии.'), actions(action('Скачать правки', () => {
     const url = URL.createObjectURL(new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json' })); const a = link('Скачать', url); a.download = 'course-draft.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }), action('Загрузить сохранённое', async () => { if (await confirm('Загрузить сохранённый курс?', 'Локальные изменения будут заменены. Убедитесь, что скачали нужные правки.', 'Загрузить')) { setDirty(false); location.reload(); } })));

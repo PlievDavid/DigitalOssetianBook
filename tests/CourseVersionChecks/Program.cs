@@ -311,7 +311,9 @@ try
         phrase.Id = Guid.NewGuid(); phrase.WordIdsJson = "[]"; db.Exercises.Add(phrase);
         db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = phrase.Kind, MaterialId = phrase.Id, OwnerId = owner.Id });
         var password = "aA1!" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
-        foreach (var u in new[] { owner, other, learner })
+        var browserAdmin = new UserAccount { Email = "admin@example.invalid" };
+        db.Users.Add(browserAdmin);
+        foreach (var u in new[] { owner, other, learner, browserAdmin })
         {
             u.UserName = u.Email; u.NormalizedEmail = u.Email!.ToUpperInvariant(); u.NormalizedUserName = u.NormalizedEmail;
             u.PasswordHash = new PasswordHasher<UserAccount>().HashPassword(u, password); u.PublicName = "Проверка курсов";
@@ -319,6 +321,8 @@ try
         var role = await db.Roles.FirstAsync(x => x.Name == "Editor");
         db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = owner.Id, RoleId = role.Id });
         db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = other.Id, RoleId = role.Id });
+        var adminRole = await db.Roles.FirstAsync(x => x.Name == "Admin");
+        db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = browserAdmin.Id, RoleId = adminRole.Id });
         await db.SaveChangesAsync();
         var webRoot = Path.GetFullPath("IronLanguage.Web");
         var playable = new Exercise
@@ -355,7 +359,7 @@ try
         var browser = new ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         browser.ArgumentList.Add("tests/courses-v2-browser.cjs"); browser.Environment["ADAM_TEST_URL"] = url;
         browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer,
-            phraseTitle = phrase.RussianPrompt, missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
+            admin = browserAdmin.Email, phraseTitle = phrase.RussianPrompt, missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
         using var process = Process.Start(browser)!;
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync(); Console.Write(await output); Console.Error.Write(await error); Check(process.ExitCode == 0, "Браузерная проверка не прошла");
