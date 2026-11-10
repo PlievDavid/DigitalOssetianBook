@@ -31,7 +31,7 @@
     append(dialog, node('h2', title), node('p', description), actions(button('Отмена', () => finish(false)), button(label, () => finish(true), 'button primary')));
     dialog.addEventListener('cancel', e => { e.preventDefault(); finish(false); }); document.body.append(dialog); dialog.showModal();
   });
-  const run = async (control, task) => { control.disabled = true; try { await task(); } catch (e) { showError(e); } finally { control.disabled = false; } };
+  const run = async (control, task) => { control.disabled = true; control.setAttribute('aria-busy', 'true'); try { await task(); } catch (e) { showError(e); } finally { control.disabled = false; control.removeAttribute('aria-busy'); } };
   function shell(showTabs = true) {
     root.replaceChildren();
     if (!showTabs) { root.append(message); return; }
@@ -77,10 +77,14 @@
         const lessons = await api('/author/lesson-library'); tools.hidden = true; grid.hidden = true; library.hidden = false;
         courseTab.setAttribute('aria-current', 'false'); lessonTab.setAttribute('aria-current', 'true'); library.replaceChildren(node('h2', 'Библиотека уроков'), node('p', 'Сохраните урок через его меню в конструкторе. Затем добавляйте его копию в любые свои курсы. Правки копий независимы.', 'cv-meta'));
         if (!lessons.length) library.append(empty('Пока нет сохранённых уроков', 'В конструкторе нажмите правой кнопкой по уроку → «Сохранить в библиотеку».'));
-        lessons.forEach(x => library.append(append(node('article', null, 'cv-author-row'), append(node('div'), node('h3', x.lesson.title), node('p', `${x.lesson.blocks.length} блоков · Сохранён ${new Date(x.createdAt).toLocaleDateString('ru-RU')}`, 'cv-meta')))));
+        lessons.forEach(x => library.append(append(node('article', null, 'cv-author-row'),
+          append(node('div'), node('h3', x.lesson.title), node('p', `${x.lesson.blocks.length} блоков · Сохранён ${new Date(x.createdAt).toLocaleDateString('ru-RU')}`, 'cv-meta')),
+          actions(link('Открыть оригинал', `/author/courses/${x.sourceCourseId}?lesson=${x.sourceLessonId}`),
+            button('Обновить курсы', e => run(e.currentTarget, () => updateLinkedCourses(x)))))));
       })), link('Материалы упражнений', '/editor'));
       const [courseTab, lessonTab] = tabs.querySelectorAll('button'); courseTab.setAttribute('aria-current', 'true');
       root.insertBefore(tabs, tools); library.hidden = true; root.append(library);
+      if (params.has('library')) lessonTab.click();
     }
     function draw() {
       const url = new URL(location.href); query ? url.searchParams.set('q', query) : url.searchParams.delete('q'); level ? url.searchParams.set('level', level) : url.searchParams.delete('level'); history.replaceState(null, '', url);
@@ -92,22 +96,98 @@
           const row = node('article', null, 'cv-author-row');
           const state = c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик';
           const body = append(node('div'), node('span', state, 'cv-author-status'), node('h2', c.title), node('p', `${c.modules || 0} модулей · ${c.lessons || 0} уроков`, 'cv-meta'));
-          row.append(body, link('Редактировать курс', `/author/courses/${c.id}`, 'cv-button')); grid.append(row); return;
+          row.append(body, actions(link('Редактировать курс', `/author/courses/${c.id}`, 'cv-button'),
+            c.published ? link('Результаты учеников', `/author/courses/${c.id}/analytics`, 'cv-button') : null)); grid.append(row); return;
         }
         const card = node('article', null, 'cv-card'); card.dataset.theme = c.theme || 'sage';
         if (c.coverPath) { const img = node('img', null, 'cv-course-image'); img.src = c.coverPath; img.alt = ''; img.loading = 'lazy'; card.append(img); }
         card.append(append(node('div', null, 'cv-cover'), node('span', authored ? c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик' : c.level)));
         const body = append(node('div', null, 'cv-card-content'), node('h2', c.title), node('p', c.description.length > 180 ? c.description.slice(0, 180) + '…' : c.description || 'Добавьте описание курса.'));
-        if (!authored) body.append(node('span', mine ? `${c.completedBlocks} из ${c.totalBlocks} блоков завершено` : `Уроков: ${c.lessons}`, 'cv-meta'));
+        if (!authored) body.append(node('span', mine || enrolled.has(c.id) ? `${c.completedBlocks} из ${c.totalBlocks} блоков завершено` : `Блоков: ${c.totalBlocks}`, 'cv-meta'));
         if (c.author) body.append(node('span', c.author, 'cv-meta'));
         body.append(actions(enrolled.has(c.id) ? button('Продолжить', e => run(e.currentTarget, () => continueCourse(c.id)), 'button primary') : link('Открыть курс', `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
       });
     }
     draw();
   }
+  async function updateLinkedCourses(version) {
+    const rows = await api(`/author/lesson-library/${version.id}/uses`);
+    const previous = document.activeElement;
+    const dialog = node('dialog', null, 'cv-dialog');
+    dialog.setAttribute('aria-label', 'Обновить связанные уроки');
+    dialog.addEventListener('close', () => { dialog.remove(); previous?.focus(); });
+    dialog.append(node('h2', 'Обновить связанные уроки'), node('p', rows.length ? 'Выберите курсы. Новая версия урока попадёт в их черновики.' : 'Курсов с более ранней версией этого урока нет.'));
+    const choices = rows.map(row => {
+      const input = node('input'); input.type = 'checkbox';
+      dialog.append(append(node('label', null, 'cv-check'), input, node('span', `${row.title} · ${row.count} включений`)));
+      return { input, row };
+    });
+    const feedback = node('div'); feedback.setAttribute('role', 'status');
+    const commit = button('Обновить выбранные', async e => {
+      const chosen = choices.filter(x => x.input.checked);
+      if (!chosen.length) { feedback.textContent = 'Выберите хотя бы один курс.'; return; }
+      const control = e.currentTarget;
+      control.disabled = true;
+      try {
+        const results = await post(`/author/lesson-library/${version.id}/update`, { courses: chosen.map(({ row }) => ({ courseId: row.id, stamp: row.draftStamp })) });
+        feedback.replaceChildren(...results.map(row => node('p', `${rows.find(x => x.id === row.id)?.title}: ${row.saved ? 'черновик обновлён' : row.error}`)));
+        choices.filter(x => results.some(row => row.id === x.row.id && row.saved)).forEach(x => { x.input.checked = false; x.input.disabled = true; });
+      } catch (error) { feedback.textContent = error.message; }
+      finally { control.disabled = false; }
+    }, 'button primary');
+    dialog.append(feedback, actions(button('Закрыть', () => dialog.close()), rows.length ? commit : null));
+    document.body.append(dialog); dialog.showModal();
+  }
+  async function analytics(id) {
+    shell(false);
+    root.append(link('← Преподавание', '/courses/teaching', 'back-link'));
+    const params = new URLSearchParams(location.search);
+    const report = await api(`/author/courses/${id}/analytics?` + params);
+    const date = value => value ? new Date(value).toLocaleString('ru-RU') : '—';
+    function table(labels, rows) {
+      const head = append(node('thead'), append(node('tr'), ...labels.map(label => node('th', label))));
+      const body = node('tbody');
+      rows.forEach(cells => body.append(append(node('tr'), ...cells.map(cell => cell instanceof Node ? append(node('td'), cell) : node('td', String(cell))))));
+      const scroll = node('div', null, 'cv-report-table'); scroll.tabIndex = 0;
+      return append(scroll, append(node('table'), head, body));
+    }
+    if (report.student) {
+      root.append(link('← Результаты курса', `/author/courses/${id}/analytics`), heading(report.student.name, report.title),
+        node('p', `${report.student.status} · ${report.student.counts.completedBlocks} из ${report.student.counts.totalBlocks} блоков`));
+      if (report.student.finishedAt) root.append(node('p', 'Первое завершение: ' + date(report.student.finishedAt), 'cv-meta'));
+      report.modules.forEach(module => {
+        root.append(node('h2', module.title));
+        module.lessons.forEach(lesson => {
+          root.append(node('h3', lesson.title), table(['Блок', 'Статус', 'Попытки', 'Верные', 'Последняя активность'],
+            lesson.blocks.map(b => [b.title, b.completed ? 'Пройден' : 'Не пройден', b.attempts, b.correct, date(b.lastSeen)])));
+        });
+      });
+      return;
+    }
+    root.append(heading('Результаты учеников', report.title), node('p',
+      `Начали: ${report.started}. Завершили актуальную программу: ${report.finished}. Средний прогресс: ${report.averageProgress}%.`));
+    const period = field('Период', String(report.days), days => { params.set('days', days); params.delete('page'); location.search = params; }, {
+      values: [{ value: '7', label: '7 дней' }, { value: '30', label: '30 дней' }, { value: '90', label: '90 дней' }]
+    });
+    root.append(period, node('p', `За период начали: ${report.startedInPeriod}. Завершили: ${report.finishedInPeriod}.`, 'cv-meta'));
+    root.append(node('h2', 'Ученики'));
+    if (!report.students.length) root.append(node('p', 'Курс пока никто не начал.'));
+    else root.append(table(['Ученик', 'Прогресс', 'Статус', 'Начало', 'Активность'], report.students.map(student => {
+      const avatar = node('img', null, 'cv-report-avatar'); avatar.src = student.avatar; avatar.alt = ''; avatar.width = 32; avatar.height = 32;
+      const name = append(node('span', null, 'cv-report-student'), avatar, link(student.name, `?learner=${student.id}`, ''));
+      return [name, `${student.counts.completedBlocks}/${student.counts.totalBlocks} · ${student.counts.percent}%`, student.status, date(student.startedAt), date(student.lastActive)];
+    })));
+    const page = Number(params.get('page')) || 1;
+    const pageLink = (number, label) => { const next = new URLSearchParams(params); next.set('page', number); return link(label, '?' + next); };
+    root.append(actions(page > 1 ? pageLink(page - 1, 'Назад') : null, report.hasMore ? pageLink(page + 1, 'Дальше') : null),
+      node('h2', 'Блоки актуальной программы'),
+      table(['Блок', 'Открыли', 'Завершили', 'Попытки', 'Верно с первого ответа'], report.blocks.map(b =>
+        [b.title, b.opened, b.completed, b.attempts, b.firstCorrectPercent == null ? '—' : b.firstCorrectPercent + '%'])));
+  }
   async function details(id) {
     await import('/js/course-rich-text.js');
     const c = await api(`/courses/${id}`); shell(false); root.append(link('← Каталог курсов', '/courses', 'back-link'));
+    if (window.AdamAuthenticated) root.append(node('p', 'Автор курса видит ваше имя и учебные результаты по этому курсу.', 'cv-notice'));
     root.classList.add('cv-course-detail');
     const lessons = c.modules.flatMap(m => m.lessons), completed = lessons.filter(l => l.completed).length;
     const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || lessons[0];
@@ -119,7 +199,9 @@
     if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'), node('p', c.outcomes)));
     const status = node('div', null, 'cv-course-status');
     if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : c.completedBlocks === c.totalBlocks ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
-    if (c.started) status.append(append(node('div'), node('strong', c.completedBlocks === c.totalBlocks ? 'Курс пройден' : 'Обучение начато'), node('span', `Пройдено блоков: ${c.completedBlocks} из ${c.totalBlocks}`, 'cv-meta')));
+    if (c.started || c.firstCompletedAt) status.append(append(node('div'),
+      node('strong', c.percent === 100 ? 'Курс пройден' : c.firstCompletedAt ? 'Добавлены новые блоки' : 'Обучение начато'),
+      node('span', `Пройдено блоков: ${c.completedBlocks} из ${c.totalBlocks} · ${c.percent}%`, 'cv-meta')));
     hero.append(status);
     if (!window.AdamAuthenticated) hero.append(node('p', 'Войдите, чтобы сохранить прогресс между посещениями.', 'cv-meta'));
     root.append(hero);
@@ -142,11 +224,19 @@
   }
   async function player(id) {
     await import('/js/course-rich-text.js');
-    let selected = new URLSearchParams(location.search).get('block'), state, picked = [];
+    let selected = new URLSearchParams(location.search).get('block'), state, picked = [], practiceFeedback = '', refreshing = false;
     shell(false); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
     async function refresh(blockId = null) {
-      state = await api(`/course-sessions/${id}${blockId ? '?block=' + encodeURIComponent(blockId) : ''}`); picked = [];
-      if (state.updateRequired) { state = await post(`/course-sessions/${id}/update`); blockId = state.block?.id ?? null; }
+      refreshing = true;
+      try {
+      const blockQuery = blockId ? '?block=' + encodeURIComponent(blockId) : '';
+      state = await api(`/course-sessions/${id}${blockQuery}`); picked = [];
+      const updated = state.updateRequired;
+      if (updated) {
+        state = await post(`/course-sessions/${id}/update${blockQuery}`);
+        if (state.courseRedirect) { location.replace('/courses/' + state.courseRedirect); return; }
+        blockId = state.block?.id ?? null;
+      }
       if (state.id !== id) { id = state.id; history.replaceState(null, '', '/courses/sessions/' + id); }
       if (state.block?.kind === 'theory' && !state.steps[state.viewStep].completed) {
         blockId = state.block.id;
@@ -154,12 +244,85 @@
         state = await api(`/course-sessions/${id}?block=${blockId}`);
       }
       const url = new URL(location.href); blockId ? url.searchParams.set('block', blockId) : url.searchParams.delete('block'); history.replaceState(null, '', url); draw();
+      if (updated) notice('Программа курса обновилась. Зачёт неизменённых блоков сохранён.');
+      if (window.AdamAuthenticated && !state.preview && state.block && !state.block.unavailable)
+        post(`/course-sessions/${id}/view`, { blockId: state.block.id }).catch(() => {});
+      } finally { refreshing = false; }
+    }
+    function exerciseAudio(src) {
+      const status = node('p', null, 'cv-meta'); status.setAttribute('role', 'status');
+      const audio = node('audio'); audio.controls = true; audio.src = src; audio.preload = 'metadata';
+      audio.addEventListener('error', () => { status.textContent = 'Не удалось загрузить запись. Обновите страницу или вернитесь к упражнению позже.'; });
+      return append(node('div'), audio, status);
+    }
+    function practiceBlock(card, block) {
+      const { board, revision, complete } = block.practice;
+      const status = node('p', practiceFeedback, 'cv-meta'); status.setAttribute('role', 'status');
+      practiceFeedback = '';
+      async function answer(trigger, value) {
+        await run(trigger, async () => {
+          const result = await post(`/course-sessions/${id}/practice`, { blockId: block.id, revision, ...value });
+          practiceFeedback = result.stale ? 'Упражнение обновлено.' : result.correct ? 'Верно!' : 'Пока неверно. Попробуйте ещё раз.';
+          if (result.hint && typeof result.hint === 'string') practiceFeedback += ' ' + result.hint;
+          if (result.hint?.prefix) practiceFeedback += ' Начало реплики: ' + result.hint.prefix;
+          if (result.hint?.expected) practiceFeedback += ' Подсказка: ' + result.hint.expected;
+          if (result.expected && !result.correct) practiceFeedback += ' Ответ: ' + result.expected;
+          await refresh(block.id);
+        });
+      }
+      if (complete) {
+        card.append(node('p', 'Упражнение выполнено.', 'cv-result'));
+        return;
+      }
+      if (block.kind === 'matching') {
+        let left;
+        const leftGroup = node('div', null, 'cv-tokens'), rightGroup = node('div', null, 'cv-tokens');
+        const leftButtons = board.left.map(tile => {
+          const control = button(tile.text, () => {
+            left = tile.index;
+            leftButtons.forEach(x => x.setAttribute('aria-pressed', String(x === control)));
+            rightButtons.forEach((x, index) => { x.disabled = board.right[index].matched; });
+          }, 'cv-token');
+          control.disabled = tile.matched; control.setAttribute('aria-pressed', 'false'); return control;
+        });
+        const rightButtons = board.right.map(tile => {
+          const control = button(tile.text, e => answer(e.currentTarget, { pair: { left, right: tile.index } }), 'cv-token');
+          control.disabled = true; return control;
+        });
+        leftGroup.append(...leftButtons); rightGroup.append(...rightButtons);
+        card.append(node('p', 'Выберите слово в первом ряду и его пару во втором.'), leftGroup, rightGroup, node('p', `Пар собрано: ${board.matched} из ${board.total}`, 'cv-meta'));
+      } else if (block.kind === 'dialogue') {
+        board.lines.forEach(line => card.append(node('p', [line.name, line.text].filter(Boolean).join(' · '), 'cv-prose')));
+        const turn = board.turn;
+        if (turn) {
+          const submit = (event, value, skip = false) => answer(event.currentTarget, { dialogue: { turnId: turn.line, value, skip } });
+          if (turn.options.length) card.append(actions(...turn.options.map(option => button(option, e => submit(e, option), 'cv-token'))));
+          else {
+            const control = field('Ваша реплика', '', () => {});
+            card.append(control, button('Ответить', e => submit(e, control.querySelector('input').value), 'button primary'));
+          }
+          if (turn.skippable) card.append(button('Пропустить реплику', e => submit(e, null, true), 'cv-button'));
+        }
+      } else {
+        if (block.kind === 'picture') {
+          const image = node('img'); image.src = board.picturePath; image.alt = 'Назовите предмет на изображении'; image.style.maxWidth = '100%';
+          image.addEventListener('error', () => { status.textContent = 'Не удалось загрузить изображение.'; });
+          card.append(image);
+        } else card.append(node('p', board.prompt, 'cv-prose'));
+        if (board.options.length) card.append(actions(...board.options.map((option, index) => button(option, e => answer(e.currentTarget, { choice: { index } }), 'cv-token'))));
+        else {
+          const control = field('Ваш ответ', '', () => {});
+          card.append(control, button('Проверить ответ', e => answer(e.currentTarget, { choice: { text: control.querySelector('input').value } }), 'button primary'));
+        }
+      }
+      card.append(status);
     }
     function draw() {
       area.replaceChildren(); root.dataset.theme = state.theme || "sage";
       area.append(link(state.preview ? '← В конструктор' : '← К программе курса', state.preview ? `/author/courses/${state.courseId}` : `/courses/${state.courseId}`, 'back-link'));
       if (state.preview) area.append(node('p', 'Предпросмотр. Прогресс и очки не сохраняются.', 'cv-notice'));
       else if (!window.AdamAuthenticated) area.append(node('p', 'Гостевое занятие. Войдите, чтобы сохранять прогресс между посещениями.', 'cv-notice'));
+      else area.append(node('p', 'Автор курса видит ваше имя и учебные результаты по этому курсу.', 'cv-notice'));
       const header = node('section', null, 'cv-player-header');
       const top = append(node('div', null, 'cv-player-top'), heading(state.title, state.block ? `Шаг ${state.viewStep + 1} из ${state.count}` : 'Урок завершён'));
       if (!state.preview) {
@@ -217,12 +380,20 @@
         if (state.steps[state.viewStep].completed) { await refresh(state.steps[state.viewStep + 1]?.id ?? null); return; }
         await post(`/course-sessions/${id}/next`, { blockId: b.id }); await refresh(state.steps[state.viewStep + 1]?.id ?? null);
       }), 'button primary');
-      if (b.kind === 'theory') card.append(window.AdamCourseRichText.render(b));
+      if (b.unavailable) {
+        card.append(node('p', 'Материал недоступен. Вы можете открыть другой блок урока.', 'cv-notice'));
+        next.hidden = true;
+      }
+      else if (b.kind === 'theory') card.append(window.AdamCourseRichText.render(b));
+      else if (b.practice) {
+        practiceBlock(card, b);
+        next.hidden = !b.practice.complete; next.disabled = next.hidden;
+      }
       else {
-        if (b.kind === 'listening') {
-          const audio = node('audio'); audio.controls = true; audio.src = b.card.audioPath; audio.preload = 'metadata'; card.append(audio);
-        }
-        card.append(node('p', b.card.russianPrompt, 'cv-prose'), node('p', b.kind === 'listening' ? 'Прослушайте запись и выберите один ответ.' : 'Соберите осетинский перевод из слов.', 'cv-meta'));
+        if (b.kind === 'listening' || b.kind === 'audio') card.append(exerciseAudio(b.card.audioPath));
+        if (b.kind !== 'audio') card.append(node('p', b.card.russianPrompt, 'cv-prose'));
+        const instructions = { listening: 'Прослушайте запись и выберите один ответ.', audio: 'Прослушайте запись и соберите фразу из слов.', translation: 'Соберите осетинский перевод из слов.' };
+        card.append(node('p', instructions[b.kind], 'cv-meta'));
         const selected = node('div', null, 'cv-picked'), tokens = node('div', null, 'cv-tokens');
         selected.setAttribute('aria-label', 'Собранная фраза'); tokens.setAttribute('aria-label', 'Доступные слова');
         const check = button('Проверить ответ', e => run(e.currentTarget, async () => {
@@ -250,6 +421,16 @@
       card.append(actions(next)); area.append(card);
     }
     await refresh(selected);
+    document.addEventListener('visibilitychange', async () => {
+      if (document.hidden || state?.preview || refreshing || picked.length || area.querySelector('dialog[open], button[aria-busy="true"]') ||
+          [...area.querySelectorAll('input, textarea')].some(input => input.value)) return;
+      const current = state;
+      try {
+        const latest = await api(`/course-sessions/${id}`);
+        if (latest.updateRequired && state === current && !refreshing && !picked.length &&
+            ![...area.querySelectorAll('input, textarea')].some(input => input.value)) await refresh(state.block?.id);
+      } catch (error) { showError(error); }
+    });
   }
   window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
   root.addEventListener('click', async e => {
@@ -260,6 +441,7 @@
     const parts = path.split('/').filter(Boolean);
     if (path === '/author/courses' || path === '/courses/teaching') return catalog(false, true);
     if (path === '/my-courses') return catalog(true);
+    if (parts[0] === 'author' && parts[3] === 'analytics') return analytics(parts[2]);
     if (parts[0] === 'author' && parts[2]) return studio(parts[2]);
     if (parts[1] === 'sessions') return player(parts[2]);
     if (parts[0] === 'courses' && parts[1]) return details(parts[1]);

@@ -16,6 +16,7 @@ public sealed class LibraryLesson
 public interface ILessonLibraryRepository
 {
     Task<LibraryLesson[]> Owned(Guid owner, CancellationToken ct);
+    Task<LibraryLesson?> Owned(Guid owner, Guid id, CancellationToken ct);
     Task<LibraryLesson> Save(LibraryLesson lesson, CancellationToken ct);
 }
 
@@ -23,6 +24,9 @@ public sealed class EfLessonLibraryRepository(AdamDbContext db) : ILessonLibrary
 {
     public Task<LibraryLesson[]> Owned(Guid owner, CancellationToken ct) => db.LibraryLessons.AsNoTracking()
         .Where(x => x.OwnerId == owner).OrderByDescending(x => x.CreatedAt).ToArrayAsync(ct);
+
+    public Task<LibraryLesson?> Owned(Guid owner, Guid id, CancellationToken ct) =>
+        db.LibraryLessons.AsNoTracking().SingleOrDefaultAsync(x => x.OwnerId == owner && x.Id == id, ct);
 
     public async Task<LibraryLesson> Save(LibraryLesson lesson, CancellationToken ct)
     {

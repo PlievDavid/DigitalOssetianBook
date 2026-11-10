@@ -5,9 +5,12 @@ window.AdamCourseStudio = async function (ui) {
   await import('/js/course-rich-text.js'); await window.AdamCourseRichText.load();
   const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/css/course-studio.css'; document.head.append(style);
   const id = location.pathname.split('/').pop();
-  const course = await api(`/author/courses/${id}`), materials = await api('/author/course-materials');
+  const course = await api(`/author/courses/${id}`);
+  const materials = new Map();
+  const exerciseTypes = { translation: 'Собери фразу', listening: 'Аудирование', audio: 'Аудиопазл',
+    matching: 'Соотнесение', picture: 'Картинка и слово', grammar: 'Форма слова', dialogue: 'Диалог' };
   let draft = JSON.parse(course.draftJson), stamp = course.draftStamp, changed = 0, saved = 0, saving, timer, conflict = false;
-  let tab = 'program', selectedLesson = draft.modules[0]?.lessons[0]?.id, selectedBlock = null, showProgram = false;
+  let tab = 'program', selectedLesson = new URLSearchParams(location.search).get('lesson') ?? draft.modules[0]?.lessons[0]?.id, selectedBlock = null, showProgram = false;
   const icon = name => {
     const paths = { plus: 'M12 5v14M5 12h14', dots: 'M5 12h.01M12 12h.01M19 12h.01', text: 'M5 5h14M12 5v14M8 19h8', tiles: 'M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z', eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6', book: 'M4 4h7a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4zM14 7h6v12h-6', check: 'M5 12l4 4L19 6', arrow: 'M14 6l-6 6 6 6', chevron: 'M8 10l4 4 4-4' };
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
@@ -41,6 +44,7 @@ window.AdamCourseStudio = async function (ui) {
     const before = document.activeElement, d = node('dialog', null, 'cs-dialog');
     const close = () => { d.close(); d.remove(); before?.isConnected && before.focus(); };
     const head = append(node('div', null, 'cs-dialog-head'), node('h2', titleText), action('Закрыть', close));
+    d.setAttribute('aria-label', titleText);
     d.append(head); build(d, close); document.body.append(d); d.showModal();
     d.addEventListener('cancel', e => { e.preventDefault(); close(); });
     return d;
@@ -56,20 +60,25 @@ window.AdamCourseStudio = async function (ui) {
     canvas.querySelector('[aria-label="Название урока"]')?.focus();
   }
   async function saveToLibrary(lesson) {
-    try { await save(); await post(`/author/courses/${id}/lessons/${lesson.id}/library`, { stamp }); notice('Урок сохранён в библиотеке преподавания. Его можно добавить в другой курс.'); }
+    try { await save(); await post(`/author/courses/${id}/lessons/${lesson.id}/library`, { stamp }); notice('Версия урока сохранена. Обновления можно применить в библиотеке преподавания.'); }
     catch (e) { showError(e); }
   }
   async function fromLibrary(module) {
     try {
       const lessons = await api('/author/lesson-library');
       modal('Добавить урок из библиотеки', (d, close) => {
-        d.append(node('p', 'Добавится независимая копия. Изменения в этом курсе не затронут библиотеку и другие курсы.', 'cs-help'));
+        d.append(node('p', 'Связанный урок можно обновлять из библиотеки. Независимую копию можно редактировать в курсе.', 'cs-help'));
         const list = node('div');
         const draw = query => { list.replaceChildren(); const found = lessons.filter(x => x.lesson.title.toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru')));
           if (!found.length) list.append(node('p', lessons.length ? 'Уроки не найдены.' : 'Сначала сохраните урок в библиотеку через меню урока.', 'cs-help'));
-          found.forEach(x => list.append(action(`${x.lesson.title} · ${x.lesson.blocks.length} блоков`, () => {
-            mutate(() => { const copy = structuredClone(x.lesson); copy.id = uuid(); copy.blocks.forEach(b => b.id = uuid()); module.lessons.push(copy); selectedLesson = copy.id; selectedBlock = null; showProgram = false; }); close();
-          }, 'plus', 'cs-library-choice')));
+          const add = lesson => { mutate(() => { module.lessons.push(lesson); selectedLesson = lesson.id; selectedBlock = null; showProgram = false; }); close(); };
+          found.forEach(x => list.append(append(node('article', null, 'cs-material-item'), node('strong', x.lesson.title),
+            node('p', `${x.lesson.blocks.length} блоков · ${new Date(x.createdAt).toLocaleString('ru-RU')}`, 'cs-help'),
+            actions(action('Независимая копия', () => {
+              const copy = structuredClone(x.lesson); copy.id = uuid(); copy.blocks.forEach(b => b.id = uuid()); add(copy);
+            }, 'plus', 'cs-library-choice'), action('Связанный урок', e => run(e.currentTarget, async () => {
+              add(await api(`/author/lesson-library/${x.id}/inclusion`));
+            }), 'book')))));
         };
         d.append(field('Найти урок', '', draw), list); draw('');
       });
@@ -159,21 +168,90 @@ window.AdamCourseStudio = async function (ui) {
     modal('Что добавить в урок?', (d, close) => {
       d.append(node('p', 'Чередуйте объяснения с практикой. Порядок можно изменить в любой момент.', 'cs-help'));
       const choice = (label, description, kind, glyph) => {
-        const b = button('', () => { mutate(() => { const block = { id: uuid(), kind, title: label, text: '', materialId: kind !== 'theory' ? materials.find(m => m.kind === kind)?.id : null }; lesson.blocks.push(block); selectedBlock = block.id; }); close(); canvas.querySelector('.cs-block-edit input')?.focus(); }, 'cs-block-choice');
+        const add = material => {
+          mutate(() => { const block = { id: uuid(), kind, title: label, text: '', materialId: material?.id ?? null }; lesson.blocks.push(block); selectedBlock = block.id; });
+          canvas.querySelector('.cs-block-edit input')?.focus();
+        };
+        const b = button('', () => { close(); if (kind === 'theory') add(); else chooseMaterial(kind, add); }, 'cs-block-choice');
         b.append(icon(glyph), append(node('span'), node('strong', label), node('small', description))); return b;
       };
       d.append(choice('Объяснение', 'Правило, пример или короткая инструкция', 'theory', 'text'));
-      const exercise = choice('Собери фразу', 'Практика с проверкой ответа из вашей библиотеки', 'translation', 'tiles'); exercise.disabled = !materials.some(m => m.kind === 'translation'); d.append(exercise);
-      const listening = choice('Аудирование', 'Запись, вопрос и выбор одного ответа', 'listening', 'tiles'); listening.disabled = !materials.some(m => m.kind === 'listening'); d.append(listening);
-      if (!materials.length) d.append(node('p', 'Сначала опубликуйте нужное задание в библиотеке материалов.', 'cs-help'), link('Открыть библиотеку', '/editor', 'cs-text-link'));
+      Object.entries(exerciseTypes).forEach(([kind, label]) => d.append(choice(label, 'Упражнение из библиотеки', kind, 'tiles')));
+    });
+  }
+  function chooseMaterial(kind, select) {
+    modal('Библиотека упражнений', (dialog, close) => {
+      let own = true, query = '', page = 1, request = 0, timer;
+      const list = node('div', null, 'cs-material-results');
+      const feedback = node('p', 'Загружаем упражнения…', 'cs-help');
+      feedback.setAttribute('role', 'status');
+      const ownButton = action('Мои материалы', () => changeScope(true));
+      const sharedButton = action('Доступные мне', () => changeScope(false));
+      const search = field('Найти упражнение', '', value => {
+        query = value; page = 1; request++;
+        clearTimeout(timer); timer = setTimeout(load, 300);
+      });
+      const input = search.querySelector('input');
+      function changeScope(value) { own = value; page = 1; clearTimeout(timer); load(); }
+      const clear = action('Очистить поиск', () => { input.value = ''; query = ''; page = 1; clearTimeout(timer); load(); input.focus(); });
+      const create = link('Создать упражнение', '/editor/new/' + kind, 'cs-text-link');
+      create.target = '_blank'; create.rel = 'noopener';
+      dialog.append(node('p', exerciseTypes[kind], 'cs-help'), actions(ownButton, sharedButton), search, clear, feedback, list, create);
+      async function load() {
+        const currentRequest = ++request;
+        ownButton.setAttribute('aria-pressed', String(own));
+        sharedButton.setAttribute('aria-pressed', String(!own));
+        list.replaceChildren();
+        feedback.textContent = 'Загружаем упражнения…';
+        try {
+          const result = await api('/author/course-materials?' + new URLSearchParams({ kind, own, q: query, page }));
+          if (!dialog.open || request !== currentRequest) return;
+          feedback.textContent = result.items.length ? `Страница ${page}` : 'Нет подходящих опубликованных упражнений.';
+          result.items.forEach(item => {
+            const entry = append(node('article', null, 'cs-material-item'), node('strong', item.title), node('p', `${exerciseTypes[item.kind]} · ${item.author}`, 'cs-help'));
+            const preview = node('details');
+            preview.append(node('summary', 'Предпросмотр'), node('p', item.fragment));
+            if (item.audioPath) { const audio = node('audio'); audio.controls = true; audio.preload = 'none'; audio.src = item.audioPath; preview.append(audio); }
+            if (item.imagePath) { const img = node('img'); img.src = item.imagePath; img.alt = 'Изображение из упражнения'; preview.append(img); }
+            entry.append(preview, action('Добавить', () => { materials.set(item.id, item); close(); select(item); }));
+            list.append(entry);
+          });
+          if (page > 1 || result.hasMore) list.append(actions(
+            page > 1 ? action('Назад', () => { page--; load(); }) : null,
+            result.hasMore ? action('Дальше', () => { page++; load(); }) : null));
+        } catch {
+          if (!dialog.open || request !== currentRequest) return;
+          feedback.textContent = 'Не удалось загрузить упражнения.';
+          list.append(action('Повторить загрузку', load));
+        }
+      }
+      queueMicrotask(() => { input.focus(); load(); });
     });
   }
   async function openPublication() {
-    try { await save(); } catch (e) { showError(e); return; }
+    let issues;
+    try {
+      await save();
+      issues = await api(`/author/courses/${id}/publication-issues`);
+    } catch (e) { showError(e); return; }
+    if (issues.length) {
+      modal('Проверьте курс перед публикацией', (dialog, close) => {
+        const list = node('ul');
+        issues.forEach(issue => list.append(append(node('li'), node('p', issue.message), action('Исправить', () => {
+          close();
+          tab = issue.lessonId ? 'program' : 'settings';
+          if (issue.lessonId) { selectedLesson = issue.lessonId; selectedBlock = issue.blockId; }
+          draw();
+          canvas.querySelector('.cs-block-edit input, input, button')?.focus();
+        }))));
+        dialog.append(list);
+      });
+      return;
+    }
     modal(course.publishedVersionId ? 'Опубликовать изменения' : 'Курс готов к публикации?', (d, close) => {
       const lessons = draft.modules.flatMap(m => m.lessons);
       d.append(append(node('div', null, 'cs-publish-summary'), icon('book'), append(node('div'), node('strong', draft.title), node('p', `${draft.modules.length} модулей · ${lessons.length} уроков · ${lessons.reduce((n, l) => n + l.blocks.length, 0)} блоков`))));
-      d.append(node('p', 'Курс появится в каталоге сразу после проверки заполнения. Ученики, уже начавшие обучение, сохранят свою программу.', 'cs-help'));
+      d.append(node('p', 'После публикации ученики получат новую программу. Зачёт неизменённых блоков сохранится.', 'cs-help'));
       const check = document.createElement('input'); check.type = 'checkbox';
       d.append(append(node('label', null, 'cv-check'), check, node('span', 'Я проверил учебные тексты, переводы и права на материалы.')));
       const error = node('p', null, 'cs-form-error'); error.setAttribute('role', 'alert'); d.append(error);
@@ -191,6 +269,37 @@ window.AdamCourseStudio = async function (ui) {
   async function preview(e) {
     const { lesson } = current(); if (!lesson) return;
     await run(e.currentTarget, async () => { await save(); const session = await post(`/author/courses/${id}/preview/${lesson.id}`); location.href = `/courses/sessions/${session.id}`; });
+  }
+  async function showVersions() {
+    try {
+      const result = await api(`/author/courses/${id}/versions`);
+      modal('История публикаций', (dialog, close) => {
+        if (!result.versions.length) dialog.append(node('p', 'У курса пока нет публикаций.', 'cs-help'));
+        result.versions.forEach(version => {
+          const row = append(node('section', null, 'cs-material-item'),
+            node('h3', `Версия ${version.number}. ${version.title}`),
+            node('p', `${new Date(version.publishedAt).toLocaleString('ru-RU')} · ${result.author}`, 'cs-help'),
+            node('p', `Добавлено: ${version.added}. Изменено: ${version.changed}. Удалено: ${version.removed}.`, 'cs-help'));
+          const lessons = node('details');
+          lessons.append(node('summary', 'Предпросмотр уроков'));
+          version.lessons.forEach(lesson => lessons.append(action(lesson.title, e => run(e.currentTarget, async () => {
+            await save();
+            const session = await post(`/author/courses/${id}/preview/${lesson.id}?version=${version.id}`);
+            location.href = `/courses/sessions/${session.id}`;
+          }), 'eye')));
+          row.append(lessons, action('Восстановить в черновик', async () => {
+            close();
+            if (!await confirm('Восстановить версию?', 'Текущий черновик будет заменён. Опубликованный курс останется доступен ученикам.', 'Восстановить')) return;
+            try {
+              await save();
+              await post(`/author/courses/${id}/versions/${version.id}/restore`, { stamp });
+              location.reload();
+            } catch (error) { showError(error); }
+          }));
+          dialog.append(row);
+        });
+      });
+    } catch (error) { showError(error); }
   }
   function drawTree() {
     sidebar.replaceChildren(); sidebar.append(append(node('div', null, 'cs-program-head'), node('h2', 'Программа'), iconButton('Добавить модуль', newModule, 'plus')));
@@ -217,6 +326,19 @@ window.AdamCourseStudio = async function (ui) {
       const empty = append(node('div', null, 'cs-start'), icon('book'), node('h2', 'Начните с первого урока'), node('p', 'Объедините уроки одной темы в модуль. Внутри урока можно добавить объяснение и практику.'), action('Добавить модуль', newModule, 'plus', 'cs-primary'));
       canvas.append(empty); return;
     }
+    if (lesson.libraryVersionId) {
+      canvas.append(node('h2', lesson.title), node('p', 'Связанный урок · ' + lesson.blocks.length + ' блоков', 'cs-help'),
+        actions(action('Открыть оригинал', e => run(e.currentTarget, async () => {
+          await save();
+          const source = (await api('/author/lesson-library')).find(x => x.id === lesson.libraryVersionId);
+          if (!source) throw new Error('Версия урока недоступна.');
+          location.href = `/author/courses/${source.sourceCourseId}?lesson=${source.sourceLessonId}`;
+        })), link('Обновить из библиотеки', '/courses/teaching?library=1', 'cs-action'),
+        action('Сделать независимой копией', () => mutate(() => { lesson.libraryVersionId = null; }))));
+      lesson.blocks.forEach(block => canvas.append(append(node('article', null, 'cs-block'), node('h3', block.title),
+        block.kind === 'theory' ? window.AdamCourseRichText.render(block) : node('p', exerciseTypes[block.kind]))));
+      return;
+    }
     const lessonTitle = document.createElement('input'); lessonTitle.value = lesson.title; lessonTitle.maxLength = 150; lessonTitle.className = 'cs-lesson-title'; lessonTitle.setAttribute('aria-label', 'Название урока');
     lessonTitle.addEventListener('input', () => { lesson.title = lessonTitle.value; dirty(); const active = sidebar.querySelector('.cs-lesson[aria-current="true"] span:last-child'); if (active) active.textContent = lesson.title; });
     canvas.append(append(node('header', null, 'cs-lesson-heading'), append(node('div'), node('p', module.title, 'cs-breadcrumb'), lessonTitle, node('p', `${lesson.blocks.length} блоков · Изменения сохраняются автоматически`, 'cs-help')), iconButton('Настройки урока', () => lessonSettings(module, lesson))));
@@ -224,14 +346,19 @@ window.AdamCourseStudio = async function (ui) {
     lesson.blocks.forEach((b, bi) => {
       const editing = selectedBlock === b.id;
       const card = node('article', null, `cs-block${editing ? ' cs-block-edit' : ''}`);
-      card.append(append(node('div', null, 'cs-block-head'), append(node('span', null, 'cs-block-type'), icon(b.kind === 'theory' ? 'text' : 'tiles'), node('span', b.kind === 'theory' ? 'Объяснение' : b.kind === 'listening' ? 'Аудирование' : 'Собери фразу'), node('small', String(bi + 1))), actions(editing ? null : action('Редактировать', () => { selectedBlock = b.id; drawLesson(); canvas.querySelector('.cs-block-edit input')?.focus(); }), iconButton('Действия с блоком ' + (bi + 1), () => blockMenu(lesson, b)))));
+      card.append(append(node('div', null, 'cs-block-head'), append(node('span', null, 'cs-block-type'), icon(b.kind === 'theory' ? 'text' : 'tiles'), node('span', b.kind === 'theory' ? 'Объяснение' : exerciseTypes[b.kind]), node('small', String(bi + 1))), actions(editing ? null : action('Редактировать', () => { selectedBlock = b.id; drawLesson(); canvas.querySelector('.cs-block-edit input')?.focus(); }), iconButton('Действия с блоком ' + (bi + 1), () => blockMenu(lesson, b)))));
       if (editing) {
         card.append(field('Заголовок блока', b.title, v => { b.title = v; dirty(); }, { max: 150 }));
         if (b.kind === 'theory') card.append(window.AdamCourseRichText.editor(b, (text, richText) => { b.text = text; b.richText = richText; dirty(); }));
-        else card.append(field('Упражнение из библиотеки', b.materialId || '', v => { b.materialId = v; dirty(); }, { values: [{ value: '', label: 'Выберите упражнение' }, ...materials.filter(m => m.kind === b.kind).map(m => ({ value: m.id, label: m.title }))] }), node('p', 'Правильный ответ и правила проверки берутся из опубликованного задания.', 'cs-help'));
+        else {
+          const material = materials.get(b.materialId);
+          card.append(node('p', material?.title ?? (b.materialId ? 'Упражнение выбрано' : 'Выберите упражнение'), 'cs-block-body'),
+            actions(action(b.materialId ? 'Заменить' : 'Выбрать упражнение', () => chooseMaterial(b.kind, item => mutate(() => { b.materialId = item.id; }))),
+              material?.own ? link('Открыть оригинал', `/editor/${b.kind}/${b.materialId}/preview`, 'cs-text-link') : null));
+        }
         card.append(action('Готово', () => { selectedBlock = null; drawLesson(); save().catch(showError); }, 'check', 'cs-done'));
       } else {
-        card.append(node('h3', b.title), b.kind === 'theory' ? window.AdamCourseRichText.render(b) : node('p', materials.find(m => m.id === b.materialId)?.title || 'Выберите упражнение', 'cs-block-body'));
+        card.append(node('h3', b.title), b.kind === 'theory' ? window.AdamCourseRichText.render(b) : node('p', materials.get(b.materialId)?.title ?? (b.materialId ? 'Упражнение выбрано' : 'Выберите упражнение'), 'cs-block-body'));
       }
       canvas.append(card);
     });
@@ -294,6 +421,7 @@ window.AdamCourseStudio = async function (ui) {
   const courseMenu = iconButton('Действия с курсом', () => modal('Действия с курсом', (d, close) => {
     d.append(action('Сохранить изменения', async e => { await run(e.currentTarget, save); close(); }));
     if (course.publishedVersionId) d.append(link('Открыть опубликованный курс', `/courses/${id}`, 'cs-action'));
+    if (course.publishedVersionId) d.append(action('История публикаций', () => { close(); showVersions(); }));
     d.append(action('Архивировать курс', async () => {
       close(); if (await confirm('Архивировать курс?', 'Курс исчезнет из каталога. Записанные ученики смогут продолжить обучение.', 'Архивировать')) {
         try { await save(); await post(`/author/courses/${id}/archive`); location.href = '/author/courses'; } catch (e) { showError(e); }

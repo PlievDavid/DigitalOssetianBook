@@ -286,3 +286,8 @@
 [data-theme="sand"] { --theme-green:#6c4b27; --theme-green-hover:#563a1b; --theme-green-active:#402a13; --theme-sage:#f5eddf; --theme-border:#e5d9c7; }
 .cv-hero-image { max-height:none; }
 .cv-player-header .cv-step.is-complete,.cv-lesson-marker.is-complete { background:var(--theme-success); }
+.cv-report-table { max-width: 100%; overflow-x: auto; margin-block: .75rem 1.5rem; }
+.cv-report-table table { width: 100%; border-collapse: collapse; }
+.cv-report-table th, .cv-report-table td { text-align: start; padding: .75rem; border-bottom: 1px solid var(--line, #dce4df); overflow-wrap: anywhere; }
+.cv-report-student { display: flex; align-items: center; gap: .5rem; }
+.cv-report-avatar { flex: none; border-radius: 50%; }

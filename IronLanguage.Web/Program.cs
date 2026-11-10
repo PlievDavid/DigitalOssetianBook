@@ -29,10 +29,13 @@ builder.Services.AddScoped<IReadingLibraryRepository, EfReadingLibraryRepository
 builder.Services.AddScoped<ReadingSeedService>();
 builder.Services.AddScoped<ICurriculumRepository, EfCurriculumRepository>();
 builder.Services.AddScoped<ICourseRepository, EfCourseRepository>();
+builder.Services.AddScoped<ICourseMaterialRepository, EfCourseMaterialRepository>();
+builder.Services.AddScoped<ICourseAdministrationRepository, EfCourseAdministrationRepository>();
 builder.Services.AddScoped<ILessonLibraryRepository, EfLessonLibraryRepository>();
 builder.Services.AddScoped<CourseAuthoringService>();
 builder.Services.AddScoped<ICourseLearningRepository, EfCourseLearningRepository>();
 builder.Services.AddScoped<CourseLearningService>();
+builder.Services.AddScoped<CourseAnalytics>();
 builder.Services.AddScoped<ICourseRatingRepository, EfCourseRatingRepository>();
 builder.Services.AddScoped<CurriculumService>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
@@ -232,6 +235,22 @@ app.Use(async (context, next) =>
         context.RequestServices.GetRequiredService<AnalyticsRecorder>().Record(section, "view");
 });
 
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value;
+    var extension = Path.GetExtension(path)?.ToLowerInvariant();
+    if (path is not null && (path.StartsWith("/media/pictures/", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/media/", StringComparison.OrdinalIgnoreCase) && extension is ".mp3" or ".ogg" or ".wav"))
+    {
+        var editor = context.User.IsInRole("Editor") ? context.User.UserId() : null;
+        if (!await context.RequestServices.GetRequiredService<ICourseMaterialRepository>().CanReadMedia(path, editor, context.RequestAborted))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+    }
+    await next();
+});
 app.UseStaticFiles(); // Uploaded media is added after build, outside the static asset manifest.
 app.MapStaticAssets();
 
