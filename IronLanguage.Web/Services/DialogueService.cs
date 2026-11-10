@@ -218,6 +218,12 @@ public static class DialogueScript
 
 public sealed class DialogueService(ICatalogRepository catalog, IProgressRepository progress, GuestLearningStore guests)
 {
+    public static DialogueSession CreateSnapshot(Dialogue dialogue, Guid userId)
+    {
+        var (index, consumed) = Advance(Material(dialogue), 1);
+        return new DialogueSession { UserId = userId, DialogueId = dialogue.Id, DialogueVersion = dialogue.Version,
+            DialogueTitle = dialogue.Title, ScriptJson = dialogue.ScriptJson, StateJson = Save(new DialogueState(index, consumed, 0)) };
+    }
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly Regex WordPattern = new(@"[\p{L}\p{M}]+", RegexOptions.Compiled);
 
@@ -312,11 +318,28 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
             {
                 if (session.CompletedAt is not null || session.Revision != revision) return Task.FromResult(false);
                 session.CompletedAt = DateTimeOffset.UtcNow;
+                guests.Completed(entry);
                 return Task.FromResult(true);
             });
         }
         finally { entry.Gate.Release(); }
     }
+
+    internal static Task<DialogueAnswerView> AnswerSnapshot(DialogueSession session, DialogueAnswerInput input) =>
+        AnswerCore(session, input, (revision, state, attempts, errors, hints, turns) =>
+        {
+            session.StateJson = state;
+            session.Attempts = attempts;
+            session.Errors = errors;
+            session.Hints = hints;
+            session.TurnsCompleted = turns;
+            session.Revision = revision + 1;
+            return Task.FromResult(true);
+        }, _ =>
+        {
+            session.CompletedAt = DateTimeOffset.UtcNow;
+            return Task.FromResult(true);
+        });
 
     private static async Task<DialogueAnswerView> AnswerCore(DialogueSession session, DialogueAnswerInput input,
         Func<int, string, int, int, int, int, Task<bool>> saveState, Func<int, Task<bool>> complete)
@@ -409,7 +432,7 @@ public sealed class DialogueService(ICatalogRepository catalog, IProgressReposit
             new DialogueCounters(totalAttempts, errors, hints, turns), finished, summary, []);
     }
 
-    private static DialogueSessionView View(DialogueSession session)
+    internal static DialogueSessionView View(DialogueSession session)
     {
         var material = Material(session);
         var state = Load(session.StateJson);

@@ -1,0 +1,92 @@
+@model IronLanguage.Web.Models.LessonPage
+@using IronLanguage.Web.Services
+@{
+    ViewData["Title"] = Model.Snapshot.Title;
+    var course = Model.Course;
+    var courseId = course?.Course.Revision.ContentId;
+    var step = Model.SelectedStep; var done = Model.CompletedSteps ?? [];
+    var returnUrl = courseId.HasValue ? $"/courses/{courseId}/contents" : "/courses";
+}
+<section class="feature-shell curriculum lesson-player" data-lesson-version="@Model.Run.LessonVersion">
+    <a class="back-link" href="@returnUrl">← @(course is null ? "К курсам" : "К содержанию курса")</a>
+    <div class="lesson-layout @(course is null ? "lesson-layout--standalone" : "")">
+    @if (course is not null) {
+        <aside class="lesson-course-navigation" aria-label="Уроки курса">
+            <h2>@course.Course.Document.Title</h2>
+            <ol>
+            @foreach (var lesson in course.Lessons) {
+                var current = lesson.Revision.ContentId == Model.Run.LessonId;
+                var percent = CurriculumService.LessonProgress(course.Runs, lesson, current ? Model.Run : null);
+                <li>
+                    <form method="post" action="/lessons/@lesson.Revision.ContentId/start?courseId=@courseId&amp;firstStep=true">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" aria-current="@(current ? "page" : null)">
+                            <span>@lesson.Document.Title</span>
+                            <partial name="_LessonProgressCircle" model="percent" />
+                            <span class="visually-hidden">Выполнено @percent%</span>
+                        </button>
+                    </form>
+                </li>
+            }
+            </ol>
+        </aside>
+    }
+    <div class="lesson-content">
+        <h1>@Model.Snapshot.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Snapshot.Goal)) { <p>@Model.Snapshot.Goal</p> }
+        @if (Model.Snapshot.Minutes is int minutes) { <p class="course-note">Примерное время — @minutes мин.</p> }
+        @if (TempData["LessonWordStatus"] is string wordStatus) { <p role="status">@wordStatus</p> }
+        @if (Model.Run.CompletedAt is not null && !Context.Request.Query.ContainsKey("step")) {
+            <div class="lesson-complete" role="status"><h2>Урок пройден!</h2><p>Все шаги завершены.</p><div class="curriculum-actions"><a class="button primary" href="@returnUrl">@(course is null ? "К курсам" : "К содержанию курса")</a><a href="/lessons/@Model.Run.LessonId?courseId=@courseId">Повторить урок</a></div></div>
+        } else {
+            var card = Model.Snapshot.Cards[step];
+            <div class="lesson-position"><div class="lesson-step-list" aria-label="Прогресс урока">
+                @for (var i = 0; i < Model.Snapshot.Cards.Length; i++) { <a href="/lessons/runs/@Model.Run.Id?step=@i&courseId=@courseId" class="@(done.Contains(i) ? "is-complete" : "") @(Model.Snapshot.Cards[i].Kind == "theory" ? "is-theory" : "") @(i == step ? "is-current" : "")" aria-current="@(i == step ? "step" : null)" aria-label="Карточка @(i + 1): @Model.Snapshot.Cards[i].Title@(done.Contains(i) ? ", выполнена" : "")">@(i + 1)</a> }
+            </div><span>Шаг @(step + 1) из @Model.Snapshot.Cards.Length</span></div>
+            @if (card.Kind == "theory") { <partial name="_TheoryCard" model="card" /> }
+            else if (card.Kind == "dialogue") {
+                ViewData["LessonStartUrl"] = $"/dialogs/sessions/{Model.Snapshot.AttemptIds[step]}";
+                <partial name="_DialoguePlayer" />
+            } else if (card.Kind == "listening") {
+                ViewData["LessonListeningPath"] = $"/lessons/runs/{Model.Run.Id}/exercise?step={step}";
+                <partial name="_ListeningPlayer" />
+            } else {
+                ViewData["LessonStartUrl"] = $"/lessons/runs/{Model.Run.Id}/exercise?step={step}";
+                <partial name="_ExercisePlayer" model="card.Kind" />
+            }
+            @if (Model.Error is not null) { <p class="form-error" role="alert">@Model.Error</p> }
+            <form method="post" action="/lessons/runs/@Model.Run.Id/next?courseId=@courseId" class="lesson-next">@Html.AntiForgeryToken()<input type="hidden" name="step" value="@step" /><button class="button primary" type="submit">@(step + 1 == Model.Snapshot.Cards.Length ? "Завершить урок" : "Далее →")</button></form>
+            @if (User.Identity?.IsAuthenticated != true) { <p class="course-note">Вы занимаетесь как гость. Чтобы сохранять прогресс, <a href="/account/login">войдите</a>.</p> }
+        }
+        @if (ViewData["LessonWords"] is List<IronLanguage.Db.WordEntry> words && words.Count > 0)
+        {
+            <details open="@(Model.Run.CompletedAt is not null || TempData["LessonWordSaved"] is true)">
+                <summary>Слова урока для повторения</summary>
+                @if (User.Identity?.IsAuthenticated != true) { <p><a href="/account/login">Войдите</a>, чтобы сохранять слова.</p> }
+                <ul>
+                @foreach (var word in words)
+                {
+                    <li>
+                        <span lang="os">@word.Ossetian</span> — @word.Russian
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <form method="post" action="/lessons/runs/@Model.Run.Id/words/@word.Id?step=@step&amp;courseId=@courseId">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="button secondary" aria-label="Сохранить «@word.Ossetian» в мой словарь">В мой словарь</button>
+                            </form>
+                        }
+                    </li>
+                }
+                </ul>
+            </details>
+        }
+    </div>
+    </div>
+</section>
+@section Styles { <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" /> }
+@section Scripts {
+    <script src="~/js/practice.js" asp-append-version="true" defer></script>
+    <script src="~/js/letter-keys.js" asp-append-version="true" defer></script>
+    <script src="~/js/listening.js" asp-append-version="true" defer></script>
+    <script src="~/js/dialog.js" asp-append-version="true" defer></script>
+}

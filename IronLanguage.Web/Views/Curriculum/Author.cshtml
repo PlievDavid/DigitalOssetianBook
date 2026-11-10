@@ -1,0 +1,24 @@
+@model IronLanguage.Web.Models.PublicAuthorPage
+@{ ViewData["Title"] = Model.Author.Name; }
+<section class="feature-shell curriculum public-author">
+    <a class="back-link" href="/courses">← К курсам</a>
+    <header class="public-author-heading">
+        <div class="public-author-avatar" aria-hidden="true">
+            <partial name="_Avatar" model="@(new IronLanguage.Web.Models.AvatarDisplayModel(Model.Avatar, true))" />
+        </div>
+        <h1>@Model.Author.Name</h1>
+    </header>
+    <h2>Курсы автора</h2>
+    <ul class="curriculum-list">
+        @foreach (var course in Model.Courses) {
+            <li>
+                <a href="/courses/@course.Revision.ContentId/about">@course.Document.Title</a>
+                @if (!string.IsNullOrWhiteSpace(course.Document.Description)) { <p>@course.Document.Description</p> }
+            </li>
+        }
+    </ul>
+</section>
+@section Styles {
+    <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/curriculum-catalog.css" asp-append-version="true" />
+}

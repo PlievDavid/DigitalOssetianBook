@@ -38,6 +38,66 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("Achievements");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.AdminAudit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("After")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Before")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("AdminAudits");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.AnalyticsState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AnalyticsStates");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.Book", b =>
                 {
                     b.Property<Guid>("Id")
@@ -51,10 +111,10 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("CoverImagePath")
+                    b.Property<string>("CoverDesignJson")
                         .HasColumnType("text");
 
-                    b.Property<string>("CoverDesignJson")
+                    b.Property<string>("CoverImagePath")
                         .HasColumnType("text");
 
                     b.Property<string>("Description")
@@ -65,11 +125,11 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("IllustrationsJson")
+                    b.Property<string>("DraftTranslation")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DraftTranslation")
+                    b.Property<string>("IllustrationsJson")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -84,13 +144,13 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("TranslationReviewed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Version")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.Property<bool>("TranslationReviewed")
-                        .HasColumnType("boolean");
 
                     b.ToTable("Books");
                 });
@@ -115,14 +175,14 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Translation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BookId", "Number")
                         .IsUnique();
-
-                    b.Property<string>("Translation")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.ToTable("Chapters");
                 });
@@ -175,6 +235,253 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("ContentRevisions");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.Course", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Archived")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BlockReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DraftJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("DraftStamp")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PublishedVersionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("PublishedVersionId", "Id");
+
+                    b.ToTable("Courses");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseBlockActivity", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BlockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Key")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool?>("Correct")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserId", "VersionId", "BlockId", "Key");
+
+                    b.HasIndex("CourseId", "At");
+
+                    b.ToTable("CourseBlockActivities");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseEnrollment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VersionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CourseId")
+                        .IsUnique();
+
+                    b.HasIndex("VersionId", "CourseId");
+
+                    b.ToTable("CourseEnrollments");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseLessonSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AttemptIdsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.PrimitiveCollection<int[]>("CompletedSteps")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Step")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VersionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VersionId", "CourseId");
+
+                    b.HasIndex("UserId", "VersionId", "LessonId")
+                        .IsUnique()
+                        .HasFilter("\"CompletedAt\" IS NULL");
+
+                    b.ToTable("CourseLessonSessions");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseMaterialAccess", b =>
+                {
+                    b.Property<string>("Kind")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Blocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("InCatalog")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Shared")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Kind", "MaterialId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("CourseMaterialAccesses");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CoursePracticeRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Complete")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StateJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CoursePracticeRuns");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseRating", b =>
+                {
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.HasKey("CourseId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CourseRatings", t =>
+                        {
+                            t.HasCheckConstraint("CK_CourseRatings_Score", "\"Score\" >= 1 AND \"Score\" <= 5");
+                        });
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("SourceDraftStamp")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId", "Number")
+                        .IsUnique();
+
+                    b.HasIndex("CourseId", "SourceDraftStamp")
+                        .IsUnique();
+
+                    b.ToTable("CourseVersions");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -208,6 +515,27 @@ namespace IronLanguage.Db.Migrations
                     b.HasKey("UserId", "Day");
 
                     b.ToTable("DailyActivities");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.DailyMetric", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Section")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Event")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Day", "Section", "Event");
+
+                    b.ToTable("DailyMetrics");
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Dialogue", b =>
@@ -288,6 +616,9 @@ namespace IronLanguage.Db.Migrations
 
                     b.Property<int>("Hints")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("LessonRunId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Revision")
                         .HasColumnType("integer");
@@ -479,6 +810,9 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("LessonRunId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("OptionsJson")
                         .IsRequired()
                         .HasColumnType("text");
@@ -559,6 +893,76 @@ namespace IronLanguage.Db.Migrations
                     b.HasIndex("Published", "Archived");
 
                     b.ToTable("Grammars");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.LessonRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LessonVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Step")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "LessonId")
+                        .IsUnique()
+                        .HasFilter("\"CompletedAt\" IS NULL");
+
+                    b.ToTable("LessonRuns");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.LibraryLesson", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LessonJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceCourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceLessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("SourceStamp")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId", "SourceCourseId", "SourceLessonId", "SourceStamp")
+                        .IsUnique();
+
+                    b.ToTable("LibraryLessons");
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Matching", b =>
@@ -669,30 +1073,80 @@ namespace IronLanguage.Db.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("AvatarJson")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
-                    b.Property<bool>("IsEditor")
+                    b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsBlocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PublicName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex");
+
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("IronLanguage.Db.WordEntry", b =>
@@ -776,6 +1230,136 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("WordleGames");
                 });
 
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex");
+
+                    b.ToTable("AspNetRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserLogins", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetUserRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
+                });
+
             modelBuilder.Entity("IronLanguage.Db.BookChapter", b =>
                 {
                     b.HasOne("IronLanguage.Db.Book", "Book")
@@ -785,6 +1369,97 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.Course", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IronLanguage.Db.CourseVersion", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedVersionId", "Id")
+                        .HasPrincipalKey("Id", "CourseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseBlockActivity", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseEnrollment", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IronLanguage.Db.CourseVersion", null)
+                        .WithMany()
+                        .HasForeignKey("VersionId", "CourseId")
+                        .HasPrincipalKey("Id", "CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseLessonSession", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IronLanguage.Db.CourseVersion", null)
+                        .WithMany()
+                        .HasForeignKey("VersionId", "CourseId")
+                        .HasPrincipalKey("Id", "CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseMaterialAccess", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CoursePracticeRun", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseRating", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.CourseVersion", b =>
+                {
+                    b.HasOne("IronLanguage.Db.Course", null)
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.CrosswordSolvedWord", b =>
@@ -807,6 +1482,15 @@ namespace IronLanguage.Db.Migrations
                     b.Navigation("Sense");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.LibraryLesson", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("IronLanguage.Db.SavedWord", b =>
                 {
                     b.HasOne("IronLanguage.Db.WordEntry", "Word")
@@ -819,6 +1503,57 @@ namespace IronLanguage.Db.Migrations
                 });
 
             modelBuilder.Entity("IronLanguage.Db.WordleGame", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
                     b.HasOne("IronLanguage.Db.UserAccount", null)
                         .WithMany()

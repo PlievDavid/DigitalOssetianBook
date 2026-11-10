@@ -19,18 +19,7 @@ public sealed class MatchingService(ICatalogRepository catalog, GuestLearningSto
         if (material is null) return null;
         var payload = JsonSerializer.Deserialize<MatchingMaterial>(material.ScriptJson, JsonOptions)
             ?? throw new InvalidOperationException("Некорректный материал соотнесения.");
-        var rights = payload.Pairs.Select((pair, index) => (Text: pair.Right, Source: index))
-            .Concat(payload.Distractors.Select(text => (Text: text, Source: -1))).ToList();
-        Shuffle(rights);
-        var state = new MatchingState
-        {
-            MaterialId = material.Id, Version = material.Version, Title = material.Title,
-            Lefts = payload.Pairs.Select(x => x.Left).ToArray(),
-            Rights = rights.Select(x => x.Text).ToArray(),
-            RightSource = rights.Select(x => x.Source).ToArray(),
-            MatchedByLeft = Enumerable.Repeat(-1, payload.Pairs.Length).ToArray(),
-            RightLocked = new bool[rights.Count]
-        };
+        var state = CreateState(material.Id, material.Version, payload);
         guests.Add(owner, sessionId, state);
         var words = await Words(payload.WordIds, ct);
         return Board(sessionId, state, words);
@@ -44,26 +33,49 @@ public sealed class MatchingService(ICatalogRepository catalog, GuestLearningSto
         try
         {
             var state = entry.Value;
-            if (leftIndex < 0 || leftIndex >= state.Lefts.Length || rightIndex < 0 || rightIndex >= state.Rights.Length)
-                throw new ArgumentException("Неверный выбор пары.");
-            // Повтор уже зачтённой пары (сбой сети): возвращаем успех, не меняя состояние.
-            if (state.MatchedByLeft[leftIndex] >= 0)
-            {
-                var repeat = state.MatchedByLeft[leftIndex] == rightIndex;
-                return new MatchingCheck(repeat, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
-            }
-            if (state.RightLocked[rightIndex])
-                return new MatchingCheck(false, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
-            var correct = state.RightSource[rightIndex] == leftIndex;
-            if (correct)
-            {
-                state.MatchedByLeft[leftIndex] = rightIndex;
-                state.RightLocked[rightIndex] = true;
-                state.Matched++;
-            }
-            return new MatchingCheck(correct, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
+            var result = CheckState(state, leftIndex, rightIndex);
+            if (result.Finished) guests.Completed(entry);
+            return result;
         }
         finally { entry.Gate.Release(); }
+    }
+
+    internal static MatchingState CreateState(Guid id, int version, MatchingMaterial payload)
+    {
+        var rights = payload.Pairs.Select((pair, index) => (Text: pair.Right, Source: index))
+            .Concat(payload.Distractors.Select(text => (Text: text, Source: -1))).ToList();
+        Shuffle(rights);
+        return new MatchingState
+        {
+            MaterialId = id, Version = version, Title = payload.Title,
+            Lefts = payload.Pairs.Select(x => x.Left).ToArray(),
+            Rights = rights.Select(x => x.Text).ToArray(),
+            RightSource = rights.Select(x => x.Source).ToArray(),
+            MatchedByLeft = Enumerable.Repeat(-1, payload.Pairs.Length).ToArray(),
+            RightLocked = new bool[rights.Count]
+        };
+    }
+
+    internal static MatchingCheck CheckState(MatchingState state, int leftIndex, int rightIndex)
+    {
+        if (leftIndex < 0 || leftIndex >= state.Lefts.Length || rightIndex < 0 || rightIndex >= state.Rights.Length)
+            throw new ArgumentException("Неверный выбор пары.");
+        // Повтор уже зачтённой пары не меняет состояние.
+        if (state.MatchedByLeft[leftIndex] >= 0)
+        {
+            var repeat = state.MatchedByLeft[leftIndex] == rightIndex;
+            return new MatchingCheck(repeat, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
+        }
+        if (state.RightLocked[rightIndex])
+            return new MatchingCheck(false, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
+        var correct = state.RightSource[rightIndex] == leftIndex;
+        if (correct)
+        {
+            state.MatchedByLeft[leftIndex] = rightIndex;
+            state.RightLocked[rightIndex] = true;
+            state.Matched++;
+        }
+        return new MatchingCheck(correct, state.Matched, state.Lefts.Length, state.Matched == state.Lefts.Length);
     }
 
     public async Task<MatchingBoard?> Board(Guid owner, Guid sessionId, CancellationToken ct)
@@ -97,7 +109,7 @@ public sealed class MatchingService(ICatalogRepository catalog, GuestLearningSto
         return [.. words];
     }
 
-    private static MatchingBoard Board(Guid sessionId, MatchingState state, MatchingWord[] words) => new(
+    internal static MatchingBoard Board(Guid sessionId, MatchingState state, MatchingWord[] words) => new(
         sessionId, state.MaterialId, state.Version, state.Title,
         [.. state.Lefts.Select((text, index) => new MatchingTile(index, text, state.MatchedByLeft[index] >= 0))],
         [.. state.Rights.Select((text, index) => new MatchingTile(index, text, state.RightLocked[index]))],

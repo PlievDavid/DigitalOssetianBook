@@ -6,13 +6,19 @@ public interface IAccountRepository
 {
     Task<UserAccount?> FindByEmail(string email, CancellationToken ct = default);
     Task<UserAccount?> FindById(Guid id, CancellationToken ct = default);
+    Task<bool> CanEdit(Guid id, CancellationToken ct = default);
     Task<UserAccount?> FirstEditor(CancellationToken ct = default);
-    Task<bool> Create(UserAccount user, CancellationToken ct = default);
     Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default);
+    Task<bool> SavePublicName(Guid id, string? name, CancellationToken ct = default);
 }
 
 public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
 {
+    public Task<bool> SavePublicName(Guid id, string? name, CancellationToken ct = default) => SaveName(id, name, ct);
+
+    private async Task<bool> SaveName(Guid id, string? name, CancellationToken ct) =>
+        await db.Users.Where(x => x.Id == id).ExecuteUpdateAsync(x => x.SetProperty(p => p.PublicName, name), ct) == 1;
+
     public async Task<bool> SaveAvatar(Guid id, string avatarJson, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(avatarJson);
@@ -26,16 +32,11 @@ public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
     public Task<UserAccount?> FindById(Guid id, CancellationToken ct = default) =>
         db.Users.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<UserAccount?> FirstEditor(CancellationToken ct = default) =>
-        db.Users.AsNoTracking().Where(x => x.IsEditor).OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(ct);
+    public Task<bool> CanEdit(Guid id, CancellationToken ct = default) => db.UserRoles.AnyAsync(ur => ur.UserId == id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == "Editor" || r.Name == "Admin")), ct);
 
-    public async Task<bool> Create(UserAccount user, CancellationToken ct = default)
-    {
-        if (await db.Users.AnyAsync(x => x.Email == user.Email, ct)) return false;
-        db.Users.Add(user);
-        try { await db.SaveChangesAsync(ct); return true; }
-        catch (DbUpdateException) { db.Entry(user).State = EntityState.Detached; return false; }
-    }
+    public Task<UserAccount?> FirstEditor(CancellationToken ct = default) =>
+        db.Users.AsNoTracking().Where(x => db.UserRoles.Any(ur => ur.UserId == x.Id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == "Editor" || r.Name == "Admin")))).OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(ct);
+
 }
 
 public interface ICatalogRepository
@@ -58,7 +59,7 @@ public interface ICatalogRepository
     Task<List<Exercise>> DraftExercises(CancellationToken ct = default);
     Task<List<Book>> DraftBooks(CancellationToken ct = default);
     Task<List<WordEntry>> DraftWords(CancellationToken ct = default);
-    Task AddExercise(Exercise exercise, CancellationToken ct = default);
+    Task AddExercise(Exercise exercise, CancellationToken ct = default, Guid? owner = null);
     Task AddBook(Book book, CancellationToken ct = default);
     Task<bool> AddChapter(BookChapter chapter, CancellationToken ct = default);
     Task AddWord(WordEntry word, CancellationToken ct = default);
@@ -70,9 +71,9 @@ public interface ICatalogRepository
 public sealed class EfCatalogRepository(AdamDbContext db) : ICatalogRepository
 {
     public Task<List<Exercise>> Exercises(string? kind = null, CancellationToken ct = default) =>
-        db.Exercises.AsNoTracking().Where(x => x.Published && !x.Archived && (kind == null || x.Kind == kind)).OrderBy(x => x.RussianPrompt).ToListAsync(ct);
+        db.Exercises.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == x.Kind && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)) && (kind == null || x.Kind == kind)).OrderBy(x => x.RussianPrompt).ToListAsync(ct);
     public Task<Exercise?> Exercise(Guid id, bool includeDraft = false, CancellationToken ct = default) =>
-        db.Exercises.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && (includeDraft || (x.Published && !x.Archived)), ct);
+        db.Exercises.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && (includeDraft || (x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == x.Kind && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)))), ct);
     public Task<List<WordEntry>> Words(CancellationToken ct = default) =>
         db.Words.AsNoTracking().Where(x => x.Published && !x.Archived && x.DictionarySenseId == null).OrderBy(x => x.Ossetian).ToListAsync(ct);
     public Task<WordEntry?> Word(Guid id, CancellationToken ct = default) =>
@@ -95,25 +96,30 @@ public sealed class EfCatalogRepository(AdamDbContext db) : ICatalogRepository
     public Task<Book?> Book(Guid id, CancellationToken ct = default) =>
         db.Books.AsNoTracking().Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
     public Task<List<Dialogue>> Dialogues(CancellationToken ct = default) =>
-        db.Dialogues.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
+        db.Dialogues.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "dialogue" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
     public Task<Dialogue?> Dialogue(Guid id, CancellationToken ct = default) =>
-        db.Dialogues.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
+        db.Dialogues.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "dialogue" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<Matching>> Matchings(CancellationToken ct = default) =>
-        db.Matchings.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
+        db.Matchings.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "matching" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
     public Task<Matching?> Matching(Guid id, CancellationToken ct = default) =>
-        db.Matchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
+        db.Matchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "matching" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<PictureMatching>> Pictures(CancellationToken ct = default) =>
-        db.PictureMatchings.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
+        db.PictureMatchings.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "picture" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
     public Task<PictureMatching?> Picture(Guid id, CancellationToken ct = default) =>
-        db.PictureMatchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
+        db.PictureMatchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "picture" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<Grammar>> Grammars(CancellationToken ct = default) =>
-        db.Grammars.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
+        db.Grammars.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "grammar" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
     public Task<Grammar?> Grammar(Guid id, CancellationToken ct = default) =>
-        db.Grammars.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
+        db.Grammars.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "grammar" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<Exercise>> DraftExercises(CancellationToken ct = default) => db.Exercises.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
     public Task<List<Book>> DraftBooks(CancellationToken ct = default) => db.Books.AsNoTracking().Include(x => x.Chapters).Where(x => !x.Published).ToListAsync(ct);
     public Task<List<WordEntry>> DraftWords(CancellationToken ct = default) => db.Words.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);
-    public async Task AddExercise(Exercise exercise, CancellationToken ct = default) { db.Exercises.Add(exercise); await db.SaveChangesAsync(ct); }
+    public async Task AddExercise(Exercise exercise, CancellationToken ct = default, Guid? owner = null) {
+        db.Exercises.Add(exercise);
+        if (owner is Guid user)
+            db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = exercise.Kind, MaterialId = exercise.Id, OwnerId = user });
+        await db.SaveChangesAsync(ct);
+    }
     public async Task AddBook(Book book, CancellationToken ct = default) { db.Books.Add(book); await db.SaveChangesAsync(ct); }
     public async Task<bool> AddChapter(BookChapter chapter, CancellationToken ct = default)
     {
@@ -154,7 +160,7 @@ public interface IProgressRepository
 public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
 {
     public Task<ExerciseAttempt?> ActiveAttempt(Guid userId, Guid exerciseId, CancellationToken ct = default) =>
-        db.Attempts.AsNoTracking().Where(x => x.UserId == userId && x.ExerciseId == exerciseId && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
+        db.Attempts.AsNoTracking().Where(x => x.UserId == userId && x.ExerciseId == exerciseId && x.LessonRunId == null && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
     public Task<ExerciseAttempt?> Attempt(Guid userId, Guid attemptId, CancellationToken ct = default) =>
         db.Attempts.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Id == attemptId, ct);
     public async Task CreateAttempt(ExerciseAttempt attempt, CancellationToken ct = default) { db.Attempts.Add(attempt); await db.SaveChangesAsync(ct); }
@@ -208,7 +214,7 @@ public sealed class EfProgressRepository(AdamDbContext db) : IProgressRepository
     public Task<List<Achievement>> Achievements(Guid userId, CancellationToken ct = default) => db.Achievements.AsNoTracking().Where(x => x.UserId == userId).ToListAsync(ct);
 
     public Task<DialogueSession?> ActiveSession(Guid userId, Guid dialogueId, CancellationToken ct = default) =>
-        db.DialogueSessions.AsNoTracking().Where(x => x.UserId == userId && x.DialogueId == dialogueId && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
+        db.DialogueSessions.AsNoTracking().Where(x => x.UserId == userId && x.DialogueId == dialogueId && x.LessonRunId == null && x.CompletedAt == null).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
     public Task<DialogueSession?> Session(Guid userId, Guid sessionId, CancellationToken ct = default) =>
         db.DialogueSessions.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Id == sessionId, ct);
     public async Task CreateSession(DialogueSession session, CancellationToken ct = default)

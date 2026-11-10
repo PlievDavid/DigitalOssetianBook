@@ -46,6 +46,7 @@ public sealed class PictureService(ICatalogRepository catalog, GuestLearningStor
                 ? CheckChoice(state, optionIndex)
                 : CheckFree(state, answer);
             state.Answered = true;
+            guests.Completed(entry);
             state.Correct = correct;
             return new PictureCheckResult(correct, state.CorrectWord, true, null, await Words(state.WordIds, ct));
         }
@@ -71,7 +72,7 @@ public sealed class PictureService(ICatalogRepository catalog, GuestLearningStor
         finally { entry.Gate.Release(); }
     }
 
-    private static bool CheckChoice(PictureState state, int? optionIndex)
+    internal static bool CheckChoice(PictureState state, int? optionIndex)
     {
         if (optionIndex is not int index || index < 0 || index >= state.Options.Length)
             throw new ArgumentException("Выберите вариант ответа.");
@@ -79,7 +80,7 @@ public sealed class PictureService(ICatalogRepository catalog, GuestLearningStor
         return PictureScript.Normalize(selected) == PictureScript.Normalize(state.CorrectWord);
     }
 
-    private static bool CheckFree(PictureState state, string? answer)
+    internal static bool CheckFree(PictureState state, string? answer)
     {
         var value = (answer ?? "").Trim();
         if (value.Length == 0)
@@ -100,7 +101,7 @@ public sealed class PictureService(ICatalogRepository catalog, GuestLearningStor
         return [.. words];
     }
 
-    private static string[] Shuffle(string[] values)
+    internal static string[] Shuffle(string[] values)
     {
         var list = values.ToList();
         for (var i = list.Count - 1; i > 0; i--)

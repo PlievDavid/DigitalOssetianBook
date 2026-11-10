@@ -1,0 +1,20 @@
+@model CourseMaterialAdminItem[]
+@{
+    ViewData["Title"] = "Доступ к упражнениям";
+    var page = (int)ViewData["Page"]!;
+    var query = ViewData["Query"] as string;
+}
+<section class="panel">
+    <form method="get"><label>Название <input name="q" type="search" value="@query" /></label><button type="submit">Найти</button></form>
+    @if (Model.Length == 0) { <p>Упражнения не найдены.</p> }
+    <div class="table-wrap"><table>
+        <thead><tr><th>Упражнение</th><th>Тип</th><th>Доступ</th></tr></thead>
+        <tbody>@foreach (var row in Model)
+        {
+            <tr><th><a href="/admin/course-materials/@row.Kind/@row.Id">@row.Title</a></th>
+                <td>@AdminLabels.Section(row.Kind)</td><td>@(row.Blocked ? "Заблокировано" : row.OwnerId is null ? "Владелец не установлен" : "Владелец установлен")</td></tr>
+        }</tbody>
+    </table></div>
+    @if (page > 1) { <a asp-action="CourseMaterials" asp-route-page="@(page - 1)" asp-route-q="@query">Назад</a> }
+    @if (ViewData["More"] is true) { <a asp-action="CourseMaterials" asp-route-page="@(page + 1)" asp-route-q="@query">Дальше</a> }
+</section>

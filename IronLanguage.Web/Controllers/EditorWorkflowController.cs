@@ -4,39 +4,86 @@ using IronLanguage.Web.Models;
 using IronLanguage.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), Route("editor")]
-public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment) : Controller
+public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment, ICurriculumRepository curriculum, ICourseMaterialRepository materials) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "grammar", "book", "dialogue", "matching", "picture"];
 
-    [HttpGet("new/{kind}")]
-    public IActionResult New(string kind) => Kinds.Contains(kind) ? View("Form", new EditorFormModel { Kind = kind }) : NotFound();
-
-    [HttpPost("new/{kind}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
-    public async Task<IActionResult> New(string kind, EditorFormModel model, CancellationToken ct)
+    public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        if (!Kinds.Contains(kind)) return NotFound();
-        model.Kind = kind;
-        var payload = await BuildPayload(model, null, null, ct);
-        if (payload is null) return View("Form", model);
-        var id = await editor.Create(kind, payload, ct);
+        if (context.ActionArguments.TryGetValue("id", out var argument) && argument is Guid id)
+        {
+            context.ActionArguments.TryGetValue("kind", out var kindArgument);
+            var kind = kindArgument as string;
+            if (kind is null && await editor.Revision(id, HttpContext.RequestAborted) is { } revision)
+            {
+                kind = revision.Kind;
+                id = revision.ContentId;
+            }
+            if (kind is not null && EfCourseMaterialRepository.Supports(kind))
+            {
+                var access = await materials.Access(kind, id, HttpContext.RequestAborted);
+                if (access?.OwnerId != User.UserId() && !(access?.OwnerId is null && User.IsInRole("Admin")))
+                {
+                    context.Result = NotFound();
+                    return;
+                }
+                ViewData["MaterialAccess"] = access;
+            }
+        }
+        await next();
+    }
+
+    [HttpPost("published/{kind}/{id:guid}/access"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfigureAccess(string kind, Guid id, bool inCatalog, bool shared, CancellationToken ct)
+    {
+        if (!await materials.Configure(User.UserId()!.Value, kind, id, inCatalog, shared, ct)) return NotFound();
         return Redirect($"/editor/{kind}/{id}/preview");
     }
 
-    [HttpGet("draft/{kind}/{id:guid}")]
-    public async Task<IActionResult> EditDraft(string kind, Guid id, CancellationToken ct)
+    [HttpGet("new/{kind}")]
+    public async Task<IActionResult> New(string kind, Guid? lessonId, CancellationToken ct)
     {
+        if (!Kinds.Contains(kind) || !await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
+        return View("Form", new EditorFormModel { Kind = kind });
+    }
+
+    private async Task<bool> ValidLesson(Guid? lessonId, string kind, CancellationToken ct) =>
+        lessonId is null || (kind is "audio" or "translation" or "dialogue" or "listening" &&
+            await curriculum.GetOwned("lesson", lessonId.Value, User.UserId()!.Value, ct) is not null);
+
+    [HttpPost("new/{kind}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
+    public async Task<IActionResult> New(string kind, EditorFormModel model, Guid? lessonId, CancellationToken ct)
+    {
+        if (!Kinds.Contains(kind) || !await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
+        model.Kind = kind;
+        var payload = await BuildPayload(model, null, null, ct);
+        if (payload is null) return View("Form", model);
+        var id = await editor.Create(kind, payload, ct, User.UserId());
+        return Redirect($"/editor/{kind}/{id}/preview{LessonQuery(lessonId)}");
+    }
+
+    [HttpGet("draft/{kind}/{id:guid}")]
+    public async Task<IActionResult> EditDraft(string kind, Guid id, Guid? lessonId, CancellationToken ct)
+    {
+        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
         var material = await editor.Material(kind, id, ct);
         return material is null || material.Published ? NotFound() : View("Form", EditorFormModel.FromPayload(kind, material.PayloadJson, id));
     }
 
     [HttpPost("draft/{kind}/{id:guid}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
-    public async Task<IActionResult> EditDraft(string kind, Guid id, EditorFormModel model, CancellationToken ct)
+    public async Task<IActionResult> EditDraft(string kind, Guid id, EditorFormModel model, Guid? lessonId, CancellationToken ct)
     {
+        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
         var material = await editor.Material(kind, id, ct);
         if (material is null || material.Published) return NotFound();
         model.Kind = kind; model.ContentId = id;
@@ -47,7 +94,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         var payload = await BuildPayload(model, audio, cover, ct);
         if (payload is null) return View("Form", model);
         if (!await editor.UpdateDraft(kind, id, payload, ct)) return Conflict();
-        return Redirect($"/editor/{kind}/{id}/preview");
+        return Redirect($"/editor/{kind}/{id}/preview{LessonQuery(lessonId)}");
     }
 
     [HttpPost("published/{kind}/{id:guid}/revise"), ValidateAntiForgeryToken]
@@ -66,9 +113,22 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     public async Task<IActionResult> DeleteRevision(Guid id, CancellationToken ct) =>
         await editor.DeleteRevision(id, ct) ? Redirect("/editor") : NotFound();
 
+    [HttpGet("published/{kind}/{id:guid}/usage")]
+    public async Task<IActionResult> Usage(string kind, Guid id, CancellationToken ct)
+    {
+        if (!Kinds.Contains(kind) || await editor.Material(kind, id, ct) is not { Published: true }) return NotFound();
+        var rows = await curriculum.MaterialUsage(kind, id, ct);
+        ViewData["ArchiveUrl"] = $"/editor/published/{kind}/{id}/archive";
+        ViewData["EditorId"] = User.UserId();
+        return View(rows.Select(row => new CurriculumItem(row, CurriculumService.Parse(row))).ToArray());
+    }
+
     [HttpPost("published/{kind}/{id:guid}/archive"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Archive(string kind, Guid id, CancellationToken ct) =>
-        await editor.SetArchived(kind, id, true, ct) ? Redirect("/editor") : NotFound();
+    public async Task<IActionResult> Archive(string kind, Guid id, CancellationToken ct)
+    {
+        if (await editor.SetArchived(kind, id, true, ct)) return Redirect("/editor");
+        return await Usage(kind, id, ct);
+    }
 
     [HttpPost("archived/{kind}/{id:guid}/restore"), ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(string kind, Guid id, CancellationToken ct) =>
@@ -98,8 +158,10 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpGet("{kind}/{id:guid}/preview")]
-    public async Task<IActionResult> Preview(string kind, Guid id, CancellationToken ct)
+    public async Task<IActionResult> Preview(string kind, Guid id, Guid? lessonId, CancellationToken ct)
     {
+        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
+        ViewData["LessonId"] = lessonId;
         var material = await editor.Material(kind, id, ct);
         return material is null ? NotFound() : View("Preview", await PreviewModel(kind, id, null, material.Version, material.Published, false, material.PayloadJson, ct));
     }
@@ -133,6 +195,8 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         { model.Error = "Материал уже изменился. Откройте его заново перед публикацией."; return View("Preview", model); }
         return Redirect($"/editor/{revision.Kind}/{revision.ContentId}/preview");
     }
+
+    private static string LessonQuery(Guid? lessonId) => lessonId is Guid id ? $"?lessonId={id}" : "";
 
     private async Task<EditorPreviewModel> PreviewModel(string kind, Guid id, Guid? revisionId, int version, bool published, bool historical, string payload, CancellationToken ct)
     {

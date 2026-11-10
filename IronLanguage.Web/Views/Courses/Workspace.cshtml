@@ -1,0 +1,7 @@
+@{ ViewData["Title"] = "Курсы"; }
+<section class="feature-shell courses-v2" id="courses-workspace" data-editor="@User.IsInRole("Editor").ToString().ToLowerInvariant()">
+    <p class="cv-loading" role="status">Загружаем курсы…</p>
+</section>
+<noscript><p class="feature-shell">Для конструктора и прохождения курса включите JavaScript.</p></noscript>
+@section Styles { <link rel="stylesheet" href="~/css/courses-v2.css" asp-append-version="true" /> }
+@section Scripts { <script src="~/js/courses-v2.js" asp-append-version="true" defer></script> }

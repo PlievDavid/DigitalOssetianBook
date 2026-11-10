@@ -32,6 +32,14 @@
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
             <div class="nav-menu nav-menu-section">
+                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/courses") || currentPath.StartsWith("/author") || currentPath == "/my-courses" ? "is-current" : "")" href="/courses" aria-controls="courses-menu" aria-haspopup="true" aria-expanded="false">Курсы</a>
+                <div id="courses-menu" class="nav-menu-panel">
+                    <a class="nav-menu-item" href="/courses">Каталог курсов</a>
+                    @if (User.Identity?.IsAuthenticated == true) { <a class="nav-menu-item" href="/my-courses">Мои курсы</a> }
+                    @if (User.IsInRole("Editor")) { <a class="nav-menu-item" href="/courses/teaching">Преподавание</a> }
+                </div>
+            </div>
+            <div class="nav-menu nav-menu-section">
                 <a class="nav-section-link nav-menu-trigger @(currentPath == "/" || currentPath.StartsWith("/dialogs") || currentPath.StartsWith("/audio-puzzles") || currentPath.StartsWith("/translate") || currentPath.StartsWith("/listening") || currentPath.StartsWith("/matching") || currentPath.StartsWith("/picture") || currentPath.StartsWith("/grammar") ? "is-current" : "")" href="/" aria-controls="practice-menu" aria-haspopup="true" aria-expanded="false">Задания</a>
                 <div id="practice-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/audio-puzzles">Аудиопазлы</a>

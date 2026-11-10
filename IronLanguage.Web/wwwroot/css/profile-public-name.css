@@ -1,0 +1,11 @@
+.profile-public-name { display: grid; gap: 10px; margin: 24px 0; padding: 20px; border: 1px solid var(--theme-border); border-radius: 12px; }
+.profile-public-name label { font-weight: 650; }
+.profile-name-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; max-width: 560px; }
+.profile-name-controls input { box-sizing: border-box; flex: 1 1 230px; min-width: 0; min-height: 44px; padding: 9px 12px; border: 1px solid var(--theme-border); border-radius: 10px; background: var(--theme-surface); color: inherit; font: inherit; }
+.profile-name-controls button { min-height: 44px; }
+.profile-public-name p { margin: 0; color: var(--theme-green); font-size: 14px; }
+.profile-public-name [role="alert"] { color: var(--theme-error); }
+.profile-public-name input[aria-invalid="true"] { border-color: var(--theme-error); }
+@media (max-width: 480px) {
+    .profile-name-controls button { width: 100%; }
+}

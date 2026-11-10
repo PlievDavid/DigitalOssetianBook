@@ -1,5 +1,8 @@
 @model AvatarOptions
-@{ ViewData["Title"] = "Профиль"; }
+@{
+    ViewData["Title"] = "Профиль";
+    var nameError = TempData["PublicNameError"] as string;
+}
 <div class="account-layout mobile-profile-layout">
     @await Html.PartialAsync("_AccountNavigation")
 <section class="feature-shell profile-shell">
@@ -9,6 +12,17 @@
         <span class="profile-avatar profile-avatar-large" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel(Model, true))</span>
         <div><span class="profile-caption">@(User.IsInRole("Editor") ? "Редактор материалов" : "Учётная запись")</span><strong>@User.Identity?.Name</strong></div>
     </div>
+    <form action="/profile/name" method="post" class="profile-public-name" novalidate>
+        @Html.AntiForgeryToken()
+        <label for="public-name">Публичное имя</label>
+        <div class="profile-name-controls">
+            <input id="public-name" name="publicName" required maxlength="100" autocomplete="nickname" value="@ViewData["PublicName"]"
+                   aria-invalid="@(nameError is null ? null : "true")" aria-describedby="@(nameError is null ? null : "public-name-error")" />
+            <button class="button primary" type="submit">Сохранить имя</button>
+        </div>
+        @if (TempData["PublicNameSaved"] is true) { <p role="status">Имя сохранено.</p> }
+        @if (nameError is not null) { <p id="public-name-error" role="alert">@nameError</p> }
+    </form>
     <section class="mobile-profile-results" id="progress-app" aria-labelledby="profile-results-title">
         <h2 id="profile-results-title">Мои результаты</h2>
         <p id="progress-status" role="status">Загрузка…</p>
@@ -19,9 +33,10 @@
     </section>
     <div class="profile-links">
         <a href="/profile/avatar"><strong>Мой аватар</strong><span>Внешность, причёска и одежда персонажа</span></a>
-        @if (User.IsInRole("Editor")) { <a class="mobile-profile-results-link" href="/editor"><strong>Редактор материалов</strong><span>Управление учебными материалами</span></a> }
+        @if (User.IsInRole("Editor")) { <a class="mobile-profile-results-link" href="/editor/curriculum"><strong>Преподавание</strong><span>Курсы, уроки и учебные материалы</span></a> }
     </div>
     <form action="/account/logout" method="post" class="profile-logout">@Html.AntiForgeryToken()<button type="submit">Выйти из аккаунта</button></form>
 </section>
 </div>
+@section Styles { <link rel="stylesheet" href="~/css/profile-public-name.css" asp-append-version="true" /> }
 @section Scripts { <script src="~/js/progress.js" asp-append-version="true" defer></script> }

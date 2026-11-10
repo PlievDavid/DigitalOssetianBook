@@ -1,0 +1,70 @@
+@using IronLanguage.Web.Services
+@model IronLanguage.Web.Models.CurriculumCatalog
+@{
+    var course = Model.Kind == "course";
+    ViewData["Title"] = course ? "Курсы" : "Уроки";
+}
+<section class="feature-shell curriculum learner-curriculum catalog-page">
+    <div class="catalog-main">
+    <form method="get" class="catalog-page-search" role="search">
+        <label class="visually-hidden" for="course-search">Поиск по названию</label>
+        <input id="course-search" name="q" type="search" value="@Model.Query" placeholder="@(course ? "Найти курс" : "Найти урок")" />
+        @if (course) { <input type="hidden" name="filter" value="@Model.Filter" /> }
+        <button type="submit">Найти</button>
+    </form>
+    <header class="catalog-page-heading"><h1>@ViewData["Title"]</h1></header>
+    @if (course) {
+        <nav class="catalog-page-tabs" aria-label="Курсы по прогрессу">
+            @foreach (var tab in new[] { (Key: "all", Label: "Все курсы"), (Key: "started", Label: "Продолжаю") }) {
+                <a href="/courses?filter=@tab.Key&q=@Uri.EscapeDataString(Model.Query)" aria-current="@(Model.Filter == tab.Key ? "page" : null)">@tab.Label</a>
+            }
+        </nav>
+    } else { <a class="catalog-back" href="/courses">← Все курсы</a> }
+    @if (Model.Items.Length == 0) {
+        <div class="curriculum-empty-state"><h2>@(Model.Query.Length > 0 ? "Ничего не найдено" : Model.Filter != "all" ? "Здесь пока нет курсов" : course ? "Курсы готовятся" : "Уроки готовятся")</h2><p>@(Model.Query.Length > 0 ? "Попробуйте другое название." : Model.Filter == "started" ? "Начните курс, и он появится здесь." : "Опубликованные материалы появятся здесь.")</p></div>
+    }
+    <div class="catalog-list">
+        @foreach (var item in Model.Items) {
+            var total = item.Document.LessonIds.Length;
+            var completed = item.Document.LessonIds.Count(id => Model.Lessons.Any(lesson => lesson.Revision.ContentId == id && Model.Runs.Any(run => CurriculumService.CountsForProgress(run, lesson) && run.CompletedAt != null)));
+            var finished = course && total > 0 && completed == total;
+            var active = !finished ? Model.Runs.FirstOrDefault(run => run.CompletedAt == null && (course ? item.Document.LessonIds.Contains(run.LessonId) : item.Revision.ContentId == run.LessonId) && !Model.Lessons.Any(lesson => lesson.Revision.ContentId == run.LessonId && Model.Runs.Any(done => CurriculumService.CountsForProgress(done, lesson) && done.CompletedAt != null))) : null;
+            var href = course ? $"/courses/{item.Revision.ContentId}/about" : $"/lessons/{item.Revision.ContentId}";
+            <article class="catalog-item">
+                <div class="catalog-item-top">
+                    @if (course && !string.IsNullOrEmpty(item.Document.CoverPath)) { <div class="catalog-emblem catalog-emblem--image"><img src="@item.Document.CoverPath" alt="" loading="lazy" /></div> }
+                    else {
+                    <div class="catalog-emblem" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M24 37c-4-3-9-4-15-3V12c6-1 11 0 15 3m0 22c4-3 9-4 15-3V12c-6-1-11 0-15 3m0 22V15M13 18c3-.3 5 .1 7 1m-7 5c3-.3 5 .1 7 1m15-7c-3-.3-5 .1-7 1m7 5c-3-.3-5 .1-7 1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    }
+                    <div class="catalog-item-content">
+                        <h2><a href="@href">@item.Document.Title</a></h2>
+                        @if (course && Model.Authors?.GetValueOrDefault(item.Revision.ContentId) is { } author) { <a class="catalog-author" href="/authors/@author.Id">@author.Name</a> }
+                        @if (!string.IsNullOrWhiteSpace(item.Document.Description)) { <p class="catalog-item-description">@(Model.Kind == "course" ? IronLanguage.Web.Services.CourseMarkdown.Excerpt(item.Document.Description) : item.Document.Description)</p> }
+                    </div>
+                </div>
+                <div class="catalog-item-footer">
+                    @if (course) {
+                        var rating = Model.Ratings?.GetValueOrDefault(item.Revision.ContentId);
+                        <div class="catalog-item-meta">
+                            <span>Уроков: @total</span>
+                            <span>@(rating?.Average is double average ? $"★ {average:0.0} ({rating.Count})" : "Пока без оценок")</span>
+                        </div>
+                    }
+                    @if (course && (completed > 0 || active is not null)) {
+                        <div class="catalog-item-progress">
+                            <span>@(finished ? "Пройден" : $"{completed} из {total} пройдено")</span>
+                            @if (active is not null) { <a class="catalog-continue" href="/lessons/runs/@active.Id?courseId=@item.Revision.ContentId">Продолжить</a> }
+                        </div>
+                    } else if (active is not null) {
+                        <a class="catalog-continue" href="/lessons/runs/@active.Id">Продолжить</a>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+    </div>
+</section>
+@section Styles {
+    <link rel="stylesheet" href="~/css/curriculum.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/curriculum-catalog.css" asp-append-version="true" />
+}

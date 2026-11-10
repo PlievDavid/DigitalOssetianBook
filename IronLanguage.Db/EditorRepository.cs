@@ -28,7 +28,7 @@ public interface IEditorRepository
 {
     Task<List<EditorItem>> Items(CancellationToken ct = default);
     Task<EditorMaterial?> Material(string kind, Guid id, CancellationToken ct = default);
-    Task<Guid> Create(string kind, string payloadJson, CancellationToken ct = default);
+    Task<Guid> Create(string kind, string payloadJson, CancellationToken ct = default, Guid? owner = null);
     Task<bool> UpdateDraft(string kind, Guid id, string payloadJson, CancellationToken ct = default);
     Task<bool> PublishDraft(string kind, Guid id, Guid editorId, CancellationToken ct = default);
     Task<ContentRevision?> Revision(Guid id, CancellationToken ct = default);
@@ -106,8 +106,16 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         return null;
     }
 
-    public async Task<Guid> Create(string kind, string payloadJson, CancellationToken ct = default)
+    public async Task<Guid> Create(string kind, string payloadJson, CancellationToken ct = default, Guid? owner = null)
     {
+        async Task<Guid> SaveNew(Guid id)
+        {
+            if (owner is Guid user)
+                db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = kind, MaterialId = id, OwnerId = user });
+            await db.SaveChangesAsync(ct);
+            return id;
+        }
+
         if (kind == "word")
         {
             var p = Parse<WordMaterial>(payloadJson);
@@ -121,14 +129,14 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
                 TokensJson = JsonSerializer.Serialize(p.Tokens), AlternativesJson = JsonSerializer.Serialize(p.Alternatives),
                 DistractorsJson = JsonSerializer.Serialize(p.Distractors ?? []),
                 WordIdsJson = JsonSerializer.Serialize(p.WordIds), Explanation = p.Explanation, AudioPath = p.AudioPath };
-            db.Exercises.Add(exercise); await db.SaveChangesAsync(ct); return exercise.Id;
+            db.Exercises.Add(exercise); return await SaveNew(exercise.Id);
         }
         if (kind == "listening")
         {
             var p = Parse<ListeningMaterial>(payloadJson);
             var exercise = new Exercise { Kind = kind, RussianPrompt = p.Question, OptionsJson = JsonSerializer.Serialize(p.Options),
                 CorrectOption = p.CorrectOption, Transcript = p.Transcript, Explanation = p.Explanation, AudioPath = p.AudioPath };
-            db.Exercises.Add(exercise); await db.SaveChangesAsync(ct); return exercise.Id;
+            db.Exercises.Add(exercise); return await SaveNew(exercise.Id);
         }
         if (kind == "book")
         {
@@ -146,25 +154,25 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var p = Parse<DialogueMaterial>(payloadJson);
             var dialogue = new Dialogue { Title = p.Title, Dialect = p.Dialect, Level = p.Level, ScriptJson = payloadJson };
-            db.Dialogues.Add(dialogue); await db.SaveChangesAsync(ct); return dialogue.Id;
+            db.Dialogues.Add(dialogue); return await SaveNew(dialogue.Id);
         }
         if (kind == "matching")
         {
             var p = Parse<MatchingMaterial>(payloadJson);
             var matching = new Matching { Title = p.Title, ScriptJson = payloadJson };
-            db.Matchings.Add(matching); await db.SaveChangesAsync(ct); return matching.Id;
+            db.Matchings.Add(matching); return await SaveNew(matching.Id);
         }
         if (kind == "picture")
         {
             var p = Parse<PictureMaterial>(payloadJson);
             var picture = new PictureMatching { Title = p.Title, ScriptJson = payloadJson };
-            db.PictureMatchings.Add(picture); await db.SaveChangesAsync(ct); return picture.Id;
+            db.PictureMatchings.Add(picture); return await SaveNew(picture.Id);
         }
         if (kind == "grammar")
         {
             var p = Parse<GrammarMaterial>(payloadJson);
             var grammar = new Grammar { Title = p.Title, ScriptJson = payloadJson };
-            db.Grammars.Add(grammar); await db.SaveChangesAsync(ct); return grammar.Id;
+            db.Grammars.Add(grammar); return await SaveNew(grammar.Id);
         }
         throw new ArgumentException("Unknown material kind", nameof(kind));
     }
@@ -415,6 +423,19 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
     }
 
     public async Task<bool> SetArchived(string kind, Guid id, bool archived, CancellationToken ct = default)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        if (archived)
+        {
+            await EfCurriculumRepository.LockMaterials(db, ct);
+            if ((await new EfCurriculumRepository(db).MaterialUsage(kind, id, ct)).Count > 0) return false;
+        }
+        var changed = await UpdateArchived(kind, id, archived, ct);
+        await tx.CommitAsync(ct);
+        return changed;
+    }
+
+    private async Task<bool> UpdateArchived(string kind, Guid id, bool archived, CancellationToken ct)
     {
         if (kind == "word")
             return await db.Words.Where(x => x.Id == id && x.Published && x.DictionarySenseId == null && x.Archived != archived)

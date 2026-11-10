@@ -10,6 +10,17 @@ public sealed record ProgressSummary(int Points, int Streak, string[] Achievemen
 
 public sealed class LearningService(ICatalogRepository catalog, IProgressRepository progress, GuestLearningStore guests)
 {
+    public static ExerciseAttempt CreateSnapshot(Exercise exercise, Guid userId) => new()
+    {
+        UserId = userId, ExerciseId = exercise.Id, ExerciseVersion = exercise.Version,
+        ExpectedAnswer = exercise.OssetianAnswer, AlternativesJson = exercise.AlternativesJson,
+        TokensJson = exercise.TokensJson, DistractorsJson = exercise.DistractorsJson, WordIdsJson = exercise.WordIdsJson,
+        RussianPrompt = exercise.RussianPrompt, Explanation = exercise.Explanation, AudioPath = exercise.AudioPath
+    };
+
+    public Task<ExerciseCard> SnapshotCard(string kind, ExerciseAttempt attempt, CancellationToken ct) =>
+        Card(new Exercise { Id = attempt.ExerciseId, Kind = kind }, attempt, ct);
+
     public static string[] ParseTokens(string json) => JsonSerializer.Deserialize<string[]>(json) ?? [];
     public static string Normalize(string value) => string.Join(' ', value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
 
@@ -70,16 +81,16 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         return steps;
     }
 
-    public async Task<AnswerResult?> Answer(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct)
+    public async Task<AnswerResult?> Answer(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct, bool withinLesson = false)
     {
         var attempt = await progress.Attempt(userId, attemptId, ct);
-        if (attempt is null) return null;
+        if (attempt is null || !withinLesson && attempt.LessonRunId is not null) return null;
         if (attempt.CompletedAt is not null)
             return new AnswerResult(attempt.Correct ?? false, attempt.ExpectedAnswer, attempt.Explanation, true);
         var tokens = ParseTokens(attempt.TokensJson);
         ValidateIndices(tokenIndices, tokens.Length);
         var answer = string.Join(' ', tokenIndices.Select(i => tokens[i]));
-        var correct = IsCorrect(attempt, answer);
+        var correct = attempt.OptionsJson is { Length: > 2 } ? tokenIndices.Length == 1 && tokenIndices[0] == attempt.CorrectOption : IsCorrect(attempt, answer);
         var saved = await progress.CompleteAttempt(userId, attemptId, answer, correct, ct);
         if (!saved)
         {
@@ -105,7 +116,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         return (card, attempt);
     }
 
-    public async Task<AnswerResult?> AnswerGuest(Guid owner, Guid attemptId, int[] tokenIndices, CancellationToken ct)
+    public async Task<AnswerResult?> AnswerGuest(Guid owner, Guid attemptId, int[] tokenIndices, CancellationToken ct, bool withinLesson = false)
     {
         var entry = guests.Find<ExerciseAttempt>(owner, attemptId);
         if (entry is null) return null;
@@ -113,13 +124,17 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         try
         {
             var attempt = entry.Value;
+            if (!withinLesson && attempt.LessonRunId is not null) return null;
             if (attempt.CompletedAt is not null)
                 return new AnswerResult(attempt.Correct ?? false, attempt.ExpectedAnswer, attempt.Explanation, true);
             var tokens = ParseTokens(attempt.TokensJson);
             ValidateIndices(tokenIndices, tokens.Length);
             var answer = string.Join(' ', tokenIndices.Select(i => tokens[i]));
-            attempt.Correct = IsCorrect(attempt, answer);
+            attempt.Correct = attempt.OptionsJson is { Length: > 2 } ? tokenIndices.Length == 1 && tokenIndices[0] == attempt.CorrectOption : IsCorrect(attempt, answer);
+            attempt.SubmittedAnswer = answer;
+            attempt.DraftIndicesJson = JsonSerializer.Serialize(tokenIndices);
             attempt.CompletedAt = DateTimeOffset.UtcNow;
+            guests.Completed(entry);
             return new AnswerResult(attempt.Correct.Value, attempt.ExpectedAnswer, attempt.Explanation, false);
         }
         finally { entry.Gate.Release(); }
@@ -138,7 +153,7 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
     public async Task<bool?> SaveDraft(Guid userId, Guid attemptId, int[] tokenIndices, CancellationToken ct)
     {
         var attempt = await progress.Attempt(userId, attemptId, ct);
-        if (attempt is null) return null;
+        if (attempt is null || attempt.LessonRunId is not null) return null;
         if (attempt.CompletedAt is not null) return false;
         var length = ParseTokens(attempt.TokensJson).Length;
         if (tokenIndices.Length > length || tokenIndices.Distinct().Count() != tokenIndices.Length || tokenIndices.Any(i => i < 0 || i >= length))

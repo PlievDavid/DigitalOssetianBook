@@ -1,6 +1,7 @@
 @model IronLanguage.Web.Models.EditorIndexModel
 @{ ViewData["Title"] = "Редактор материалов"; ViewData["PageClass"] = "editor-page"; }
 <section class="feature-shell editor-home">
+    <a class="back-link" href="/courses/teaching">← Преподавание</a>
     <header class="editor-page-heading">
         <span class="editor-eyebrow">Конструктор заданий</span>
         <h1>Что вы хотите добавить?</h1>
@@ -9,16 +10,23 @@
     <div class="editor-choices">
         <a href="/editor/new/word"><span aria-hidden="true">Ӕ</span><strong>Слово</strong><small>Перевод, пример и запись</small></a>
         <a href="/editor/new/audio"><span aria-hidden="true">♫</span><strong>Аудиопазл</strong><small>Запись и выбор слов по шагам</small></a>
-        <a href="/editor/new/translation"><span aria-hidden="true">↔</span><strong>Собери фразу</strong><small>Фраза на русском и осетинском</small></a>
+        <a href="/editor/new/translation"><span aria-hidden="true">↔</span><strong>Собери фразу</strong><small>Русская подсказка и осетинский ответ</small></a>
         <a href="/editor/new/listening"><span aria-hidden="true">◉</span><strong>Аудирование</strong><small>Запись, вопрос и четыре варианта ответа</small></a>
         <a href="/editor/new/book"><span aria-hidden="true">▤</span><strong>Произведение</strong><small>Текст, перевод и иллюстрации</small></a>
         <a href="/editor/new/dialogue"><span aria-hidden="true">⇄</span><strong>Диалог</strong><small>Сценарий, реплики и ходы ученика</small></a>
         <a href="/editor/new/matching"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "matching")</span><strong>Соотнесение</strong><small>Пары «слово — его пара» и отвлекающие слова</small></a>
         <a href="/editor/new/picture"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "picture")</span><strong>Картинка и слово</strong><small>Картинки и осетинские слова к ним</small></a>
-        <a href="/editor/new/grammar"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "grammar")</span><strong>Форма слова</strong><small>Пропущенное слово и выбор правильной формы</small></a>
+        <a href="/editor/new/grammar"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "grammar")</span><strong>Форма слова</strong><small>Грамматика в контексте предложения</small></a>
     </div>
 
-    <div class="editor-library-header"><h2>Материалы</h2><div class="editor-library-controls"><div class="editor-tabs" role="tablist" aria-label="Состояние материала"><button type="button" class="is-active" data-editor-tab="drafts" role="tab" aria-selected="true">Черновики</button><button type="button" data-editor-tab="published" role="tab" aria-selected="false">Опубликовано</button><button type="button" data-editor-tab="archived" role="tab" aria-selected="false">Архив</button></div><label class="editor-filter"><span>Тип</span><select id="editor-kind-filter" aria-label="Тип материала"><option value="all">Все материалы</option><option value="word">Слова</option><option value="audio">Аудиопазлы</option><option value="translation">Собери фразу</option><option value="listening">Аудирование</option><option value="book">Произведения</option><option value="dialogue">Диалоги</option><option value="matching">Соотнесения</option><option value="picture">Картинки и слова</option><option value="grammar">Формы слова</option></select></label></div></div>
+    <div class="editor-library-header"><h2>Библиотека материалов</h2>
+        <div class="editor-tabs" role="tablist" aria-label="Состояние материала"><button type="button" class="is-active" data-editor-tab="drafts" role="tab" aria-selected="true">Черновики</button><button type="button" data-editor-tab="published" role="tab" aria-selected="false">Опубликовано</button><button type="button" data-editor-tab="archived" role="tab" aria-selected="false">Архив</button></div>
+        <div class="editor-library-controls">
+            <label class="editor-filter"><span>Поиск</span><input id="editor-search" type="search" placeholder="Название материала" /></label>
+            <label class="editor-filter"><span>Тип</span><select id="editor-kind-filter"><option value="all">Все материалы</option><option value="word">Слова</option><option value="audio">Аудиопазлы</option><option value="translation">Собери фразу</option><option value="listening">Аудирование</option><option value="book">Произведения</option><option value="dialogue">Диалоги</option><option value="matching">Соотнесения</option><option value="picture">Картинки и слова</option><option value="grammar">Формы слова</option></select></label>
+            <label class="editor-filter"><span>Сортировка</span><select id="editor-sort"><option value="original">По умолчанию</option><option value="title-asc">Название: А–Я</option><option value="title-desc">Название: Я–А</option><option value="kind">По типу</option></select></label>
+        </div>
+    </div>
     <div id="editor-drafts" class="editor-items" role="tabpanel">
         @foreach (var item in Model.Items.Where(x => !x.Published))
         {
@@ -28,23 +36,24 @@
         {
             <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · новая версия</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/revisions/@item.PendingRevisionId/edit">Изменить</a><a href="/editor/revisions/@item.PendingRevisionId/preview">Предпросмотр</a><form method="post" action="/editor/revisions/@item.PendingRevisionId/delete" data-confirm="Удалить черновик новой версии «@item.Title»?">@Html.AntiForgeryToken()<button class="editor-danger" type="submit">Удалить</button></form></div></article>
         }
-        <p class="editor-empty" hidden>Черновиков этого типа нет.</p>
+        <p class="editor-empty" hidden>Материалы не найдены. Попробуйте изменить поиск или тип.</p>
     </div>
     <div id="editor-published" class="editor-items" role="tabpanel" hidden>
         @foreach (var item in Model.Items.Where(x => x.Published && !x.Archived))
         {
-            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · версия @item.Version</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/published/@item.Kind/@item.Id/revise">@Html.AntiForgeryToken()<button type="submit">Новая версия</button></form><form method="post" action="/editor/published/@item.Kind/@item.Id/archive" data-confirm="Убрать «@item.Title» из публикации? Материал останется в архиве.">@Html.AntiForgeryToken()<button class="editor-danger" type="submit">Убрать с сайта</button></form></div></article>
+            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · версия @item.Version</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/published/@item.Kind/@item.Id/revise">@Html.AntiForgeryToken()<button type="submit">Новая версия</button></form><a href="/editor/published/@item.Kind/@item.Id/usage">Где используется и как снять</a></div></article>
         }
-        <p class="editor-empty" hidden>Опубликованных материалов этого типа нет.</p>
+        <p class="editor-empty" hidden>Материалы не найдены. Попробуйте изменить поиск или тип.</p>
     </div>
     <div id="editor-archived" class="editor-items" role="tabpanel" hidden>
         @foreach (var item in Model.Items.Where(x => x.Archived))
         {
             <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · в архиве</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/archived/@item.Kind/@item.Id/restore">@Html.AntiForgeryToken()<button type="submit">Вернуть на сайт</button></form></div></article>
         }
-        <p class="editor-empty" hidden>В архиве нет материалов этого типа.</p>
+        <p class="editor-empty" hidden>Материалы не найдены. Попробуйте изменить поиск или тип.</p>
     </div>
 </section>
+@section Styles { <link rel="stylesheet" href="~/css/editor-library-refined.css" asp-append-version="true" /> }
 @section Scripts { <script src="~/js/editor.js" asp-append-version="true" defer></script> }
 @functions {
     private static string TypeName(string kind) => kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "book" => "Произведение", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", _ => kind };

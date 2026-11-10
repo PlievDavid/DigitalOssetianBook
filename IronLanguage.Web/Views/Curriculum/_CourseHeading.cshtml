@@ -1,0 +1,18 @@
+@model IronLanguage.Web.Models.CoursePage
+<header class="course-heading">
+    <div>
+        <h1 class="course-title">@Model.Course.Document.Title</h1>
+        @if (Model.Author is { } author)
+        {
+            <a class="course-author" href="/authors/@author.Id">@author.Name</a>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Course.Document.CoverPath))
+    {
+        <img class="course-heading-cover" src="@Model.Course.Document.CoverPath" alt="" />
+    }
+    else
+    {
+        <span class="course-heading-letter" aria-hidden="true">Ӕ</span>
+    }
+</header>
