@@ -3,6 +3,7 @@ window.AdamCourseStudio = async function (ui) {
   const { root, api, post, node, append, link, button, actions, field, confirm, run, showError, notice, message, setDirty } = ui;
   await import('/js/course-cover-crop.js');
   await import('/js/course-rich-text.js'); await window.AdamCourseRichText.load();
+  const { authorTheoryMedia, editTheoryMedia } = await import('/js/course-theory-media.js');
   const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/css/course-studio.css'; document.head.append(style);
   const id = location.pathname.split('/').pop();
   const course = await api(`/author/courses/${id}`);
@@ -24,11 +25,13 @@ window.AdamCourseStudio = async function (ui) {
   const title = node('h1', draft.title, 'cs-course-title');
   const recovery = node('div', null, 'cv-notice error'); recovery.hidden = true;
   const publish = action('Опубликовать', openPublication, null, 'cs-primary');
+  let uploadingTheory = false;
+  let abortTheoryUpload;
   const accessBadge = node('span', null, 'cs-badge');
   const accessNotice = node('div', null, 'cv-notice error');
   accessNotice.setAttribute('role', 'alert');
   function renderAccess() {
-    publish.disabled = course.archived || Boolean(course.blockReason);
+    publish.disabled = uploadingTheory || course.archived || Boolean(course.blockReason);
     accessBadge.textContent = course.blockReason ? 'Заблокирован' : course.archived ? 'В архиве' : course.publishedVersionId ? 'Есть опубликованная версия' : 'Черновик';
     accessBadge.classList.toggle('cv-blocked-status', Boolean(course.blockReason));
     const warning = course.blockReason ? 'Администратор заблокировал курс. Причина: ' + course.blockReason : '';
@@ -351,6 +354,7 @@ window.AdamCourseStudio = async function (ui) {
     sidebar.append(action('Добавить модуль', newModule, 'plus', 'cs-add-module'));
   }
   function drawLesson() {
+    abortTheoryUpload?.(); abortTheoryUpload = null;
     canvas.replaceChildren(); const { module, lesson } = current();
     if (!lesson) {
       const empty = append(node('div', null, 'cs-start'), icon('book'), node('h2', 'Начните с первого урока'), node('p', 'Объедините уроки одной темы в модуль. Внутри урока можно добавить объяснение и практику.'), action('Добавить модуль', newModule, 'plus', 'cs-primary'));
@@ -366,7 +370,8 @@ window.AdamCourseStudio = async function (ui) {
         })), link('Обновить из библиотеки', '/courses/teaching?library=1', 'cs-action'),
         action('Сделать независимой копией', () => mutate(() => { lesson.libraryVersionId = null; }))));
       lesson.blocks.forEach(block => canvas.append(append(node('article', null, 'cs-block'), node('h3', block.title),
-        block.kind === 'theory' ? window.AdamCourseRichText.render(block) : node('p', exerciseTypes[block.kind]))));
+        block.kind === 'theory' ? window.AdamCourseRichText.render(block) : node('p', exerciseTypes[block.kind]),
+        block.kind === 'theory' ? authorTheoryMedia(block.theoryMedia, node) : null)));
       return;
     }
     const lessonTitle = document.createElement('input'); lessonTitle.value = lesson.title; lessonTitle.maxLength = 150; lessonTitle.className = 'cs-lesson-title'; lessonTitle.setAttribute('aria-label', 'Название урока');
@@ -378,24 +383,37 @@ window.AdamCourseStudio = async function (ui) {
       const card = node('article', null, `cs-block${editing ? ' cs-block-edit' : ''}`);
       card.append(append(node('div', null, 'cs-block-head'), append(node('span', null, 'cs-block-type'), icon(b.kind === 'theory' ? 'text' : 'tiles'), node('span', b.kind === 'theory' ? 'Объяснение' : exerciseTypes[b.kind]), node('small', String(bi + 1))), actions(editing ? null : action('Редактировать', () => { selectedBlock = b.id; drawLesson(); canvas.querySelector('.cs-block-edit input')?.focus(); }), iconButton('Действия с блоком ' + (bi + 1), () => blockMenu(lesson, b)))));
       if (editing) {
+        const done = action('Готово', () => { selectedBlock = null; drawLesson(); save().catch(showError); }, 'check', 'cs-done');
         card.append(field('Заголовок блока', b.title, v => { b.title = v; dirty(); }, { max: 150 }));
-        if (b.kind === 'theory') card.append(window.AdamCourseRichText.editor(b, (text, richText) => { b.text = text; b.richText = richText; dirty(); }));
-        else {
+        if (b.kind === 'theory') {
+          const attachment = editTheoryMedia(id, b.theoryMedia, media => { b.theoryMedia = media; dirty(); }, {
+            node, action, field, actions, busy: value => {
+              uploadingTheory = value;
+              done.disabled = value;
+              previewButton.disabled = value || !current().lesson;
+              renderAccess();
+            }
+          });
+          abortTheoryUpload = attachment.abort;
+          card.append(window.AdamCourseRichText.editor(b, (text, richText) => { b.text = text; b.richText = richText; dirty(); }), attachment.section);
+        } else {
           const material = materials.get(b.materialId);
           card.append(node('p', material?.title ?? (b.materialId ? 'Сведения об упражнении недоступны' : 'Выберите упражнение'), 'cs-block-body'),
             material ? node('p', material.author, 'cs-help') : null,
             actions(action(b.materialId ? 'Заменить' : 'Выбрать упражнение', () => chooseMaterial(b.kind, item => mutate(() => { b.materialId = item.id; }))),
               material?.own ? link('Открыть оригинал', `/editor/${b.kind}/${b.materialId}/preview`, 'cs-text-link') : null));
         }
-        card.append(action('Готово', () => { selectedBlock = null; drawLesson(); save().catch(showError); }, 'check', 'cs-done'));
+        card.append(done);
       } else {
-        card.append(node('h3', b.title), b.kind === 'theory' ? window.AdamCourseRichText.render(b) : node('p', materials.get(b.materialId)?.title ?? (b.materialId ? 'Упражнение выбрано' : 'Выберите упражнение'), 'cs-block-body'));
+        append(card, node('h3', b.title), b.kind === 'theory' ? window.AdamCourseRichText.render(b) : node('p', materials.get(b.materialId)?.title ?? (b.materialId ? 'Упражнение выбрано' : 'Выберите упражнение'), 'cs-block-body'),
+          b.kind === 'theory' ? authorTheoryMedia(b.theoryMedia, node) : null);
       }
       canvas.append(card);
     });
     canvas.append(action('Добавить блок', () => addBlock(lesson), 'plus', 'cs-add-block'));
   }
   function drawSettings() {
+    abortTheoryUpload?.(); abortTheoryUpload = null;
     canvas.replaceChildren();
     const heading = append(node('header', null, 'cs-settings-heading'), node('h2', 'О курсе'), node('p', 'Помогите ученику понять, чему он научится и подойдёт ли ему ваша программа.', 'cs-help'));
     const form = node('div', null, 'cs-settings-form');
@@ -441,7 +459,7 @@ window.AdamCourseStudio = async function (ui) {
   function draw() {
     content.dataset.tab = tab; content.dataset.program = String(showProgram);
     tabs.querySelectorAll('button[data-tab]').forEach(b => b.setAttribute('aria-current', String(b.dataset.tab === tab)));
-    previewButton.disabled = !current().lesson;
+    previewButton.disabled = uploadingTheory || !current().lesson;
     if (tab === 'settings') drawSettings(); else { drawTree(); drawLesson(); }
   }
   root.classList.add('course-studio'); root.replaceChildren();

@@ -371,6 +371,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check(await publishButton.isEnabled(), 'После снятия блокировки нельзя опубликовать курс');
     await admin.close();
 
+    await require('./course-theory-media.cjs')({ api, base, page, student, author, learner, guest, browser, login, fixture, check, out });
     check(errors.length === 0, 'Ошибки JavaScript: ' + errors.join('; '));
     console.log(`Course browser checks: ${checks} passed.`);
   } catch (e) {

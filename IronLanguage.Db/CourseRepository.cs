@@ -40,6 +40,7 @@ public interface ICourseRepository
     Task<Course> Create(Guid owner, string draft, CancellationToken ct);
     Task<Course?> Owned(Guid id, Guid owner, CancellationToken ct);
     Task<CourseAccessState?> OwnedAccess(Guid id, Guid owner, CancellationToken ct);
+    Task<Guid?> Owner(Guid id, CancellationToken ct);
     Task<Course?> Save(Guid id, Guid owner, long stamp, string draft, CancellationToken ct);
     Task<CourseVersion?> Publish(Guid id, Guid owner, long stamp, string snapshot, CancellationToken ct);
     Task<CourseEnrollment?> Enroll(Guid id, Guid user, CancellationToken ct);
@@ -66,6 +67,9 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
     public Task<CourseAccessState?> OwnedAccess(Guid id, Guid owner, CancellationToken ct) =>
         db.Courses.Where(x => x.Id == id && x.OwnerId == owner)
             .Select(x => new CourseAccessState(x.Archived, x.BlockReason)).SingleOrDefaultAsync(ct);
+
+    public Task<Guid?> Owner(Guid id, CancellationToken ct) =>
+        db.Courses.Where(x => x.Id == id).Select(x => (Guid?)x.OwnerId).SingleOrDefaultAsync(ct);
 
     public Task<CourseVersion[]> History(Guid id, Guid owner, CancellationToken ct) =>
         db.CourseVersions.AsNoTracking().Where(v => v.CourseId == id && db.Courses.Any(c => c.Id == id && c.OwnerId == owner))

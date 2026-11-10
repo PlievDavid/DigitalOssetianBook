@@ -25,11 +25,13 @@ public sealed record CourseDraftBlock(Guid Id, string Kind, string Title, string
     public Exercise? PublishedExercise { get; init; }
     public EditorMaterial? PublishedActivity { get; init; }
     public JsonElement? RichText { get; init; }
+    public CourseTheoryMedia? TheoryMedia { get; init; }
 }
 public sealed record CoursePublicationIssue(string Message, Guid? LessonId = null, Guid? BlockId = null);
 
 public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMaterialRepository? materials = null, ICourseLearningRepository? publications = null,
-    IEditorRepository? editor = null, ILessonLibraryRepository? library = null, IWebHostEnvironment? environment = null)
+    IEditorRepository? editor = null, ILessonLibraryRepository? library = null, IWebHostEnvironment? environment = null,
+    CourseTheoryMediaStore? theoryMedia = null)
 {
     public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -72,8 +74,18 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
                     if (publishing && block.Kind != "theory" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
                         throw new ArgumentException("Выберите упражнение из библиотеки.");
                     var text = CourseRichText.PlainText(block);
-                    if (text is null || text.Length > 20_000 || publishing && block.Kind == "theory" && string.IsNullOrWhiteSpace(text))
-                        throw new ArgumentException("Заполните текст теории (до 20 000 символов).");
+                    if (text is null || text.Length > 20_000)
+                        throw new ArgumentException("Текст теории должен содержать не более 20 000 символов.");
+                    if (publishing && block.Kind == "theory" && block.TheoryMedia is null && string.IsNullOrWhiteSpace(text))
+                        throw new ArgumentException("Добавьте текст, фото или видео.");
+                    if (block.TheoryMedia is { } media)
+                    {
+                        if (block.Kind != "theory" || !CourseTheoryMediaStore.ValidName(media.File) ||
+                            media.Caption is null || media.Caption.Length > 300 || media.Alt is null || media.Alt.Length > 300)
+                            throw new ArgumentException("Проверьте вложение, подпись и описание изображения.");
+                        if (publishing && !CourseTheoryMediaStore.IsVideo(media.File) && string.IsNullOrWhiteSpace(media.Alt))
+                            throw new ArgumentException("Добавьте описание изображения.");
+                    }
                 }
             }
         }
@@ -82,6 +94,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
     public async Task<Course> Create(Guid owner, CourseDraft draft, CancellationToken ct)
     {
         Validate(draft, false);
+        CheckTheoryFiles(draft, owner);
         await CheckLinks(draft, owner, ct);
         await CheckMaterials(draft, owner, [], ct);
         return await courses.Create(owner, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
@@ -92,6 +105,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
         Validate(draft, false);
         var course = await courses.Owned(id, owner, ct);
         if (course is null || course.DraftStamp != stamp) return null;
+        CheckTheoryFiles(draft, owner);
         await CheckLinks(draft, owner, ct);
         await CheckMaterials(draft, owner, await PublishedBlocks(course, ct), ct);
         return await courses.Save(id, owner, stamp, JsonSerializer.Serialize(WithoutSnapshots(draft), JsonOptions), ct);
@@ -211,7 +225,11 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
 
     private async Task<CourseDraftBlock> ResolveBlock(CourseDraftBlock block, Guid owner, Dictionary<Guid, CourseDraftBlock> published, CancellationToken ct)
     {
-        if (block.Kind == "theory") return block;
+        if (block.Kind == "theory")
+        {
+            CheckTheoryFile(block, owner);
+            return block;
+        }
         var materialId = block.MaterialId!.Value;
         var previous = Previous(block, published);
         var unavailable = $"В блоке «{block.Title}» выберите доступное опубликованное упражнение.";
@@ -237,6 +255,18 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
         if (exercise is null || exercise.Kind != block.Kind) throw new ArgumentException(unavailable);
         CheckFile(exercise.AudioPath, $"Запись блока «{block.Title}»", required: exercise.Kind is "audio" or "listening");
         return block with { PublishedExercise = exercise };
+    }
+
+    private void CheckTheoryFiles(CourseDraft draft, Guid owner)
+    {
+        foreach (var block in draft.Modules.SelectMany(m => m.Lessons).SelectMany(l => l.Blocks))
+            CheckTheoryFile(block, owner);
+    }
+
+    private void CheckTheoryFile(CourseDraftBlock block, Guid owner)
+    {
+        if (block.TheoryMedia is { } media && theoryMedia?.Exists(owner, media.File) != true)
+            throw new ArgumentException($"Вложение блока «{block.Title}» недоступно. Замените или удалите файл.");
     }
 
     private void CheckFile(string? path, string label, bool required)

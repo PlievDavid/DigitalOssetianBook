@@ -55,6 +55,7 @@ await control.OpenAsync();
 await using (var command = new NpgsqlCommand($"CREATE SCHEMA \"{schema}\"", control)) await command.ExecuteNonQueryAsync();
 Process? site = null;
 string? browserAudioFile = null;
+DirectoryInfo? browserTheoryMedia = null;
 try
 {
     var isolated = new NpgsqlConnectionStringBuilder(connection) { SearchPath = schema }.ConnectionString;
@@ -352,6 +353,8 @@ try
         start.ArgumentList.Add(Path.Combine(webRoot, "bin/Debug/net10.0/IronLanguage.Web.dll"));
         start.Environment["ConnectionStrings__Adam"] = isolated; start.Environment["ASPNETCORE_URLS"] = url; start.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         start.Environment["DataProtection__KeysDirectory"] = Path.GetFullPath(".run-local/course-v2-checks/keys");
+        browserTheoryMedia = Directory.CreateTempSubdirectory("adam-course-theory-");
+        start.Environment["CourseTheoryMedia__Root"] = browserTheoryMedia.FullName;
         site = Process.Start(start)!; site.OutputDataReceived += (_, _) => { }; site.ErrorDataReceived += (_, _) => { }; site.BeginOutputReadLine(); site.BeginErrorReadLine();
         using var http = new HttpClient(); var ready = false;
         for (var i = 0; i < 80; i++) { if (site.HasExited) throw new Exception("Тестовый сайт остановился"); try { ready = (await http.GetAsync(url + "/account/login")).IsSuccessStatusCode; if (ready) break; } catch (HttpRequestException) { } await Task.Delay(250); }
@@ -370,6 +373,15 @@ finally
 {
     if (site is { HasExited: false }) { site.Kill(entireProcessTree: true); await site.WaitForExitAsync(); }
     if (browserAudioFile is not null) File.Delete(browserAudioFile);
+    if (browserTheoryMedia is not null)
+    {
+        foreach (var folder in browserTheoryMedia.EnumerateDirectories())
+        {
+            foreach (var file in folder.EnumerateFiles()) file.Delete();
+            folder.Delete();
+        }
+        browserTheoryMedia.Delete();
+    }
     NpgsqlConnection.ClearAllPools();
     await using var cleanup = new NpgsqlCommand($"DROP SCHEMA \"{schema}\" CASCADE", control);
     await cleanup.ExecuteNonQueryAsync();

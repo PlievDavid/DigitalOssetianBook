@@ -33,6 +33,7 @@ builder.Services.AddScoped<ICourseMaterialRepository, EfCourseMaterialRepository
 builder.Services.AddScoped<ICourseAdministrationRepository, EfCourseAdministrationRepository>();
 builder.Services.AddScoped<ILessonLibraryRepository, EfLessonLibraryRepository>();
 builder.Services.AddScoped<CourseAuthoringService>();
+builder.Services.AddSingleton<CourseTheoryMediaStore>();
 builder.Services.AddScoped<ICourseLearningRepository, EfCourseLearningRepository>();
 builder.Services.AddScoped<CourseLearningService>();
 builder.Services.AddScoped<CourseAnalytics>();

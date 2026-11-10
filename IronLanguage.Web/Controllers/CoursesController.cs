@@ -8,7 +8,8 @@ namespace IronLanguage.Web.Controllers;
 
 [AutoValidateAntiforgeryToken, RequestSizeLimit(1_000_000)]
 public sealed class CoursesController(ICourseRepository courses, ICourseLearningRepository repository, CourseLearningService learning,
-    ICourseMaterialRepository materials, CourseAuthoringService authoring, GuestLearningStore guests, ILessonLibraryRepository library, IWebHostEnvironment environment) : Controller
+    ICourseMaterialRepository materials, CourseAuthoringService authoring, GuestLearningStore guests, ILessonLibraryRepository library,
+    IWebHostEnvironment environment, CourseTheoryMediaStore theoryMedia) : Controller
 {
     [HttpGet("courses")]
     [HttpGet("courses/{id:guid}")]
@@ -253,6 +254,39 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
         var file = environment.WebRootFileProvider.GetFileInfo(path.TrimStart('/'));
         if (!file.Exists || file.IsDirectory || !new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider().TryGetContentType(path, out var type)) return NotFound();
         return File(file.CreateReadStream(), type, enableRangeProcessing: true);
+    }
+
+    [HttpPost("api/v1/author/courses/{id:guid}/theory-media"), Authorize(Roles = "Editor")]
+    [RequestSizeLimit(CourseTheoryMediaStore.RequestLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = CourseTheoryMediaStore.VideoLimit)]
+    public async Task<IActionResult> UploadTheoryMedia(Guid id, IFormFile? file, CancellationToken ct)
+    {
+        var owner = User.UserId()!.Value;
+        if (await courses.OwnedAccess(id, owner, ct) is null) return NotFound();
+        if (file is null) return BadRequest(new { error = "Выберите фото или видео." });
+        try { return Json(new { file = await theoryMedia.Upload(owner, file, ct) }); }
+        catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
+    }
+
+    [HttpGet("api/v1/author/theory-media/{file}"), HttpHead("api/v1/author/theory-media/{file}"), Authorize(Roles = "Editor")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public IActionResult AuthorTheoryMedia(string file) => StreamTheoryMedia(User.UserId()!.Value, file);
+
+    [HttpGet("api/v1/course-sessions/{id:guid}/theory-media/{block:guid}")]
+    [HttpHead("api/v1/course-sessions/{id:guid}/theory-media/{block:guid}")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> LessonTheoryMedia(Guid id, Guid block, CancellationToken ct)
+    {
+        if (!CanAccessSession(id) || await learning.TheoryMedia(id, block, User.UserId(), guests.Owner(HttpContext), ct) is not { } media)
+            return NotFound();
+        return StreamTheoryMedia(media.Owner, media.File);
+    }
+
+    private IActionResult StreamTheoryMedia(Guid owner, string file)
+    {
+        if (theoryMedia.Open(owner, file) is not { } stream) return NotFound();
+        Response.Headers.XContentTypeOptions = "nosniff";
+        return File(stream, CourseTheoryMediaStore.ContentType(file), enableRangeProcessing: true);
     }
 
     [HttpPost("api/v1/course-sessions/{id:guid}/update")]

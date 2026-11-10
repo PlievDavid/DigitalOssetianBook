@@ -33,7 +33,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
     }
     internal static string Fingerprint(CourseDraftBlock b) => JsonSerializer.Serialize(new
     {
-        b.Kind, b.Text, b.RichText, b.MaterialId,
+        b.Kind, b.Text, b.RichText, b.MaterialId, b.TheoryMedia,
         exercise = b.PublishedExercise is not { } e ? null : new { e.RussianPrompt, e.OssetianAnswer, e.TokensJson,
             e.AlternativesJson, e.DistractorsJson, e.OptionsJson, e.CorrectOption, e.Transcript, e.WordIdsJson, e.Explanation, e.AudioPath },
         activity = b.PublishedActivity?.PayloadJson
@@ -270,7 +270,13 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
                     if (attempt.CompletedAt is not null) result = new { correct = attempt.Correct, expectedAnswer = attempt.ExpectedAnswer, explanation = attempt.Explanation };
                 }
             }
-            blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, attemptId = Attempts(session)[viewStep], card, result, practice, unavailable };
+            var theoryMedia = block.TheoryMedia is { } attachment ? new
+            {
+                video = CourseTheoryMediaStore.IsVideo(attachment.File), attachment.Alt, attachment.Caption,
+                url = $"/api/v1/course-sessions/{id}/theory-media/{block.Id}"
+            } : null;
+            blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, theoryMedia,
+                attemptId = Attempts(session)[viewStep], card, result, practice, unavailable };
         }
         var preview = temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview;
         var done = preview ? new HashSet<Guid>() : await Completed(session.CourseId, version.Id, user, owner, ct);
@@ -423,6 +429,16 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         if (block.Kind == "picture" && block.PublishedActivity is { } picture)
             return JsonSerializer.Deserialize<PictureMaterial>(picture.PayloadJson, CourseAuthoringService.JsonOptions)?.PicturePath;
         return null;
+    }
+
+    public async Task<(Guid Owner, string File)?> TheoryMedia(Guid id, Guid blockId, Guid? user, Guid owner, CancellationToken ct)
+    {
+        if (await Find(id, user, owner, ct) is not { } found) return null;
+        var block = Lesson(found.Version, found.Session.LessonId)?.Blocks.FirstOrDefault(b => b.Id == blockId);
+        if (block is not { Kind: "theory", TheoryMedia: { } attachment }) return null;
+        var preview = found.Temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview;
+        if (!await CanUse(found.Session.CourseId, block, preview, ct)) return null;
+        return await courses.Owner(found.Session.CourseId, ct) is Guid author ? (author, attachment.File) : null;
     }
 
     private async Task<bool> CanUse(Guid course, CourseDraftBlock block, bool preview, CancellationToken ct) =>
