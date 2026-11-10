@@ -181,13 +181,22 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
         catch (ArgumentException e) { return BadRequest(new { error = e.Message }); }
     }
     public sealed record StepInput(Guid BlockId);
-    public sealed record AnswerInput(Guid BlockId, int[] TokenIndices);
+    public sealed record RetryInput(Guid BlockId, Guid AttemptId);
+    [HttpPost("api/v1/course-sessions/{id:guid}/retry")]
+    public async Task<IActionResult> Retry(Guid id, [FromBody] RetryInput input, CancellationToken ct)
+    {
+        if (!CanAccessSession(id)) return NotFound();
+        if (!ModelState.IsValid || input is null) return BadRequest();
+        return await learning.Retry(id, input.BlockId, input.AttemptId, User.UserId(), guests.Owner(HttpContext), ct)
+            ? NoContent() : Conflict(new { error = "Повторная попытка недоступна. Обновите занятие." });
+    }
+    public sealed record AnswerInput(Guid BlockId, int[] TokenIndices, Guid? AttemptId = null);
     [HttpPost("api/v1/course-sessions/{id:guid}/answers")]
     public async Task<IActionResult> Answer(Guid id, [FromBody] AnswerInput input, CancellationToken ct)
     {
         if (!CanAccessSession(id)) return NotFound();
         if (!ModelState.IsValid || input is null || input.TokenIndices is null) return BadRequest();
-        try { return await learning.Answer(id, input.BlockId, input.TokenIndices, User.UserId(), guests.Owner(HttpContext), ct) is { } answer ? Json(answer) : NotFound(); }
+        try { return await learning.Answer(id, input.BlockId, input.TokenIndices, User.UserId(), guests.Owner(HttpContext), ct, input.AttemptId) is { } answer ? Json(answer) : NotFound(); }
         catch (ArgumentException e) { return BadRequest(new { error = e.Message }); }
     }
     [HttpPost("api/v1/course-sessions/{id:guid}/next")]

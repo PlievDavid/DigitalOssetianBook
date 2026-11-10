@@ -124,10 +124,28 @@ try
     await audioAuthor.Publish(audioCourse.Id, owner.Id, audioCourse.DraftStamp, true, ct);
     var audioSession = (await runner.Start(audioCourse.Id, audioLesson.Id, learner.Id, Guid.NewGuid(), ct))!;
     Check(!await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Аудирование зачтено без ответа");
+    var failedAttempt = JsonSerializer.Deserialize<Guid?[]>(audioSession.AttemptIdsJson)![0]!.Value;
+    Check(!(await runner.Answer(audioSession.Id, audioBlock.Id, [0], learner.Id, Guid.Empty, ct))!.Correct, "Неверный ответ принят");
+    Check(!await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Неверный ответ завершил блок");
+    Check(!await runner.Retry(audioSession.Id, audioBlock.Id, failedAttempt, other.Id, Guid.Empty, ct), "Чужая попытка заменена");
+    Check(await runner.Retry(audioSession.Id, audioBlock.Id, failedAttempt, learner.Id, Guid.Empty, ct), "Повторная попытка не создана");
+    var retried = (await lessons.Session(learner.Id, audioSession.Id, ct))!.AttemptIdsJson;
+    Check(await runner.Retry(audioSession.Id, audioBlock.Id, failedAttempt, learner.Id, Guid.Empty, ct) && (await lessons.Session(learner.Id, audioSession.Id, ct))!.AttemptIdsJson == retried, "Дубликат заменил новую попытку");
+    Check(await db.Attempts.AnyAsync(a => a.Id == failedAttempt && a.Correct == false && a.CompletedAt != null, ct), "История ошибки потеряна");
+    var staleRejected = false;
+    try { await runner.Answer(audioSession.Id, audioBlock.Id, [0], learner.Id, Guid.Empty, ct, failedAttempt); }
+    catch (ArgumentException) { staleRejected = true; }
+    Check(staleRejected, "Устаревшая вкладка ответила за новую попытку");
     Check((await runner.Answer(audioSession.Id, audioBlock.Id, [2], learner.Id, Guid.Empty, ct))!.Correct, "Аудирование не проверено");
     Check((await runner.Answer(audioSession.Id, audioBlock.Id, [0], learner.Id, Guid.Empty, ct))!.AlreadySubmitted, "Повтор аудирования изменил результат");
     Check(await runner.Advance(audioSession.Id, audioBlock.Id, learner.Id, Guid.Empty, ct), "Аудирование не завершилось");
     var guestOwner = Guid.NewGuid();
+    var guestAudio = (await runner.Start(audioCourse.Id, audioLesson.Id, null, guestOwner, ct))!;
+    var guestAttempt = JsonSerializer.Deserialize<Guid?[]>(guestAudio.AttemptIdsJson)![0]!.Value;
+    await runner.Answer(guestAudio.Id, audioBlock.Id, [0], null, guestOwner, ct);
+    Check(!await runner.Advance(guestAudio.Id, audioBlock.Id, null, guestOwner, ct), "Гостю зачтён неверный ответ");
+    Check(await runner.Retry(guestAudio.Id, audioBlock.Id, guestAttempt, null, guestOwner, ct), "Гостевая повторная попытка недоступна");
+    Check((await runner.Answer(guestAudio.Id, audioBlock.Id, [2], null, guestOwner, ct))!.Correct && await runner.Advance(guestAudio.Id, audioBlock.Id, null, guestOwner, ct), "Гость не завершил повторную попытку");
     var session = (await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!;
     Check(session.VersionId == second.Id, "Урок не обновился до опубликованной версии");
     Check((await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!.Id == session.Id, "Повтор запуска создал сессию");

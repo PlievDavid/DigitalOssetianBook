@@ -188,12 +188,18 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const foreign = await api(page, `/course-sessions/${sessionId}`); check(foreign.status === 404, 'Чужая сессия доступна');
     check(await student.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Урок выходит за мобильный экран');
     await student.screenshot({ path: path.join(out, 'lesson-phone.png'), fullPage: true });
-    // A wrong answer is also a valid terminal exercise result; test the existing checker without inventing translations.
+    // A failed attempt remains in history, but must not complete a course block.
     await student.locator('.cv-tokens button').first().click();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
     await student.locator('.cv-result').waitFor();
     const repeated = await api(student, `/course-sessions/${sessionId}/answers`, 'POST', { blockId: lesson.blocks[1].id, tokenIndices: [0] });
     check(repeated.status === 200 && repeated.data.alreadySubmitted, 'Повтор ответа создал новый результат');
+    check((await api(student, `/course-sessions/${sessionId}/next`, 'POST', { blockId: lesson.blocks[1].id })).status === 409, 'Неверный ответ завершил блок');
+    await student.getByRole('button', { name: 'Попробовать снова', exact: true }).click();
+    await student.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();
+    for (const word of fixture.expected.split(/\s+/)) await student.locator('.cv-tokens').getByRole('button', { name: word, exact: true }).first().click();
+    await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
+    await student.getByText('Верно!', { exact: true }).waitFor();
     await student.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await student.getByRole('heading', { name: 'Урок пройден', exact: true }).waitFor();
     await student.goto(base + '/courses/' + id); await student.getByText('Курс пройден', { exact: true }).waitFor();
