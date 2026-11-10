@@ -47,12 +47,12 @@ public interface ICourseLearningRepository
     Task<CourseVersion?> Version(Guid course, Guid? user, CancellationToken ct);
     Task<List<CourseLessonSession>> Sessions(Guid user, Guid course, CancellationToken ct);
     Task<CourseLessonSession?> Session(Guid user, Guid id, CancellationToken ct);
-    Task<CourseLessonSession> Start(CourseLessonSession session, List<ExerciseAttempt> attempts, CancellationToken ct, List<CoursePracticeRun>? practices = null);
+    Task<CourseLessonSession?> Start(CourseLessonSession session, List<ExerciseAttempt> attempts, CancellationToken ct, List<CoursePracticeRun>? practices = null);
     Task<CoursePracticeRun?> Practice(Guid user, Guid id, CancellationToken ct);
     Task<bool> SavePractice(CoursePracticeRun run, int revision, CancellationToken ct);
     Task<bool> Advance(Guid user, Guid id, int step, int count, Guid? attempt, CancellationToken ct);
     Task<bool> Archive(Guid course, Guid owner, CancellationToken ct);
-    Task<bool> Retry(Guid user, Guid session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct);
+    Task<bool> Retry(CourseLessonSession session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct);
     Task<List<CourseEnrollment>> Enrollments(Guid user, CancellationToken ct);
     Task<CourseVersion[]> Mine(Guid user, CancellationToken ct);
     Task<CourseVersion[]> Snapshots(Guid[] versions, CancellationToken ct);
@@ -99,18 +99,26 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
          select new CourseLearner(account.Id, account.PublicName ?? "Ученик")).ToArrayAsync(ct);
     public Task<CourseBlockActivity[]> Activity(Guid course, CancellationToken ct) =>
         db.CourseBlockActivities.AsNoTracking().Where(x => x.CourseId == course).OrderBy(x => x.At).ToArrayAsync(ct);
-    public Task Record(CourseLessonSession session, Guid block, string key, bool? correct, CancellationToken ct) =>
-        db.Database.ExecuteSqlInterpolatedAsync($"""
+    public async Task Record(CourseLessonSession session, Guid block, string key, bool? correct, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await EfCourseRepository.Lock(db, session.CourseId, ct, shared: true);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
             INSERT INTO "CourseBlockActivities" ("UserId", "CourseId", "VersionId", "BlockId", "Key", "At", "Correct")
-            VALUES ({session.UserId}, {session.CourseId}, {session.VersionId}, {block}, {key}, {DateTimeOffset.UtcNow}, {correct})
+            SELECT "UserId", "CourseId", "VersionId", {block}, {key}, {DateTimeOffset.UtcNow}, {correct}::boolean
+            FROM "CourseLessonSessions" WHERE "Id" = {session.Id}
             ON CONFLICT DO NOTHING
             """, ct);
+        await tx.CommitAsync(ct);
+    }
     public Task<List<CourseLessonSession>> Sessions(Guid user, Guid course, CancellationToken ct) => db.CourseLessonSessions.AsNoTracking()
         .Where(x => x.UserId == user && x.CourseId == course).OrderByDescending(x => x.StartedAt).ToListAsync(ct);
     public Task<CourseLessonSession?> Session(Guid user, Guid id, CancellationToken ct) => db.CourseLessonSessions.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == user && x.Id == id, ct);
-    public async Task<CourseLessonSession> Start(CourseLessonSession session, List<ExerciseAttempt> attempts, CancellationToken ct, List<CoursePracticeRun>? practices = null)
+    public async Task<CourseLessonSession?> Start(CourseLessonSession session, List<ExerciseAttempt> attempts, CancellationToken ct, List<CoursePracticeRun>? practices = null)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await EfCourseRepository.Lock(db, session.CourseId, ct, shared: true);
+        if (!await db.CourseVersions.AnyAsync(v => v.Id == session.VersionId && v.CourseId == session.CourseId, ct)) return null;
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-session:{session.UserId}:{session.VersionId}:{session.LessonId}"}, 0))", ct);
         var active = await db.CourseLessonSessions.AsNoTracking().Where(x => x.UserId == session.UserId && x.VersionId == session.VersionId && x.LessonId == session.LessonId && (x.CompletedAt == null || session.CompletedAt != null)).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
         if (active is not null) return active;
@@ -149,21 +157,22 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.StateJson, run.StateJson).SetProperty(x => x.Complete, run.Complete)
                 .SetProperty(x => x.Revision, revision + 1), ct) == 1;
 
-    public async Task<bool> Retry(Guid user, Guid session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct)
+    public async Task<bool> Retry(CourseLessonSession session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-progress:{session}"}, 0))", ct);
-        var current = await Session(user, session, ct);
+        await EfCourseRepository.Lock(db, session.CourseId, ct, shared: true);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-progress:{session.Id}"}, 0))", ct);
+        var current = await Session(session.UserId, session.Id, ct);
         if (current is null) return false;
         var ids = System.Text.Json.JsonSerializer.Deserialize<Guid?[]>(current.AttemptIdsJson)!;
         if (index < 0 || index >= ids.Length) return false;
         if (ids[index] != expectedAttempt) return true; // A duplicate retry must not replace the new attempt.
-        if (!await db.Attempts.AnyAsync(a => a.Id == expectedAttempt && a.UserId == user && a.CompletedAt != null && a.Correct == false, ct)) return false;
+        if (!await db.Attempts.AnyAsync(a => a.Id == expectedAttempt && a.UserId == session.UserId && a.CompletedAt != null && a.Correct == false, ct)) return false;
         ids[index] = replacement.Id;
         db.Attempts.Add(replacement);
         await db.SaveChangesAsync(ct);
         var json = System.Text.Json.JsonSerializer.Serialize(ids);
-        await db.CourseLessonSessions.Where(s => s.Id == session && s.UserId == user).ExecuteUpdateAsync(s => s.SetProperty(x => x.AttemptIdsJson, json), ct);
+        await db.CourseLessonSessions.Where(s => s.Id == session.Id && s.UserId == session.UserId).ExecuteUpdateAsync(s => s.SetProperty(x => x.AttemptIdsJson, json), ct);
         await tx.CommitAsync(ct);
         return true;
     }

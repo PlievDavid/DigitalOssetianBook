@@ -202,7 +202,8 @@
         if (!lessons.length) library.append(empty('Пока нет сохранённых уроков', 'В конструкторе нажмите правой кнопкой по уроку → «Сохранить в библиотеку».'));
         lessons.forEach(x => library.append(append(node('article', null, 'cv-author-row'),
           append(node('div'), node('h3', x.lesson.title), node('p', `${x.lesson.blocks.length} блоков · Сохранён ${new Date(x.createdAt).toLocaleDateString('ru-RU')}`, 'cv-meta')),
-          actions(link('Открыть оригинал', `/author/courses/${x.sourceCourseId}?lesson=${x.sourceLessonId}`),
+          actions(x.sourceAvailable ? link('Открыть оригинал', `/author/courses/${x.sourceCourseId}?lesson=${x.sourceLessonId}`)
+            : node('span', 'Исходный курс удалён', 'cv-meta'),
             button('Обновить курсы', e => run(e.currentTarget, () => updateLinkedCourses(x)))))));
       })), link('Материалы упражнений', '/editor'));
       const [courseTab, lessonTab] = tabs.querySelectorAll('button'); courseTab.setAttribute('aria-current', 'true');

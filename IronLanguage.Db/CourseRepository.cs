@@ -41,7 +41,9 @@ public interface ICourseRepository
     Task<Course?> Owned(Guid id, Guid owner, CancellationToken ct);
     Task<CourseAccessState?> OwnedAccess(Guid id, Guid owner, CancellationToken ct);
     Task<Guid?> Owner(Guid id, CancellationToken ct);
+    Task<Guid[]> OwnedIds(Guid owner, Guid[] ids, CancellationToken ct);
     Task<Course?> Save(Guid id, Guid owner, long stamp, string draft, CancellationToken ct);
+    Task<bool?> Delete(Guid id, Guid owner, long stamp, CancellationToken ct);
     Task<CourseVersion?> Publish(Guid id, Guid owner, long stamp, string snapshot, CancellationToken ct);
     Task<CourseEnrollment?> Enroll(Guid id, Guid user, CancellationToken ct);
     Task<CourseVersion?> ForLearner(Guid id, Guid user, CancellationToken ct);
@@ -50,8 +52,13 @@ public interface ICourseRepository
 
 public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
 {
-    private Task Lock(Guid id, CancellationToken ct) => db.Database.ExecuteSqlInterpolatedAsync(
-        $"SELECT pg_advisory_xact_lock(hashtextextended({"course-v2:" + id}, 0))", ct);
+    internal static Task Lock(AdamDbContext db, Guid id, CancellationToken ct, bool shared = false)
+    {
+        var key = "course-v2:" + id;
+        return shared
+            ? db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock_shared(hashtextextended({key}, 0))", ct)
+            : db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", ct);
+    }
 
     public async Task<Course> Create(Guid owner, string draft, CancellationToken ct)
     {
@@ -71,6 +78,9 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
     public Task<Guid?> Owner(Guid id, CancellationToken ct) =>
         db.Courses.Where(x => x.Id == id).Select(x => (Guid?)x.OwnerId).SingleOrDefaultAsync(ct);
 
+    public Task<Guid[]> OwnedIds(Guid owner, Guid[] ids, CancellationToken ct) =>
+        db.Courses.Where(x => x.OwnerId == owner && ids.Contains(x.Id)).Select(x => x.Id).ToArrayAsync(ct);
+
     public Task<CourseVersion[]> History(Guid id, Guid owner, CancellationToken ct) =>
         db.CourseVersions.AsNoTracking().Where(v => v.CourseId == id && db.Courses.Any(c => c.Id == id && c.OwnerId == owner))
             .OrderByDescending(v => v.Number).ToArrayAsync(ct);
@@ -86,7 +96,7 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
     public async Task<CourseVersion?> Publish(Guid id, Guid owner, long stamp, string snapshot, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        await Lock(id, ct);
+        await Lock(db, id, ct);
         var course = await Owned(id, owner, ct);
         if (course is null || course.DraftStamp != stamp || course.Archived || course.BlockReason != null) return null;
         var existing = await db.CourseVersions.AsNoTracking().SingleOrDefaultAsync(
@@ -107,7 +117,7 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
     public async Task<CourseEnrollment?> Enroll(Guid id, Guid user, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        await Lock(id, ct);
+        await Lock(db, id, ct);
         var course = await db.Courses.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.BlockReason == null, ct);
         if (course is null) return null;
         var existing = await db.CourseEnrollments.AsNoTracking().SingleOrDefaultAsync(x => x.CourseId == id && x.UserId == user, ct);
@@ -118,6 +128,34 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return enrollment;
+    }
+
+    public async Task<bool?> Delete(Guid id, Guid owner, long stamp, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await Lock(db, id, ct);
+        var owned = db.Courses.Where(c => c.Id == id && c.OwnerId == owner);
+        // Clear the publication pointer and lock the row against a concurrent draft save.
+        if (await owned.Where(c => c.DraftStamp == stamp)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.PublishedVersionId, (Guid?)null), ct) == 0)
+            return await owned.AnyAsync(ct) ? false : null;
+
+        var sessions = db.CourseLessonSessions.Where(s => s.CourseId == id);
+        await db.Attempts.Where(a => sessions.Any(s => s.Id == a.LessonRunId)).ExecuteDeleteAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            DELETE FROM "CoursePracticeRuns" AS run
+            USING "CourseLessonSessions" AS session
+            CROSS JOIN LATERAL jsonb_array_elements_text(session."AttemptIdsJson"::jsonb) AS attempt(id)
+            WHERE session."CourseId" = {id} AND run."UserId" = session."UserId" AND run."Id" = attempt.id::uuid
+            """, ct);
+        await db.CourseBlockActivities.Where(a => a.CourseId == id).ExecuteDeleteAsync(ct);
+        await db.CourseRatings.Where(r => r.CourseId == id).ExecuteDeleteAsync(ct);
+        await sessions.ExecuteDeleteAsync(ct);
+        await db.CourseEnrollments.Where(e => e.CourseId == id).ExecuteDeleteAsync(ct);
+        await db.CourseVersions.Where(v => v.CourseId == id).ExecuteDeleteAsync(ct);
+        await owned.ExecuteDeleteAsync(ct);
+        await tx.CommitAsync(ct);
+        return true;
     }
 
     public async Task<CourseVersion?> ForLearner(Guid id, Guid user, CancellationToken ct)

@@ -108,7 +108,8 @@ try
     var learning = new LearningService(catalog, progress, guests);
     var lessons = new EfCourseLearningRepository(db);
     var runner = new CourseLearningService(repo, lessons, progress, learning, guests);
-    var unordered = await lessons.Start(new CourseLessonSession { UserId = learner.Id, CourseId = course.Id, VersionId = first.Id, LessonId = Guid.NewGuid() }, [], ct);
+    var unordered = await lessons.Start(new CourseLessonSession { UserId = learner.Id, CourseId = course.Id, VersionId = first.Id, LessonId = Guid.NewGuid() }, [], ct)
+        ?? throw new InvalidOperationException("Не создана тестовая сессия курса.");
     Check(await lessons.Advance(learner.Id, unordered.Id, 2, 3, null, ct), "Не сохранён просмотр последнего блока");
     var unorderedState = (await lessons.Session(learner.Id, unordered.Id, ct))!;
     Check(unorderedState.Step == 0 && unorderedState.CompletedAt is null && unorderedState.CompletedSteps.Contains(2), "Просмотр последнего блока завершил весь урок");
@@ -236,6 +237,28 @@ try
     Check(await lessons.Version(practiceCourse.Id, learner.Id, ct) is null, "Записанный ученик видит заблокированный курс");
     Check(!await runner.Advance(practiceSession.Id, practiceBlocks[0].Id, learner.Id, guestOwner, ct), "Старая ссылка обошла блокировку курса");
     Check(await administration.ChangeCourse(owner.Id, practiceCourse.Id, false, "Проверка разблокировки", ct), "Курс не разблокирован");
+    var guestPractice = (await runner.Start(practiceCourse.Id, practiceLesson.Id, null, guestOwner, ct))!;
+    var practiceVersion = (await lessons.Snapshot(practiceSession.VersionId, ct))!;
+    var practicePreview = (await runner.Start(practiceCourse.Id, practiceLesson.Id, owner.Id, guestOwner, ct, practiceVersion))!;
+    var practiceIds = JsonSerializer.Deserialize<Guid?[]>(practiceSession.AttemptIdsJson)!.OfType<Guid>().ToArray();
+    Check(await repo.Delete(practiceCourse.Id, other.Id, 0, ct) is null, "Чужой автор удалил курс");
+    Check(await repo.Delete(practiceCourse.Id, owner.Id, 1, ct) == false, "Устаревший черновик позволил удалить курс");
+    Check(await lessons.Archive(practiceCourse.Id, owner.Id, ct) && await repo.Delete(practiceCourse.Id, owner.Id, 0, ct) == true, "Владелец не смог удалить архивный курс");
+    Check(await repo.Delete(practiceCourse.Id, owner.Id, 0, ct) is null, "Повторное удаление не распознано");
+    Check(await runner.State(practiceSession.Id, learner.Id, guestOwner, ct) is null &&
+        await runner.State(guestPractice.Id, null, guestOwner, ct) is null &&
+        await runner.State(practicePreview.Id, owner.Id, guestOwner, ct) is null, "После удаления открывается старая сессия");
+    Check(await lessons.Start(new CourseLessonSession { UserId = learner.Id, CourseId = practiceCourse.Id, VersionId = practiceVersion.Id, LessonId = practiceLesson.Id }, [], ct) is null,
+        "Запрос со старым снимком создал сессию удалённого курса");
+    await lessons.Record(practiceSession, practiceBlocks[0].Id, "open", null, ct);
+    Check(!await db.CourseVersions.AnyAsync(v => v.CourseId == practiceCourse.Id, ct) &&
+        !await db.CourseEnrollments.AnyAsync(e => e.CourseId == practiceCourse.Id, ct) &&
+        !await db.CourseBlockActivities.AnyAsync(a => a.CourseId == practiceCourse.Id, ct) &&
+        !await db.Attempts.AnyAsync(a => practiceIds.Contains(a.Id), ct) &&
+        !await db.CoursePracticeRuns.AnyAsync(a => practiceIds.Contains(a.Id), ct), "После удаления остались версии или данные прохождения");
+    Check(await db.Exercises.AnyAsync(e => e.Id == practiceBlocks[0].MaterialId, ct) &&
+        await db.ExerciseRewards.AnyAsync(r => r.UserId == learner.Id && r.ExerciseId == practiceBlocks[0].MaterialId, ct),
+        "Удаление затронуло исходный материал или уже начисленную награду");
     var session = (await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!;
     Check(session.VersionId == second.Id, "Урок не обновился до опубликованной версии");
     Check((await runner.Start(course.Id, lesson.Id, learner.Id, guestOwner, ct))!.Id == session.Id, "Повтор запуска создал сессию");
