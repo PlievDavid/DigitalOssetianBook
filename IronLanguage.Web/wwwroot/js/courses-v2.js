@@ -328,7 +328,6 @@
   async function details(id) {
     await import('/js/course-rich-text.js');
     const c = await api(`/courses/${id}`); shell(false); root.append(link('← Каталог курсов', '/courses', 'back-link'));
-    if (window.AdamAuthenticated) root.append(node('p', 'Автор курса видит ваше имя и учебные результаты по этому курсу.', 'cv-notice'));
     root.classList.add('cv-course-detail');
     const lessons = c.modules.flatMap(m => m.lessons), completed = lessons.filter(l => l.completed).length;
     const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || lessons[0];

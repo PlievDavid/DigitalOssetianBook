@@ -160,7 +160,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.getByRole('button', { name: 'Продолжить редактирование', exact: true }).click();
     await login(student, fixture.learner); await student.goto(base + '/courses/' + id);
     await student.getByRole('heading', { name: 'Проверка курса Ӕ/ӕ' }).waitFor();
-    await student.getByText('Автор курса видит ваше имя и учебные результаты по этому курсу.', { exact: true }).waitFor();
+    check(await student.getByText('Автор курса видит ваше имя и учебные результаты по этому курсу.', { exact: true }).count() === 0, 'На странице курса остался баннер');
     check(await student.locator('.cv-tabs').count() === 0, 'На странице курса остались вкладки каталога');
     check(await student.locator('.cv-summary, progress').count() === 0, 'На странице курса осталась боковая карточка прогресса');
     check((await api(student, '/author/courses/' + id)).status === 403, 'Ученик получил авторский доступ');
