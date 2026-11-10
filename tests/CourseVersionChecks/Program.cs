@@ -128,6 +128,8 @@ try
     Check(!await materialAccess.CanReadMedia(audioExercise.AudioPath!, null, ct), "Аудио личного материала выдаётся напрямую");
     Check(await materialAccess.CanReadMedia(audioExercise.AudioPath!, owner.Id, ct), "Автор не может прослушать свой материал");
     Check((await materialAccess.Search(owner.Id, "listening", "вопрос", true, 1, ct)).Items.Single().Id == audioExercise.Id, "Свое упражнение не найдено");
+    Check((await materialAccess.Selected(owner.Id, [audioExercise.Id], ct)).Single().Own, "Сохранённое упражнение владельца не найдено");
+    Check((await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Length == 0, "Сведения о личном упражнении доступны другому автору");
     Check((await materialAccess.Search(other.Id, "listening", null, false, 1, ct)).Items.Length == 0, "Другой преподаватель видит личное упражнение");
     Check(!await materialAccess.Configure(other.Id, "listening", audioExercise.Id, true, true, ct), "Чужой преподаватель поменял права");
     var audioAuthor = new CourseAuthoringService(repo, materialAccess, lessons);
@@ -135,9 +137,11 @@ try
     await audioAuthor.Publish(audioCourse.Id, owner.Id, audioCourse.DraftStamp, true, ct);
     var borrowedDraft = CourseLearningService.Read((await lessons.Version(audioCourse.Id, null, ct))!);
     await materialAccess.Configure(owner.Id, "listening", audioExercise.Id, false, true, ct);
+    Check(!(await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Single().Own, "Общий материал не показан как чужой");
     var borrowed = await audioAuthor.Create(other.Id, borrowedDraft, ct);
     Check(await audioAuthor.Publish(borrowed.Id, other.Id, 0, true, ct) is not null, "Разрешённое упражнение не опубликовано");
     await materialAccess.Configure(owner.Id, "listening", audioExercise.Id, false, false, ct);
+    Check((await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Length == 0, "Отзыв не скрыл сведения об упражнении");
     await audioAuthor.Save(borrowed.Id, other.Id, 0, borrowedDraft with { Title = "Изменено описание курса" }, ct);
     Check(await audioAuthor.Publish(borrowed.Id, other.Id, 1, true, ct) is not null, "Отзыв уничтожил опубликованное включение");
     var newInclusionRejected = false;
@@ -351,7 +355,7 @@ try
         var browser = new ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         browser.ArgumentList.Add("tests/courses-v2-browser.cjs"); browser.Environment["ADAM_TEST_URL"] = url;
         browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer,
-            missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
+            phraseTitle = phrase.RussianPrompt, missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
         using var process = Process.Start(browser)!;
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync(); Console.Write(await output); Console.Error.Write(await error); Check(process.ExitCode == 0, "Браузерная проверка не прошла");

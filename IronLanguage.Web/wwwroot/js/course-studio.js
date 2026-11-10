@@ -6,7 +6,7 @@ window.AdamCourseStudio = async function (ui) {
   const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/css/course-studio.css'; document.head.append(style);
   const id = location.pathname.split('/').pop();
   const course = await api(`/author/courses/${id}`);
-  const materials = new Map();
+  const materials = new Map((course.materials ?? []).map(material => [material.id, material]));
   const exerciseTypes = { translation: 'Собери фразу', listening: 'Аудирование', audio: 'Аудиопазл',
     matching: 'Соотнесение', picture: 'Картинка и слово', grammar: 'Форма слова', dialogue: 'Диалог' };
   let draft = JSON.parse(course.draftJson), stamp = course.draftStamp, changed = 0, saved = 0, saving, timer, conflict = false;
@@ -169,17 +169,18 @@ window.AdamCourseStudio = async function (ui) {
       d.append(node('p', 'Чередуйте объяснения с практикой. Порядок можно изменить в любой момент.', 'cs-help'));
       const choice = (label, description, kind, glyph) => {
         const add = material => {
-          mutate(() => { const block = { id: uuid(), kind, title: label, text: '', materialId: material?.id ?? null }; lesson.blocks.push(block); selectedBlock = block.id; });
+          const type = material?.kind ?? kind;
+          mutate(() => { const block = { id: uuid(), kind: type, title: exerciseTypes[type] ?? label, text: '', materialId: material?.id ?? null }; lesson.blocks.push(block); selectedBlock = block.id; });
           canvas.querySelector('.cs-block-edit input')?.focus();
         };
-        const b = button('', () => { close(); if (kind === 'theory') add(); else chooseMaterial(kind, add); }, 'cs-block-choice');
+        const b = button('', () => { close(); if (kind === 'theory') add(); else chooseMaterial(kind, add, true); }, 'cs-block-choice');
         b.append(icon(glyph), append(node('span'), node('strong', label), node('small', description))); return b;
       };
       d.append(choice('Объяснение', 'Правило, пример или короткая инструкция', 'theory', 'text'));
       Object.entries(exerciseTypes).forEach(([kind, label]) => d.append(choice(label, 'Упражнение из библиотеки', kind, 'tiles')));
     });
   }
-  function chooseMaterial(kind, select) {
+  function chooseMaterial(kind, select, canChangeType = false) {
     modal('Библиотека упражнений', (dialog, close) => {
       let own = true, query = '', page = 1, request = 0, timer;
       const list = node('div', null, 'cs-material-results');
@@ -196,7 +197,16 @@ window.AdamCourseStudio = async function (ui) {
       const clear = action('Очистить поиск', () => { input.value = ''; query = ''; page = 1; clearTimeout(timer); load(); input.focus(); });
       const create = link('Создать упражнение', '/editor/new/' + kind, 'cs-text-link');
       create.target = '_blank'; create.rel = 'noopener';
-      dialog.append(node('p', exerciseTypes[kind], 'cs-help'), actions(ownButton, sharedButton), search, clear, feedback, list, create);
+      const type = canChangeType ? field('Тип упражнения', kind, value => {
+        kind = value;
+        page = 1;
+        create.hidden = !kind;
+        create.href = '/editor/new/' + kind;
+        clearTimeout(timer);
+        load();
+      }, { values: [{ value: '', label: 'Все типы' }, ...Object.entries(exerciseTypes).map(([value, label]) => ({ value, label }))] })
+        : node('p', exerciseTypes[kind], 'cs-help');
+      dialog.append(type, actions(ownButton, sharedButton), search, clear, feedback, list, create);
       async function load() {
         const currentRequest = ++request;
         ownButton.setAttribute('aria-pressed', String(own));
@@ -352,7 +362,8 @@ window.AdamCourseStudio = async function (ui) {
         if (b.kind === 'theory') card.append(window.AdamCourseRichText.editor(b, (text, richText) => { b.text = text; b.richText = richText; dirty(); }));
         else {
           const material = materials.get(b.materialId);
-          card.append(node('p', material?.title ?? (b.materialId ? 'Упражнение выбрано' : 'Выберите упражнение'), 'cs-block-body'),
+          card.append(node('p', material?.title ?? (b.materialId ? 'Сведения об упражнении недоступны' : 'Выберите упражнение'), 'cs-block-body'),
+            material ? node('p', material.author, 'cs-help') : null,
             actions(action(b.materialId ? 'Заменить' : 'Выбрать упражнение', () => chooseMaterial(b.kind, item => mutate(() => { b.materialId = item.id; }))),
               material?.own ? link('Открыть оригинал', `/editor/${b.kind}/${b.materialId}/preview`, 'cs-text-link') : null));
         }
