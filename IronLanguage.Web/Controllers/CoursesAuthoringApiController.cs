@@ -8,7 +8,8 @@ namespace IronLanguage.Web.Controllers;
 [ApiController, Authorize(Roles = "Editor"), AutoValidateAntiforgeryToken]
 [Route("api/v1/author/courses")]
 [RequestSizeLimit(1_000_000)]
-public sealed class CoursesAuthoringApiController(ICourseRepository courses, CourseAuthoringService authoring, ICourseLearningRepository publications, CourseAnalytics analytics) : ControllerBase
+public sealed class CoursesAuthoringApiController(ICourseRepository courses, CourseAuthoringService authoring, ICourseLearningRepository publications,
+    CourseAnalytics analytics, ICourseMaterialRepository materials) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create(CourseDraft draft, CancellationToken ct)
@@ -22,8 +23,17 @@ public sealed class CoursesAuthoringApiController(ICourseRepository courses, Cou
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
-        await courses.Owned(id, User.UserId()!.Value, ct) is { } course ? Ok(course) : NotFound();
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
+    {
+        var owner = User.UserId()!.Value;
+        if (await courses.Owned(id, owner, ct) is not { } course) return NotFound();
+        var draft = System.Text.Json.JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, CourseAuthoringService.JsonOptions)!;
+        var references = draft.Modules.SelectMany(m => m.Lessons).SelectMany(l => l.Blocks)
+            .Where(b => b.Kind != "theory" && b.MaterialId.HasValue).ToLookup(b => b.MaterialId!.Value, b => b.Kind);
+        var selected = await materials.Selected(owner, references.Select(x => x.Key).ToArray(), ct);
+        return Ok(new { course.Id, course.OwnerId, course.Archived, course.BlockReason, course.PublishedVersionId,
+            course.DraftStamp, course.DraftJson, course.CreatedAt, materials = selected.Where(m => references[m.Id].Contains(m.Kind)) });
+    }
 
     public sealed record SaveInput(long Stamp, CourseDraft Draft);
     [HttpPatch("{id:guid}/draft")]

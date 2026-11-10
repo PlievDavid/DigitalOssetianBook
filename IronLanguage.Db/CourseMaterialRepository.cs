@@ -23,11 +23,13 @@ internal sealed class CourseMaterialItem
 }
 public sealed record CourseMaterialChoice(Guid Id, string Kind, string Title, string Fragment, string? AudioPath, string? ImagePath, string Author, bool Own);
 public sealed record CourseMaterialPage(CourseMaterialChoice[] Items, bool HasMore);
+public sealed record CourseMaterialSummary(Guid Id, string Kind, string Title, string Author, bool Own);
 
 public interface ICourseMaterialRepository
 {
     Task<CourseMaterialAccess?> Access(string kind, Guid id, CancellationToken ct);
     Task<CourseMaterialPage> Search(Guid owner, string? kind, string? query, bool own, int page, CancellationToken ct);
+    Task<CourseMaterialSummary[]> Selected(Guid owner, Guid[] ids, CancellationToken ct);
     Task<Exercise?> Exercise(Guid owner, string kind, Guid id, CancellationToken ct);
     Task<bool> Available(Guid owner, string kind, Guid id, CancellationToken ct);
     Task<bool> Configure(Guid owner, string kind, Guid id, bool inCatalog, bool shared, CancellationToken ct);
@@ -90,6 +92,17 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
             return new CourseMaterialChoice(row.Id, row.Kind, row.Title, row.Fragment ?? row.Title,
                 row.AudioPath, row.Kind == "picture" ? Read("picturePath") : null, row.Author, row.Own);
         }).ToArray(), rows.Length > size);
+    }
+
+    public Task<CourseMaterialSummary[]> Selected(Guid owner, Guid[] ids, CancellationToken ct)
+    {
+        if (ids.Length == 0) return Task.FromResult(Array.Empty<CourseMaterialSummary>());
+        return (from material in Inventory()
+                join access in db.CourseMaterialAccesses on new { material.Kind, MaterialId = material.Id } equals new { access.Kind, access.MaterialId }
+                join author in db.Users on access.OwnerId equals (Guid?)author.Id
+                where ids.Contains(material.Id) && !access.Blocked && (access.OwnerId == owner || access.Shared)
+                select new CourseMaterialSummary(material.Id, material.Kind, material.Title, author.PublicName ?? "Преподаватель", access.OwnerId == owner))
+            .ToArrayAsync(ct);
     }
 
     private IQueryable<CourseMaterialItem> Inventory() => db.Database.SqlQueryRaw<CourseMaterialItem>("""
