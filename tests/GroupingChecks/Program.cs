@@ -14,6 +14,7 @@ static class GroupingChecks
         TestParseValid();
         TestParseRejectsBrokenMarkup();
         await TestStartSnapshot();
+        await TestStartRejectsInvalidMaterial();
         await TestWrongThenCorrect();
         await TestRepeatDoesNotCountTwice();
         await TestInvalidIndices();
@@ -51,6 +52,8 @@ static class GroupingChecks
         Reject("Заголовок Latin", Groups, Words);
         Reject("Title", "Одна\nДве", "один | 1\nдва | 1\nтри | 1");
         Reject("Title", "Одна\nДве", Words.Replace("фӕндыр | 1", "фӕндыр"));
+        Reject("Title", "Одна\nДве", Words.Replace("фӕндыр | 1", "фӕндыр | 01"));
+        Reject("Title", "Одна\nДве", Words.Replace("фӕндыр | 1", "фӕндыр | +1"));
 
         static void Reject(string title, string groups, string words)
         {
@@ -63,7 +66,11 @@ static class GroupingChecks
     static async Task TestStartSnapshot()
     {
         var env = new TestEnvironment();
+        var linked = new WordEntry { Ossetian = "фӕндыр", Russian = "желание", Published = true };
+        env.Catalog.WordsList.Add(linked);
         var material = Create(env, out var entity);
+        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        entity.ScriptJson = JsonSerializer.Serialize(material with { WordIds = [linked.Id] }, jsonOptions);
         var owner = Guid.NewGuid();
         var sessionId = Guid.NewGuid();
         var service = new GroupingService(env.Catalog, env.Guests);
@@ -77,17 +84,53 @@ static class GroupingChecks
         Require(board.Tiles.All(tile => !tile.Solved && tile.Group is null));
         Require(board.Tiles.Select(tile => tile.Text).OrderBy(x => x, StringComparer.Ordinal)
             .SequenceEqual(material.Words.Select(word => word.Text).OrderBy(x => x, StringComparer.Ordinal)));
-        Require(board.Words.Length == 0);
+        Require(board.Words.Length == 1 && board.Words[0].Id == linked.Id);
 
         // Материал изменился после старта — занятие продолжает использовать снимок.
         entity.ScriptJson = JsonSerializer.Serialize(new GroupingMaterial("Другое", ["А", "Б"],
             [new GroupingWord("иное", 0), new GroupingWord("слово", 0), new GroupingWord("ещё", 0), new GroupingWord("одно", 1)], []),
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            jsonOptions);
         var restored = await service.Board(owner, sessionId, CancellationToken.None)
             ?? throw new Exception("Ожидалось восстановление занятия.");
         Require(restored.Title == material.Title);
+        Require(restored.Words.Length == 1 && restored.Words[0].Id == linked.Id);
         Require(restored.Tiles.Select(tile => tile.Text).OrderBy(x => x, StringComparer.Ordinal)
             .SequenceEqual(material.Words.Select(word => word.Text).OrderBy(x => x, StringComparer.Ordinal)));
+    }
+
+    static async Task TestStartRejectsInvalidMaterial()
+    {
+        var env = new TestEnvironment();
+        var service = new GroupingService(env.Catalog, env.Guests);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var payloads = new[]
+        {
+            new GroupingMaterial("Одна группа", ["Одна"], Four(0), []),
+            new GroupingMaterial("Слишком много групп", [.. Enumerable.Range(1, 7).Select(index => $"Группа {index}")], Four(0), []),
+            new GroupingMaterial("Мало слов", ["А", "Б"], [new("один", 0), new("два", 0), new("три", 1)], []),
+            new GroupingMaterial("Много слов", ["А", "Б"],
+                [.. Enumerable.Range(1, 31).Select(index => new GroupingWord($"слово {index}", index % 2))], []),
+            new GroupingMaterial("Неверная группа", ["А", "Б"], Four(2), [])
+        };
+        foreach (var payload in payloads)
+        {
+            var entity = new Grouping
+            {
+                Title = payload.Title,
+                Published = true,
+                ScriptJson = JsonSerializer.Serialize(payload, options)
+            };
+            env.Catalog.GroupingsList.Add(entity);
+            try
+            {
+                await service.Start(Guid.NewGuid(), Guid.NewGuid(), entity.Id, CancellationToken.None);
+                Require(false, $"Материал «{payload.Title}» должен быть отклонён.");
+            }
+            catch (InvalidOperationException) { }
+        }
+
+        static GroupingWord[] Four(int group) =>
+            [new("один", group), new("два", group), new("три", group), new("четыре", group)];
     }
 
     static async Task TestWrongThenCorrect()
@@ -155,6 +198,10 @@ static class GroupingChecks
         var repeat = await service.Check(owner, board.SessionId, tile.Index, correctGroup, CancellationToken.None)
             ?? throw new Exception("Ожидался результат проверки.");
         Require(repeat.Correct && repeat.Placed == first.Placed);
+        var wrongGroupRepeat = await service.Check(owner, board.SessionId, tile.Index, 1 - correctGroup, CancellationToken.None)
+            ?? throw new Exception("Ожидался результат проверки.");
+        Require(wrongGroupRepeat.Correct && wrongGroupRepeat.Placed == first.Placed);
+        Require(wrongGroupRepeat.Tiles.Single(x => x.Index == tile.Index).Group == correctGroup);
     }
 
     static async Task TestInvalidIndices()

@@ -8,8 +8,15 @@
   const status = el('grouping-builder-status');
 
   // Malformed text is shown as plain textareas and reaches server validation unchanged.
+  const groups = rows(groupsInput.value);
   const sourceWords = rows(wordsInput.value);
-  if (sourceWords.some(row => row.split('|').length !== 2)) {
+  const malformed = sourceWords.some(row => {
+    const parts = row.split('|').map(part => part.trim());
+    if (parts.length !== 2 || !/^[1-9]\d*$/.test(parts[1])) return true;
+    const group = Number(parts[1]);
+    return !Number.isSafeInteger(group) || group > groups.length;
+  });
+  if (malformed) {
     for (const [input, title] of [[groupsInput, 'Группы (название каждой с новой строки)'], [wordsInput, 'Слова: слово | номер группы']]) {
       const label = document.createElement('label');
       const textarea = document.createElement('textarea');
@@ -25,21 +32,16 @@
     const warning = document.createElement('p');
     warning.className = 'form-error';
     warning.setAttribute('role', 'alert');
-    warning.textContent = 'В сохранённых словах есть строка без разделителя «|» или с лишним разделителем. Данные не изменены: исправьте текст ниже и сохраните черновик, после проверки сервер снова откроет конструктор.';
+    warning.textContent = 'В сохранённых словах есть строка без разделителя «|», с лишним разделителем или с неверным номером группы. Данные не изменены: исправьте текст ниже и сохраните черновик, после проверки сервер снова откроет конструктор.';
     root.prepend(warning);
     return;
   }
 
-  const groups = rows(groupsInput.value);
   const words = sourceWords.map(row => {
     const [text, number] = row.split('|').map(part => part.trim());
-    const parsed = Number.parseInt(number, 10);
-    return { text, group: Number.isInteger(parsed) && parsed > 0 ? parsed - 1 : -1 };
+    return { text, group: Number.parseInt(number, 10) - 1 };
   });
   if (!groups.length) groups.push('', '');
-  words.forEach(word => {
-    if (word.group < 0 || word.group >= groups.length) word.group = 0;
-  });
 
   const element = (tag, text, className) => {
     const node = document.createElement(tag);

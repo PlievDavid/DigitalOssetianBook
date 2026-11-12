@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IronLanguage.Db.Migrations
 {
     [DbContext(typeof(AdamDbContext))]
-    [Migration("20261106172801_GroupingExercises")]
-    partial class GroupingExercises
+    [Migration("20261112134836_AddGroupingExercises")]
+    partial class AddGroupingExercises
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -532,6 +532,36 @@ namespace IronLanguage.Db.Migrations
                     b.HasKey("UserId", "ExerciseId", "Day");
 
                     b.ToTable("ExerciseRewards");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.Grammar", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Archived")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Published")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ScriptJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Published", "Archived");
+
+                    b.ToTable("Grammars");
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Grouping", b =>

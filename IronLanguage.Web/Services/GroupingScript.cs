@@ -1,3 +1,4 @@
+using System.Globalization;
 using IronLanguage.Db;
 
 namespace IronLanguage.Web.Services;
@@ -107,7 +108,9 @@ public static class GroupingScript
                 errors.Add($"Слова, строка {index}: слово «{word}» повторяется.");
                 continue;
             }
-            if (!int.TryParse(parts[1], out var group) || group < 1 || group > groupCount)
+            if (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var group)
+                || parts[1] != group.ToString(CultureInfo.InvariantCulture)
+                || group < 1 || group > groupCount)
             {
                 errors.Add($"Слова, строка {index}: укажите номер группы от 1 до {Math.Max(1, groupCount)}.");
                 continue;

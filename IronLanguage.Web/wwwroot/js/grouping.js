@@ -14,6 +14,7 @@
   let selectedWord = null;
   let busy = false;
   let generation = 0;
+  let renderedWordsKey = null;
   let drag = null;
   let suppressClick = false;
 
@@ -293,6 +294,9 @@
   }
 
   function renderWords() {
+    const key = `${session.sessionId}:${(session.words ?? []).map(word => word.id).join(",")}`;
+    if (key === renderedWordsKey) return;
+    renderedWordsKey = key;
     wordsBox.replaceChildren();
     if (!session.words || !session.words.length) return;
     const heading = document.createElement("h2");
@@ -323,6 +327,7 @@
     busy = false;
     session = null;
     selectedWord = null;
+    renderedWordsKey = null;
     play.hidden = true; list.hidden = false;
     result.textContent = "";
     summaryBox.hidden = true; summaryBox.replaceChildren();

@@ -23,6 +23,7 @@ public sealed class GroupingApiController(ICatalogRepository catalog, GroupingSe
             return board is null ? NotFound() : Ok(board);
         }
         catch (GuestCapacityException error) { return StatusCode(503, new { error = error.Message }); }
+        catch (InvalidOperationException error) { return UnprocessableEntity(new { error = error.Message }); }
     }
 
     [HttpPost("groupings/sessions/{sid:guid}/check")]

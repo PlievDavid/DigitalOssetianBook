@@ -19,21 +19,28 @@ public sealed class GroupingService(ICatalogRepository catalog, GuestLearningSto
         if (material is null) return null;
         var payload = JsonSerializer.Deserialize<GroupingMaterial>(material.ScriptJson, JsonOptions)
             ?? throw new InvalidOperationException("Некорректный материал «Разбить слова на группы».");
-        if (payload.Groups.Length == 0 || payload.Words.Length == 0)
+        if (payload.Groups is null || payload.Words is null)
             throw new InvalidOperationException("В материале «Разбить слова на группы» нет групп или слов.");
+        if (payload.Groups.Length is < GroupingScript.MinGroups or > GroupingScript.MaxGroups)
+            throw new InvalidOperationException($"В материале «Разбить слова на группы» должно быть от {GroupingScript.MinGroups} до {GroupingScript.MaxGroups} групп.");
+        if (payload.Words.Length is < GroupingScript.MinWords or > GroupingScript.MaxWords)
+            throw new InvalidOperationException($"В материале «Разбить слова на группы» должно быть от {GroupingScript.MinWords} до {GroupingScript.MaxWords} слов.");
+        if (payload.Words.Any(word => word is null || word.Group < 0 || word.Group >= payload.Groups.Length))
+            throw new InvalidOperationException("В материале «Разбить слова на группы» указан неверный номер группы.");
         var order = Enumerable.Range(0, payload.Words.Length).ToList();
         Shuffle(order);
         var state = new GroupingState
         {
             MaterialId = material.Id, Version = material.Version, Title = material.Title,
             Groups = [.. payload.Groups],
+            WordIds = [.. (payload.WordIds ?? [])],
             Texts = [.. order.Select(index => payload.Words[index].Text)],
             CorrectGroup = [.. order.Select(index => payload.Words[index].Group)],
             GroupOfWord = Enumerable.Repeat(-1, order.Count).ToArray(),
             Solved = new bool[order.Count]
         };
         guests.Add(owner, sessionId, state);
-        var words = await Words(payload.WordIds, ct);
+        var words = await Words(state.WordIds, ct);
         return Board(sessionId, state, words);
     }
 
@@ -47,9 +54,9 @@ public sealed class GroupingService(ICatalogRepository catalog, GuestLearningSto
             var state = entry.Value;
             if (wordIndex < 0 || wordIndex >= state.Texts.Length || groupIndex < 0 || groupIndex >= state.Groups.Length)
                 throw new ArgumentException("Неверная группа или слово.");
-            // Повтор уже зачтённого слова (сбой сети) не начисляет прогресс дважды.
+            // Повтор уже зачтённого слова (сбой сети) не начисляет прогресс дважды и не меняет закреплённую группу.
             if (state.Solved[wordIndex])
-                return new GroupingCheck(state.GroupOfWord[wordIndex] == groupIndex, state.Placed, state.Texts.Length, state.Placed == state.Texts.Length, Tiles(state));
+                return new GroupingCheck(true, state.Placed, state.Texts.Length, state.Placed == state.Texts.Length, Tiles(state));
             var correct = state.CorrectGroup[wordIndex] == groupIndex;
             if (correct)
             {
@@ -74,13 +81,8 @@ public sealed class GroupingService(ICatalogRepository catalog, GuestLearningSto
         finally { entry.Gate.Release(); }
     }
 
-    private async Task<GroupingLinkedWord[]> WordsFor(GroupingState state, CancellationToken ct)
-    {
-        var material = await catalog.Grouping(state.MaterialId, ct);
-        if (material is null) return [];
-        var payload = JsonSerializer.Deserialize<GroupingMaterial>(material.ScriptJson, JsonOptions);
-        return payload is null ? [] : await Words(payload.WordIds, ct);
-    }
+    private async Task<GroupingLinkedWord[]> WordsFor(GroupingState state, CancellationToken ct) =>
+        await Words(state.WordIds, ct);
 
     private async Task<GroupingLinkedWord[]> Words(Guid[] wordIds, CancellationToken ct)
     {
@@ -115,6 +117,7 @@ public sealed class GroupingService(ICatalogRepository catalog, GuestLearningSto
         public int Version { get; init; }
         public string Title { get; init; } = "";
         public string[] Groups { get; init; } = [];
+        public Guid[] WordIds { get; init; } = [];
         public string[] Texts { get; init; } = [];
         public int[] CorrectGroup { get; init; } = [];
         public int[] GroupOfWord { get; set; } = [];
