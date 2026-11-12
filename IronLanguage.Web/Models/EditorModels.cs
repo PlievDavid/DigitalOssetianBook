@@ -63,6 +63,9 @@ public sealed class EditorFormModel
     public string GrammarDistractor1 { get; set; } = "";
     public string GrammarDistractor2 { get; set; } = "";
     public string GrammarDistractor3 { get; set; } = "";
+    public string GroupingTitle { get; set; } = "";
+    public string GroupingGroupsText { get; set; } = "";
+    public string GroupingWordsText { get; set; } = "";
     public string? ExistingAudioPath { get; set; }
     public IFormFile? Audio { get; set; }
 
@@ -141,6 +144,14 @@ public sealed class EditorFormModel
             model.PictureDistractor2 = p.Distractors.ElementAtOrDefault(1) ?? "";
             model.WordIdsCsv = string.Join(',', p.WordIds);
         }
+        else if (kind == "grouping")
+        {
+            var p = JsonSerializer.Deserialize<GroupingMaterial>(json, options)!;
+            model.GroupingTitle = p.Title;
+            model.GroupingGroupsText = string.Join('\n', p.Groups);
+            model.GroupingWordsText = string.Join('\n', p.Words.Select(x => $"{x.Text} | {x.Group + 1}"));
+            model.WordIdsCsv = string.Join(',', p.WordIds);
+        }
         else if (kind == "grammar")
         {
             var p = JsonSerializer.Deserialize<GrammarMaterial>(json, options)!;
@@ -177,6 +188,7 @@ public sealed class EditorPreviewModel
     public MatchingMaterial? Matching { get; init; }
     public PictureMaterial? Picture { get; init; }
     public GrammarMaterial? Grammar { get; init; }
+    public GroupingMaterial? Grouping { get; init; }
     public List<ContentRevision> History { get; init; } = [];
     public Dictionary<Guid, WordEntry> Words { get; init; } = [];
 }

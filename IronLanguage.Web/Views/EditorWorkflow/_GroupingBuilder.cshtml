@@ -1,0 +1,26 @@
+@model IronLanguage.Web.Models.EditorFormModel
+<section id="grouping-builder" class="editor-grouping-builder">
+    <div class="editor-grouping-heading">
+        <div>
+            <h2>Группы</h2>
+            <p class="field-help">От 2 до 6 групп. Название группы увидит ученик, например «Существительные».</p>
+        </div>
+        <button type="button" id="grouping-add-group" class="button secondary">Добавить группу</button>
+    </div>
+    <div id="grouping-groups" class="editor-grouping-groups"></div>
+
+    <div class="editor-grouping-heading">
+        <div>
+            <h2>Слова</h2>
+            <p class="field-help">От 4 до 30 слов. Для каждого слова выберите группу; в каждой группе должно быть хотя бы одно слово.</p>
+        </div>
+        <button type="button" id="grouping-add-word" class="button secondary">Добавить слово</button>
+    </div>
+    <div id="grouping-words" class="editor-grouping-words"></div>
+    <p id="grouping-builder-status" class="field-help" role="status" aria-live="polite"></p>
+
+    <input asp-for="GroupingGroupsText" type="hidden" />
+    <input asp-for="GroupingWordsText" type="hidden" />
+    <span asp-validation-for="GroupingGroupsText" class="form-error"></span>
+    <span asp-validation-for="GroupingWordsText" class="form-error"></span>
+</section>
