@@ -21,6 +21,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
     public DbSet<Dialogue> Dialogues => Set<Dialogue>();
     public DbSet<Matching> Matchings => Set<Matching>();
     public DbSet<PictureMatching> PictureMatchings => Set<PictureMatching>();
+    public DbSet<Grammar> Grammars => Set<Grammar>();
     public DbSet<Grouping> Groupings => Set<Grouping>();
     public DbSet<DialogueSession> DialogueSessions => Set<DialogueSession>();
     public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
@@ -57,5 +58,6 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<BookChapter>().HasOne(x => x.Book).WithMany(x => x.Chapters).HasForeignKey(x => x.BookId);
         model.Entity<DialogueReward>().HasKey(x => new { x.UserId, x.DialogueId, x.Day });
         model.Entity<DialogueSession>().HasIndex(x => new { x.UserId, x.DialogueId, x.CompletedAt });
+        model.Entity<Grammar>().HasIndex(x => new { x.Published, x.Archived });
     }
 }

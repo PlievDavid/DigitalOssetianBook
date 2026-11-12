@@ -531,7 +531,7 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("ExerciseRewards");
                 });
 
-            modelBuilder.Entity("IronLanguage.Db.Grouping", b =>
+            modelBuilder.Entity("IronLanguage.Db.Grammar", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -556,7 +556,9 @@ namespace IronLanguage.Db.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Groupings");
+                    b.HasIndex("Published", "Archived");
+
+                    b.ToTable("Grammars");
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Matching", b =>

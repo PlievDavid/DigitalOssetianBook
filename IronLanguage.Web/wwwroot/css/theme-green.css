@@ -235,6 +235,9 @@ html { scrollbar-gutter: stable; }
 .format-picture { background: #fdf6e9; }
 .format-picture .format-icon { background: #f3e2b9; color: #8a6d1f; }
 .format-picture .round-arrow { color: #8a6d1f; }
+.format-grammar { background: #f3eef8; }
+.format-grammar .format-icon { background: #e4d4f0; color: #5b3a8c; }
+.format-grammar .round-arrow { color: #5b3a8c; }
 .format-grouping { background: #f4eef8; }
 .format-grouping .format-icon { background: #e5d8f2; color: #5b3f8c; }
 .format-grouping .round-arrow { color: #5b3f8c; }
