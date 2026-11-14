@@ -51,15 +51,16 @@
     });
     root.append(nav, message);
   }
-  async function continueCourse(courseId, lessonId = null) {
+  async function continueCourse(courseId, lessonId = null, fromStart = false) {
     if (!lessonId) {
       const course = await api(`/courses/${courseId}`);
       const lessons = course.modules.flatMap(m => m.lessons);
-      lessonId = course.resumeLessonId || lessons.find(l => l.available && !l.completed)?.id || lessons.find(l => l.available)?.id;
+      const first = lessons.find(l => l.available)?.id;
+      lessonId = fromStart ? first : course.resumeLessonId || lessons.find(l => l.available && !l.completed)?.id || first;
     }
     if (!lessonId) { location.href = `/courses/${courseId}`; return; }
     const session = await post(`/courses/${courseId}/lessons/${lessonId}/sessions`);
-    location.href = `/courses/sessions/${session.id}`;
+    location.href = `/courses/sessions/${session.id}${fromStart ? '?start=1' : ''}`;
   }
   const courseLevels = ['', 'Начальный', 'Средний', 'Продвинутый'];
   function levelFilter(level, onChange) {
@@ -150,7 +151,10 @@
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
     const enrolled = new Set(!authored && window.AdamAuthenticated ? (mine ? rows : await api('/me/courses')).map(c => c.id) : []);
     if (!authored) root.classList.add('cv-material-catalog');
-    if (authored) { root.replaceChildren(message); root.append(link('← Каталог курсов', '/courses', 'back-link')); } else shell();
+    if (authored) {
+      root.classList.add('cv-teaching');
+      root.replaceChildren(message, link('← Каталог курсов', '/courses', 'back-link'));
+    } else shell();
     const create = button('Создать курс', e => run(e.currentTarget, async () => {
       const trigger = e.currentTarget;
       await import('/js/course-rich-text.js');
@@ -197,9 +201,8 @@
       dialog.showModal();
       titleInput.focus();
     }), 'button primary');
-    if (authored) root.append(heading(authored ? 'Преподавание' : mine ? 'Мои курсы' : 'Курсы осетинского языка', authored
-      ? 'Ваши курсы и библиотека уроков для повторного использования.'
-      : mine ? 'Возвращайтесь к своей программе и продолжайте с сохранённого места.' : 'Изучайте язык последовательно: объяснение, практика и новый шаг.', authored ? create : null));
+    if (authored) root.append(append(node('section', null, 'cv-teaching-hero cv-report-banner'),
+      heading('Преподавание', 'Управляйте своими курсами, сохраняйте уроки и следите за результатами учеников.', create)));
     const grid = node('div', null, authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
     if (authored || !courseLevels.includes(level)) level = '';
@@ -235,22 +238,55 @@
     if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }));
     const resultsStatus = node('div', null, 'cv-results-status');
     resultsStatus.setAttribute('role', 'status');
-    root.append(tools, resultsStatus, grid);
+    const catalogPanel = authored
+      ? append(node('section', null, 'cv-report-panel cv-teaching-panel'), node('h2', 'Ваши курсы'), tools, resultsStatus, grid)
+      : null;
+    if (catalogPanel) root.append(catalogPanel); else root.append(tools, resultsStatus, grid);
     if (authored) {
-      const library = node('section', null, 'cv-library');
-      const tabs = actions(button('Курсы', () => { tools.hidden = false; grid.hidden = false; library.hidden = true; courseTab.setAttribute('aria-current', 'true'); lessonTab.setAttribute('aria-current', 'false'); }), button('Библиотека уроков', async e => run(e.currentTarget, async () => {
-        const lessons = await api('/author/lesson-library'); tools.hidden = true; grid.hidden = true; library.hidden = false;
-        courseTab.setAttribute('aria-current', 'false'); lessonTab.setAttribute('aria-current', 'true'); library.replaceChildren(node('h2', 'Библиотека уроков'), node('p', 'Сохраните урок через его меню в конструкторе. Затем добавляйте его копию в любые свои курсы. Правки копий независимы.', 'cv-meta'));
-        if (!lessons.length) library.append(empty('Пока нет сохранённых уроков', 'В конструкторе нажмите правой кнопкой по уроку → «Сохранить в библиотеку».'));
-        lessons.forEach(x => library.append(append(node('article', null, 'cv-author-row'),
-          append(node('div'), node('h3', x.lesson.title), node('p', `${x.lesson.blocks.length} блоков · Сохранён ${new Date(x.createdAt).toLocaleDateString('ru-RU')}`, 'cv-meta')),
-          actions(x.sourceAvailable ? link('Открыть оригинал', `/author/courses/${x.sourceCourseId}?lesson=${x.sourceLessonId}`)
-            : node('span', 'Исходный курс удалён', 'cv-meta'),
-            button('Обновить курсы', e => run(e.currentTarget, () => updateLinkedCourses(x)))))));
-      })), link('Материалы упражнений', '/editor'));
-      const [courseTab, lessonTab] = tabs.querySelectorAll('button'); courseTab.setAttribute('aria-current', 'true');
-      root.insertBefore(tabs, tools); library.hidden = true; root.append(library);
-      if (params.has('library')) lessonTab.click();
+      const library = node('section', null, 'cv-report-panel cv-teaching-panel cv-library');
+      const libraryTitle = node('h2', 'Библиотека уроков');
+      const libraryIntro = node('p', 'Добавляйте сохранённые уроки в свои курсы как независимые копии или связанные уроки.', 'cv-meta');
+      const lessonGrid = node('div', null, 'cv-author-list');
+      library.append(libraryTitle, libraryIntro, lessonGrid);
+      catalogPanel.id = 'cv-teaching-courses';
+      library.id = 'cv-teaching-library';
+      let libraryIsOpen = false;
+      function showSection(showLibrary) {
+        libraryIsOpen = showLibrary;
+        catalogPanel.hidden = showLibrary;
+        library.hidden = !showLibrary;
+        (showLibrary ? lessonTab : courseTab).setAttribute('aria-current', 'true');
+        (showLibrary ? courseTab : lessonTab).removeAttribute('aria-current');
+        const url = new URL(location.href);
+        if (showLibrary) url.searchParams.set('library', '1'); else url.searchParams.delete('library');
+        history.replaceState(null, '', url);
+      }
+      const courseTab = button('Курсы', () => showSection(false));
+      const lessonTab = button('Библиотека уроков', e => {
+        showSection(true);
+        lessonGrid.replaceChildren(node('p', 'Загружаем уроки…', 'cv-meta'));
+        return run(e.currentTarget, async () => {
+          const lessons = await api('/author/lesson-library');
+          if (!libraryIsOpen) return;
+          lessonGrid.replaceChildren();
+          if (!lessons.length) lessonGrid.append(empty('Пока нет сохранённых уроков', 'В меню урока выберите «Сохранить в библиотеку».'));
+          lessons.forEach(x => lessonGrid.append(append(node('article', null, 'cv-author-row'),
+            append(node('div', null, 'cv-author-copy'), node('h3', x.lesson.title), node('p',
+              `Блоков: ${x.lesson.blocks.length} · ${new Date(x.createdAt).toLocaleDateString('ru-RU')}`, 'cv-meta')),
+            actions(x.sourceAvailable ? link('Открыть оригинал', `/author/courses/${x.sourceCourseId}?lesson=${x.sourceLessonId}`, 'cv-button cv-teaching-primary')
+              : node('span', 'Исходный курс удалён', 'cv-meta'),
+              button('Обновить курсы', e => run(e.currentTarget, () => updateLinkedCourses(x)))))));
+        });
+      });
+      courseTab.setAttribute('aria-controls', catalogPanel.id);
+      lessonTab.setAttribute('aria-controls', library.id);
+      const tabs = append(node('nav', null, 'cv-teaching-nav'),
+        append(node('div', null, 'cv-teaching-switch'), courseTab, lessonTab),
+        link('Материалы упражнений', '/editor', 'cv-teaching-materials'));
+      tabs.setAttribute('aria-label', 'Разделы преподавания');
+      root.insertBefore(tabs, catalogPanel);
+      root.append(library);
+      if (params.has('library')) lessonTab.click(); else showSection(false);
     }
     function draw() {
       clearTimeout(searchTimer);
@@ -271,10 +307,10 @@
         if (authored) {
           const row = node('article', null, 'cv-author-row');
           const state = c.blockReason ? 'Заблокирован' : c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик';
-          const body = append(node('div'), node('span', state, c.blockReason ? 'cv-author-status cv-blocked-status' : 'cv-author-status'),
-            node('h2', c.title), node('p', `${c.modules || 0} модулей · ${c.lessons || 0} уроков`, 'cv-meta'),
+          const body = append(node('div', null, 'cv-author-copy'), node('span', state, c.blockReason ? 'cv-report-badge cv-blocked-status' : 'cv-report-badge' + (state === 'Опубликован' ? ' is-done' : '')),
+            node('h3', c.title), node('p', `Модулей: ${c.modules || 0} · Уроков: ${c.lessons || 0}`, 'cv-meta'),
             c.blockReason ? node('p', 'Причина: ' + c.blockReason, 'cv-blocked-status') : null);
-          row.append(body, actions(link('Редактировать курс', `/author/courses/${c.id}`, 'cv-button'),
+          row.append(body, actions(link('Редактировать курс', `/author/courses/${c.id}`, 'cv-button cv-teaching-primary'),
             c.published ? link('Результаты учеников', `/author/courses/${c.id}/analytics`, 'cv-button') : null)); grid.append(row); return;
         }
         const card = node('article', null, 'cv-card'); card.dataset.theme = c.theme || 'sage';
@@ -283,7 +319,8 @@
         const body = append(node('div', null, 'cv-card-content'), node('h2', c.title), node('p', c.description.length > 180 ? c.description.slice(0, 180) + '…' : c.description || 'Добавьте описание курса.'));
         if (!authored) body.append(node('span', mine || enrolled.has(c.id) ? `${c.completedBlocks} из ${c.totalBlocks} блоков завершено` : `Блоков: ${c.totalBlocks}`, 'cv-meta'));
         if (c.author) body.append(node('span', c.author, 'cv-meta'));
-        body.append(actions(enrolled.has(c.id) ? button('Продолжить', e => run(e.currentTarget, () => continueCourse(c.id)), 'button primary') : link('Открыть курс', `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
+        const repeat = c.totalBlocks > 0 && c.completedBlocks === c.totalBlocks;
+        body.append(actions(enrolled.has(c.id) ? button(repeat ? 'Повторить курс' : 'Продолжить', e => run(e.currentTarget, () => continueCourse(c.id, null, repeat)), 'button primary') : link('Открыть курс', `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
       });
     }
     draw();
@@ -421,8 +458,11 @@
     const c = await api(`/courses/${id}`); shell(false); root.append(link('← Каталог курсов', '/courses', 'back-link'));
     root.classList.add('cv-course-detail');
     const lessons = c.modules.flatMap(m => m.lessons), completed = lessons.filter(l => l.completed).length;
-    const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || lessons[0];
-    const start = lesson => async e => run(e.currentTarget, async () => { const session = await post(`/courses/${id}/lessons/${lesson.id}/sessions`); location.href = `/courses/sessions/${session.id}`; });
+    const first = lessons.find(l => l.available);
+    const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || first;
+    const repeat = c.totalBlocks > 0 && c.completedBlocks === c.totalBlocks;
+    const start = (lesson, fromStart = !lesson.started && !lesson.completed) =>
+      e => run(e.currentTarget, () => continueCourse(id, lesson.id, fromStart));
     const hero = node('section', null, 'cv-material-hero');
     root.dataset.theme = c.theme || 'sage';
     const intro = append(node('div', null, 'cv-hero-intro'), append(node('div', null, 'cv-course-chips'),
@@ -431,7 +471,8 @@
     if (c.outcomes) copy.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'),
       window.AdamCourseRichText.render({ text: c.outcomes, richText: c.outcomesRichText })));
     const status = node('div', null, 'cv-course-status');
-    if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : c.completedBlocks === c.totalBlocks ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
+    const entry = !c.started || repeat ? first : next;
+    if (entry) status.append(button(repeat ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(entry, !c.started || repeat), 'button primary'));
     if (c.started || c.firstCompletedAt) status.append(append(node('div'),
       node('strong', c.percent === 100 ? 'Курс пройден' : c.firstCompletedAt ? 'Добавлены новые блоки' : 'Обучение начато'),
       node('span', `Пройдено блоков: ${c.completedBlocks} из ${c.totalBlocks} · ${c.percent}%`, 'cv-meta')));
@@ -460,9 +501,10 @@
   async function player(id) {
     await import('/js/course-rich-text.js');
     const { renderTheoryMedia } = await import('/js/course-theory-media.js');
-    let selected = new URLSearchParams(location.search).get('block'), state, picked = [], practiceFeedback = '', refreshing = false;
+    const entry = new URLSearchParams(location.search);
+    let state, picked = [], practiceFeedback = '', refreshing = false;
     shell(false); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
-    async function refresh(blockId = null, showCompletion = false) {
+    async function refresh(blockId = null, showCompletion = false, fromStart = false) {
       refreshing = true;
       try {
       const blockQuery = blockId ? '?block=' + encodeURIComponent(blockId) : '';
@@ -474,16 +516,17 @@
         blockId = state.block?.id ?? null;
       }
       if (state.id !== id) { id = state.id; history.replaceState(null, '', '/courses/sessions/' + id); }
-      if (!showCompletion && !state.block && state.completed && state.steps.length) {
-        blockId = state.steps.at(-1).id;
-        state = await api(`/course-sessions/${id}?block=${blockId}`);
+      const entryBlock = fromStart ? state.steps[0] : !showCompletion && !state.block && state.completed ? state.steps.at(-1) : null;
+      if (entryBlock) {
+        blockId = entryBlock.id;
+        if (state.block?.id !== blockId) state = await api(`/course-sessions/${id}?block=${blockId}`);
       }
       if (state.block?.kind === 'theory' && !state.steps[state.viewStep].completed) {
         blockId = state.block.id;
         await post(`/course-sessions/${id}/next`, { blockId });
         state = await api(`/course-sessions/${id}?block=${blockId}`);
       }
-      const url = new URL(location.href); blockId ? url.searchParams.set('block', blockId) : url.searchParams.delete('block'); history.replaceState(null, '', url); draw();
+      const url = new URL(location.href); url.searchParams.delete('start'); blockId ? url.searchParams.set('block', blockId) : url.searchParams.delete('block'); history.replaceState(null, '', url); draw();
       if (updated) notice('Программа курса обновилась. Зачёт неизменённых блоков сохранён.');
       if (window.AdamAuthenticated && !state.preview && state.block && !state.block.unavailable)
         post(`/course-sessions/${id}/view`, { blockId: state.block.id }).catch(() => {});
@@ -686,7 +729,7 @@
       }
       card.append(actions(next)); area.append(card);
     }
-    await refresh(selected);
+    await refresh(entry.get('block'), false, !entry.has('block') && entry.get('start') === '1');
     document.addEventListener('visibilitychange', async () => {
       if (document.hidden || state?.preview || refreshing || picked.length || area.querySelector('dialog[open], button[aria-busy="true"]') ||
           [...area.querySelectorAll('input, textarea')].some(input => input.value)) return;
