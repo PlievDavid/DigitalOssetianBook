@@ -46,13 +46,19 @@
     if (paragraph.hasChildNodes()) result.append(paragraph);
     return result;
   }
-  function editor(block, onChange, name = 'Текст объяснения') {
+  function editor(block, onChange, name = 'Текст объяснения', { showHint = true } = {}) {
     const wrap = document.createElement('div'); wrap.className = 'cr-editor';
     const label = document.createElement('p'); label.className = 'cr-label'; label.textContent = name;
-    const hint = document.createElement('p'); hint.className = 'cs-help'; hint.textContent = 'Выделите текст, чтобы изменить оформление. Alt+F10 — перейти к инструментам.';
-    const surface = document.createElement('div'); wrap.append(label, surface, hint);
+    const surface = document.createElement('div'); wrap.append(label, surface);
+    if (showHint) {
+      const hint = document.createElement('p');
+      hint.className = 'cs-help';
+      hint.textContent = 'Выделите текст, чтобы изменить оформление. Alt+F10 — перейти к инструментам.';
+      wrap.append(hint);
+    }
     const quill = new window.Quill(surface, { formats: ['bold', 'italic', 'underline', 'strike', 'font', 'size', 'color', 'background', 'align', 'indent'], modules: { toolbar: false, history: { userOnly: true } } });
     quill.root.setAttribute('role', 'textbox'); quill.root.setAttribute('aria-label', name); quill.root.setAttribute('aria-multiline', 'true');
+    quill.root.setAttribute('aria-keyshortcuts', 'Alt+F10');
     if (block.richText) quill.setContents(block.richText, 'silent'); else quill.setText(block.text || '', 'silent');
     quill.history.clear();
     quill.on('text-change', () => onChange(quill.getText().replace(/\n$/, ''), quill.getContents()));

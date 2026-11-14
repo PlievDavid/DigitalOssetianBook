@@ -34,6 +34,19 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const courseCount = (await api(page, '/author/courses')).data.length;
     await create.click();
     const createDialog = page.getByRole('dialog', { name: 'Новый курс' });
+    await createDialog.waitFor();
+    check(await createDialog.locator('.cs-help').count() === 0, 'В окне нового курса осталась подсказка под редактором');
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      check(await createDialog.evaluate(dialog => {
+        const bounds = dialog.getBoundingClientRect();
+        const text = dialog.querySelector('.ql-container').getBoundingClientRect();
+        const buttons = dialog.querySelector('.cv-actions').getBoundingClientRect();
+        return bounds.left >= 0 && bounds.right <= innerWidth && dialog.scrollWidth <= dialog.clientWidth && text.bottom < buttons.top;
+      }), 'Диалог выходит за пределы экрана при ширине ' + width);
+      await createDialog.screenshot({ path: path.join(out, `new-course-${width}.png`) });
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await createDialog.getByRole('button', { name: 'Создать черновик' }).click();
     await createDialog.press('Escape');
     check((await api(page, '/author/courses')).data.length === courseCount, 'Пустая или отменённая форма создала курс');
@@ -221,6 +234,8 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.goto(base + '/courses/teaching');
     await page.getByRole('heading', { name: 'Преподавание', exact: true }).waitFor();
     const teaching = page.getByRole('navigation', { name: 'Разделы преподавания' });
+    const switcher = teaching.locator('.cv-teaching-switch');
+    check(await switcher.evaluate(el => getComputedStyle(el, '::before').transitionProperty === 'transform'), 'Индикатор вкладок не анимируется');
     const coursesSection = page.locator('#cv-teaching-courses');
     await coursesSection.getByRole('link', { name: 'Редактировать курс', exact: true }).first().waitFor();
     await page.screenshot({ path: path.join(out, 'teaching-courses-wide.png'), fullPage: true });
@@ -233,10 +248,13 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.screenshot({ path: path.join(out, 'teaching-phone.png'), fullPage: true });
     await page.reload();
     await page.locator('.cv-library').getByRole('heading', { name: 'Первый урок', exact: true }).waitFor();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    check(await switcher.evaluate(el => getComputedStyle(el, '::before').transitionDuration === '0s'), 'Настройка уменьшенного движения не отключила анимацию вкладок');
     await teaching.getByRole('button', { name: 'Курсы', exact: true }).press('Enter');
     check(await coursesSection.isVisible() && !await page.locator('.cv-library').isVisible() &&
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Мобильный список курсов не открывается или выходит за экран');
     await page.screenshot({ path: path.join(out, 'teaching-courses-phone.png'), fullPage: true });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.locator('[aria-controls="courses-menu"]').hover();
     await page.locator('#courses-menu').getByRole('link', { name: 'Преподавание', exact: true }).waitFor({ state: 'visible' });
@@ -342,11 +360,19 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await contents.waitFor({ state: 'hidden' });
     await student.goto(base + '/courses/' + id); await student.getByText('Курс пройден', { exact: true }).waitFor();
     const heroPhoto = student.locator('.cv-hero-image');
-    check(await heroPhoto.evaluate(img => {
-      const image = img.getBoundingClientRect();
-      const title = img.parentElement.querySelector('h1').getBoundingClientRect();
-      return Math.abs(image.width - image.height) < 1 && image.top >= title.bottom;
-    }), 'На телефоне фото не квадратное или не ниже заголовка');
+    for (const width of [320, 390, 531]) {
+      await student.setViewportSize({ width, height: 844 });
+      check(await heroPhoto.evaluate(img => {
+        const image = img.getBoundingClientRect();
+        const intro = img.parentElement.querySelector('.cv-hero-intro').getBoundingClientRect();
+        const copy = img.parentElement.querySelector('.cv-hero-copy').getBoundingClientRect();
+        return Math.abs(image.width - image.height) < 1 && image.width <= 112 &&
+          image.left >= intro.right && image.top < intro.bottom && copy.top >= image.bottom &&
+          document.documentElement.scrollWidth <= innerWidth + 1;
+      }), 'Фото вытеснило текст или вышло за экран при ширине ' + width);
+      if (width === 531) await student.screenshot({ path: path.join(out, 'course-compact-531.png'), fullPage: true });
+    }
+    await student.setViewportSize({ width: 390, height: 844 });
     await student.screenshot({ path: path.join(out, 'course-completed-phone.png'), fullPage: true });
     await student.setViewportSize({ width: 1440, height: 1000 });
     check(await heroPhoto.evaluate(img => {
@@ -461,7 +487,13 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.setViewportSize({ width: 1440, height: 1000 });
     // Switching lessons within a free-order course preserves the unfinished session.
     const secondDraft = (await api(page, '/author/courses/' + second.id)).data;
-    const nextDraft = JSON.parse(secondDraft.draftJson), nextLesson = { id: require('node:crypto').randomUUID(), title: 'Следующее занятие', blocks: [{ id: require('node:crypto').randomUUID(), kind: 'theory', title: 'Объяснение', text: 'Текст проверки' }] };
+    const nextDraft = JSON.parse(secondDraft.draftJson);
+    const nextLesson = {
+      id: require('node:crypto').randomUUID(), title: 'Следующее занятие',
+      blocks: ['Объяснение', 'Закрепление'].map(title => ({
+        id: require('node:crypto').randomUUID(), kind: 'theory', title, text: 'Текст проверки'
+      }))
+    };
     nextDraft.description = 'Проверка переходов'; nextDraft.modules[0].lessons.push(nextLesson);
     const savedSecond = (await api(page, '/author/courses/' + second.id + '/draft', 'PATCH', { stamp: secondDraft.draftStamp, draft: nextDraft })).data;
     check((await api(page, '/author/courses/' + second.id + '/publish', 'POST', { stamp: savedSecond.draftStamp, reviewed: true })).status === 200, 'Курс для переходов не опубликован');
@@ -470,8 +502,16 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await contentsToggle.waitFor(); const firstSessionUrl = student.url();
     await contentsToggle.click(); await student.locator('.cv-drawer-lesson').filter({ hasText: nextLesson.title }).click();
     await student.getByRole('heading', { name: 'Следующее занятие', exact: true }).waitFor();
+    await student.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await student.getByRole('button', { name: 'Шаг 2: Закрепление, пройден', exact: true }).waitFor();
+    const completedSession = new URL(student.url()).pathname;
     await contentsToggle.click(); await student.waitForTimeout(350); check(await student.locator('.cv-course-drawer').evaluate(e => e.open), 'Панель свернулась сразу после открытия'); await student.locator('.cv-course-drawer').hover(); await student.mouse.move(student.viewportSize().width - 20, 300); await student.locator('.cv-course-drawer').waitFor({ state: 'hidden' }); check(true, 'Панель закрылась при уходе мыши'); await contentsToggle.click(); await student.keyboard.press('Escape'); await student.locator('.cv-course-drawer').waitFor({ state: 'hidden' }); check(await student.locator('.cv-course-drawer').evaluate(e => !e.open), 'Панель не закрывается Escape'); await contentsToggle.click(); await student.locator('.cv-drawer-lesson').first().click();
     await student.waitForURL(url => url.pathname === new URL(firstSessionUrl).pathname); check(true, 'Переход вернул сохранённую сессию');
+    await contentsToggle.click();
+    await student.getByRole('button', { name: /Следующее занятие\. Пройдено 2 из 2 блоков/ }).click();
+    await student.waitForURL(url => url.pathname === completedSession && url.searchParams.get('block') === nextLesson.blocks[0].id);
+    check(await student.locator('.cv-step[aria-current="step"]').textContent() === '1' &&
+      await student.locator('.cv-step.is-complete').count() === 2, 'Переход в завершённый урок открыл последний блок или изменил прогресс');
     await student.goto(base + '/courses'); await student.locator('.cv-card').filter({ hasText: 'Другой курс' }).getByRole('button', { name: 'Продолжить', exact: true }).click(); await student.waitForURL(/\/courses\/sessions\//); check(true, 'Карточка продолжает занятие напрямую'); await student.goto(firstSessionUrl);
     await student.setViewportSize({ width: 1440, height: 1000 });
     await student.getByRole('heading', { name: 'Изменённая копия', exact: true }).waitFor();

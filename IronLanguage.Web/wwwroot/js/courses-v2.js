@@ -159,8 +159,10 @@
       const trigger = e.currentTarget;
       await import('/js/course-rich-text.js');
       await window.AdamCourseRichText.load();
-      const dialog = node('dialog', null, 'cv-dialog');
-      dialog.setAttribute('aria-label', 'Новый курс');
+      const dialog = node('dialog', null, 'cv-dialog cv-create-dialog');
+      const title = node('h2', 'Новый курс');
+      title.id = 'cv-new-course-title';
+      dialog.setAttribute('aria-labelledby', title.id);
       const titleField = field('Название курса', '', () => {}, { max: 150 });
       const titleInput = titleField.querySelector('input');
       titleInput.required = true;
@@ -168,12 +170,12 @@
       const outcomesEditor = window.AdamCourseRichText.editor({}, (text, document) => {
         outcomes = text;
         outcomesRichText = document;
-      }, 'Результаты обучения');
+      }, 'Результаты обучения', { showHint: false });
       const form = node('form');
       const error = node('p', null, 'cv-notice error');
       error.setAttribute('role', 'alert');
       const submit = node('button', 'Создать черновик', 'button primary');
-      const cancel = button('Отмена', () => dialog.close());
+      const cancel = button('Отмена', () => dialog.close(), 'cv-create-cancel');
       form.addEventListener('submit', async event => {
         event.preventDefault();
         const title = titleInput.value.trim();
@@ -196,7 +198,7 @@
       dialog.addEventListener('cancel', event => { if (submit.disabled) event.preventDefault(); });
       dialog.addEventListener('close', () => { dialog.remove(); trigger.focus(); });
       form.append(titleField, outcomesEditor, error, actions(cancel, submit));
-      dialog.append(node('h2', 'Новый курс'), form);
+      dialog.append(title, form);
       document.body.append(dialog);
       dialog.showModal();
       titleInput.focus();
@@ -643,8 +645,7 @@
           }
           const item = button(null, e => run(e.currentTarget, async () => {
             if (lesson.id === state.lessonId) { await closeDrawer(); return; }
-            const session = await post(`/courses/${state.courseId}/lessons/${lesson.id}/sessions`);
-            location.href = `/courses/sessions/${session.id}`;
+            await continueCourse(state.courseId, lesson.id, true);
           }), 'cv-drawer-lesson');
           item.append(node('span', lesson.title, 'cv-drawer-lesson-name'));
           if (lesson.totalBlocks != null) {
@@ -675,7 +676,7 @@
       if (state.completed && !state.block) {
         const nextLesson = state.lessons.slice(state.lessons.findIndex(l => l.id === state.lessonId) + 1).find(l => l.available);
         const action = state.preview ? link('Вернуться в конструктор', `/author/courses/${state.courseId}`, 'button primary')
-          : nextLesson ? button('Продолжить курс', e => run(e.currentTarget, () => continueCourse(state.courseId, nextLesson.id)), 'button primary')
+          : nextLesson ? button('Продолжить курс', e => run(e.currentTarget, () => continueCourse(state.courseId, nextLesson.id, true)), 'button primary')
           : link('К программе курса', `/courses/${state.courseId}`, 'button primary');
         area.append(empty('Урок пройден', nextLesson ? 'Переходите к следующему уроку программы.' : 'Вы завершили все уроки курса.', action)); return;
       }
