@@ -411,14 +411,15 @@
 .cv-teaching > .back-link { justify-self:start; }
 .cv-teaching-hero .cv-heading > .button { flex-shrink:0; border-radius:999px; }
 .cv-teaching-nav { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-.cv-teaching-switch { position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; width:min(100%,350px); padding:4px; border-radius:28px; background:var(--theme-sage); }
+.cv-teaching-switch { position:relative; isolation:isolate; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:4px; width:min(100%,18rem); padding:4px; border-radius:28px; background:var(--theme-sage); }
 .cv-teaching-switch::before {
-  content:""; position:absolute; z-index:-1; inset:4px auto 4px 4px; width:calc(50% - 6px);
+  content:""; position:absolute; z-index:-1; inset-block:4px;
+  inset-inline:4px calc(100% - (100% - 12px) / 3 - 4px);
   border-radius:999px; background:var(--theme-green);
-  transition:transform 280ms cubic-bezier(.2,0,0,1);
+  transition:inset-inline-start 260ms cubic-bezier(.2,0,0,1), inset-inline-end 260ms cubic-bezier(.2,0,0,1);
 }
-.cv-teaching-switch:has(.cv-button:last-child[aria-current="true"])::before { transform:translateX(calc(100% + 4px)); }
-.cv-teaching-switch .cv-button { border:0; border-radius:999px; background:transparent; color:var(--theme-green); transition:color 160ms ease; }
+.cv-teaching-switch:has(.cv-button:last-child[aria-current="true"])::before { inset-inline:calc((100% - 12px) / 3 + 8px) 4px; }
+.cv-teaching-switch .cv-button { border:0; border-radius:999px; background:transparent; color:var(--theme-green); font-size:.9375rem; line-height:1.25; white-space:nowrap; padding:6px 8px; transition:color 160ms ease; }
 .cv-teaching-switch .cv-button[aria-current="true"] { background:transparent; color:white; }
 @media(prefers-reduced-motion:reduce) {
   .cv-teaching-switch::before,.cv-teaching-switch .cv-button { transition:none; }
@@ -449,7 +450,6 @@
   .cv-teaching-hero .cv-heading { align-items:start; }
   .cv-teaching-panel .cv-author-row { flex-direction:column; align-items:flex-start; }
   .cv-teaching-panel .cv-author-row .cv-actions { justify-content:flex-start; }
-  .cv-teaching-switch .cv-button { padding-inline:12px; }
 }
 .cv-theory-media { margin: 16px 0 0; min-width: 0; }
 .cv-theory-media img, .cv-theory-media video { display: block; max-width: 100%; max-height: min(70vh, 640px); border-radius: 12px; object-fit: contain; }

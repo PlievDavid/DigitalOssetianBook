@@ -235,13 +235,25 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.getByRole('heading', { name: 'Преподавание', exact: true }).waitFor();
     const teaching = page.getByRole('navigation', { name: 'Разделы преподавания' });
     const switcher = teaching.locator('.cv-teaching-switch');
-    check(await switcher.evaluate(el => getComputedStyle(el, '::before').transitionProperty === 'transform'), 'Индикатор вкладок не анимируется');
+    check(await switcher.evaluate(el => parseFloat(getComputedStyle(el, '::before').transitionDuration) > 0), 'Индикатор вкладок не анимируется');
     const coursesSection = page.locator('#cv-teaching-courses');
     await coursesSection.getByRole('link', { name: 'Редактировать курс', exact: true }).first().waitFor();
     await page.screenshot({ path: path.join(out, 'teaching-courses-wide.png'), fullPage: true });
     await teaching.getByRole('button', { name: 'Библиотека уроков', exact: true }).press('Enter');
     await page.locator('.cv-library').getByRole('heading', { name: 'Первый урок', exact: true }).waitFor();
     check(!await coursesSection.isVisible() && new URL(page.url()).searchParams.has('library'), 'Библиотека не скрыла курсы или не сохранила вкладку в адресе');
+    for (const width of [320, 390, 1176]) {
+      await page.setViewportSize({ width, height: 844 });
+      check(await switcher.evaluate(group => {
+        const tab = group.lastElementChild;
+        const text = document.createRange();
+        text.selectNodeContents(tab);
+        const line = text.getBoundingClientRect(), button = tab.getBoundingClientRect();
+        return text.getClientRects().length === 1 && line.left >= button.left && line.right <= button.right &&
+          button.height >= 44 && button.height <= 46;
+      }), 'Подпись библиотеки перенеслась или кнопка потеряла компактность при ширине ' + width);
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.screenshot({ path: path.join(out, 'teaching-wide.png'), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Преподавание выходит за мобильный экран');
