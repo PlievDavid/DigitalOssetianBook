@@ -149,18 +149,18 @@
 .cs-required-note { font-size:13px; line-height:1.5; color:var(--theme-muted); }
 @media(max-width:700px) { .cs-workspace[data-tab="settings"] .cs-canvas { padding:20px 14px; border-radius:20px; } .cs-settings-form { padding:20px 16px; } }
 .cs-cover-settings { margin-bottom:28px; }
-.cs-cover-settings img { width:100%; max-height:260px; object-fit:cover; border-radius:16px; margin-bottom:16px; }
+.cs-course-photo { display:block; width:min(100%,240px); aspect-ratio:1; object-fit:cover; border-radius:20px; margin-bottom:16px; }
+.cs-cover-settings.is-cropping .cs-course-photo { display:none; }
 .cs-cover-settings input[type="file"] { max-width:100%; }
 .cs-workspace[data-tab="settings"] { margin-top:24px; }
-.cs-cover-settings > .button { border-radius:24px; min-height:48px; margin:12px 0; }
-.cs-cover-settings img { aspect-ratio:16/9; max-height:none; }
-.cs-crop-dialog { width:min(640px,calc(100vw - 32px)); box-sizing:border-box; border:0; border-radius:28px; padding:24px; color:var(--theme-ink); max-height:90dvh; overflow:auto; }
-.cs-crop-dialog::backdrop { background:#10241c88; }
-.cs-crop-dialog canvas { width:100%; aspect-ratio:16/9; display:block; border-radius:12px; background:#eee; }
-.cs-crop-dialog label { display:grid; gap:8px; margin:16px 0; }
-.cs-crop-dialog input { width:100%; accent-color:var(--theme-green); }
-.cs-crop-dialog .button { border-radius:24px; }
-.cs-crop-dialog :focus-visible { outline:2px solid var(--theme-green); outline-offset:3px; }
+.cs-cover-settings .button { border-radius:24px; min-height:48px; }
+.cs-crop-editor:not(:empty) { display:grid; gap:14px; }
+.cs-crop-stage { position:relative; width:100%; overflow:hidden; border-radius:12px; user-select:none; }
+.cs-crop-stage img { display:block; width:100%; pointer-events:none; }
+.cs-crop-frame { position:absolute; box-shadow:0 0 0 999px #10241ca6,inset 0 0 0 2px white; touch-action:none; cursor:move; }
+.cs-crop-frame:focus-visible { outline:3px solid var(--theme-focus); outline-offset:-5px; }
+.cs-crop-handle { position:absolute; right:0; bottom:0; width:min(44px,40%); height:min(44px,40%); cursor:nwse-resize; }
+.cs-crop-handle::after { content:""; position:absolute; right:5px; bottom:5px; width:14px; height:14px; background:white; border-radius:3px; box-shadow:0 1px 5px #10241c99; }
 .cs-material-results { display: grid; gap: .75rem; margin-block: .75rem; }
 .cs-material-item { min-width: 0; padding: .85rem; border: 1px solid var(--line, #dce4df); border-radius: .75rem; overflow-wrap: anywhere; }
 .cs-material-item details { margin-block: .5rem; }

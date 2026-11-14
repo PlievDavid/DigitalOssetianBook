@@ -1,7 +1,7 @@
 window.AdamCourseStudio = async function (ui) {
   'use strict';
   const { root, api, post, node, append, link, button, actions, field, confirm, run, showError, notice, message, setDirty } = ui;
-  await import('/js/course-cover-crop.js');
+  const { cropCoursePhoto } = await import('/js/course-cover-crop.js');
   await import('/js/course-rich-text.js'); await window.AdamCourseRichText.load();
   const { authorTheoryMedia, editTheoryMedia } = await import('/js/course-theory-media.js');
   const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/css/course-studio.css'; document.head.append(style);
@@ -432,7 +432,9 @@ window.AdamCourseStudio = async function (ui) {
     body.dataset.alignment = block.alignment || '';
     return body;
   }
+  let photoEdit;
   function drawSettings() {
+    photoEdit?.abort();
     abortTheoryUpload?.(); abortTheoryUpload = null;
     canvas.replaceChildren();
     const heading = append(node('header', null, 'cs-settings-heading'), node('h2', 'О курсе'), node('p', 'Помогите ученику понять, чему он научится и подойдёт ли ему ваша программа.', 'cs-help'));
@@ -457,24 +459,40 @@ window.AdamCourseStudio = async function (ui) {
     const options = node('div', null, 'cs-settings-options');
     options.append(field('Уровень', draft.level || 'Начальный', v => { draft.level = v; dirty(); }, { values: ['Начальный', 'Средний', 'Продвинутый'] }), field('Порядок уроков', draft.sequential ? 'sequential' : 'free', v => { draft.sequential = v === 'sequential'; dirty(); }, { values: [{ value: 'free', label: 'Любой урок' }, { value: 'sequential', label: 'Строго по порядку' }] })); form.append(options);
     canvas.dataset.theme = draft.theme || 'sage';
-    const cover = node('section', null, 'cs-cover-settings'); cover.append(node('h3', 'Обложка курса'));
-    if (draft.coverPath) { const img = node('img'); img.src = draft.coverPath; img.alt = 'Обложка курса'; cover.append(img); }
-    const upload = node('input'); upload.type = 'file'; upload.accept = 'image/png,image/jpeg,image/webp'; upload.setAttribute('aria-label', 'Загрузить обложку курса');
+    const cover = node('section', null, 'cs-cover-settings'); cover.append(node('h3', 'Главное фото курса'));
+    const crop = node('div', null, 'cs-crop-editor');
+    if (draft.coverPath) { const img = node('img', null, 'cs-course-photo'); img.src = draft.coverPath; img.alt = 'Главное фото курса'; cover.append(img); }
+    const upload = node('input'); upload.type = 'file'; upload.accept = 'image/png,image/jpeg,image/webp'; upload.setAttribute('aria-label', 'Загрузить главное фото курса');
+    const choose = action(draft.coverPath ? 'Заменить фото' : 'Выбрать фото', () => upload.click(), 'plus', 'button primary');
+    const remove = draft.coverPath ? action('Убрать фото', () => { draft.coverPath = null; dirty(); drawSettings(); }) : null;
+    const photoActions = actions(choose, remove);
     upload.addEventListener('change', async () => {
       const file = upload.files[0]; if (!file) return;
-      if (file.size > 5000000) { showError(new Error('Обложка должна быть не больше 5 МБ.')); return; }
+      upload.value = '';
+      if (file.size > 5000000) { showError(new Error('Фото должно быть не больше 5 МБ.')); return; }
+      const editing = photoEdit = new AbortController();
       upload.disabled = true;
+      photoActions.hidden = true;
+      cover.classList.add('is-cropping');
       try {
-        const data = new FormData(); const cropped = await window.AdamCropCover(file); if (!cropped) return; data.append('file', cropped, 'cover.jpg');
+        const cropped = await cropCoursePhoto(file, crop, editing.signal); if (!cropped || editing.signal.aborted) return;
+        const data = new FormData(); data.append('file', cropped, 'photo.jpg');
         const token = document.querySelector('#api-antiforgery input').value;
-        const response = await fetch(`/api/v1/author/courses/${id}/cover`, { method: 'POST', body: data, headers: { RequestVerificationToken: token } });
-        const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Не удалось загрузить обложку.');
+        const response = await fetch(`/api/v1/author/courses/${id}/cover`, { method: 'POST', body: data, signal: editing.signal, headers: { RequestVerificationToken: token } });
+        const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Не удалось загрузить фото.');
         draft.coverPath = result.path; dirty(); drawSettings();
-      } catch (e) { showError(e); } finally { upload.disabled = false; }
+        canvas.querySelector('.cs-cover-settings button')?.focus();
+      } catch (e) {
+        if (!editing.signal.aborted) showError(e);
+      } finally {
+        upload.disabled = false;
+        photoActions.hidden = false;
+        cover.classList.remove('is-cropping');
+        if (!editing.signal.aborted) choose.focus();
+      }
     });
-    upload.hidden = true; const choose = action(draft.coverPath ? 'Заменить обложку' : 'Выбрать изображение', () => upload.click(), 'plus', 'button primary');
-    cover.append(choose, upload, node('p', 'PNG, JPEG или WebP до 5 МБ. После выбора настройте кадр 16:9.', 'cs-help'));
-    if (draft.coverPath) cover.append(action('Убрать обложку', () => { draft.coverPath = null; dirty(); drawSettings(); }));
+    upload.hidden = true;
+    cover.append(photoActions, upload, crop, node('p', 'PNG, JPEG или WebP до 5 МБ. Главное фото сохраняется квадратным.', 'cs-help'));
     cover.append(field('Оформление страницы', draft.theme || 'sage', v => { draft.theme = v; dirty(); canvas.dataset.theme = v; }, { values: [{ value: 'sage', label: 'Шалфей' }, { value: 'sky', label: 'Небо' }, { value: 'sand', label: 'Песок' }] }));
     form.prepend(cover);
     canvas.append(heading, form);
@@ -483,7 +501,7 @@ window.AdamCourseStudio = async function (ui) {
     content.dataset.tab = tab; content.dataset.program = String(showProgram);
     tabs.querySelectorAll('button[data-tab]').forEach(b => b.setAttribute('aria-current', String(b.dataset.tab === tab)));
     previewButton.disabled = uploadingTheory || !current().lesson;
-    if (tab === 'settings') drawSettings(); else { drawTree(); drawLesson(); }
+    if (tab === 'settings') drawSettings(); else { photoEdit?.abort(); drawTree(); drawLesson(); }
   }
   root.classList.add('course-studio'); root.replaceChildren();
   const context = append(node('div', null, 'cs-context'), link('← Преподавание', '/courses/teaching', 'cs-back'), status);

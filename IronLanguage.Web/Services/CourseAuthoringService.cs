@@ -39,7 +39,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
 
     public static void Validate(CourseDraft draft, bool publishing)
     {
-        if (draft.Theme is not ("sage" or "sky" or "sand") || draft.CoverPath is not null && !System.Text.RegularExpressions.Regex.IsMatch(draft.CoverPath, @"^/media/course-covers/[a-f0-9]{32}\.(png|jpg|jpeg|webp)$")) throw new ArgumentException("Проверьте обложку и оформление курса.");
+        if (draft.Theme is not ("sage" or "sky" or "sand") || draft.CoverPath is not null && !System.Text.RegularExpressions.Regex.IsMatch(draft.CoverPath, @"^/media/course-covers/[a-f0-9]{32}\.(png|jpg|jpeg|webp)$")) throw new ArgumentException("Проверьте главное фото и оформление курса.");
         if (draft.Level is not ("Начальный" or "Средний" or "Продвинутый") || draft.Outcomes is null || draft.Outcomes.Length > 3000 ||
             CourseRichText.PlainText(new CourseDraftBlock(Guid.Empty, "theory", "", draft.Outcomes) { RichText = draft.OutcomesRichText }).Length > 3000)
             throw new ArgumentException("Проверьте уровень и результаты обучения (до 3000 символов).");
@@ -169,7 +169,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
         var draft = JsonSerializer.Deserialize<CourseDraft>(course.DraftJson, JsonOptions)
             ?? throw new ArgumentException("Не удалось прочитать черновик.");
         Validate(draft, true);
-        CheckFile(draft.CoverPath, "Обложка курса", required: false);
+        CheckFile(draft.CoverPath, "Главное фото курса", required: false);
         await CheckLinks(draft, owner, ct);
         draft = await Resolve(course, draft, ct);
         return await courses.Publish(id, owner, stamp, JsonSerializer.Serialize(draft, JsonOptions), ct);
@@ -181,7 +181,7 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
         var issues = new List<CoursePublicationIssue>();
         var published = await PublishedBlocks(course, ct);
         var placeholder = new CourseDraftModule(Guid.NewGuid(), "Проверка", [new(Guid.NewGuid(), "Проверка", [new(Guid.NewGuid(), "theory", "Проверка", "Проверка")])]);
-        try { Validate(draft with { Modules = [placeholder] }, true); CheckFile(draft.CoverPath, "Обложка курса", required: false); }
+        try { Validate(draft with { Modules = [placeholder] }, true); CheckFile(draft.CoverPath, "Главное фото курса", required: false); }
         catch (ArgumentException error) { issues.Add(new(error.Message)); }
         if (draft.Modules.Length == 0) issues.Add(new("Добавьте хотя бы один модуль."));
         foreach (var module in draft.Modules)

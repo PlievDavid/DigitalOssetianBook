@@ -318,6 +318,7 @@
   }
   async function analytics(id) {
     shell(false);
+    root.classList.add('cv-report');
     const params = new URLSearchParams(location.search);
     const report = await api(`/author/courses/${id}/analytics?` + params);
     const overviewParams = new URLSearchParams(params);
@@ -327,46 +328,93 @@
       ? link('← Результаты курса', overviewUrl, 'back-link')
       : link('← Преподавание', '/courses/teaching', 'back-link'));
     const date = value => value ? new Date(value).toLocaleString('ru-RU') : '—';
-    function table(labels, rows) {
-      const head = append(node('thead'), append(node('tr'), ...labels.map(label => node('th', label))));
+    function table(labels, rows, label) {
+      const head = append(node('thead'), append(node('tr'), ...labels.map(label => {
+        const cell = node('th', label);
+        cell.scope = 'col';
+        return cell;
+      })));
       const body = node('tbody');
-      rows.forEach(cells => body.append(append(node('tr'), ...cells.map(cell => cell instanceof Node ? append(node('td'), cell) : node('td', String(cell))))));
+      rows.forEach(cells => {
+        const row = node('tr');
+        row.setAttribute('role', 'row');
+        cells.forEach((value, index) => {
+          const cell = value instanceof Node ? append(node('td'), value) : node('td', String(value));
+          cell.setAttribute('role', 'cell');
+          if (index) {
+            const mobileLabel = node('span', labels[index], 'cv-report-cell-label');
+            mobileLabel.setAttribute('aria-hidden', 'true');
+            cell.prepend(mobileLabel);
+          }
+          row.append(cell);
+        });
+        body.append(row);
+      });
       const scroll = node('div', null, 'cv-report-table'); scroll.tabIndex = 0;
-      return append(scroll, append(node('table'), head, body));
+      scroll.setAttribute('role', 'region');
+      scroll.setAttribute('aria-label', label);
+      const data = append(node('table'), head, body);
+      data.setAttribute('role', 'table');
+      head.setAttribute('role', 'rowgroup');
+      body.setAttribute('role', 'rowgroup');
+      head.firstElementChild.setAttribute('role', 'row');
+      head.querySelectorAll('th').forEach(cell => cell.setAttribute('role', 'columnheader'));
+      return append(scroll, data);
+    }
+    function metric(label, value, detail, glyph) {
+      return append(node('div', null, 'cv-report-metric'), append(node('span', null, 'cv-report-icon'), icon(glyph)),
+        node('strong', value), node('span', label), detail ? node('small', detail) : null);
+    }
+    function progress(counts) {
+      const bar = node('progress');
+      bar.max = 100;
+      bar.value = counts.percent;
+      bar.setAttribute('aria-label', 'Прогресс обучения');
+      return append(node('div', null, 'cv-report-progress'),
+        node('strong', counts.percent + '%'), bar, node('small', `${counts.completedBlocks} из ${counts.totalBlocks} блоков`));
+    }
+    function badge(text, done) {
+      return node('span', text, 'cv-report-badge' + (done ? ' is-done' : ''));
+    }
+    function panel(title, ...content) {
+      return append(node('section', null, 'cv-report-panel'), node('h2', title), ...content);
     }
     if (report.student) {
-      root.append(heading(report.student.name, report.title),
-        node('p', `${report.student.status} · ${report.student.counts.completedBlocks} из ${report.student.counts.totalBlocks} блоков`));
-      if (report.student.finishedAt) root.append(node('p', 'Первое завершение: ' + date(report.student.finishedAt), 'cv-meta'));
+      root.append(append(node('section', null, 'cv-report-banner'), heading(report.student.name, report.title),
+        badge(report.student.status, report.student.counts.percent === 100), progress(report.student.counts),
+        report.student.finishedAt ? node('p', 'Первое завершение: ' + date(report.student.finishedAt), 'cv-meta') : null));
       report.modules.forEach(module => {
-        root.append(node('h2', module.title));
+        const section = panel(module.title);
         module.lessons.forEach(lesson => {
-          root.append(node('h3', lesson.title), table(['Блок', 'Статус', 'Попытки', 'Верные', 'Последняя активность'],
-            lesson.blocks.map(b => [b.title, b.completed ? 'Пройден' : 'Не пройден', b.attempts, b.correct, date(b.lastSeen)])));
+          section.append(node('h3', lesson.title), table(['Блок', 'Статус', 'Попытки', 'Верные', 'Последняя активность'],
+            lesson.blocks.map(b => [b.title, badge(b.completed ? 'Пройден' : 'Не пройден', b.completed), b.attempts, b.correct, date(b.lastSeen)]), lesson.title));
         });
+        root.append(section);
       });
       return;
     }
-    root.append(heading('Результаты учеников', report.title), node('p',
-      `Начали: ${report.started}. Завершили актуальную программу: ${report.finished}. Средний прогресс: ${report.averageProgress}%.`));
     const period = field('Период', String(report.days), days => { params.set('days', days); params.delete('page'); location.search = params; }, {
       values: [{ value: '7', label: '7 дней' }, { value: '30', label: '30 дней' }, { value: '90', label: '90 дней' }]
     });
-    root.append(period, node('p', `За период начали: ${report.startedInPeriod}. Завершили: ${report.finishedInPeriod}.`, 'cv-meta'));
-    root.append(node('h2', 'Ученики'));
-    if (!report.students.length) root.append(node('p', 'Курс пока никто не начал.'));
-    else root.append(table(['Ученик', 'Прогресс', 'Статус', 'Начало', 'Активность'], report.students.map(student => {
+    root.append(append(node('section', null, 'cv-report-banner'), heading('Результаты учеников', report.title, period)),
+      append(node('div', null, 'cv-report-metrics'),
+        metric('Начали курс', report.started, `За период: ${report.startedInPeriod}`, 'M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6m-3-3h6'),
+        metric('Завершили программу', report.finished, `За период: ${report.finishedInPeriod}`, 'M4 12l5 5L20 6'),
+        metric('Средний прогресс', report.averageProgress + '%', 'По всем начавшим курс', 'M4 19V5m0 14h16M8 15l4-4 3 2 5-6')));
+    const students = panel('Ученики');
+    if (!report.students.length) students.append(node('p', 'Курс пока никто не начал.', 'cv-meta'));
+    else students.append(table(['Ученик', 'Прогресс', 'Статус', 'Начало', 'Активность'], report.students.map(student => {
       const target = new URLSearchParams(overviewParams);
       target.set('learner', student.id);
       const name = link(student.name, '?' + target, 'cv-report-student');
-      return [name, `${student.counts.completedBlocks}/${student.counts.totalBlocks} · ${student.counts.percent}%`, student.status, date(student.startedAt), date(student.lastActive)];
-    })));
+      return [name, progress(student.counts), badge(student.status, student.counts.percent === 100), date(student.startedAt), date(student.lastActive)];
+    }), 'Результаты учеников'));
     const page = Number(params.get('page')) || 1;
     const pageLink = (number, label) => { const next = new URLSearchParams(params); next.set('page', number); return link(label, '?' + next); };
-    root.append(actions(page > 1 ? pageLink(page - 1, 'Назад') : null, report.hasMore ? pageLink(page + 1, 'Дальше') : null),
-      node('h2', 'Блоки актуальной программы'),
+    if (page > 1 || report.hasMore) students.append(actions(page > 1 ? pageLink(page - 1, 'Назад') : null, report.hasMore ? pageLink(page + 1, 'Дальше') : null));
+    root.append(students, panel('Блоки актуальной программы',
       table(['Блок', 'Открыли', 'Завершили', 'Попытки', 'Верно с первого ответа'], report.blocks.map(b =>
-        [b.title, b.opened, b.completed, b.attempts, b.firstCorrectPercent == null ? '—' : b.firstCorrectPercent + '%'])));
+        [b.title, b.opened, b.completed, b.attempts, b.firstCorrectPercent == null ? '—' : b.firstCorrectPercent + '%']), 'Блоки актуальной программы')));
   }
   async function details(id) {
     await import('/js/course-rich-text.js');
@@ -377,27 +425,30 @@
     const start = lesson => async e => run(e.currentTarget, async () => { const session = await post(`/courses/${id}/lessons/${lesson.id}/sessions`); location.href = `/courses/sessions/${session.id}`; });
     const hero = node('section', null, 'cv-material-hero');
     root.dataset.theme = c.theme || 'sage';
-    if (c.coverPath) { const img = node('img', null, 'cv-hero-image'); img.src = c.coverPath; img.alt = ''; hero.append(img); }
-    hero.append(append(node('div', null, 'cv-course-chips'), node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'), window.AdamCourseRichText.render({ text: c.description, richText: c.descriptionRichText }));
-    if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'),
+    const intro = append(node('div', null, 'cv-hero-intro'), append(node('div', null, 'cv-course-chips'),
+      node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'));
+    const copy = append(node('div', null, 'cv-hero-copy'), window.AdamCourseRichText.render({ text: c.description, richText: c.descriptionRichText }));
+    if (c.outcomes) copy.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'),
       window.AdamCourseRichText.render({ text: c.outcomes, richText: c.outcomesRichText })));
     const status = node('div', null, 'cv-course-status');
     if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : c.completedBlocks === c.totalBlocks ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
     if (c.started || c.firstCompletedAt) status.append(append(node('div'),
       node('strong', c.percent === 100 ? 'Курс пройден' : c.firstCompletedAt ? 'Добавлены новые блоки' : 'Обучение начато'),
       node('span', `Пройдено блоков: ${c.completedBlocks} из ${c.totalBlocks} · ${c.percent}%`, 'cv-meta')));
-    hero.append(status);
-    if (!window.AdamAuthenticated) hero.append(node('p', 'Войдите, чтобы сохранить прогресс между посещениями.', 'cv-meta'));
+    copy.append(status);
+    if (!window.AdamAuthenticated) copy.append(node('p', 'Войдите, чтобы сохранить прогресс между посещениями.', 'cv-meta'));
+    hero.append(append(node('div', null, 'cv-hero-text'), intro, copy));
+    if (c.coverPath) { const img = node('img', null, 'cv-hero-image'); img.src = c.coverPath; img.alt = ''; hero.append(img); }
     root.append(hero);
     const program = append(node('section', null, 'cv-course-program'), node('h2', 'Программа курса'));
     let number = 0;
     c.modules.forEach(m => {
       const section = append(node('section', null, 'cv-material-module'), node('h3', m.title));
       m.lessons.forEach(l => {
-        const b = button(l.started ? 'Продолжить урок' : l.completed ? 'Повторить' : 'Открыть урок', start(l), 'cv-lesson-action'); b.disabled = !l.available;
+        const b = button(l.completed ? 'Повторить' : l.started ? 'Продолжить урок' : 'Открыть урок', start(l), 'cv-lesson-action'); b.disabled = !l.available;
         const marker = node('span', l.completed ? '✓' : String(++number), 'cv-lesson-marker' + (l.completed ? ' is-complete' : '')); marker.setAttribute('aria-hidden', 'true');
         if (l.completed) number++;
-        section.append(append(node('div', null, 'cv-material-lesson'), marker, append(node('div', null, 'cv-lesson-copy'), node('h4', l.title), node('span', l.started ? 'Можно продолжить' : l.completed ? 'Завершён' : l.available ? 'Не начат' : 'Сначала завершите предыдущий урок', 'cv-meta')), b));
+        section.append(append(node('div', null, 'cv-material-lesson'), marker, append(node('div', null, 'cv-lesson-copy'), node('h4', l.title), node('span', l.completed ? 'Завершён' : l.started ? 'Можно продолжить' : l.available ? 'Не начат' : 'Сначала завершите предыдущий урок', 'cv-meta')), b));
       }); program.append(section);
     });
     root.append(program);
@@ -411,7 +462,7 @@
     const { renderTheoryMedia } = await import('/js/course-theory-media.js');
     let selected = new URLSearchParams(location.search).get('block'), state, picked = [], practiceFeedback = '', refreshing = false;
     shell(false); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
-    async function refresh(blockId = null) {
+    async function refresh(blockId = null, showCompletion = false) {
       refreshing = true;
       try {
       const blockQuery = blockId ? '?block=' + encodeURIComponent(blockId) : '';
@@ -423,6 +474,10 @@
         blockId = state.block?.id ?? null;
       }
       if (state.id !== id) { id = state.id; history.replaceState(null, '', '/courses/sessions/' + id); }
+      if (!showCompletion && !state.block && state.completed && state.steps.length) {
+        blockId = state.steps.at(-1).id;
+        state = await api(`/course-sessions/${id}?block=${blockId}`);
+      }
       if (state.block?.kind === 'theory' && !state.steps[state.viewStep].completed) {
         blockId = state.block.id;
         await post(`/course-sessions/${id}/next`, { blockId });
@@ -583,8 +638,9 @@
       }
       const b = state.block, card = append(node('section', null, 'cv-player-card'), node('h2', b.title));
       const next = button('Продолжить', e => run(e.currentTarget, async () => {
-        if (state.steps[state.viewStep].completed) { await refresh(state.steps[state.viewStep + 1]?.id ?? null); return; }
-        await post(`/course-sessions/${id}/next`, { blockId: b.id }); await refresh(state.steps[state.viewStep + 1]?.id ?? null);
+        const nextBlock = state.steps[state.viewStep + 1]?.id ?? null;
+        if (!state.steps[state.viewStep].completed) await post(`/course-sessions/${id}/next`, { blockId: b.id });
+        await refresh(nextBlock, !nextBlock);
       }), 'button primary');
       if (b.unavailable) {
         card.append(node('p', 'Материал недоступен. Вы можете открыть другой блок урока.', 'cv-notice'));
