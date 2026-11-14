@@ -16,7 +16,6 @@ public sealed class WordReviewState
 public sealed class WordReviewSettings
 {
     public Guid UserId { get; set; }
-    public string Format { get; set; } = "cards";
     public bool DirectInput { get; set; }
 }
 
@@ -27,7 +26,6 @@ public sealed class WordReviewSession
     public Guid Id { get; set; } = Guid.NewGuid();
     public DateTimeOffset StartedAt { get; set; }
     public string Mode { get; set; } = "mixed";
-    public string Format { get; set; } = "cards";
     public string ItemsJson { get; set; } = "[]";
     public int Index { get; set; }
     public bool Revealed { get; set; }

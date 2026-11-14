@@ -3,6 +3,9 @@ using System.Security.Claims;
 using System.Text.Json;
 using IronLanguage.Db;
 using IronLanguage.Web.Services;
+using IronLanguage.Web.Controllers;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
@@ -42,6 +45,9 @@ var memory = new ReviewMemoryRepository();
 var memoryOwner = Guid.NewGuid();
 var memoryClock = new TestClock(now);
 var memoryService = new WordReviewService(memory, memoryClock);
+var controller = new WordReviewController(memory, memoryService, memoryClock, null!) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+await controller.Available("  ФÆЛǼ   ", 1, default);
+Check(memory.LastAvailableSearch == "фӕлӕ", "Available search normalizes stress, ligature and whitespace");
 var singleWord = new WordEntry { Ossetian = "чиныг", Russian = "книга", Published = true };
 memory.Words.Add(new(new SavedWord { UserId = memoryOwner, WordId = singleWord.Id, Word = singleWord }, null, null));
 var single = await memoryService.Start(memoryOwner, "mixed", default);
@@ -59,7 +65,7 @@ memory.States[(memoryOwner,singleWord.Id,false)].Stage=0;
 single = await memoryService.Start(memoryOwner,"due",default);
 Check(single.Card?.Direction == "Русский → осетинский", "Deferred reverse available in next session before first direction is due");
 Check(await memoryService.Command(Guid.NewGuid(),single.Id,new(0,"reveal"),default) is null, "Other account cannot reveal");
-await memory.SaveSettings(new() { UserId=memoryOwner,Format="test" },default);
+await memory.SaveSettings(new() { UserId=memoryOwner },default);
 single = await memoryService.Start(memoryOwner,"due",default);
 Check(single.Card?.Kind == "input", "Insufficient confirmed distractors fall back to input");
 single = (await memoryService.Command(memoryOwner,single.Id,new(0,"answer",Answer:" ЧИНЫГ  "),default))!;
@@ -71,7 +77,7 @@ single=(await memoryService.Command(memoryOwner,single.Id,new(single.Index,"fini
 Check(single.Card is null && memory.States.Count==stateCount && single.Correct==0 && single.Points==0,"Finish ends session without answering remaining cards or awarding");
 memoryClock.Now = memoryClock.Now.AddDays(8);
 Check(await memoryService.Current(memoryOwner,default) is null, "Snapshot expires after seven days");
-await memory.SaveSettings(new() { UserId=memoryOwner,Format="cards" },default);
+await memory.SaveSettings(new() { UserId=memoryOwner },default);
 foreach(var pair in new[] { ("чиныг","книга"),("карк","курица"),("гогыз","индюк"),("кӕсаг","рыба") }) {
     var word=new WordEntry {Ossetian=pair.Item1,Russian=pair.Item2,Published=true};
     memory.Words.Add(new(new SavedWord {UserId=memoryOwner,WordId=word.Id,Word=word},null,null));
@@ -190,7 +196,7 @@ try {
     Check((await db.DailyActivities.SingleAsync(x => x.UserId == owners[0] && x.Day == day)).Points == 20, "Shared daily activity and points");
     Check(await db.WordReviewStates.CountAsync(x => x.UserId == owners[0] && x.WordId == firstWord) == 2, "Directions tracked independently");
     clock.Now = clock.Now.AddDays(49);
-    await repo.SaveSettings(new() { UserId = owners[0], Format = "test", DirectInput = true },default);
+    await repo.SaveSettings(new() { UserId = owners[0], DirectInput = true },default);
     current = await service.Start(owners[0], "due", default);
     Check(current.Card?.Kind == "input" && current.Card.Translation is null, "Settings change keeps schedule and hides typed answer");
     await service.Command(owners[0], current.Id, new(current.Index,"answer",Answer:"неверный ответ"),default);
@@ -227,7 +233,7 @@ try {
     var large = await repo.Page(owners[0],"","all","due",35,30,default);
     Check(large.Total == 1035 && large.Pages == 35 && large.Items.Length == 15, "Thousand-word dictionary remains paginated on server");
     if (args.Contains("--browser")) {
-        await repo.SaveSettings(new() { UserId=owners[0], Format="cards" },default);
+        await repo.SaveSettings(new() { UserId=owners[0] },default);
         clock.Now = DateTimeOffset.UtcNow;
         // Make fixture words due without touching any user data.
         await db.WordReviewStates.Where(x => x.UserId == owners[0]).ExecuteUpdateAsync(x => x.SetProperty(s => s.DueAt, DateTimeOffset.UtcNow.AddHours(-1)));

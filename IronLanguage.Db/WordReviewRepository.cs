@@ -75,7 +75,7 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
         var total = await items.CountAsync(ct);
         var fresh = await items.CountAsync(x => x.Fresh, ct);
         var mastered = await items.CountAsync(x => x.Status == "mastered", ct);
-        var due = await items.CountAsync(x => x.Status != "new" && x.DueAt <= now, ct);
+        var due = await items.CountAsync(x => x.DueAt <= now, ct);
         var next = await items.Where(x => x.DueAt > now).MinAsync(x => x.DueAt, ct);
         var day = DateOnly.FromDateTime(now.UtcDateTime);
         var points = await db.WordReviewRewards.CountAsync(x => x.UserId == userId && x.Day == day, ct);
@@ -184,7 +184,7 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
         await Lock(settings.UserId, ct);
         var current = await db.WordReviewSettings.SingleOrDefaultAsync(x => x.UserId == settings.UserId, ct);
         if (current is null) db.WordReviewSettings.Add(settings);
-        else { current.Format = settings.Format; current.DirectInput = settings.DirectInput; }
+        else current.DirectInput = settings.DirectInput;
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }

@@ -112,7 +112,7 @@ const normalize=value=>value.normalize('NFD').replace(/\u0301/g,'').replace(/æ/
   assert((await snapshot()).result?.correct,JSON.stringify({session:await snapshot(),status:await page.locator("#review-status").textContent()}));
   assert(Math.abs(await checkTop()-pairsTop)<1);
   await page.screenshot({path:path.join(out,'matching-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:path.join(out,'matching-wide.png'),fullPage:true});
-  await api('/word-review/settings',{format:'auto',directInput:true},'PUT');const typed=await api('/word-review/sessions',{mode:'due'});assert.equal(typed.card.kind,'input');
+  await api('/word-review/settings',{directInput:true},'PUT');const typed=await api('/word-review/sessions',{mode:'due'});assert.equal(typed.card.kind,'input');
   await page.reload();await idle();await page.locator('#review-resume').click();await page.setViewportSize({width:390,height:674});
   await page.locator('#review-input').fill('неверный ответ');const typedTop=await checkTop();
   await page.locator('#review-input').press('Enter');await idle();

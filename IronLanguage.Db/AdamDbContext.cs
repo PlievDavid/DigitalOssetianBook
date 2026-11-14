@@ -37,7 +37,6 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : DbC
         model.Entity<WordReviewState>().HasOne<SavedWord>().WithMany().HasForeignKey(x => new { x.UserId, x.WordId }).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordReviewState>().HasIndex(x => new { x.UserId, x.DueAt });
         model.Entity<WordReviewSettings>().HasKey(x => x.UserId);
-        model.Entity<WordReviewSettings>().Property(x => x.Format).HasMaxLength(16);
         model.Entity<WordReviewSettings>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<WordReviewSession>().HasKey(x => x.UserId);
         model.Entity<WordReviewSession>().HasIndex(x => x.Id).IsUnique();

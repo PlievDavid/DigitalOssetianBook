@@ -757,10 +757,6 @@ namespace IronLanguage.Db.Migrations
                     b.Property<int>("Errors")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Format")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
@@ -805,11 +801,6 @@ namespace IronLanguage.Db.Migrations
 
                     b.Property<bool>("DirectInput")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("Format")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
 
                     b.HasKey("UserId");
 

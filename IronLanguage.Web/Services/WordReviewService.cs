@@ -11,7 +11,7 @@ public sealed record ReviewAnswerResult(bool Correct, string Expected, DateTimeO
 public sealed record ReviewPairView(Guid WordId, string Prompt, string? Expected, bool? Correct);
 public sealed record ReviewPairBatch(int[] Submission, ReviewAnswerResult?[] Results);
 public sealed record ReviewCardView(Guid WordId, string Direction, string Prompt, string Kind, string[] Options, string? Translation, ReviewPairView[]? Pairs = null, int[]? PairIndices = null);
-public sealed record ReviewSessionView(Guid Id, int Index, int Total, string Mode, string Format, bool Revealed,
+public sealed record ReviewSessionView(Guid Id, int Index, int Total, string Mode, bool Revealed,
     ReviewCardView? Card, ReviewAnswerResult? Result, int Correct, int Errors, int Skipped, int Points);
 public sealed record ReviewCommand(int Index, string Action, string? Answer = null, bool? Known = null, int[]? PairIndices = null);
 
@@ -133,7 +133,7 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
         else if(session.ResultJson is not null)result=JsonSerializer.Deserialize<ReviewAnswerResult>(session.ResultJson,Json);
         var card=item is null?null:new ReviewCardView(item.WordId,item.Reverse?"Русский → осетинский":"Осетинский → русский",item.Prompt,item.Kind,item.Options,
             item.Kind=="cards" && session.Revealed || item.Kind!="pairs" && result is not null ? item.Answers[0] : null,pairs,submission);
-        return new(session.Id,session.Index,cards.Length,session.Mode,"auto",session.Revealed,card,result,session.Correct,session.Errors,session.Skipped,session.Points);
+        return new(session.Id,session.Index,cards.Length,session.Mode,session.Revealed,card,result,session.Correct,session.Errors,session.Skipped,session.Points);
     }
     public async Task<ReviewSessionView?> Current(Guid userId,CancellationToken ct)
     {
@@ -200,7 +200,7 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
                 if(source.Backward?.DueAt is null || source.Backward.DueAt<=now)candidates.Add(backward);
             }
         }
-        var session=new WordReviewSession {UserId=userId,StartedAt=now,Mode=mode,Format="auto",ItemsJson=JsonSerializer.Serialize(PairRounds(WordReviewRules.Order(candidates,mode)),Json)};
+        var session=new WordReviewSession {UserId=userId,StartedAt=now,Mode=mode,ItemsJson=JsonSerializer.Serialize(PairRounds(WordReviewRules.Order(candidates,mode)),Json)};
         await repository.Start(session,ct);return View(session);
     }
     private async Task<ReviewSessionView?> Match(Guid userId,Guid id,ReviewCommand input,ReviewCardSnapshot round,DateTimeOffset now,CancellationToken ct)

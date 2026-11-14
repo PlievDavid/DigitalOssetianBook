@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 public sealed record ReviewStartInput(string Mode);
-public sealed record ReviewSettingsInput(string Format, bool DirectInput);
+public sealed record ReviewSettingsInput(bool DirectInput);
 public sealed record TopicSaveInput(Guid[] SenseIds);
 public sealed record TopicRatingInput(bool? Known);
 
@@ -52,21 +52,20 @@ public sealed class WordReviewController(IWordReviewRepository repository, WordR
     public async Task<IActionResult> Settings(CancellationToken ct)
     {
         var settings = await repository.Settings(Owner, ct);
-        return Ok(new { settings.Format, settings.DirectInput });
+        return Ok(new { settings.DirectInput });
     }
 
     [AllowAnonymous, HttpGet("available")]
     public async Task<IActionResult> Available(string search = "", int page = 1, CancellationToken ct = default)
     {
         if (search.Length > 100) return BadRequest();
-        return Ok(await repository.Available(User.UserId(), search.Trim().Replace('æ', 'ӕ').Replace('Æ', 'Ӕ'), page, ct));
+        return Ok(await repository.Available(User.UserId(), WordReviewRules.Normalize(search), page, ct));
     }
 
     [HttpPut("settings")]
     public async Task<IActionResult> SaveSettings(ReviewSettingsInput input, CancellationToken ct)
     {
-        if (input.Format is not ("auto" or "cards" or "test")) return BadRequest();
-        await repository.SaveSettings(new() { UserId = Owner, Format = input.Format, DirectInput = input.DirectInput }, ct);
+        await repository.SaveSettings(new() { UserId = Owner, DirectInput = input.DirectInput }, ct);
         return NoContent();
     }
 

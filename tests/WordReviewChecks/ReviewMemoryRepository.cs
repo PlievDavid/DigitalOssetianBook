@@ -3,6 +3,7 @@ using IronLanguage.Web.Services;
 
 internal sealed class ReviewMemoryRepository : IWordReviewRepository
 {
+    public string? LastAvailableSearch;
     public readonly Dictionary<Guid, WordReviewSession> Sessions = [];
     public readonly Dictionary<(Guid, Guid, bool), WordReviewState> States = [];
     public readonly Dictionary<Guid, WordReviewSettings> Preferences = [];
@@ -10,7 +11,7 @@ internal sealed class ReviewMemoryRepository : IWordReviewRepository
     public readonly HashSet<(Guid, Guid, DateOnly)> Rewards = [];
     public Task<ReviewCounts> Counts(Guid userId, DateTimeOffset now, CancellationToken ct) => throw new NotSupportedException();
     public Task<VocabularyPage> Page(Guid userId, string search, string status, string sort, int page, int size, CancellationToken ct) => throw new NotSupportedException();
-    public Task<VocabularyPage> Available(Guid? userId, string search, int page, CancellationToken ct) => throw new NotSupportedException();
+    public Task<VocabularyPage> Available(Guid? userId, string search, int page, CancellationToken ct) { LastAvailableSearch = search; return Task.FromResult(new VocabularyPage([], 0, 1, 1)); }
     public Task<List<ReviewSource>> Sources(Guid userId, CancellationToken ct) => Task.FromResult(Words.Where(x => x.Saved.UserId == userId).Select(x => x with { Forward = States.GetValueOrDefault((userId,x.Saved.WordId,false)), Backward = States.GetValueOrDefault((userId,x.Saved.WordId,true)) }).ToList());
     public Task<WordReviewSettings> Settings(Guid userId, CancellationToken ct) => Task.FromResult(Preferences.GetValueOrDefault(userId) ?? new() { UserId = userId });
     public Task SaveSettings(WordReviewSettings settings, CancellationToken ct) { Preferences[settings.UserId] = settings; return Task.CompletedTask; }

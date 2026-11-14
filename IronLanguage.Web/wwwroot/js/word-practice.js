@@ -208,7 +208,7 @@
     event.preventDefault();
     work(async () => {
       try {
-        await AdamApi('/word-review/settings', { method: 'PUT', body: JSON.stringify({ format: 'auto', directInput: settingsForm.elements.directInput.checked }) });
+        await AdamApi('/word-review/settings', { method: 'PUT', body: JSON.stringify({ directInput: settingsForm.elements.directInput.checked }) });
         settings.close();
       } catch (error) { setText('review-settings-error', error.message); }
     });
