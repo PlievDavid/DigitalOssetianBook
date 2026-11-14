@@ -78,7 +78,7 @@ public sealed record LessonSnapshot(string Title, CurriculumCard[] Cards, Guid?[
 }
 public sealed record LessonPage(LessonRun Run, LessonSnapshot Snapshot, string? Error = null, CoursePage? Course = null, int SelectedStep = 0, int[]? CompletedSteps = null);
 
-public sealed record CurriculumCatalog(CurriculumItem[] Items, CurriculumItem[] Lessons, List<LessonRun> Runs, string Kind, string Query, string Filter, Dictionary<Guid, CurriculumAuthor>? Authors = null, Dictionary<Guid, CourseRatingSummary>? Ratings = null);
+public sealed record CurriculumCatalog(CurriculumItem[] Items, CurriculumItem[] Lessons, List<LessonRun> Runs, string Kind, string Query, string Filter, Dictionary<Guid, CurriculumAuthor>? Authors = null);
 
 public sealed record PublicAuthorPage(CurriculumAuthor Author, CurriculumItem[] Courses, AvatarOptions Avatar);
 

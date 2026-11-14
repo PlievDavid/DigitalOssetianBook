@@ -10,9 +10,10 @@ public sealed class CourseAnalytics(ICourseRepository courses, ICourseLearningRe
             await learning.Snapshot(versionId, ct) is not { } version) return null;
 
         var enrollments = await learning.Learners(course, ct);
-        var history = await learning.History([course], null, ct);
+        var cutoff = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.AddDays(1 - days), TimeSpan.Zero);
+        var history = await learning.History([course], learner, ct);
         var versions = (await learning.Snapshots(history.Select(s => s.VersionId).Append(versionId).Distinct().ToArray(), ct)).ToDictionary(x => x.Id);
-        var events = await learning.Activity(course, ct);
+        var events = await learning.Activity(course, learner, cutoff, ct);
         var byUser = history.ToLookup(s => s.UserId);
         var byActivity = events.ToLookup(a => a.UserId);
         var title = CourseLearningService.Read(version).Title;
@@ -53,7 +54,6 @@ public sealed class CourseAnalytics(ICourseRepository courses, ICourseLearningRe
                 }) }) }) };
         }
 
-        var cutoff = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.AddDays(1 - days), TimeSpan.Zero);
         var period = comparable.Where(a => a.At >= cutoff).ToLookup(a => a.BlockId);
         var firstAnswers = comparable.Where(a => a.Correct.HasValue).GroupBy(a => (a.UserId, a.BlockId))
             .Select(g => g.OrderBy(a => a.At).First()).Where(a => a.At >= cutoff).ToLookup(a => a.BlockId);

@@ -20,6 +20,7 @@ public sealed class CoursePracticeRun
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
+    public Guid? SessionId { get; set; }
     public string StateJson { get; set; } = "{}";
     public int Revision { get; set; }
     public bool Complete { get; set; }
@@ -58,7 +59,7 @@ public interface ICourseLearningRepository
     Task<CourseVersion[]> Snapshots(Guid[] versions, CancellationToken ct);
     Task<CourseLessonSession[]> History(Guid[] courseIds, Guid? user, CancellationToken ct);
     Task<CourseLearner[]> Learners(Guid course, CancellationToken ct);
-    Task<CourseBlockActivity[]> Activity(Guid course, CancellationToken ct);
+    Task<CourseBlockActivity[]> Activity(Guid course, Guid? learner, DateTimeOffset cutoff, CancellationToken ct);
     Task Record(CourseLessonSession session, Guid block, string key, bool? correct, CancellationToken ct);
     Task<Dictionary<Guid, string>> AuthorNames(Guid[] courses, CancellationToken ct);
 }
@@ -97,8 +98,22 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
          join account in db.Users on enrollment.UserId equals account.Id
          where enrollment.CourseId == course
          select new CourseLearner(account.Id, account.PublicName ?? "Ученик")).ToArrayAsync(ct);
-    public Task<CourseBlockActivity[]> Activity(Guid course, CancellationToken ct) =>
-        db.CourseBlockActivities.AsNoTracking().Where(x => x.CourseId == course).OrderBy(x => x.At).ToArrayAsync(ct);
+    public async Task<CourseBlockActivity[]> Activity(Guid course, Guid? learner, DateTimeOffset cutoff, CancellationToken ct)
+    {
+        var activity = db.CourseBlockActivities.AsNoTracking().Where(x => x.CourseId == course);
+        if (learner is Guid id) return await activity.Where(x => x.UserId == id).ToArrayAsync(ct);
+
+        var recent = await activity.Where(x => x.At >= cutoff).ToArrayAsync(ct);
+        // Older rows affect only lifetime last activity and whether a recent answer was the first.
+        var older = activity.Where(x => x.At < cutoff);
+        var lastSeen = await older.GroupBy(x => x.UserId)
+            .Select(g => new CourseBlockActivity { UserId = g.Key, At = g.Max(x => x.At) }).ToArrayAsync(ct);
+        var firstAnswers = await older.Where(x => x.Correct.HasValue)
+            .GroupBy(x => new { x.UserId, x.VersionId, x.BlockId })
+            .Select(g => new CourseBlockActivity { UserId = g.Key.UserId, VersionId = g.Key.VersionId,
+                BlockId = g.Key.BlockId, At = g.Min(x => x.At), Correct = false }).ToArrayAsync(ct);
+        return [.. recent, .. lastSeen, .. firstAnswers];
+    }
     public async Task Record(CourseLessonSession session, Guid block, string key, bool? correct, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -123,7 +138,11 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
         var active = await db.CourseLessonSessions.AsNoTracking().Where(x => x.UserId == session.UserId && x.VersionId == session.VersionId && x.LessonId == session.LessonId && (x.CompletedAt == null || session.CompletedAt != null)).OrderByDescending(x => x.StartedAt).FirstOrDefaultAsync(ct);
         if (active is not null) return active;
         db.CourseLessonSessions.Add(session); db.Attempts.AddRange(attempts);
-        if (practices is not null) db.CoursePracticeRuns.AddRange(practices);
+        if (practices is not null)
+        {
+            foreach (var practice in practices) practice.SessionId = session.Id;
+            db.CoursePracticeRuns.AddRange(practices);
+        }
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         return session;
     }

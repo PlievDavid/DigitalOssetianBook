@@ -12,7 +12,7 @@
             <li>
             @if (lesson.Revision.EditorId == (Guid?)ViewData["EditorId"])
             {
-                <a href="/editor/curriculum/lesson/@lesson.Revision.ContentId/edit">@lesson.Document.Title</a>
+                <span>@lesson.Document.Title — урок из прежней системы</span>
             }
             else
             {

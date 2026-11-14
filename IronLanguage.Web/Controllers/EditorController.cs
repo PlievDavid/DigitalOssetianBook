@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), Route("editor")]
-public sealed class EditorController(ICatalogRepository catalog, IEditorRepository editor, IWebHostEnvironment environment, ICurriculumRepository curriculum, ICourseMaterialRepository materials) : Controller
+public sealed class EditorController(ICatalogRepository catalog, IEditorRepository editor, IWebHostEnvironment environment, ICourseMaterialRepository materials) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct)
@@ -73,9 +73,8 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
     }
 
     [HttpPost("publish/{kind}/{id:guid}"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Publish(string kind, Guid id, bool confirmReviewed, Guid? lessonId, CancellationToken ct)
+    public async Task<IActionResult> Publish(string kind, Guid id, bool confirmReviewed, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
-        if (lessonId is Guid lesson && (kind is not ("audio" or "translation" or "dialogue") || await curriculum.GetOwned("lesson", lesson, User.UserId()!.Value, ct) is null)) return NotFound();
         if (!confirmReviewed) return BadRequest("Подтвердите проверку материала и прав на публикацию.");
         if (kind == "exercise") kind = (await catalog.Exercise(id, true, ct))?.Kind ?? kind;
         if (EfCourseMaterialRepository.Supports(kind))
@@ -117,7 +116,7 @@ public sealed class EditorController(ICatalogRepository catalog, IEditorReposito
         }
         else return NotFound();
         if (!await editor.PublishDraft(kind, id, User.UserId()!.Value, ct)) return Conflict();
-        return Redirect($"/editor/{kind}/{id}/preview{(lessonId is Guid lessonIdValue ? $"?lessonId={lessonIdValue}" : "")}");
+        return Redirect($"/editor/{kind}/{id}/preview{CourseEditorReturn.Query(courseId, lessonId)}");
     }
 
     private static bool CanAssemble(string answer, string[] pieces)

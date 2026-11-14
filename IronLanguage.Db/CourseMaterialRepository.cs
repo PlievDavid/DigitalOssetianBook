@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace IronLanguage.Db;
 
@@ -21,7 +22,7 @@ internal sealed class CourseMaterialItem
     public string? AudioPath { get; init; }
     public string? Fragment { get; init; }
 }
-public sealed record CourseMaterialChoice(Guid Id, string Kind, string Title, string Fragment, string? AudioPath, string? ImagePath, string Author, bool Own);
+public sealed record CourseMaterialChoice(Guid Id, string Kind, string Title, string Fragment, string? AudioPath, string? ImagePath, string Author, bool Own, string[] Answers);
 public sealed record CourseMaterialPage(CourseMaterialChoice[] Items, bool HasMore);
 public sealed record CourseMaterialSummary(Guid Id, string Kind, string Title, string Author, bool Own);
 
@@ -40,6 +41,7 @@ public interface ICourseMaterialRepository
 
 public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMaterialRepository
 {
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     public static bool Supports(string kind) => kind is "audio" or "translation" or "listening" or "matching" or "picture" or "grammar" or "dialogue";
 
     public Task<CourseMaterialAccess?> Access(string kind, Guid id, CancellationToken ct) =>
@@ -90,9 +92,21 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
             string? Read(string key) => script is not null && script.RootElement.TryGetProperty(key, out var field)
                 && field.ValueKind == System.Text.Json.JsonValueKind.String ? field.GetString() : null;
             return new CourseMaterialChoice(row.Id, row.Kind, row.Title, row.Fragment ?? row.Title,
-                row.AudioPath, row.Kind == "picture" ? Read("picturePath") : null, row.Author, row.Own);
+                row.AudioPath, row.Kind == "picture" ? Read("picturePath") : null, row.Author, row.Own,
+                script is null ? [] : PreviewAnswers(row.Kind, script.RootElement));
         }).ToArray(), rows.Length > size);
     }
+
+    private static string[] PreviewAnswers(string kind, JsonElement script) => kind switch
+    {
+        "matching" => script.Deserialize<MatchingMaterial>(Json)!.Pairs.Select(pair => $"{pair.Left} — {pair.Right}").ToArray(),
+        "dialogue" => script.Deserialize<DialogueMaterial>(Json)!.Turns
+            .Where(turn => turn.References.Length > 0)
+            .Select(turn => $"{turn.LineNumber}: {string.Join(" / ", turn.References)}").ToArray(),
+        "picture" => [script.GetProperty("word").GetString()!],
+        "grammar" => [script.GetProperty("correct").GetString()!],
+        _ => script.Deserialize<string[]>()!.Where(answer => !string.IsNullOrWhiteSpace(answer)).Distinct().ToArray()
+    };
 
     public Task<CourseMaterialSummary[]> Selected(Guid owner, Guid[] ids, CancellationToken ct)
     {
@@ -106,7 +120,10 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
     }
 
     private IQueryable<CourseMaterialItem> Inventory() => db.Database.SqlQueryRaw<CourseMaterialItem>("""
-        SELECT "Id", "Kind", "RussianPrompt" AS "Title", NULL::text AS "ScriptJson", "AudioPath", "RussianPrompt" AS "Fragment"
+        SELECT "Id", "Kind", "RussianPrompt" AS "Title",
+            CASE WHEN "Kind" = 'listening' THEN jsonb_build_array("OptionsJson"::jsonb -> "CorrectOption")::text
+                 ELSE (jsonb_build_array("OssetianAnswer") || "AlternativesJson"::jsonb)::text END AS "ScriptJson",
+            "AudioPath", "RussianPrompt" AS "Fragment"
         FROM "Exercises" WHERE "Published" AND NOT "Archived"
         UNION ALL
         SELECT "Id", 'matching', "Title", "ScriptJson", NULL, NULL FROM "Matchings" WHERE "Published" AND NOT "Archived"

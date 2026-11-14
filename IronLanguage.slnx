@@ -1,4 +1,9 @@
 <Solution>
   <Project Path="IronLanguage.Db/IronLanguage.Db.csproj" />
   <Project Path="IronLanguage.Web/IronLanguage.Web.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/AdminChecks/AdminChecks.csproj" />
+    <Project Path="tests/CourseVersionChecks/CourseVersionChecks.csproj" />
+    <Project Path="tests/CurriculumChecks/CurriculumChecks.csproj" />
+  </Folder>
 </Solution>

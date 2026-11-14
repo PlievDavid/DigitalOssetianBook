@@ -278,7 +278,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
                 video = CourseTheoryMediaStore.IsVideo(attachment.File), attachment.Alt, attachment.Caption,
                 url = $"/api/v1/course-sessions/{id}/theory-media/{block.Id}"
             } : null;
-            blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, theoryMedia,
+            blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, block.Alignment, theoryMedia,
                 attemptId = Attempts(session)[viewStep], card, result, practice, unavailable };
         }
         var history = isPreview ? [] : await History(session.CourseId, user, owner, ct);

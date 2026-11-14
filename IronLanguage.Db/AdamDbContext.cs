@@ -47,6 +47,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
         base.OnModelCreating(model);
         model.Entity<CourseMaterialAccess>().HasKey(x => new { x.Kind, x.MaterialId });
         model.Entity<CoursePracticeRun>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        model.Entity<CoursePracticeRun>().HasOne<CourseLessonSession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<CourseBlockActivity>().HasKey(x => new { x.UserId, x.VersionId, x.BlockId, x.Key });
         model.Entity<CourseBlockActivity>().HasIndex(x => new { x.CourseId, x.At });
         model.Entity<CourseBlockActivity>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);

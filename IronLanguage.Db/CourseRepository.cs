@@ -48,10 +48,18 @@ public interface ICourseRepository
     Task<CourseEnrollment?> Enroll(Guid id, Guid user, CancellationToken ct);
     Task<CourseVersion?> ForLearner(Guid id, Guid user, CancellationToken ct);
     Task<CourseVersion[]> History(Guid id, Guid owner, CancellationToken ct);
+    IAsyncEnumerable<string> MediaReferenceDocuments();
 }
 
 public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
 {
+    public IAsyncEnumerable<string> MediaReferenceDocuments() =>
+        db.Courses.Select(x => x.DraftJson)
+            .Concat(db.CourseVersions.Select(x => x.SnapshotJson))
+            .Concat(db.LibraryLessons.Select(x => x.LessonJson))
+            .Concat(db.ContentRevisions.Where(x => x.Kind == "course" || x.Kind == "lesson").Select(x => x.PayloadJson))
+            .AsAsyncEnumerable();
+
     internal static Task Lock(AdamDbContext db, Guid id, CancellationToken ct, bool shared = false)
     {
         var key = "course-v2:" + id;
@@ -142,12 +150,6 @@ public sealed class EfCourseRepository(AdamDbContext db) : ICourseRepository
 
         var sessions = db.CourseLessonSessions.Where(s => s.CourseId == id);
         await db.Attempts.Where(a => sessions.Any(s => s.Id == a.LessonRunId)).ExecuteDeleteAsync(ct);
-        await db.Database.ExecuteSqlInterpolatedAsync($"""
-            DELETE FROM "CoursePracticeRuns" AS run
-            USING "CourseLessonSessions" AS session
-            CROSS JOIN LATERAL jsonb_array_elements_text(session."AttemptIdsJson"::jsonb) AS attempt(id)
-            WHERE session."CourseId" = {id} AND run."UserId" = session."UserId" AND run."Id" = attempt.id::uuid
-            """, ct);
         await db.CourseBlockActivities.Where(a => a.CourseId == id).ExecuteDeleteAsync(ct);
         await db.CourseRatings.Where(r => r.CourseId == id).ExecuteDeleteAsync(ct);
         await sessions.ExecuteDeleteAsync(ct);

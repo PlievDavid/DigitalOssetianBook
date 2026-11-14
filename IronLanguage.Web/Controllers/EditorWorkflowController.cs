@@ -47,43 +47,37 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpGet("new/{kind}")]
-    public async Task<IActionResult> New(string kind, Guid? lessonId, CancellationToken ct)
+    public IActionResult New(string kind, Guid? courseId, Guid? lessonId)
     {
-        if (!Kinds.Contains(kind) || !await ValidLesson(lessonId, kind, ct)) return NotFound();
-        ViewData["LessonId"] = lessonId;
+        if (!Kinds.Contains(kind)) return NotFound();
+        SetReturn(courseId, lessonId);
         return View("Form", new EditorFormModel { Kind = kind });
     }
 
-    private async Task<bool> ValidLesson(Guid? lessonId, string kind, CancellationToken ct) =>
-        lessonId is null || (kind is "audio" or "translation" or "dialogue" or "listening" &&
-            await curriculum.GetOwned("lesson", lessonId.Value, User.UserId()!.Value, ct) is not null);
-
     [HttpPost("new/{kind}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
-    public async Task<IActionResult> New(string kind, EditorFormModel model, Guid? lessonId, CancellationToken ct)
+    public async Task<IActionResult> New(string kind, EditorFormModel model, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
-        if (!Kinds.Contains(kind) || !await ValidLesson(lessonId, kind, ct)) return NotFound();
-        ViewData["LessonId"] = lessonId;
+        if (!Kinds.Contains(kind)) return NotFound();
+        SetReturn(courseId, lessonId);
         model.Kind = kind;
         var payload = await BuildPayload(model, null, null, ct);
         if (payload is null) return View("Form", model);
         var id = await editor.Create(kind, payload, ct, User.UserId());
-        return Redirect($"/editor/{kind}/{id}/preview{LessonQuery(lessonId)}");
+        return Redirect($"/editor/{kind}/{id}/preview{CourseEditorReturn.Query(courseId, lessonId)}");
     }
 
     [HttpGet("draft/{kind}/{id:guid}")]
-    public async Task<IActionResult> EditDraft(string kind, Guid id, Guid? lessonId, CancellationToken ct)
+    public async Task<IActionResult> EditDraft(string kind, Guid id, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
-        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
-        ViewData["LessonId"] = lessonId;
+        SetReturn(courseId, lessonId);
         var material = await editor.Material(kind, id, ct);
         return material is null || material.Published ? NotFound() : View("Form", EditorFormModel.FromPayload(kind, material.PayloadJson, id));
     }
 
     [HttpPost("draft/{kind}/{id:guid}"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
-    public async Task<IActionResult> EditDraft(string kind, Guid id, EditorFormModel model, Guid? lessonId, CancellationToken ct)
+    public async Task<IActionResult> EditDraft(string kind, Guid id, EditorFormModel model, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
-        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
-        ViewData["LessonId"] = lessonId;
+        SetReturn(courseId, lessonId);
         var material = await editor.Material(kind, id, ct);
         if (material is null || material.Published) return NotFound();
         model.Kind = kind; model.ContentId = id;
@@ -94,7 +88,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         var payload = await BuildPayload(model, audio, cover, ct);
         if (payload is null) return View("Form", model);
         if (!await editor.UpdateDraft(kind, id, payload, ct)) return Conflict();
-        return Redirect($"/editor/{kind}/{id}/preview{LessonQuery(lessonId)}");
+        return Redirect($"/editor/{kind}/{id}/preview{CourseEditorReturn.Query(courseId, lessonId)}");
     }
 
     [HttpPost("published/{kind}/{id:guid}/revise"), ValidateAntiForgeryToken]
@@ -158,10 +152,9 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpGet("{kind}/{id:guid}/preview")]
-    public async Task<IActionResult> Preview(string kind, Guid id, Guid? lessonId, CancellationToken ct)
+    public async Task<IActionResult> Preview(string kind, Guid id, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
-        if (!await ValidLesson(lessonId, kind, ct)) return NotFound();
-        ViewData["LessonId"] = lessonId;
+        SetReturn(courseId, lessonId);
         var material = await editor.Material(kind, id, ct);
         return material is null ? NotFound() : View("Preview", await PreviewModel(kind, id, null, material.Version, material.Published, false, material.PayloadJson, ct));
     }
@@ -196,7 +189,11 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         return Redirect($"/editor/{revision.Kind}/{revision.ContentId}/preview");
     }
 
-    private static string LessonQuery(Guid? lessonId) => lessonId is Guid id ? $"?lessonId={id}" : "";
+    private void SetReturn(Guid? courseId, Guid? lessonId)
+    {
+        ViewData["CourseReturnUrl"] = CourseEditorReturn.Url(courseId, lessonId);
+        ViewData["CourseReturnQuery"] = CourseEditorReturn.Query(courseId, lessonId);
+    }
 
     private async Task<EditorPreviewModel> PreviewModel(string kind, Guid id, Guid? revisionId, int version, bool published, bool historical, string payload, CancellationToken ct)
     {

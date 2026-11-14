@@ -23,6 +23,9 @@ var lesson = module.Lessons[0];
 var block = lesson.Blocks[0];
 var rich = block with { RichText = JsonSerializer.SerializeToElement(new { ops = new[] { new { insert = "Ӕ ӕ\n", attributes = new { bold = true, color = "#173f32", size = "22px" } } } }) };
 Check(CourseRichText.PlainText(rich) == "Ӕ ӕ", "Форматирование потеряло осетинские символы");
+var formatted = JsonSerializer.Deserialize<JsonElement>("""{"ops":[{"insert":"Ӕ ӕ"},{"insert":"\n","attributes":{"align":"center","indent":2}}]}""");
+Check(CourseRichText.PlainText(block with { RichText = formatted }) == "Ӕ ӕ", "Разметка абзаца исказила текст");
+CourseAuthoringService.Validate(draft with { Outcomes = "Ӕ ӕ", OutcomesRichText = formatted }, true);
 foreach (var unsafeJson in new[] { "{\"ops\":[{\"insert\":{\"image\":\"https://example.invalid/x\"}}]}", "{\"ops\":[{\"insert\":\"x\",\"attributes\":{\"link\":\"javascript:alert(1)\"}}]}", "{\"ops\":[{\"insert\":\"x\",\"attributes\":{\"color\":\"url(x)\"}}]}", "{\"ops\":[{\"delete\":1}]}" })
 {
     var rejected = false;
@@ -68,8 +71,29 @@ try
     var learner = new UserAccount { Email = "learner@example.invalid" };
     db.Users.AddRange(owner, other, learner); await db.SaveChangesAsync();
     var repo = new EfCourseRepository(db);
-    var service = new CourseAuthoringService(repo);
     var ct = CancellationToken.None;
+    var mediaTest = Directory.CreateTempSubdirectory("adam-course-cleanup-");
+    try
+    {
+        string CreateFile(bool old)
+        {
+            var file = Path.Combine(mediaTest.FullName, Guid.NewGuid().ToString("N") + ".png");
+            File.WriteAllBytes(file, [1]);
+            if (old) File.SetLastWriteTimeUtc(file, DateTime.UtcNow.AddDays(-2));
+            return file;
+        }
+        var unused = CreateFile(true);
+        var shared = CreateFile(true);
+        var recent = CreateFile(false);
+        db.LibraryLessons.Add(new LibraryLesson { OwnerId = owner.Id, LessonJson = JsonSerializer.Serialize(new { file = Path.GetFileName(shared) }) });
+        await db.SaveChangesAsync(ct);
+        Check(await CourseMediaCleanup.Run(repo, [mediaTest.FullName], false, ct) == 1 && File.Exists(unused), "Проверка очистки изменила файлы");
+        Check(await CourseMediaCleanup.Run(repo, [mediaTest.FullName], true, ct) == 1 &&
+            !File.Exists(unused) && File.Exists(shared) && File.Exists(recent), "Очистка затронула используемое или недавнее вложение");
+        await db.LibraryLessons.Where(x => x.OwnerId == owner.Id).ExecuteDeleteAsync(ct);
+    }
+    finally { mediaTest.Delete(recursive: true); }
+    var service = new CourseAuthoringService(repo);
     var course = await service.Create(owner.Id, draft, ct);
     Check(await repo.Owned(course.Id, other.Id, ct) is null, "Чужой черновик доступен");
     Check(await repo.Enroll(course.Id, learner.Id, ct) is null, "Запись на черновик разрешена");
@@ -129,7 +153,8 @@ try
     Check(await catalog.Exercise(audioExercise.Id, ct: ct) is null, "Личное упражнение доступно в общем каталоге");
     Check(!await materialAccess.CanReadMedia(audioExercise.AudioPath!, null, ct), "Аудио личного материала выдаётся напрямую");
     Check(await materialAccess.CanReadMedia(audioExercise.AudioPath!, owner.Id, ct), "Автор не может прослушать свой материал");
-    Check((await materialAccess.Search(owner.Id, "listening", "вопрос", true, 1, ct)).Items.Single().Id == audioExercise.Id, "Свое упражнение не найдено");
+    var listeningPreview = (await materialAccess.Search(owner.Id, "listening", "вопрос", true, 1, ct)).Items.Single();
+    Check(listeningPreview.Id == audioExercise.Id && listeningPreview.Answers.SequenceEqual(["Вариант 3"]), "Предпросмотр аудирования не показывает правильный вариант");
     Check((await materialAccess.Selected(owner.Id, [audioExercise.Id], ct)).Single().Own, "Сохранённое упражнение владельца не найдено");
     Check((await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Length == 0, "Сведения о личном упражнении доступны другому автору");
     Check((await materialAccess.Search(other.Id, "listening", null, false, 1, ct)).Items.Length == 0, "Другой преподаватель видит личное упражнение");
@@ -186,10 +211,17 @@ try
             [new(1, "npc", "Ӕ"), new(2, "student", "")], [new(2, "choice", ["ӕ"], ["ӕ", "Б"], 2, false)]))
     };
     var practiceBlocks = new List<CourseDraftBlock>();
+    var previewAnswers = new Dictionary<string, string[]>
+    {
+        ["audio"] = ["Ӕ ӕ"], ["matching"] = ["А — Б", "В — Г"], ["picture"] = ["Ӕ"],
+        ["grammar"] = ["ӕ"], ["dialogue"] = ["2: ӕ"]
+    };
     foreach (var (kind, payload) in kinds)
     {
         var material = await materialEditor.Create(kind, JsonSerializer.Serialize(payload, CourseAuthoringService.JsonOptions), ct, owner.Id);
         Check(await materialEditor.PublishDraft(kind, material, owner.Id, ct), "Не опубликована тестовая версия " + kind);
+        var choice = (await materialAccess.Search(owner.Id, kind, null, true, 1, ct)).Items.Single(x => x.Id == material);
+        Check(choice.Answers.SequenceEqual(previewAnswers[kind]), "Неверный ответ в предпросмотре: " + kind);
         practiceBlocks.Add(new(Guid.NewGuid(), kind, kind, "") { MaterialId = material });
     }
     var practiceAuthor = new CourseAuthoringService(repo, materialAccess, lessons, materialEditor, new EfLessonLibraryRepository(db));
@@ -232,6 +264,14 @@ try
     var analytics = new CourseAnalytics(repo, lessons);
     Check(await analytics.Report(practiceCourse.Id, other.Id, null, 30, 1, ct) is null, "Чужой автор видит отчёт");
     Check(await analytics.Report(practiceCourse.Id, owner.Id, learner.Id, 30, 1, ct) is not null, "Автор не видит результат ученика");
+    var oldActivity = DateTimeOffset.UtcNow.AddDays(-40);
+    var practiceBlock = practiceBlocks[0].Id;
+    var aged = await db.CourseBlockActivities.Where(a => a.CourseId == practiceCourse.Id && a.BlockId == practiceBlock && a.Correct.HasValue)
+        .ExecuteUpdateAsync(a => a.SetProperty(row => row.At, oldActivity), ct);
+    var report = JsonSerializer.SerializeToElement(await analytics.Report(practiceCourse.Id, owner.Id, null, 7, 1, ct), CourseAuthoringService.JsonOptions);
+    var reportBlock = report.GetProperty("blocks").EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == practiceBlock);
+    Check(aged > 0 && report.GetProperty("started").GetInt32() == 1 && reportBlock.GetProperty("attempts").GetInt32() == 0,
+        "Период отчёта включил старый ответ или исключил ученика");
     var administration = new EfCourseAdministrationRepository(db);
     Check(await administration.ChangeCourse(owner.Id, practiceCourse.Id, true, "Проверка блокировки", ct), "Курс не заблокирован");
     Check(await lessons.Version(practiceCourse.Id, learner.Id, ct) is null, "Записанный ученик видит заблокированный курс");
@@ -241,6 +281,11 @@ try
     var practiceVersion = (await lessons.Snapshot(practiceSession.VersionId, ct))!;
     var practicePreview = (await runner.Start(practiceCourse.Id, practiceLesson.Id, owner.Id, guestOwner, ct, practiceVersion))!;
     var practiceIds = JsonSerializer.Deserialize<Guid?[]>(practiceSession.AttemptIdsJson)!.OfType<Guid>().ToArray();
+    var exerciseAttemptCount = await db.Attempts.CountAsync(a => practiceIds.Contains(a.Id), ct);
+    Check(await db.CoursePracticeRuns.CountAsync(r => practiceIds.Contains(r.Id) && r.SessionId == practiceSession.Id, ct) == practiceIds.Length - exerciseAttemptCount,
+        "Попытки не связаны с сеансом");
+    await db.CourseLessonSessions.Where(s => s.Id == practiceSession.Id)
+        .ExecuteUpdateAsync(s => s.SetProperty(row => row.AttemptIdsJson, "[\"not-a-guid\"]"), ct);
     Check(await repo.Delete(practiceCourse.Id, other.Id, 0, ct) is null, "Чужой автор удалил курс");
     Check(await repo.Delete(practiceCourse.Id, owner.Id, 1, ct) == false, "Устаревший черновик позволил удалить курс");
     Check(await lessons.Archive(practiceCourse.Id, owner.Id, ct) && await repo.Delete(practiceCourse.Id, owner.Id, 0, ct) == true, "Владелец не смог удалить архивный курс");
@@ -373,7 +418,10 @@ try
         var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port; listener.Stop();
         var url = $"http://127.0.0.1:{port}";
         var start = new ProcessStartInfo("dotnet") { WorkingDirectory = webRoot, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
-        start.ArgumentList.Add(Path.Combine(webRoot, "bin/Debug/net10.0/IronLanguage.Web.dll"));
+        var configuration = typeof(CourseAuthoringService).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyConfigurationAttribute), false)
+            .OfType<System.Reflection.AssemblyConfigurationAttribute>().Single().Configuration;
+        start.ArgumentList.Add(Path.Combine(webRoot, "bin", configuration, "net10.0", "IronLanguage.Web.dll"));
         start.Environment["ConnectionStrings__Adam"] = isolated; start.Environment["ASPNETCORE_URLS"] = url; start.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         start.Environment["DataProtection__KeysDirectory"] = Path.GetFullPath(".run-local/course-v2-checks/keys");
         browserTheoryMedia = Directory.CreateTempSubdirectory("adam-course-theory-");

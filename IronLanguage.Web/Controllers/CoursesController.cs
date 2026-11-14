@@ -179,7 +179,7 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
         var firstCompletedAt = await learning.FirstCompletion(id, User.UserId(), owner, ct);
         var author = (await repository.AuthorNames([id], ct)).GetValueOrDefault(id, "Автор курса");
         return Json(new { totalBlocks = blocks.Total, completedBlocks = blocks.Completed, percent = blocks.Total == 0 ? 0 : blocks.Completed * 100 / blocks.Total,
-            firstCompletedAt, id, d.Title, d.Description, d.DescriptionRichText, d.CoverPath, d.Theme, d.Outcomes, d.Level, d.Sequential, author, version = v.Number, modules,
+            firstCompletedAt, id, d.Title, d.Description, d.DescriptionRichText, d.CoverPath, d.Theme, d.Outcomes, d.OutcomesRichText, d.Level, d.Sequential, author, version = v.Number, modules,
             started = active.Length > 0 || done.Count > 0,
             resumeLessonId = active.FirstOrDefault(s => !done.Contains(s.LessonId) && modules.SelectMany(m => m.lessons).Any(l => l.Id == s.LessonId))?.LessonId });
     }
@@ -264,13 +264,14 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
 
     [HttpPost("api/v1/author/courses/{id:guid}/theory-media"), Authorize(Roles = "Editor")]
     [RequestSizeLimit(CourseTheoryMediaStore.RequestLimit)]
-    [RequestFormLimits(MultipartBodyLengthLimit = CourseTheoryMediaStore.VideoLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = CourseTheoryMediaStore.RequestLimit)]
     public async Task<IActionResult> UploadTheoryMedia(Guid id, IFormFile? file, CancellationToken ct)
     {
         var owner = User.UserId()!.Value;
         if (await courses.OwnedAccess(id, owner, ct) is null) return NotFound();
         if (file is null) return BadRequest(new { error = "Выберите фото или видео." });
         try { return Json(new { file = await theoryMedia.Upload(owner, file, ct) }); }
+        catch (EndOfStreamException) { return BadRequest(new { error = "Файл загружен не полностью. Выберите его ещё раз." }); }
         catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
     }
 

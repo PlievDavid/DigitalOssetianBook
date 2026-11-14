@@ -26,8 +26,11 @@ public static class CourseRichText
             foreach (var attr in attrs.EnumerateObject())
             {
                 var value = attr.Value.ValueKind == JsonValueKind.String ? attr.Value.GetString() : null;
+                var line = insert.GetString() is { Length: > 0 } content && content.All(c => c == '\n');
                 var valid = attr.Name switch
                 {
+                    "align" => line && value is "center" or "right" or "justify",
+                    "indent" => line && attr.Value.ValueKind == JsonValueKind.Number && attr.Value.TryGetInt32(out var indent) && indent is >= 1 and <= 3,
                     "bold" or "italic" or "underline" or "strike" => attr.Value.ValueKind is JsonValueKind.True or JsonValueKind.False,
                     "font" => value is "onest" or "golos" or "serif",
                     "size" => value is "16px" or "18px" or "22px" or "28px",

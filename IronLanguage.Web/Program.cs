@@ -37,7 +37,6 @@ builder.Services.AddSingleton<CourseTheoryMediaStore>();
 builder.Services.AddScoped<ICourseLearningRepository, EfCourseLearningRepository>();
 builder.Services.AddScoped<CourseLearningService>();
 builder.Services.AddScoped<CourseAnalytics>();
-builder.Services.AddScoped<ICourseRatingRepository, EfCourseRatingRepository>();
 builder.Services.AddScoped<CurriculumService>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 builder.Services.AddScoped<LearningService>();
@@ -99,6 +98,20 @@ Directory.CreateDirectory(keysPath);
 builder.Services.AddDataProtection().SetApplicationName("Adam").PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 var app = builder.Build();
+
+if (args.FirstOrDefault() == "course-media-cleanup")
+{
+    var apply = args is [_, "--apply"];
+    if (!apply && args.Length != 1)
+        throw new ArgumentException("Использование: course-media-cleanup [--apply]");
+    using var scope = app.Services.CreateScope();
+    var courses = scope.ServiceProvider.GetRequiredService<ICourseRepository>();
+    var store = scope.ServiceProvider.GetRequiredService<CourseTheoryMediaStore>();
+    var coverFolder = Path.Combine(app.Environment.WebRootPath, "media", "course-covers");
+    var removed = await CourseMediaCleanup.Run(courses, store.OwnerDirectories().Append(coverFolder), apply, CancellationToken.None);
+    Console.WriteLine(apply ? $"Удалено файлов без ссылок: {removed}." : $"Файлов без ссылок: {removed}.");
+    return;
+}
 
 if (args.FirstOrDefault() == "admin-grant")
 {

@@ -12,6 +12,7 @@ public sealed record CourseDraft(string Title, string Description, CourseDraftMo
     public JsonElement? DescriptionRichText { get; init; }
     public string Level { get; init; } = "Начальный";
     public string Outcomes { get; init; } = "";
+    public JsonElement? OutcomesRichText { get; init; }
     public bool Sequential { get; init; }
 }
 public sealed record CourseDraftModule(Guid Id, string Title, CourseDraftLesson[] Lessons);
@@ -25,6 +26,7 @@ public sealed record CourseDraftBlock(Guid Id, string Kind, string Title, string
     public Exercise? PublishedExercise { get; init; }
     public EditorMaterial? PublishedActivity { get; init; }
     public JsonElement? RichText { get; init; }
+    public string? Alignment { get; init; }
     public CourseTheoryMedia? TheoryMedia { get; init; }
 }
 public sealed record CoursePublicationIssue(string Message, Guid? LessonId = null, Guid? BlockId = null);
@@ -38,7 +40,8 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
     public static void Validate(CourseDraft draft, bool publishing)
     {
         if (draft.Theme is not ("sage" or "sky" or "sand") || draft.CoverPath is not null && !System.Text.RegularExpressions.Regex.IsMatch(draft.CoverPath, @"^/media/course-covers/[a-f0-9]{32}\.(png|jpg|jpeg|webp)$")) throw new ArgumentException("Проверьте обложку и оформление курса.");
-        if (draft.Level is not ("Начальный" or "Средний" or "Продвинутый") || draft.Outcomes is null || draft.Outcomes.Length > 3000)
+        if (draft.Level is not ("Начальный" or "Средний" or "Продвинутый") || draft.Outcomes is null || draft.Outcomes.Length > 3000 ||
+            CourseRichText.PlainText(new CourseDraftBlock(Guid.Empty, "theory", "", draft.Outcomes) { RichText = draft.OutcomesRichText }).Length > 3000)
             throw new ArgumentException("Проверьте уровень и результаты обучения (до 3000 символов).");
         if (string.IsNullOrWhiteSpace(draft.Title) || draft.Title.Length > 150)
             throw new ArgumentException("Укажите название до 150 символов.");
@@ -74,6 +77,8 @@ public sealed class CourseAuthoringService(ICourseRepository courses, ICourseMat
                     if (publishing && block.Kind != "theory" && (block.MaterialId is null || block.MaterialId == Guid.Empty))
                         throw new ArgumentException("Выберите упражнение из библиотеки.");
                     var text = CourseRichText.PlainText(block);
+                    if (block.Alignment is not null && (block.Kind != "theory" || block.Alignment is not ("center" or "right")))
+                        throw new ArgumentException("Проверьте выравнивание содержимого блока.");
                     if (text is null || text.Length > 20_000)
                         throw new ArgumentException("Текст теории должен содержать не более 20 000 символов.");
                     if (publishing && block.Kind == "theory" && block.TheoryMedia is null && string.IsNullOrWhiteSpace(text))

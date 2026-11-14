@@ -152,8 +152,50 @@
     if (!authored) root.classList.add('cv-material-catalog');
     if (authored) { root.replaceChildren(message); root.append(link('← Каталог курсов', '/courses', 'back-link')); } else shell();
     const create = button('Создать курс', e => run(e.currentTarget, async () => {
-      const course = await post('/author/courses', { title: 'Новый курс', description: '', modules: [] });
-      location.href = `/author/courses/${course.id}`;
+      const trigger = e.currentTarget;
+      await import('/js/course-rich-text.js');
+      await window.AdamCourseRichText.load();
+      const dialog = node('dialog', null, 'cv-dialog');
+      dialog.setAttribute('aria-label', 'Новый курс');
+      const titleField = field('Название курса', '', () => {}, { max: 150 });
+      const titleInput = titleField.querySelector('input');
+      titleInput.required = true;
+      let outcomes = '', outcomesRichText = null;
+      const outcomesEditor = window.AdamCourseRichText.editor({}, (text, document) => {
+        outcomes = text;
+        outcomesRichText = document;
+      }, 'Результаты обучения');
+      const form = node('form');
+      const error = node('p', null, 'cv-notice error');
+      error.setAttribute('role', 'alert');
+      const submit = node('button', 'Создать черновик', 'button primary');
+      const cancel = button('Отмена', () => dialog.close());
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const title = titleInput.value.trim();
+        if (!title) {
+          error.textContent = 'Введите название курса.';
+          titleInput.focus();
+          return;
+        }
+        if (submit.disabled) return;
+        submit.disabled = cancel.disabled = true;
+        error.textContent = '';
+        try {
+          const course = await post('/author/courses', { title, description: '', outcomes, outcomesRichText, modules: [] });
+          location.href = `/author/courses/${course.id}`;
+        } catch (problem) {
+          error.textContent = problem.message;
+          submit.disabled = cancel.disabled = false;
+        }
+      });
+      dialog.addEventListener('cancel', event => { if (submit.disabled) event.preventDefault(); });
+      dialog.addEventListener('close', () => { dialog.remove(); trigger.focus(); });
+      form.append(titleField, outcomesEditor, error, actions(cancel, submit));
+      dialog.append(node('h2', 'Новый курс'), form);
+      document.body.append(dialog);
+      dialog.showModal();
+      titleInput.focus();
     }), 'button primary');
     if (authored) root.append(heading(authored ? 'Преподавание' : mine ? 'Мои курсы' : 'Курсы осетинского языка', authored
       ? 'Ваши курсы и библиотека уроков для повторного использования.'
@@ -337,7 +379,8 @@
     root.dataset.theme = c.theme || 'sage';
     if (c.coverPath) { const img = node('img', null, 'cv-hero-image'); img.src = c.coverPath; img.alt = ''; hero.append(img); }
     hero.append(append(node('div', null, 'cv-course-chips'), node('span', c.level), node('span', `Уроков: ${lessons.length}`)), heading(c.title, c.author || 'Автор курса'), window.AdamCourseRichText.render({ text: c.description, richText: c.descriptionRichText }));
-    if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'), node('p', c.outcomes)));
+    if (c.outcomes) hero.append(append(node('div', null, 'cv-course-outcomes'), node('h2', 'Чему вы научитесь'),
+      window.AdamCourseRichText.render({ text: c.outcomes, richText: c.outcomesRichText })));
     const status = node('div', null, 'cv-course-status');
     if (next) status.append(button(c.resumeLessonId ? 'Продолжить' : c.completedBlocks === c.totalBlocks ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(next), 'button primary'));
     if (c.started || c.firstCompletedAt) status.append(append(node('div'),
@@ -547,7 +590,11 @@
         card.append(node('p', 'Материал недоступен. Вы можете открыть другой блок урока.', 'cv-notice'));
         next.hidden = true;
       }
-      else if (b.kind === 'theory') append(card, window.AdamCourseRichText.render(b), renderTheoryMedia(b.theoryMedia, node));
+      else if (b.kind === 'theory') {
+        const body = append(node('div', null, 'cr-block-content'), window.AdamCourseRichText.render(b), renderTheoryMedia(b.theoryMedia, node));
+        body.dataset.alignment = b.alignment || '';
+        card.append(body);
+      }
       else if (b.practice) {
         practiceBlock(card, b);
         next.hidden = !b.practice.complete; next.disabled = next.hidden;

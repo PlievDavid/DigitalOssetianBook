@@ -414,6 +414,9 @@ namespace IronLanguage.Db.Migrations
                     b.Property<int>("Revision")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("StateJson")
                         .IsRequired()
                         .HasColumnType("text");
@@ -422,6 +425,8 @@ namespace IronLanguage.Db.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
 
                     b.HasIndex("UserId");
 
@@ -1437,6 +1442,11 @@ namespace IronLanguage.Db.Migrations
 
             modelBuilder.Entity("IronLanguage.Db.CoursePracticeRun", b =>
                 {
+                    b.HasOne("IronLanguage.Db.CourseLessonSession", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("IronLanguage.Db.UserAccount", null)
                         .WithMany()
                         .HasForeignKey("UserId")

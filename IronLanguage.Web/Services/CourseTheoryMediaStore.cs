@@ -34,6 +34,12 @@ public sealed partial class CourseTheoryMediaStore(IWebHostEnvironment environme
 
     private string Folder(Guid owner) => Path.Combine(root, owner.ToString("N"));
 
+    internal IEnumerable<string> OwnerDirectories() =>
+        Directory.Exists(root) && !File.GetAttributes(root).HasFlag(FileAttributes.ReparsePoint)
+            ? Directory.EnumerateDirectories(root).Where(path => Guid.TryParseExact(Path.GetFileName(path), "N", out _) &&
+                !File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint))
+            : [];
+
     public bool Exists(Guid owner, string file) => ValidName(file) && File.Exists(Path.Combine(Folder(owner), file));
 
     public FileStream? Open(Guid owner, string file)
@@ -70,6 +76,7 @@ public sealed partial class CourseTheoryMediaStore(IWebHostEnvironment environme
             created = true;
             await destination.WriteAsync(prefix, ct);
             await source.CopyToAsync(destination, ct);
+            if (destination.Length != file.Length) throw new EndOfStreamException();
         }
         catch
         {
