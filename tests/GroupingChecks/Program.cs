@@ -110,7 +110,9 @@ static class GroupingChecks
             new GroupingMaterial("Мало слов", ["А", "Б"], [new("один", 0), new("два", 0), new("три", 1)], []),
             new GroupingMaterial("Много слов", ["А", "Б"],
                 [.. Enumerable.Range(1, 31).Select(index => new GroupingWord($"слово {index}", index % 2))], []),
-            new GroupingMaterial("Неверная группа", ["А", "Б"], Four(2), [])
+            new GroupingMaterial("Неверная группа", ["А", "Б"], Four(2), []),
+            new GroupingMaterial("Пустая группа", ["А", " "], Four(0), []),
+            new GroupingMaterial("Пустое слово", ["А", "Б"], [new(" ", 0), new("два", 0), new("три", 1), new("четыре", 1)], [])
         };
         foreach (var payload in payloads)
         {
@@ -128,6 +130,15 @@ static class GroupingChecks
             }
             catch (InvalidOperationException) { }
         }
+
+        var broken = new Grouping { Published = true, ScriptJson = "{" };
+        env.Catalog.GroupingsList.Add(broken);
+        try
+        {
+            await service.Start(Guid.NewGuid(), Guid.NewGuid(), broken.Id, CancellationToken.None);
+            Require(false, "Повреждённый JSON должен быть отклонён.");
+        }
+        catch (InvalidOperationException) { }
 
         static GroupingWord[] Four(int group) =>
             [new("один", group), new("два", group), new("три", group), new("четыре", group)];
@@ -276,6 +287,10 @@ sealed class MemoryCatalog : ICatalogRepository
         Task.FromResult(ExercisesList.FirstOrDefault(x => x.Id == id && (x.Published || includeDraft)));
     public Task<List<WordEntry>> Words(CancellationToken ct = default) =>
         Task.FromResult(WordsList.Where(x => x.Published && !x.Archived).ToList());
+    public Task<List<WordEntry>> WordsByIds(Guid[] ids, CancellationToken ct = default) =>
+        Task.FromResult(ids.Select(id => WordsList.FirstOrDefault(x => x.Id == id && x.Published && !x.Archived)).OfType<WordEntry>().ToList());
+    public Task<List<Grammar>> Grammars(CancellationToken ct = default) => Task.FromResult(new List<Grammar>());
+    public Task<Grammar?> Grammar(Guid id, CancellationToken ct = default) => Task.FromResult<Grammar?>(null);
     public Task<WordEntry?> Word(Guid id, CancellationToken ct = default) =>
         Task.FromResult(WordsList.FirstOrDefault(x => x.Id == id && x.Published && !x.Archived));
     public Task<List<Book>> Books(CancellationToken ct = default) => Task.FromResult(new List<Book>());

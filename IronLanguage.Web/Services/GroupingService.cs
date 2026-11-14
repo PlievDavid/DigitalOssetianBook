@@ -17,14 +17,24 @@ public sealed class GroupingService(ICatalogRepository catalog, GuestLearningSto
     {
         var material = await catalog.Grouping(materialId, ct);
         if (material is null) return null;
-        var payload = JsonSerializer.Deserialize<GroupingMaterial>(material.ScriptJson, JsonOptions)
-            ?? throw new InvalidOperationException("Некорректный материал «Разбить слова на группы».");
+        GroupingMaterial payload;
+        try
+        {
+            payload = JsonSerializer.Deserialize<GroupingMaterial>(material.ScriptJson, JsonOptions)
+                ?? throw new InvalidOperationException("Некорректный материал «Разбить слова на группы».");
+        }
+        catch (JsonException error)
+        {
+            throw new InvalidOperationException("Некорректный материал «Разбить слова на группы».", error);
+        }
         if (payload.Groups is null || payload.Words is null)
             throw new InvalidOperationException("В материале «Разбить слова на группы» нет групп или слов.");
         if (payload.Groups.Length is < GroupingScript.MinGroups or > GroupingScript.MaxGroups)
             throw new InvalidOperationException($"В материале «Разбить слова на группы» должно быть от {GroupingScript.MinGroups} до {GroupingScript.MaxGroups} групп.");
         if (payload.Words.Length is < GroupingScript.MinWords or > GroupingScript.MaxWords)
             throw new InvalidOperationException($"В материале «Разбить слова на группы» должно быть от {GroupingScript.MinWords} до {GroupingScript.MaxWords} слов.");
+        if (payload.Groups.Any(string.IsNullOrWhiteSpace) || payload.Words.Any(word => word is null || string.IsNullOrWhiteSpace(word.Text)))
+            throw new InvalidOperationException("В материале «Разбить слова на группы» есть пустые группы или слова.");
         if (payload.Words.Any(word => word is null || word.Group < 0 || word.Group >= payload.Groups.Length))
             throw new InvalidOperationException("В материале «Разбить слова на группы» указан неверный номер группы.");
         var order = Enumerable.Range(0, payload.Words.Length).ToList();
@@ -86,13 +96,8 @@ public sealed class GroupingService(ICatalogRepository catalog, GuestLearningSto
 
     private async Task<GroupingLinkedWord[]> Words(Guid[] wordIds, CancellationToken ct)
     {
-        var words = new List<GroupingLinkedWord>();
-        foreach (var wordId in wordIds)
-        {
-            var word = await catalog.Word(wordId, ct);
-            if (word is not null) words.Add(new GroupingLinkedWord(word.Id, word.Ossetian, word.Russian));
-        }
-        return [.. words];
+        var words = await catalog.WordsByIds(wordIds, ct);
+        return [.. words.Select(word => new GroupingLinkedWord(word.Id, word.Ossetian, word.Russian))];
     }
 
     private static GroupingTile[] Tiles(GroupingState state) => [.. state.Texts.Select((text, index) => new GroupingTile(
