@@ -6,9 +6,10 @@
     <section class="home-hero" aria-labelledby="home-title">
         <img class="home-hero-art" src="~/images/green/kurt-tag-watercolor-440.webp"
              srcset="/images/green/kurt-tag-watercolor-440.webp 440w, /images/green/kurt-tag-watercolor-880.webp 880w"
-             sizes="(max-width: 700px) calc(100vw - 32px), (max-width: 1000px) 42vw, 420px"
+             sizes="(max-width: 599px) 44vw, (max-width: 700px) calc(100vw - 32px), (max-width: 1000px) 42vw, 420px"
              width="880" height="1173" fetchpriority="high" loading="eager" decoding="async" alt="" />
         <div class="hero-copy">
+            <span class="home-hero-signature"><img src="~/images/adam-mark.svg" alt="" width="24" height="20" /> Адам</span>
             <h1 id="home-title">Осетинский<br />становится ближе</h1>
             <p>Читайте, сохраняйте новые слова и проверяйте себя.</p>
             <div class="hero-actions">
@@ -24,7 +25,7 @@
             <div class="format-grid">
                 <a class="format-card format-dialogs" href="/courses">
                     <span class="format-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "materials")</span>
-                    <h3>Курсы и уроки</h3><p>От теории к практике по порядку</p><span class="round-arrow" aria-hidden="true">→</span>
+                    <h3>Курсы</h3><p>От теории к практике по порядку</p><span class="round-arrow" aria-hidden="true">→</span>
                 </a>
                 <a class="format-card format-audio" href="/exercises">
                     <span class="format-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "audio")</span>

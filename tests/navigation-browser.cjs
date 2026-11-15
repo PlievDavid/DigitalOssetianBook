@@ -18,11 +18,11 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       assert(await page.locator('.mobile-menu-toggle').isHidden());
       assert(await page.locator('#main-navigation').isHidden());
       assert(await page.locator('.mobile-bottom-nav').isVisible());
-      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Чтение', 'Профиль']);
-      assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), 0);
+      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Главная', 'Курсы', 'Слова', 'Профиль']);
+      assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').getAttribute('href'), '/');
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       checks += 6;
-      for (const [route, activeHref, currentPage] of [['/exercises', '/exercises', true], ['/audio-puzzles', '/exercises', false], ['/translate', '/exercises', false], ['/dialogs', '/exercises', false], ['/matching', '/exercises', false], ['/picture', '/exercises', false], ['/vocabulary', '/vocabulary', true], ['/word-practice', '/vocabulary', false], ['/game', '/vocabulary', false], ['/reading', '/reading', true], ['/account/login', '/profile', false]]) {
+      for (const [route, activeHref, currentPage] of [['/exercises', '/', false], ['/courses', '/courses', true], ['/audio-puzzles', '/', false], ['/translate', '/', false], ['/dialogs', '/', false], ['/matching', '/', false], ['/picture', '/', false], ['/vocabulary', '/vocabulary', true], ['/word-practice', '/vocabulary', false], ['/game', '/vocabulary', false], ['/reading', '/', false], ['/account/login', '/profile', false]]) {
         await page.goto(base + route);
         assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), activeHref);
         assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), currentPage ? 1 : 0);
@@ -34,8 +34,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
         assert.equal(await card.count(), 1);
         await card.focus(); await page.keyboard.press('Enter');
         await page.waitForURL(base + route);
-        assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Чтение', 'Профиль']);
-        assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/exercises');
+        assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Главная', 'Курсы', 'Слова', 'Профиль']);
+        assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
         assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), 0);
         const back = page.locator('#main-content > .feature-shell > .back-link');
         assert(await back.isVisible());
@@ -52,7 +52,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
       await page.setViewportSize({ width, height: 668 });
       await page.goto(base);
       assert(await page.locator('.site-header').isVisible());
-      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Задания', 'Слова', 'Чтение', 'Профиль']);
+      assert.deepEqual(await page.locator('.mobile-bottom-nav a span').allTextContents(), ['Главная', 'Курсы', 'Слова', 'Профиль']);
       assert.equal(await page.locator('#main-navigation a[href="/Home/Privacy"], #main-navigation a[href="/Home/Illustrations"]').count(), 0);
       checks += 3;
       const toggle = page.locator('.mobile-menu-toggle');

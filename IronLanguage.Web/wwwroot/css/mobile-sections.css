@@ -20,10 +20,10 @@
     .green-theme { background: #fafbf7; }
     .green-theme .site-frame { background: #fafbf7; }
     .green-theme #main-content { min-width: 0; }
-    .green-theme .mobile-bottom-nav { background: #fffffff5; border-top: 1px solid #e6e9e2; box-shadow: none; padding-inline: 8px; }
-    .green-theme .mobile-bottom-nav a { margin: 5px 2px; border-radius: 12px; gap: 3px; }
-    .green-theme .mobile-bottom-nav a.is-current { background: #edf1e7; }
-    .green-theme .mobile-bottom-nav svg { width: 24px; height: 24px; }
+    .green-theme .mobile-bottom-nav { background: var(--theme-surface); border-top: 1px solid var(--theme-border); box-shadow: none; padding-inline: 8px; }
+    .green-theme .mobile-bottom-nav a { margin: 0 2px; border-radius: 12px; gap: 3px; }
+    .green-theme .mobile-bottom-nav svg { box-sizing: content-box; width: 23px; height: 23px; border-radius: 20px; padding: 4px 12px; }
+    .green-theme .mobile-bottom-nav .is-current svg { background: #edf1e7; }
     .green-theme .mobile-bottom-nav span { font-size: 11px; }
     .green-theme .mobile-page-intro { display: block; padding: 24px 0 0; }
     .green-theme .mobile-page-intro h1 { margin: 0; font-size: 30px; line-height: 1.2; }

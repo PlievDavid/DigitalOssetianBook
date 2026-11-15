@@ -35,3 +35,73 @@
     from { opacity: .72; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+.home-hero-signature { display: none; }
+
+@media (max-width: 599px) {
+    .green-theme .home-shell { padding-top: 14px; }
+    .green-theme .home-shell .home-hero {
+        background: linear-gradient(120deg, #f7f4e9, #edf1e6);
+        border: 1px solid #e5e8dc;
+        border-radius: 24px;
+    }
+    .home-hero .home-hero-art {
+        position: absolute;
+        inset: 0 0 auto auto;
+        width: 45%;
+        height: clamp(144px, 34vw, 196px);
+        border-radius: 0 23px 0 44%;
+        object-position: 66% 41%;
+        mask-image: linear-gradient(90deg, transparent, #000 44%), linear-gradient(#000 68%, transparent);
+        mask-composite: intersect;
+    }
+    .green-theme .home-hero .hero-copy {
+        padding: 17px clamp(16px, 4.5vw, 26px) 20px;
+        gap: 11px;
+    }
+    .home-hero-signature {
+        display: inline-flex;
+        justify-self: start;
+        align-items: center;
+        gap: 6px;
+        color: var(--theme-green);
+        font-size: 13px;
+        font-weight: 750;
+    }
+    .green-theme .home-hero h1 {
+        max-width: 68%;
+        font-size: clamp(26px, 6.2vw, 36px);
+        line-height: 1.06;
+        overflow-wrap: normal;
+    }
+    .green-theme .home-hero .hero-copy > p { max-width: min(100%, 31ch); }
+    .green-theme .home-hero .hero-actions { display: flex; align-items: center; }
+    .green-theme .home-hero .hero-actions .theme-button-primary {
+        width: auto;
+        max-width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+        border-radius: 14px;
+    }
+    .green-theme .home-hero .hero-actions .theme-button-secondary, .green-theme .home-hero .hero-note { display: none; }
+
+    .green-theme .home-shell .home-formats .format-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+    .green-theme .home-shell .home-formats .format-card {
+        grid-template: auto auto / minmax(0, 1fr);
+        justify-items: center;
+        gap: 5px;
+        min-height: 80px;
+        padding: 8px 3px 10px;
+        border-radius: 15px;
+    }
+    .green-theme .home-shell .home-formats .format-icon {
+        grid-area: 1 / 1;
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background: #ffffffa8;
+    }
+    .green-theme .home-shell .home-formats .format-icon svg { width: 21px; height: 21px; }
+    .green-theme .home-shell .home-formats .format-card h3 { grid-area: 2 / 1; font-size: 14px; text-align: center; }
+    .green-theme .home-shell .home-formats .format-card :is(p, .round-arrow) { display: none; }
+}

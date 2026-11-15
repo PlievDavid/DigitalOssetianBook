@@ -3,7 +3,6 @@
     gap: clamp(18px, 2.5vw, 28px);
     padding-block: clamp(18px, 2.6vw, 34px) clamp(32px, 5vw, 62px);
 }
-.exercises-shell > .back-link { justify-self: start; margin: 0; }
 .exercises-heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(220px, 42%);
@@ -116,9 +115,6 @@
 .exercise-catalog-icon svg { width: 21px; height: 21px; }
 .exercise-catalog-arrow { color: var(--track-ink); font-size: 18px; }
 
-@media (min-width: 600px) {
-    .exercises-shell > .back-link { display: none; }
-}
 @media (min-width: 600px) and (max-width: 959px) {
     .exercise-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

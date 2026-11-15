@@ -29,6 +29,9 @@
         var isExerciseSection = isExercisesPage || new[] { "/dialogs", "/audio-puzzles", "/translate", "/listening", "/matching", "/picture", "/grammar", "/grouping" }
             .Any(path => currentPath.StartsWithSegments(path));
         var normalizedPath = currentPath.Value?.ToLowerInvariant() ?? "/";
+        var isCourseSection = currentPath.StartsWithSegments("/courses") || currentPath.StartsWithSegments("/author") || currentPath.StartsWithSegments("/my-courses");
+        var isReadingSection = currentPath.StartsWithSegments("/reading") || currentPath.StartsWithSegments("/books");
+        var isHomeSection = normalizedPath == "/" || isExerciseSection || isReadingSection || currentPath.StartsWithSegments("/games");
     }
     <header class="site-header">
         <div class="header-inner">
@@ -38,7 +41,7 @@
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
             <div class="nav-menu nav-menu-section">
-                <button type="button" class="nav-section-link nav-menu-trigger courses-menu-trigger @(normalizedPath.StartsWith("/courses") || normalizedPath.StartsWith("/author") || normalizedPath == "/my-courses" ? "is-current" : "")" aria-controls="courses-menu" aria-expanded="false">Курсы</button>
+                <button type="button" class="nav-section-link nav-menu-trigger courses-menu-trigger @(isCourseSection ? "is-current" : "")" aria-controls="courses-menu" aria-expanded="false">Курсы</button>
                 <div id="courses-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/courses" aria-current="@(normalizedPath == "/courses" ? "page" : null)">Каталог курсов</a>
                     @if (User.Identity?.IsAuthenticated == true) { <a class="nav-menu-item" href="/my-courses" aria-current="@(normalizedPath == "/my-courses" ? "page" : null)">Мои курсы</a> }
@@ -74,7 +77,7 @@
                     <span class="nav-menu-item nav-menu-item-placeholder"><span>Переводилка</span><small>В разработке</small></span>
                 </div>
             </div>
-            <a class="@(normalizedPath.StartsWith("/reading") || normalizedPath.StartsWith("/books") ? "is-current" : "")" href="/reading">Чтение</a>
+            <a class="@(isReadingSection ? "is-current" : "")" href="/reading">Чтение</a>
             @if (User.Identity?.IsAuthenticated != true) {
                 <div class="mobile-account-links"><a class="button primary" href="/account/login">Войти</a><a href="/account/register">Создать аккаунт</a></div>
             }
@@ -105,9 +108,9 @@
         </div>
     </footer>
     <nav class="mobile-bottom-nav" aria-label="Основные разделы">
-        <a class="@(isExerciseSection || normalizedPath.StartsWith("/games") ? "is-current" : "")" aria-current="@(isExercisesPage ? "page" : null)" href="/exercises">@await Html.PartialAsync("_NavIcon", "materials")<span>Задания</span></a>
+        <a class="@(isHomeSection ? "is-current" : "")" aria-current="@(normalizedPath == "/" ? "page" : null)" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Главная</span></a>
+        <a class="@(isCourseSection ? "is-current" : "")" aria-current="@(normalizedPath == "/courses" ? "page" : null)" href="/courses">@await Html.PartialAsync("_NavIcon", "materials")<span>Курсы</span></a>
         <a class="@(normalizedPath.StartsWith("/vocabulary") || normalizedPath.StartsWith("/word-practice") || normalizedPath == "/game" ? "is-current" : "")" aria-current="@(normalizedPath == "/vocabulary" ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
-        <a class="@(normalizedPath.StartsWith("/reading") || normalizedPath.StartsWith("/books") ? "is-current" : "")" aria-current="@(normalizedPath == "/reading" ? "page" : null)" href="/reading">@await Html.PartialAsync("_NavIcon", "books")<span>Чтение</span></a>
         <a class="@(normalizedPath.StartsWith("/profile") || normalizedPath.StartsWith("/account") || normalizedPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(normalizedPath == "/profile" ? "page" : null)" href="/profile">@await Html.PartialAsync("_NavIcon", "profile")<span>Профиль</span></a>
     </nav>
     </div>
