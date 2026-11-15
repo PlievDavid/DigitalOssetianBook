@@ -411,7 +411,10 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await student.waitForURL(url => url.pathname.includes('/courses/sessions/') && url.searchParams.get('block') === lesson.blocks[0].id);
     check(await student.locator('.cv-step[aria-current="step"]').textContent() === '1' &&
       (await api(student, `/course-sessions/${sessionId}`)).data.completed, 'Повтор курса не открыл начало или сбросил прогресс');
-    await student.goto(base + '/my-courses'); await student.locator('.cv-card').filter({ has: student.getByRole('heading', { name: 'Проверка курса Ӕ/ӕ', exact: true }) }).getByText('2 из 2 блоков завершено', { exact: true }).waitFor(); check(true, 'Прогресс моих курсов');
+    await student.goto(base + '/my-courses');
+    const myCourse = student.locator('.cm-list').getByRole('progressbar', { name: 'Прогресс: Проверка курса Ӕ/ӕ', exact: true });
+    await myCourse.waitFor();
+    check(await myCourse.getAttribute('aria-valuetext') === '100%, 2 из 2 блоков', 'Прогресс моих курсов');
     // Save from two tabs: the stale draft must lose, while the published version remains pinned.
     const stale = (await api(page, '/author/courses/' + id)).data;
     const updated = JSON.parse(stale.draftJson); updated.title = 'Новая публикация';

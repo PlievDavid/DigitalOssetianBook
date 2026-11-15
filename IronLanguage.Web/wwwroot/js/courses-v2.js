@@ -148,6 +148,95 @@
     update(level);
     return append(node('div', null, 'cv-field cv-level-filter'), label, trigger, menu);
   }
+
+  const myCourseIcons = {
+    book: 'M12 6a8 8 0 0 0-9-2v14a8 8 0 0 1 9 2 8 8 0 0 1 9-2V4a8 8 0 0 0-9 2v14',
+    active: 'M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+    done: 'm8 12 3 3 5-6m5 3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+    arrow: 'M4 12h15m-6-6 6 6-6 6'
+  };
+  function myCourseState(course) {
+    if (course.totalBlocks > 0 && course.completedBlocks >= course.totalBlocks) return 'done';
+    return course.completedBlocks > 0 ? 'active' : 'new';
+  }
+  function myCourseImage(course, thumbnail = false) {
+    const art = node('div', null, 'cm-art');
+    art.setAttribute('aria-hidden', 'true');
+    art.dataset.theme = course.theme || 'sage';
+    art.append(node('span', 'Ӕ', 'cm-monogram'));
+    if (course.coverPath) {
+      const image = node('img');
+      image.alt = '';
+      if (thumbnail) image.loading = 'lazy';
+      image.addEventListener('error', () => image.remove(), { once: true });
+      image.src = course.coverPath;
+      art.append(image);
+    }
+    return art;
+  }
+  function myCourseProgress(course) {
+    const { completedBlocks: completed, totalBlocks: total } = course;
+    const percent = total > 0 ? Math.min(completed >= total ? 100 : 99, Math.round(100 * completed / total)) : 0;
+    const detail = completed + ' из ' + total + ' блоков';
+    const label = append(node('div', null, 'cm-progress-label'), node('span', detail), node('strong', percent + '%'));
+    label.setAttribute('aria-hidden', 'true');
+    const track = append(node('div', null, 'cm-track'), node('span'));
+    track.setAttribute('role', 'progressbar');
+    track.setAttribute('aria-label', 'Прогресс: ' + course.title);
+    track.setAttribute('aria-valuenow', percent);
+    track.setAttribute('aria-valuetext', percent + '%, ' + detail);
+    track.style.setProperty('--cm-progress', percent / 100);
+    return append(node('div', null, 'cm-progress'), label, track);
+  }
+  function myCourseAction(course, featured) {
+    const state = myCourseState(course);
+    const title = { new: 'Начать курс', active: 'Продолжить', done: 'Повторить курс' }[state];
+    const control = button(title, e => run(e.currentTarget, () => continueCourse(course.id, null, state !== 'active')), featured ? 'cm-cta' : 'cm-row-action');
+    control.setAttribute('aria-label', title + ': ' + course.title);
+    if (featured) control.append(icon(myCourseIcons.arrow));
+    return control;
+  }
+  function myCourseOverview(rows) {
+    const done = rows.filter(course => myCourseState(course) === 'done').length;
+    const focus = rows.find(course => myCourseState(course) === 'active') || rows.find(course => myCourseState(course) === 'new') || rows[0];
+    root.append(append(node('header', null, 'cm-intro'), node('h1', 'Мои курсы'),
+      node('p', 'Продолжайте учиться и следите за своим прогрессом.')));
+    if (!focus) {
+      const mark = append(node('div', null, 'cm-empty-icon'), icon(myCourseIcons.book));
+      root.append(append(node('section', null, 'cm-welcome'), mark, node('h2', 'Вы ещё не записались на курс'),
+        node('p', 'Выберите курс в каталоге — здесь появятся ваши уроки и прогресс.'),
+        append(link('Открыть каталог', '/courses', 'cm-cta'), icon(myCourseIcons.arrow))));
+      return;
+    }
+    const state = myCourseState(focus);
+    const kicker = { new: 'Готов к старту', active: 'Продолжить обучение', done: 'Курс завершён' }[state];
+    const feature = node('article', null, 'cm-feature');
+    feature.dataset.state = state;
+    const copy = append(node('div', null, 'cm-feature-copy'),
+      append(node('p', null, 'cm-kicker'), icon(myCourseIcons[state === 'done' ? 'done' : 'book']), node('span', kicker)),
+      node('h2', focus.title), myCourseProgress(focus),
+      actions(myCourseAction(focus, true), link('О курсе', '/courses/' + focus.id, 'cm-feature-link')));
+    feature.append(copy, myCourseImage(focus));
+    const stats = node('dl', null, 'cm-stats');
+    for (const [key, label, count] of [['book', 'Всего курсов', rows.length], ['active', 'Активные', rows.length - done], ['done', 'Завершённые', done]]) {
+      const symbol = append(node('span', null, 'cm-stat-icon is-' + key), icon(myCourseIcons[key]));
+      stats.append(append(node('div', null, 'cm-stat'), node('dt', label), node('dd', count), symbol));
+    }
+    root.append(append(node('div', null, 'cm-overview'), feature,
+      append(node('section', null, 'cm-summary'), node('h2', 'Ваш прогресс'), stats)));
+  }
+  function myCourseRow(course) {
+    const state = myCourseState(course);
+    const row = node('article', null, 'cm-row');
+    row.dataset.state = state;
+    const status = { new: 'Не начат', active: 'В процессе', done: 'Завершён' }[state];
+    const detail = append(node('div', null, 'cm-row-copy'),
+      append(node('h3'), link(course.title, '/courses/' + course.id, 'cm-course-name')),
+      append(node('div', null, 'cm-row-meta'), node('span', status, 'cm-status'), course.level ? node('span', course.level) : null));
+    const info = append(node('div', null, 'cm-row-info'), myCourseImage(course, true), detail);
+    row.append(info, myCourseProgress(course), myCourseAction(course, false));
+    return row;
+  }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
     const enrolled = new Set(!authored && window.AdamAuthenticated ? (mine ? rows : await api('/me/courses')).map(c => c.id) : []);
@@ -156,6 +245,11 @@
       root.classList.add('cv-teaching');
       root.replaceChildren(message, link('← Каталог курсов', '/courses', 'back-link'));
     } else shell();
+    if (mine) {
+      root.classList.add('cm-home');
+      myCourseOverview(rows);
+      if (!rows.length) return;
+    }
     const create = button('Создать курс', e => run(e.currentTarget, async () => {
       const trigger = e.currentTarget;
       await import('/js/course-rich-text.js');
@@ -206,8 +300,9 @@
     }), 'button primary');
     if (authored) root.append(append(node('section', null, 'cv-teaching-hero cv-report-banner'),
       heading('Преподавание', 'Управляйте своими курсами, сохраняйте уроки и следите за результатами учеников.', create)));
-    const grid = node('div', null, authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
+    const grid = node('div', null, mine ? 'cm-list' : authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
+    let status = mine && ['active', 'done'].includes(params.get('status')) ? params.get('status') : '';
     if (authored || !courseLevels.includes(level)) level = '';
     let searchTimer, displayed, resultMotion;
     const input = node('input');
@@ -249,7 +344,24 @@
     const catalogPanel = authored
       ? append(node('section', null, 'cv-report-panel cv-teaching-panel'), node('h2', 'Ваши курсы'), tools, resultsStatus, grid)
       : null;
-    if (catalogPanel) root.append(catalogPanel); else root.append(tools, resultsStatus, grid);
+    if (catalogPanel) root.append(catalogPanel);
+    else if (mine) {
+      const filters = node('div', null, 'cm-filters');
+      filters.setAttribute('role', 'group');
+      filters.setAttribute('aria-label', 'Статус курса');
+      for (const [key, label] of [['', 'Все курсы'], ['active', 'Активные'], ['done', 'Завершённые']]) {
+        const filter = button(label, () => {
+          if (status === key) return;
+          status = key;
+          for (const child of filters.children) child.setAttribute('aria-pressed', String(child === filter));
+          draw();
+        }, 'cm-filter');
+        filter.setAttribute('aria-pressed', String(status === key));
+        filters.append(filter);
+      }
+      root.append(append(node('section', null, 'cm-library'),
+        append(node('header', null, 'cm-library-heading'), node('h2', 'Ваши курсы'), filters), tools, resultsStatus, grid));
+    } else root.append(tools, resultsStatus, grid);
     if (authored) {
       const library = node('section', null, 'cv-report-panel cv-teaching-panel cv-library');
       const libraryTitle = node('h2', 'Библиотека уроков');
@@ -298,9 +410,12 @@
     }
     function draw() {
       clearTimeout(searchTimer);
-      const url = new URL(location.href); query ? url.searchParams.set('q', query) : url.searchParams.delete('q'); level ? url.searchParams.set('level', level) : url.searchParams.delete('level'); history.replaceState(null, '', url);
+      const url = new URL(location.href); query ? url.searchParams.set('q', query) : url.searchParams.delete('q'); level ? url.searchParams.set('level', level) : url.searchParams.delete('level');
+      if (mine) status ? url.searchParams.set('status', status) : url.searchParams.delete('status');
+      history.replaceState(null, '', url);
       const term = query.trim().toLocaleLowerCase('ru');
-      const filtered = rows.filter(x => x.title.toLocaleLowerCase('ru').includes(term) && (!level || x.level === level));
+      const filtered = rows.filter(x => x.title.toLocaleLowerCase('ru').includes(term) && (!level || x.level === level) &&
+        (!status || (myCourseState(x) === 'done') === (status === 'done')));
       if (displayed?.length === filtered.length && displayed.every((row, index) => row === filtered[index])) return;
       if (displayed) {
         resultsStatus.textContent = filtered.length ? `Курсов найдено: ${filtered.length}` : 'Курсы не найдены';
@@ -310,7 +425,13 @@
       }
       displayed = filtered;
       grid.replaceChildren();
-      if (!filtered.length) { grid.append(empty(rows.length ? 'Курсы не найдены' : authored ? 'Здесь появится ваш первый курс' : mine ? 'Вы ещё не записались на курс' : 'Курсы готовятся', rows.length ? 'Измените запрос или сбросьте фильтры.' : authored ? 'Начните с названия, затем добавьте модули и уроки.' : 'Выберите опубликованный курс в каталоге.', mine ? link('Открыть каталог', '/courses') : null)); return; }
+      if (mine) {
+        if (filtered.length) {
+          for (const course of filtered) grid.append(myCourseRow(course));
+        } else grid.append(empty('Курсы не найдены', 'Измените запрос или сбросьте фильтры.', link('Сбросить фильтры', '/my-courses')));
+        return;
+      }
+      if (!filtered.length) { grid.append(empty(rows.length ? 'Курсы не найдены' : authored ? 'Здесь появится ваш первый курс' : 'Курсы готовятся', rows.length ? 'Измените запрос или сбросьте фильтры.' : authored ? 'Начните с названия, затем добавьте модули и уроки.' : 'Выберите опубликованный курс в каталоге.')); return; }
       filtered.forEach(c => {
         if (authored) {
           const row = node('article', null, 'cv-author-row');
@@ -325,7 +446,7 @@
         if (c.coverPath) { const img = node('img', null, 'cv-course-image'); img.src = c.coverPath; img.alt = ''; img.loading = 'lazy'; card.append(img); }
         card.append(append(node('div', null, 'cv-cover'), node('span', authored ? c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик' : c.level)));
         const body = append(node('div', null, 'cv-card-content'), node('h2', c.title), node('p', c.description.length > 180 ? c.description.slice(0, 180) + '…' : c.description || 'Добавьте описание курса.'));
-        if (!authored) body.append(node('span', mine || enrolled.has(c.id) ? `${c.completedBlocks} из ${c.totalBlocks} блоков завершено` : `Блоков: ${c.totalBlocks}`, 'cv-meta'));
+        body.append(node('span', enrolled.has(c.id) ? `${c.completedBlocks} из ${c.totalBlocks} блоков завершено` : `Блоков: ${c.totalBlocks}`, 'cv-meta'));
         if (c.author) body.append(node('span', c.author, 'cv-meta'));
         const repeat = c.totalBlocks > 0 && c.completedBlocks === c.totalBlocks;
         body.append(actions(enrolled.has(c.id) ? button(repeat ? 'Повторить курс' : 'Продолжить', e => run(e.currentTarget, () => continueCourse(c.id, null, repeat)), 'button primary') : link('Открыть курс', `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
