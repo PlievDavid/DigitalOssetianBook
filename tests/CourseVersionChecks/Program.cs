@@ -235,6 +235,21 @@ try
     Check(await runner.Retry(guestAudio.Id, audioBlock.Id, guestAttempt, null, guestOwner, ct), "Гостевая повторная попытка недоступна");
     Check((await runner.Answer(guestAudio.Id, audioBlock.Id, [2], null, guestOwner, ct))!.Correct && await runner.Advance(guestAudio.Id, audioBlock.Id, null, guestOwner, ct), "Гость не завершил повторную попытку");
     var materialEditor = new EfEditorRepository(db);
+    var groupingPayload = new GroupingMaterial("Группировка", ["А", "Б"],
+        [new("один", 0), new("два", 0), new("три", 1), new("четыре", 1)], []);
+    var groupingId = await materialEditor.Create("grouping", JsonSerializer.Serialize(groupingPayload, CourseAuthoringService.JsonOptions), ct, owner.Id);
+    Check(await materialEditor.PublishDraft("grouping", groupingId, owner.Id, ct), "Не опубликована группировка");
+    var groupingRevision = (await materialEditor.StartRevision("grouping", groupingId, owner.Id, ct))!.Value;
+    var newerGrouping = groupingPayload with { Title = "Новая группировка" };
+    var newerGroupingJson = JsonSerializer.Serialize(newerGrouping, CourseAuthoringService.JsonOptions);
+    await db.Groupings.Where(x => x.Id == groupingId).ExecuteUpdateAsync(update => update
+        .SetProperty(x => x.Version, x => x.Version + 1)
+        .SetProperty(x => x.Title, newerGrouping.Title)
+        .SetProperty(x => x.ScriptJson, newerGroupingJson), ct);
+    Check(!await materialEditor.PublishRevision(groupingRevision, ct), "Устаревшая версия группировки опубликована");
+    Check((await materialEditor.Revision(groupingRevision, ct)) is { Published: false }, "Устаревший черновик группировки потерян");
+    var currentGrouping = await db.Groupings.AsNoTracking().SingleAsync(x => x.Id == groupingId, ct);
+    Check(currentGrouping.Title == newerGrouping.Title && currentGrouping.Version == 2, "Устаревший черновик затёр новую группировку");
     var kinds = new (string Kind, object Payload)[]
     {
         ("audio", new ExerciseMaterial("audio", "Проверка", "Ӕ ӕ", ["Ӕ", "ӕ"], [], "", [], "/media/test.mp3", [["А", "Б"], ["В", "Г"]])),

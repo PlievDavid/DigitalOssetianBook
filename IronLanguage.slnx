@@ -5,5 +5,6 @@
     <Project Path="tests/AdminChecks/AdminChecks.csproj" />
     <Project Path="tests/CourseVersionChecks/CourseVersionChecks.csproj" />
     <Project Path="tests/CurriculumChecks/CurriculumChecks.csproj" />
+    <Project Path="tests/GroupingChecks/GroupingChecks.csproj" />
   </Folder>
 </Solution>

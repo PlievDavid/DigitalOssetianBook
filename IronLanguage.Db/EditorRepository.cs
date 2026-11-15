@@ -374,7 +374,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         }
         else if (revision.Kind == "grouping")
         {
-            var grouping = await db.Groupings.SingleAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
+            var grouping = await db.Groupings.SingleOrDefaultAsync(x => x.Id == revision.ContentId && x.Published && x.Version == revision.BaseVersion, ct);
             if (grouping is null) return false;
             Apply(grouping, Parse<GroupingMaterial>(revision.PayloadJson)); grouping.Version++;
         }
