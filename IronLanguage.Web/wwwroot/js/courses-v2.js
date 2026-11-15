@@ -43,30 +43,33 @@
   });
   const run = async (control, task) => { control.disabled = true; control.setAttribute('aria-busy', 'true'); try { await task(); } catch (e) { showError(e); } finally { control.disabled = false; control.removeAttribute('aria-busy'); } };
   function shell() { root.replaceChildren(message); }
-  async function continueCourse(courseId, lessonId = null, fromStart = false) {
+  async function continueCourse(courseId, lessonId = null, entryStep = null) {
     if (!lessonId) {
       const course = await api(`/courses/${courseId}`);
       const lessons = course.modules.flatMap(m => m.lessons);
       const first = lessons.find(l => l.available)?.id;
-      lessonId = fromStart ? first : course.resumeLessonId || lessons.find(l => l.available && !l.completed)?.id || first;
+      lessonId = entryStep === 'first' ? first : course.resumeLessonId || lessons.find(l => l.available && !l.completed)?.id || first;
     }
     if (!lessonId) { location.href = `/courses/${courseId}`; return; }
     const session = await post(`/courses/${courseId}/lessons/${lessonId}/sessions`);
-    location.href = `/courses/sessions/${session.id}${fromStart ? '?start=1' : ''}`;
+    const query = entryStep === 'first' ? '?start=1' : entryStep === 'last' ? '?start=last' : '';
+    location.href = `/courses/sessions/${session.id}${query}`;
   }
   const courseLevels = ['', 'Начальный', 'Средний', 'Продвинутый'];
   function levelFilter(level, onChange) {
-    const select = node('select', null, 'cv-level-select');
-    select.setAttribute('aria-label', 'Уровень курса');
+    const group = node('div', null, 'cv-level-options');
+    group.setAttribute('role', 'radiogroup');
+    group.setAttribute('aria-label', 'Уровень курса');
     for (const value of courseLevels) {
-      const option = node('option', value || 'Все уровни');
-      option.value = value;
-      select.append(option);
+      const input = node('input');
+      input.type = 'radio';
+      input.name = 'course-level';
+      input.value = value;
+      input.checked = value === level;
+      input.addEventListener('change', () => { if (input.checked) onChange(value); });
+      group.append(append(node('label', null, 'cv-level-option'), input, node('span', value || 'Все уровни')));
     }
-    select.value = level;
-    select.addEventListener('change', () => onChange(select.value));
-    const chevron = icon('m6 9 6 6 6-6');
-    return append(node('div', null, 'cv-field cv-level-filter'), select, chevron);
+    return group;
   }
 
   const myCourseIcons = {
@@ -136,7 +139,7 @@
   function myCourseAction(course, featured) {
     const state = myCourseState(course);
     const title = { new: 'Начать курс', active: 'Продолжить', done: 'Повторить курс' }[state];
-    const control = button(title, e => run(e.currentTarget, () => continueCourse(course.id, null, state !== 'active')), featured ? 'cm-cta' : 'cm-row-action');
+    const control = button(title, e => run(e.currentTarget, () => continueCourse(course.id, null, state === 'active' ? null : 'first')), featured ? 'cm-cta' : 'cm-row-action');
     control.setAttribute('aria-label', title + ': ' + course.title);
     control.append(icon(myCourseIcons.arrow));
     return control;
@@ -194,8 +197,7 @@
       description ? node('p', description, 'cm-catalog-description') : null,
       course.author ? node('span', course.author, 'cm-catalog-author') : null);
     card.dataset.state = enrolled ? state : '';
-    return append(card, courseArtwork(course, true), body,
-      append(node('span', null, 'cm-catalog-arrow'), icon(myCourseIcons.arrow)));
+    return append(card, courseArtwork(course, true), body);
   }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
@@ -301,7 +303,7 @@
     }
     searchField.append(searchLabel, append(node('div', null, 'cv-search-control'), input, clear));
     const tools = append(node('div', null, 'cv-tools'), searchField);
-    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }));
+    const levels = authored ? null : levelFilter(level, value => { level = value; draw(); });
     const resultsStatus = node('div', null, 'cv-results-status');
     resultsStatus.setAttribute('role', 'status');
     const catalogPanel = authored
@@ -327,13 +329,13 @@
       title.id = 'cm-library-title';
       library.setAttribute('aria-labelledby', title.id);
       append(library, append(node('header', null, 'cm-library-heading'), title,
-        append(node('div', null, 'cm-library-toolbar'), filters, tools)), resultsStatus, grid);
+        append(node('div', null, 'cm-library-toolbar'), filters, tools, levels)), resultsStatus, grid);
       root.append(library);
     } else {
       const title = node('h2', 'Все курсы');
       title.id = 'cm-library-title';
       const library = append(node('section', null, 'cm-library cm-catalog-library'),
-        append(node('header', null, 'cm-library-heading'), title, tools), resultsStatus, grid);
+        append(node('header', null, 'cm-library-heading'), title, tools, levels), resultsStatus, grid);
       library.setAttribute('aria-labelledby', title.id);
       root.append(library);
     }
@@ -563,8 +565,8 @@
     const first = lessons.find(l => l.available);
     const next = lessons.find(l => l.id === c.resumeLessonId && l.available) || lessons.find(l => l.available && !l.completed) || first;
     const repeat = c.totalBlocks > 0 && c.completedBlocks === c.totalBlocks;
-    const start = (lesson, fromStart = !lesson.started && !lesson.completed) =>
-      e => run(e.currentTarget, () => continueCourse(id, lesson.id, fromStart));
+    const start = (lesson, entryStep) =>
+      e => run(e.currentTarget, () => continueCourse(id, lesson.id, entryStep));
     const hero = node('section', null, 'cv-material-hero');
     root.dataset.theme = c.theme || 'sage';
     const intro = append(node('div', null, 'cv-hero-intro'), append(node('div', null, 'cv-course-chips'),
@@ -574,7 +576,7 @@
       window.AdamCourseRichText.render({ text: c.outcomes, richText: c.outcomesRichText })));
     const status = node('div', null, 'cv-course-status');
     const entry = !c.started || repeat ? first : next;
-    if (entry) status.append(button(repeat ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(entry, !c.started || repeat), 'button primary'));
+    if (entry) status.append(button(repeat ? 'Повторить курс' : c.started ? 'Продолжить' : 'Начать курс', start(entry, !c.started || repeat ? 'first' : null), 'button primary'));
     if (c.started || c.firstCompletedAt) status.append(append(node('div'),
       node('strong', c.percent === 100 ? 'Курс пройден' : c.firstCompletedAt ? 'Добавлены новые блоки' : 'Обучение начато'),
       node('span', `Пройдено блоков: ${c.completedBlocks} из ${c.totalBlocks} · ${c.percent}%`, 'cv-meta')));
@@ -588,10 +590,20 @@
     c.modules.forEach(m => {
       const section = append(node('section', null, 'cv-material-module'), node('h3', m.title));
       m.lessons.forEach(l => {
-        const b = button(l.completed ? 'Повторить' : l.started ? 'Продолжить урок' : 'Открыть урок', start(l), 'cv-lesson-action'); b.disabled = !l.available;
-        const marker = node('span', l.completed ? '✓' : String(++number), 'cv-lesson-marker' + (l.completed ? ' is-complete' : '')); marker.setAttribute('aria-hidden', 'true');
-        if (l.completed) number++;
-        section.append(append(node('div', null, 'cv-material-lesson'), marker, append(node('div', null, 'cv-lesson-copy'), node('h4', l.title), node('span', l.completed ? 'Завершён' : l.started ? 'Можно продолжить' : l.available ? 'Не начат' : 'Сначала завершите предыдущий урок', 'cv-meta')), b));
+        number++;
+        const entryStep = l.completed ? 'last' : l.started ? null : 'first';
+        const row = l.available ? button(null, start(l, entryStep), 'cv-material-lesson') : node('div', null, 'cv-material-lesson');
+        const marker = node('span', l.completed ? '✓' : String(number), 'cv-lesson-marker' + (l.completed ? ' is-complete' : ''));
+        marker.setAttribute('aria-hidden', 'true');
+        const title = node('span', l.title, 'cv-lesson-title');
+        const progress = node('span', l.completed ? 'Завершён' : l.started ? 'Можно продолжить' : l.available ? 'Не начат' : 'Сначала завершите предыдущий урок', 'cv-meta');
+        if (l.available) {
+          title.id = 'cv-lesson-title-' + l.id;
+          progress.id = 'cv-lesson-state-' + l.id;
+          row.setAttribute('aria-labelledby', title.id);
+          row.setAttribute('aria-describedby', progress.id);
+        }
+        section.append(append(row, marker, append(node('span', null, 'cv-lesson-copy'), title, progress)));
       }); program.append(section);
     });
     root.append(program);
@@ -606,7 +618,7 @@
     const entry = new URLSearchParams(location.search);
     let state, picked = [], practiceFeedback = '', refreshing = false;
     shell(); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
-    async function refresh(blockId = null, showCompletion = false, fromStart = false) {
+    async function refresh(blockId = null, showCompletion = false, entryStep = null) {
       refreshing = true;
       try {
       const blockQuery = blockId ? '?block=' + encodeURIComponent(blockId) : '';
@@ -618,7 +630,8 @@
         blockId = state.block?.id ?? null;
       }
       if (state.id !== id) { id = state.id; history.replaceState(null, '', '/courses/sessions/' + id); }
-      const entryBlock = fromStart ? state.steps[0] : !showCompletion && !state.block && state.completed ? state.steps.at(-1) : null;
+      const entryBlock = entryStep === 'first' ? state.steps[0]
+        : !showCompletion && state.completed && (entryStep === 'last' || !state.block) ? state.steps.at(-1) : null;
       if (entryBlock) {
         blockId = entryBlock.id;
         if (state.block?.id !== blockId) state = await api(`/course-sessions/${id}?block=${blockId}`);
@@ -745,7 +758,7 @@
           }
           const item = button(null, e => run(e.currentTarget, async () => {
             if (lesson.id === state.lessonId) { await closeDrawer(); return; }
-            await continueCourse(state.courseId, lesson.id, true);
+            await continueCourse(state.courseId, lesson.id, 'first');
           }), 'cv-drawer-lesson');
           item.append(node('span', lesson.title, 'cv-drawer-lesson-name'));
           if (lesson.totalBlocks != null) {
@@ -776,7 +789,7 @@
       if (state.completed && !state.block) {
         const nextLesson = state.lessons.slice(state.lessons.findIndex(l => l.id === state.lessonId) + 1).find(l => l.available);
         const action = state.preview ? link('Вернуться в конструктор', `/author/courses/${state.courseId}`, 'button primary')
-          : nextLesson ? button('Продолжить курс', e => run(e.currentTarget, () => continueCourse(state.courseId, nextLesson.id, true)), 'button primary')
+          : nextLesson ? button('Продолжить курс', e => run(e.currentTarget, () => continueCourse(state.courseId, nextLesson.id, 'first')), 'button primary')
           : link('К программе курса', `/courses/${state.courseId}`, 'button primary');
         area.append(empty('Урок пройден', nextLesson ? 'Переходите к следующему уроку программы.' : 'Вы завершили все уроки курса.', action)); return;
       }
@@ -830,7 +843,9 @@
       }
       card.append(actions(next)); area.append(card);
     }
-    await refresh(entry.get('block'), false, !entry.has('block') && entry.get('start') === '1');
+    const startAt = entry.get('start');
+    const entryStep = entry.has('block') ? null : startAt === '1' ? 'first' : startAt === 'last' ? 'last' : null;
+    await refresh(entry.get('block'), false, entryStep);
     document.addEventListener('visibilitychange', async () => {
       if (document.hidden || state?.preview || refreshing || picked.length || area.querySelector('dialog[open], button[aria-busy="true"]') ||
           [...area.querySelectorAll('input, textarea')].some(input => input.value)) return;
