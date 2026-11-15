@@ -548,11 +548,11 @@
 /* Catalog and personal courses use the same library surface. */
 .cm-intro-copy { display:grid; gap:6px; min-width:0; }
 .cm-phone-menu { display:none; }
-.cm-discover { grid-template-columns:minmax(0,1fr); align-items:center; border:1px solid #dce7ee; border-radius:28px; padding:clamp(22px,3vw,34px); background:linear-gradient(115deg,#e8f0f8,#f5f7f9 62%,#f8f5ed); }
-.cm-catalog-library .cm-library-heading { grid-template-columns:minmax(0,1fr) minmax(290px,390px); align-items:center; padding-block:14px; }
+.cm-catalog-library { border-color:var(--theme-border); }
+.cm-catalog-library .cm-library-heading { grid-template-columns:minmax(0,1fr) minmax(290px,390px); align-items:center; padding-block:14px; border-color:var(--theme-border); background:none; }
 .cm-catalog-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); padding:16px var(--cm-library-gutter) 20px; gap:12px; }
 .cm-catalog-grid > :only-child { grid-column:1/-1; }
-.cm-catalog-card { display:grid; grid-template-columns:clamp(100px,11vw,140px) minmax(0,1fr); align-items:center; gap:clamp(13px,2vw,23px); min-width:0; padding:14px; border:1px solid #dce5d7; border-radius:18px; background:#fbfcf9; transition:background-color 180ms ease,border-color 180ms ease; }
+.cm-catalog-card { display:grid; grid-template-columns:clamp(100px,11vw,140px) minmax(0,1fr); align-items:center; gap:clamp(13px,2vw,23px); min-width:0; padding:14px; border:1px solid var(--theme-border); border-radius:18px; background:var(--theme-surface); transition:background-color 180ms ease,border-color 180ms ease; }
 .cm-catalog-card:hover,.cm-catalog-card:focus-within { background:#f4f8f0; border-color:#b5c8b7; }
 .cm-catalog-card .cm-art { width:100%; border-radius:13px; }
 .cm-catalog-card .cm-monogram { font-size:clamp(38px,6vw,62px); }
@@ -587,7 +587,6 @@
   .cm-phone-links { position:absolute; inset:calc(100% + 7px) 0 auto auto; width:max-content; min-width:155px; max-width:calc(100vw - 48px); padding:5px; border:1px solid #dce5d7; border-radius:14px; background:var(--theme-surface); box-shadow:0 8px 20px #173f3230; }
   .cm-phone-links a { display:flex; align-items:center; padding:8px 10px; min-height:44px; border-radius:9px; font-size:14px; }
   .cm-phone-links a:hover,.cm-phone-links a[aria-current="page"] { background:#e8f1e2; }
-  .cm-discover { border-radius:22px; padding:18px; }
   .green-theme .cm-discover h1 { font-size:clamp(27px,7.5vw,36px); }
   .cm-catalog-library .cm-library-heading { grid-template-columns:minmax(0,1fr); }
   .cm-catalog-grid { gap:9px; padding-block:12px; }
