@@ -63,9 +63,10 @@
     location.href = `/courses/sessions/${session.id}${fromStart ? '?start=1' : ''}`;
   }
   const courseLevels = ['', 'Начальный', 'Средний', 'Продвинутый'];
-  function levelFilter(level, onChange) {
+  function levelFilter(level, onChange, hideLabel = false) {
     const label = node('span', 'Уровень');
     label.id = 'cv-level-label';
+    label.hidden = hideLabel;
     const value = node('span');
     value.id = 'cv-level-value';
     const menu = node('div', null, 'cv-level-menu');
@@ -235,9 +236,14 @@
     const searchField = node('div', null, 'cv-field cv-catalog-search');
     const searchLabel = node('label', 'Поиск по названию');
     searchLabel.htmlFor = input.id;
+    if (mine) {
+      searchLabel.id = 'cv-catalog-query-label';
+      searchLabel.hidden = true;
+      input.setAttribute('aria-labelledby', searchLabel.id);
+    }
     searchField.append(searchLabel, append(node('div', null, 'cv-search-control'), input, clear));
     const tools = append(node('div', null, 'cv-tools'), searchField);
-    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }));
+    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }, mine));
     const resultsStatus = node('div', null, 'cv-results-status');
     resultsStatus.setAttribute('role', 'status');
     const catalogPanel = authored
