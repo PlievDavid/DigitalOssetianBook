@@ -35,10 +35,6 @@
             menu.classList.toggle('is-pinned', open && pinned);
             trigger.setAttribute('aria-expanded', String(open || (compact.matches && header.classList.contains('mobile-is-open') && menu.classList.contains('nav-menu-section'))));
         };
-        if (trigger.tagName === 'BUTTON') trigger.addEventListener('click', () => {
-            const open = !menu.classList.contains('is-pinned');
-            setMenu(open, open);
-        });
         trigger.addEventListener('keydown', event => {
             if (event.key !== 'ArrowDown') return;
             event.preventDefault();

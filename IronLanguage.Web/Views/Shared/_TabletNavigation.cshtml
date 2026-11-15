@@ -3,18 +3,18 @@
     var path = Context.Request.Path.Value?.ToLowerInvariant() ?? "/";
     var signedIn = User.Identity?.IsAuthenticated == true;
     var groups = new (string Title, string Icon, (string Label, string Url)[] Links)[] {
-        ("Курсы", "courses", User.IsInRole("Editor") ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses"), ("Преподавание", "/courses/teaching")] : signedIn ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses")] : [("Каталог курсов", "/courses")]),
-        ("Задания", "materials", [("Все задания", "/exercises"), ("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar"), ("Разбить слова на группы", "/grouping")]),
-        ("Слова", "words", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
-        ("Игры", "games", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
-        ("Чтение", "books", [("Произведения", "/reading")])
+        ("Курсы", "school", User.IsInRole("Editor") ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses"), ("Преподавание", "/courses/teaching")] : signedIn ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses")] : [("Каталог курсов", "/courses")]),
+        ("Задания", "assignment", [("Все задания", "/exercises"), ("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar"), ("Разбить слова на группы", "/grouping")]),
+        ("Слова", "library_books", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
+        ("Игры", "sports_esports", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
+        ("Чтение", "menu_book", [("Произведения", "/reading")])
     };
 }
 <div class="tablet-navigation">
     <div class="tablet-nav-groups">
         @foreach (var group in groups) {
             <section class="tablet-nav-group" aria-label="@group.Title">
-                <h2 class="tablet-nav-title">@await Html.PartialAsync("_NavIcon", group.Icon)<span>@group.Title</span></h2>
+                <h2 class="tablet-nav-title">@await Html.PartialAsync("_MaterialNavigationIcon", group.Icon)<span>@group.Title</span></h2>
                 <div class="tablet-nav-links">
                     @foreach (var link in group.Links) {
                         <a href="@link.Url" aria-current="@(path == link.Url ? "page" : null)">@link.Label</a>
@@ -27,7 +27,7 @@
         <div class="tablet-account-identity">
             <span class="tablet-account-avatar" aria-hidden="true">
                 @if (signedIn) { @await Html.PartialAsync("_Avatar", new AvatarDisplayModel(await Avatars.Current(User), true)) }
-                else { @await Html.PartialAsync("_NavIcon", "profile") }
+                else { @await Html.PartialAsync("_MaterialNavigationIcon", "account_circle") }
             </span>
             <div>
                 <strong>@(signedIn ? User.Identity!.Name : "Ваш аккаунт")</strong>
@@ -36,7 +36,7 @@
         </div>
         <div class="tablet-account-actions">
             @if (signedIn) {
-                <a href="/profile" aria-current="@(path.StartsWith("/profile") ? "page" : null)">@await Html.PartialAsync("_NavIcon", "profile")Профиль</a>
+                <a href="/profile" aria-current="@(path.StartsWith("/profile") ? "page" : null)">@await Html.PartialAsync("_MaterialNavigationIcon", "account_circle")Профиль</a>
                 <a href="/progress" aria-current="@(path == "/progress" ? "page" : null)">@await Html.PartialAsync("_NavIcon", "progress")Мои результаты</a>
                 <form action="/account/logout" method="post">@Html.AntiForgeryToken()<button type="submit">Выйти</button></form>
             } else {

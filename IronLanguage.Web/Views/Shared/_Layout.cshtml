@@ -41,7 +41,7 @@
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
             <div class="nav-menu nav-menu-section">
-                <button type="button" class="nav-section-link nav-menu-trigger courses-menu-trigger @(isCourseSection ? "is-current" : "")" aria-controls="courses-menu" aria-expanded="false">Курсы</button>
+                <a class="nav-section-link nav-menu-trigger @(isCourseSection ? "is-current" : "")" href="/courses" aria-current="@(normalizedPath == "/courses" ? "page" : null)" aria-controls="courses-menu" aria-expanded="false">Курсы</a>
                 <div id="courses-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/courses" aria-current="@(normalizedPath == "/courses" ? "page" : null)">Каталог курсов</a>
                     @if (User.Identity?.IsAuthenticated == true) { <a class="nav-menu-item" href="/my-courses" aria-current="@(normalizedPath == "/my-courses" ? "page" : null)">Мои курсы</a> }
@@ -108,10 +108,10 @@
         </div>
     </footer>
     <nav class="mobile-bottom-nav" aria-label="Основные разделы">
-        <a class="@(isHomeSection ? "is-current" : "")" aria-current="@(normalizedPath == "/" ? "page" : null)" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Главная</span></a>
-        <a class="@(isCourseSection ? "is-current" : "")" aria-current="@(normalizedPath == "/courses" ? "page" : null)" href="/courses">@await Html.PartialAsync("_NavIcon", "courses")<span>Курсы</span></a>
-        <a class="@(normalizedPath.StartsWith("/vocabulary") || normalizedPath.StartsWith("/word-practice") || normalizedPath == "/game" ? "is-current" : "")" aria-current="@(normalizedPath == "/vocabulary" ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
-        <a class="@(normalizedPath.StartsWith("/profile") || normalizedPath.StartsWith("/account") || normalizedPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(normalizedPath == "/profile" ? "page" : null)" href="/profile">@await Html.PartialAsync("_NavIcon", "profile")<span>Профиль</span></a>
+        <a class="@(isHomeSection ? "is-current" : "")" aria-current="@(normalizedPath == "/" ? "page" : null)" href="/">@await Html.PartialAsync("_MaterialNavigationIcon", "home")<span>Главная</span></a>
+        <a class="@(isCourseSection ? "is-current" : "")" aria-current="@(normalizedPath == "/courses" ? "page" : null)" href="/courses">@await Html.PartialAsync("_MaterialNavigationIcon", "school")<span>Курсы</span></a>
+        <a class="@(normalizedPath.StartsWith("/vocabulary") || normalizedPath.StartsWith("/word-practice") || normalizedPath == "/game" ? "is-current" : "")" aria-current="@(normalizedPath == "/vocabulary" ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_MaterialNavigationIcon", "library_books")<span>Слова</span></a>
+        <a class="@(normalizedPath.StartsWith("/profile") || normalizedPath.StartsWith("/account") || normalizedPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(normalizedPath == "/profile" ? "page" : null)" href="/profile">@await Html.PartialAsync("_MaterialNavigationIcon", "account_circle")<span>Профиль</span></a>
     </nav>
     </div>
     <script src="~/js/nav.js" asp-append-version="true" defer></script>

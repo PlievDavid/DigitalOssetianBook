@@ -277,7 +277,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.screenshot({ path: path.join(out, 'teaching-courses-phone.png'), fullPage: true });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.locator('[aria-controls="courses-menu"]').click();
+    await page.locator('[aria-controls="courses-menu"]').hover();
     await page.locator('#courses-menu').getByRole('link', { name: 'Преподавание', exact: true }).waitFor({ state: 'visible' });
     check(true, 'Подменю преподавания открывается по наведению');
     await page.goto(base + '/author/courses/' + id);

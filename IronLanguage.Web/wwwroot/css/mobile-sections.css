@@ -22,9 +22,9 @@
     .green-theme #main-content { min-width: 0; }
     .green-theme .mobile-bottom-nav { background: var(--theme-surface); border-top: 1px solid var(--theme-border); box-shadow: none; padding-inline: 8px; }
     .green-theme .mobile-bottom-nav a { margin: 0 2px; border-radius: 12px; gap: 3px; color: var(--theme-muted); }
-    .green-theme .mobile-bottom-nav svg { box-sizing: content-box; width: 24px; height: 24px; border-radius: 20px; padding: 3px 12px; stroke-width: 1.75; }
+    .green-theme .mobile-bottom-nav svg { box-sizing: content-box; width: 24px; height: 24px; border-radius: 20px; padding: 3px 12px; }
     .green-theme .mobile-bottom-nav a.is-current { color: var(--theme-green); }
-    .green-theme .mobile-bottom-nav .is-current svg { background: var(--theme-sage); stroke-width: 1.9; }
+    .green-theme .mobile-bottom-nav .is-current svg { background: var(--theme-sage); }
     .green-theme .mobile-bottom-nav span { font-size: 11px; }
     .green-theme .mobile-page-intro { display: block; padding: 24px 0 0; }
     .green-theme .mobile-page-intro h1 { margin: 0; font-size: 30px; line-height: 1.2; }

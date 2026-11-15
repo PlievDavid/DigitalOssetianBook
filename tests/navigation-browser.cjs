@@ -115,8 +115,24 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname), 'Set
     await page.keyboard.press('Escape');
     assert(await section.evaluate(element => element === document.activeElement));
     assert.equal(await section.getAttribute('aria-expanded'), 'false');
+    const courses = page.locator('a[aria-controls="courses-menu"]');
+    const catalogue = page.locator('#courses-menu a[href="/courses"]');
+    await courses.hover();
+    assert(await catalogue.isVisible(), 'Desktop course submenu is available on hover');
+    await courses.click();
+    await page.waitForURL(base + '/courses');
+    assert.equal(await courses.getAttribute('aria-current'), 'page');
+    await page.goto(base);
+    await courses.focus();
+    await page.keyboard.press('ArrowDown');
+    assert(await catalogue.evaluate(el => document.activeElement === el));
+    await page.keyboard.press('Escape');
+    assert(await courses.evaluate(el => document.activeElement === el));
+    await page.keyboard.press('Enter');
+    await page.waitForURL(base + '/courses');
+
     assert.deepEqual(errors, []);
-    checks += 5;
+    checks += 11;
     console.log('Navigation browser checks passed: ' + checks);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.message); process.exitCode = 1; });
