@@ -109,7 +109,7 @@
     </footer>
     <nav class="mobile-bottom-nav" aria-label="Основные разделы">
         <a class="@(isHomeSection ? "is-current" : "")" aria-current="@(normalizedPath == "/" ? "page" : null)" href="/">@await Html.PartialAsync("_NavIcon", "home")<span>Главная</span></a>
-        <a class="@(isCourseSection ? "is-current" : "")" aria-current="@(normalizedPath == "/courses" ? "page" : null)" href="/courses">@await Html.PartialAsync("_NavIcon", "materials")<span>Курсы</span></a>
+        <a class="@(isCourseSection ? "is-current" : "")" aria-current="@(normalizedPath == "/courses" ? "page" : null)" href="/courses">@await Html.PartialAsync("_NavIcon", "courses")<span>Курсы</span></a>
         <a class="@(normalizedPath.StartsWith("/vocabulary") || normalizedPath.StartsWith("/word-practice") || normalizedPath == "/game" ? "is-current" : "")" aria-current="@(normalizedPath == "/vocabulary" ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_NavIcon", "words")<span>Слова</span></a>
         <a class="@(normalizedPath.StartsWith("/profile") || normalizedPath.StartsWith("/account") || normalizedPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(normalizedPath == "/profile" ? "page" : null)" href="/profile">@await Html.PartialAsync("_NavIcon", "profile")<span>Профиль</span></a>
     </nav>
