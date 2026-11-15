@@ -1,6 +1,6 @@
 @{ ViewData["Title"] = "Форма слова"; }
 <section class="feature-shell grammar-page" id="grammar-app">
-    <a class="back-link" href="/">← К заданиям</a>
+    <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Форма слова", "В предложении пропущено слово. Выберите правильную форму; после первой ошибки появится подсказка, и можно будет выбрать ещё раз.", "grammar", "lilac"))
     <div id="grammar-status" role="status"></div>
     <div id="grammar-list" class="exercise-list"></div>

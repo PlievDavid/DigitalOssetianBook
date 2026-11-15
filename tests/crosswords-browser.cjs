@@ -29,7 +29,7 @@ const url = process.env.ADAM_TEST_URL || 'http://127.0.0.1:58326';
     }
     await ready();
     assert.equal(await page.locator('.nav-menu-words .is-current').count(), 0, 'Games do not activate Words');
-    assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
+    assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/exercises');
     assert.equal(await page.locator('.mobile-bottom-nav [aria-current="page"]').count(), 0);
     const csrf = await page.locator('#api-antiforgery input').inputValue();
     let response = await page.request.post(`${url}/api/v1/crosswords/1/1/check`, { data: { cells: {} } });

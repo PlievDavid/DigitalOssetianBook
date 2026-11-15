@@ -37,7 +37,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         assert((await back.boundingBox()).y + (await back.boundingBox()).height <= (await page.locator('h1').boundingBox()).y, 'Return link is above the heading');
         if (width < 600) {
           assert.equal(await page.locator('.mobile-bottom-nav a').count(), 4);
-          assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
+          assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/exercises');
         }
         await overflow();
         await page.screenshot({ path: path.join(output, `${route.split('/').at(-1)}-${width}.png`), fullPage: true });
@@ -57,14 +57,16 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await overflow();
       await page.goto(base);
       assert.equal(await page.locator('#games a[href="/word-practice"]').count(), 0);
-      assert.equal(await page.locator('#practice-formats a[href="/picture"]').count(), 1);
+      assert.equal(await page.locator('.hero-actions a[href="/exercises"]').count(), 1);
+      await page.goto(base + '/exercises');
+      assert.equal(await page.locator('.exercises-shell a[href="/picture"]').count(), 1);
       await page.goto(base + '/picture');
       assert.equal(await page.locator('#practice-menu a[href="/picture"]').count(), 1);
       assert.equal(await page.locator('.tablet-nav-group[aria-label="Задания"] a[href="/picture"]').count(), 1);
       assert(await page.locator('[aria-controls="practice-menu"]').evaluate(element => element.classList.contains('is-current')));
       if (width < 600) {
         assert.equal(await page.locator('.mobile-bottom-nav a').count(), 4);
-        assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
+        assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/exercises');
       }
       await page.goto(base + '/games');
       await page.addStyleTag({ content: 'body { font-size: 200%; }' }); await overflow();

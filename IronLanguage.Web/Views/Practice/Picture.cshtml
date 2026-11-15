@@ -1,6 +1,6 @@
 @{ ViewData["Title"] = "Картинка и слово"; }
 <section class="feature-shell picture-page" id="picture-app">
-    <a class="back-link" href="/">← К заданиям</a>
+    <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Картинка и слово", "Посмотрите на картинку и ответьте: выберите слово или введите его.", "picture", "amber"))
     <div id="picture-status" role="status"></div>
     <div id="picture-list" class="exercise-list"></div>

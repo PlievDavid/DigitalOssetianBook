@@ -83,7 +83,4 @@
         }
     });
     compact.addEventListener('change', () => setMobile(false));
-    document.querySelector('.hero-actions a[href="#practice-formats"]')?.addEventListener('click', () => {
-        document.getElementById('practice-formats').focus({ preventScroll: true });
-    });
 })();

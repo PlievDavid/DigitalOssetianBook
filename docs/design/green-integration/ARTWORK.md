@@ -4,7 +4,7 @@
 
 | Иллюстрация | Исходная фотография и автор | Лицензия | Изменения |
 | --- | --- | --- | --- |
-| [Башня](../../../IronLanguage.Web/wwwroot/images/green/kurt-tag-watercolor.png) | [Башня Курта и Тага 1.jpg](https://commons.wikimedia.org/wiki/File:Башня_Курта_и_Тага_1.jpg), Valodor | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | Акварель, палитра, мягкие края, убран стол |
+| [Башня](../../../IronLanguage.Web/wwwroot/images/green/kurt-tag-watercolor.png) | [Башня Курта и Тага 1.jpg](https://commons.wikimedia.org/wiki/File:Башня_Курта_и_Тага_1.jpg), Valodor | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | Акварель, палитра, мягкие края, убран стол; главная загружает уменьшенные версии WebP шириной 440 и 880 px |
 | [Цей](../../../IronLanguage.Web/wwwroot/images/green/tsey-sage-watercolor.png) | [Цейский ледник.jpg](https://commons.wikimedia.org/wiki/File:Цейский_ледник.jpg), Denis Dolgopolov | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | Акварель, палитра, мягкие края, убраны туристы |
 
 Переработки распространяются по CC BY-SA 4.0. Указание авторов и ссылки доступны пользователям на /Home/Illustrations.

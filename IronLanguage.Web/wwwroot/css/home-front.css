@@ -1,0 +1,37 @@
+.home-hero-art {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(42%, 420px);
+    height: 100%;
+    object-fit: cover;
+    object-position: center 55%;
+    mask-image: linear-gradient(90deg, transparent, #000 48%);
+    pointer-events: none;
+}
+
+@media (max-width: 700px) {
+    .home-hero-art {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: clamp(130px, 33vw, 215px);
+        object-position: center 25%;
+        mask-image: linear-gradient(#000 72%, transparent);
+    }
+    .green-theme .home-hero .hero-copy { gap: 12px; padding-top: 4px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .home-hero .hero-actions { animation: home-arrive 360ms cubic-bezier(.2, .65, .3, 1) both; }
+    .home-motion-section.home-arrived { animation: home-arrive 420ms cubic-bezier(.2, .65, .3, 1) both; }
+
+    @media (hover: hover) {
+        .home-shell .round-arrow { transition: transform 180ms ease; }
+        .home-shell .format-card:hover .round-arrow { transform: translateX(3px); }
+    }
+}
+
+@keyframes home-arrive {
+    from { opacity: .72; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}

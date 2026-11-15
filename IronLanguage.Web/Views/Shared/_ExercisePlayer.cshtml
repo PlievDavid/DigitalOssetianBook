@@ -3,7 +3,7 @@
 @{ var isAudio = Model == "audio"; if (ViewData["LessonStartUrl"] is null) { ViewData["Title"] = isAudio ? "Аудиопазлы" : "Собери фразу"; } }
 <section class="feature-shell exercise-page @(isAudio ? "audio-page" : "translate-page")" id="exercise-app" data-kind="@Model" data-start-url="@ViewData["LessonStartUrl"]">
     @if (ViewData["LessonStartUrl"] is null) {
-    <a class="back-link" href="/">← К заданиям</a>
+    <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel(isAudio ? "Аудиопазлы" : "Собери фразу", isAudio ? "Слушайте осетинскую запись и выбирайте слова по одному." : "Соберите осетинский перевод русской фразы.", isAudio ? "audio" : "translate", isAudio ? "blue" : "sand"))
     }
     <div id="exercise-status" role="status"></div>

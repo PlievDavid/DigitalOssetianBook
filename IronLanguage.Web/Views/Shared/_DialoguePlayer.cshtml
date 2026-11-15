@@ -1,7 +1,7 @@
 @{ if (ViewData["LessonStartUrl"] is null) { ViewData["Title"] = "Диалоги"; } }
 <section class="feature-shell dialog-page" id="dialog-app" data-start-url="@ViewData["LessonStartUrl"]">
     @if (ViewData["LessonStartUrl"] is null) {
-    <a class="back-link" href="/">← К заданиям</a>
+    <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Диалоги", "Читайте реплики собеседника и отвечайте на осетинском. Подсказки помогут продолжить разговор.", "dialogs"))
     }
     <div id="dialog-status" role="status"></div>

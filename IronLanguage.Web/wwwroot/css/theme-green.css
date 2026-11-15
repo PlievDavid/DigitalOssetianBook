@@ -109,10 +109,6 @@ html { scrollbar-gutter: stable; }
 .home-hero {
     border-radius: var(--theme-radius-shell);
     background-color: var(--theme-sage);
-    background-image: linear-gradient(90deg, var(--theme-sage) 0%, #eff2e8ef 35%, #eff2e820 75%), linear-gradient(0deg, var(--theme-sage) 0%, #eff2e800 28%), url('../images/green/hero.png');
-    background-position: center, center, right center;
-    background-size: 100% 100%, 100% 100%, auto 105%;
-    background-repeat: no-repeat;
     min-height: 374px;
     position: relative;
     overflow: hidden;
@@ -168,7 +164,6 @@ html { scrollbar-gutter: stable; }
     .green-theme .nav-menu-trigger { width: 100%; text-align: left; }
     .green-theme .nav-menu-panel { position: static; width: 100%; box-shadow: none; margin-top: 4px; }
     .green-theme .nav-menu-words .nav-menu-panel,.green-theme .nav-menu-games .nav-menu-panel { left: auto; }
-    .home-hero { background-image: linear-gradient(90deg, var(--theme-sage) 0%, #eff2e8e6 40%, #eff2e830 100%), linear-gradient(0deg, var(--theme-sage), #eff2e800 28%), url('../images/green/hero.png'); }
     .hero-copy { padding: 40px 24px; }
     .hero-copy h1 { font-size: 44px; }
     .hero-copy > p { max-width: 420px; font-size: 18px; }
@@ -185,7 +180,7 @@ html { scrollbar-gutter: stable; }
     .green-theme .brand-copy strong { font-size: 21px; }
     .green-theme .brand-copy small { font-size: 10px; }
     .home-shell { padding: 0 14px; }
-    .home-hero { min-height: 308px; border-radius: 16px; background-image: linear-gradient(90deg, #eff2e8f5 0%, #eff2e8db 45%, #eff2e850 100%), linear-gradient(0deg, var(--theme-sage) 0%, #eff2e800 48%), url('../images/green/hero.png'); background-size: 100% 100%, 100% 100%, auto 100%; background-position: center, center, right top; }
+    .home-hero { min-height: 308px; border-radius: 16px; }
     .hero-copy { padding: 32px 16px 20px; }
     .hero-copy h1 { font: 650 34px/1.12 var(--theme-heading-font); letter-spacing: -.025em; max-width: 245px; margin-bottom: 12px; }
     .hero-copy > p { font-size: 14px; line-height: 1.5; max-width: 235px; min-height: 36px; margin-bottom: 22px; }

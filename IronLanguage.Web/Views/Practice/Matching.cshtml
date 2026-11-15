@@ -1,6 +1,6 @@
 @{ ViewData["Title"] = "Соотнесение"; }
 <section class="feature-shell matching-page game-shell" id="matching-app">
-    <a class="back-link" href="/">← К заданиям</a>
+    <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Соотнесение", "Соотнесите осетинские слова с русскими переводами. Неверный выбор можно исправить.", "matching", "teal"))
     <div id="matching-status" role="status"></div>
     <div id="matching-list" class="exercise-list"></div>
