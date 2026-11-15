@@ -51,10 +51,10 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("CoverImagePath")
+                    b.Property<string>("CoverDesignJson")
                         .HasColumnType("text");
 
-                    b.Property<string>("CoverDesignJson")
+                    b.Property<string>("CoverImagePath")
                         .HasColumnType("text");
 
                     b.Property<string>("Description")
@@ -65,11 +65,11 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("IllustrationsJson")
+                    b.Property<string>("DraftTranslation")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DraftTranslation")
+                    b.Property<string>("IllustrationsJson")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -84,13 +84,13 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("TranslationReviewed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Version")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.Property<bool>("TranslationReviewed")
-                        .HasColumnType("boolean");
 
                     b.ToTable("Books");
                 });
@@ -115,14 +115,14 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Translation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BookId", "Number")
                         .IsUnique();
-
-                    b.Property<string>("Translation")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.ToTable("Chapters");
                 });
@@ -559,6 +559,34 @@ namespace IronLanguage.Db.Migrations
                     b.HasIndex("Published", "Archived");
 
                     b.ToTable("Grammars");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.Grouping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Archived")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Published")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ScriptJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Groupings");
                 });
 
             modelBuilder.Entity("IronLanguage.Db.Matching", b =>

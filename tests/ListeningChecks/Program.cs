@@ -189,6 +189,8 @@ sealed class MemoryCatalog : ICatalogRepository
     public Task<Matching?> Matching(Guid id, CancellationToken ct = default) => Task.FromResult<Matching?>(null);
     public Task<List<PictureMatching>> Pictures(CancellationToken ct = default) => Task.FromResult(new List<PictureMatching>());
     public Task<PictureMatching?> Picture(Guid id, CancellationToken ct = default) => Task.FromResult<PictureMatching?>(null);
+    public Task<List<Grouping>> Groupings(CancellationToken ct = default) => Task.FromResult(new List<Grouping>());
+    public Task<Grouping?> Grouping(Guid id, CancellationToken ct = default) => Task.FromResult<Grouping?>(null);
     public Task<List<Exercise>> DraftExercises(CancellationToken ct = default) => Task.FromResult(ExercisesList.Where(x => !x.Published).ToList());
     public Task<List<Book>> DraftBooks(CancellationToken ct = default) => Task.FromResult(new List<Book>());
     public Task<List<WordEntry>> DraftWords(CancellationToken ct = default) => Task.FromResult(new List<WordEntry>());

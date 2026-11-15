@@ -11,7 +11,7 @@ namespace IronLanguage.Web.Controllers;
 public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "grammar", "book", "dialogue", "matching", "picture"];
+    private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "grammar", "book", "dialogue", "matching", "picture", "grouping"];
 
     [HttpGet("new/{kind}")]
     public IActionResult New(string kind) => Kinds.Contains(kind) ? View("Form", new EditorFormModel { Kind = kind }) : NotFound();
@@ -148,6 +148,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             Matching = kind == "matching" ? JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions) : null,
             Picture = kind == "picture" ? JsonSerializer.Deserialize<PictureMaterial>(payload, JsonOptions) : null,
             Grammar = kind == "grammar" ? JsonSerializer.Deserialize<GrammarMaterial>(payload, JsonOptions) : null,
+            Grouping = kind == "grouping" ? JsonSerializer.Deserialize<GroupingMaterial>(payload, JsonOptions) : null,
             History = await editor.History(kind, id, ct), Words = words
         };
     }
@@ -164,6 +165,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.MatchingTitle ??= ""; model.PairsText ??= "";
         model.PictureTitle ??= ""; model.PicturePath ??= ""; model.PictureWord ??= ""; model.PictureMode ??= "";
         model.PictureDistractor1 ??= ""; model.PictureDistractor2 ??= "";
+        model.GroupingTitle ??= ""; model.GroupingGroupsText ??= ""; model.GroupingWordsText ??= "";
         var kind = model.Kind;
         CleanOssetianText(kind, model);
         var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
@@ -370,6 +372,19 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             if (material is not null && ModelState.IsValid)
                 payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
         }
+        else if (kind == "grouping")
+        {
+            var wordIds = new List<Guid>();
+            foreach (var value in model.WordIdsCsv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!Guid.TryParse(value, out var id) || !publishedWords.Contains(id)) ModelState.AddModelError(nameof(model.WordIdsCsv), "Выберите опубликованные слова из списка.");
+                else wordIds.Add(id);
+            }
+            var (material, errors) = GroupingScript.Parse(model.GroupingTitle, model.GroupingGroupsText, model.GroupingWordsText);
+            foreach (var error in errors) ModelState.AddModelError("", error);
+            if (material is not null && ModelState.IsValid)
+                payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
+        }
         else if (kind == "grammar")
         {
             var wordIds = new List<Guid>();
@@ -423,6 +438,12 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             model.PictureWord = OssetianText.FixAe(model.PictureWord);
             model.PictureDistractor1 = OssetianText.FixAe(model.PictureDistractor1);
             model.PictureDistractor2 = OssetianText.FixAe(model.PictureDistractor2);
+        }
+        else if (kind == "grouping")
+        {
+            model.GroupingTitle = OssetianText.FixAe(model.GroupingTitle);
+            model.GroupingGroupsText = OssetianText.FixAe(model.GroupingGroupsText);
+            model.GroupingWordsText = OssetianText.FixAe(model.GroupingWordsText);
         }
         else if (kind == "grammar")
         {
@@ -503,6 +524,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         "matching" => (JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         "picture" => (JsonSerializer.Deserialize<PictureMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         "grammar" => (JsonSerializer.Deserialize<GrammarMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
+        "grouping" => (JsonSerializer.Deserialize<GroupingMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         _ => true
     };
 
