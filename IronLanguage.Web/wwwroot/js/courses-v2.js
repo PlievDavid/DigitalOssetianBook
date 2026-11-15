@@ -55,90 +55,18 @@
     location.href = `/courses/sessions/${session.id}${fromStart ? '?start=1' : ''}`;
   }
   const courseLevels = ['', 'Начальный', 'Средний', 'Продвинутый'];
-  function levelFilter(level, onChange, hideLabel = false) {
-    const label = node('span', 'Уровень');
-    label.id = 'cv-level-label';
-    label.hidden = hideLabel;
-    const value = node('span');
-    value.id = 'cv-level-value';
-    const menu = node('div', null, 'cv-level-menu');
-    menu.id = 'cv-level-menu';
-    menu.popover = 'auto';
-    menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-labelledby', label.id);
-    const trigger = button(null, () => {
-      if (menu.matches(':popover-open')) menu.hidePopover();
-      else open();
-    }, 'cv-level-trigger');
-    trigger.setAttribute('aria-labelledby', label.id + ' ' + value.id);
-    trigger.setAttribute('aria-haspopup', 'menu');
-    trigger.setAttribute('aria-controls', menu.id);
-    trigger.setAttribute('aria-expanded', 'false');
-    trigger.append(value, icon('m6 9 6 6 6-6'));
-    const items = courseLevels.map(option => {
-      const item = button(null, () => {
-        update(option);
-        menu.hidePopover();
-        trigger.focus();
-        onChange(option);
-      }, 'cv-level-option');
-      item.append(node('span', option || 'Все уровни'), icon('m5 12 4 4L19 6'));
-      item.setAttribute('role', 'menuitemradio');
-      item.tabIndex = -1;
-      return item;
-    });
-    menu.append(...items);
-    function update(option) {
-      level = option;
-      value.textContent = option || 'Все уровни';
-      items.forEach((item, index) => item.setAttribute('aria-checked', String(courseLevels[index] === option)));
+  function levelFilter(level, onChange) {
+    const select = node('select', null, 'cv-level-select');
+    select.setAttribute('aria-label', 'Уровень курса');
+    for (const value of courseLevels) {
+      const option = node('option', value || 'Все уровни');
+      option.value = value;
+      select.append(option);
     }
-    function position() {
-      const rect = trigger.getBoundingClientRect();
-      const below = innerHeight - rect.bottom - 16;
-      const above = rect.top - 16;
-      const flip = below < menu.scrollHeight && above > below;
-      menu.style.width = rect.width + 'px';
-      menu.style.maxHeight = Math.max(0, flip ? above : below) + 'px';
-      menu.style.left = rect.left + 'px';
-      menu.style.top = (flip ? rect.top - menu.offsetHeight - 8 : rect.bottom + 8) + 'px';
-      menu.classList.toggle('is-above', flip);
-    }
-    function open(index = courseLevels.indexOf(level)) {
-      menu.showPopover({ source: trigger });
-      position();
-      trigger.setAttribute('aria-expanded', 'true');
-      items[index].focus();
-    }
-    menu.addEventListener('toggle', event => {
-      if (event.newState === 'open') {
-        window.addEventListener('resize', position);
-        window.addEventListener('scroll', position);
-      } else {
-        window.removeEventListener('resize', position);
-        window.removeEventListener('scroll', position);
-        trigger.setAttribute('aria-expanded', 'false');
-      }
-    });
-    trigger.addEventListener('keydown', event => {
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-      event.preventDefault();
-      open(event.key === 'ArrowUp' ? items.length - 1 : 0);
-    });
-    menu.addEventListener('keydown', event => {
-      const index = items.indexOf(document.activeElement);
-      const next = { ArrowDown: (index + 1) % items.length, ArrowUp: (index + items.length - 1) % items.length, Home: 0, End: items.length - 1 }[event.key];
-      if (typeof next === 'number') {
-        event.preventDefault();
-        items[next].focus();
-      } else if (event.key === 'Escape' || event.key === 'Tab') {
-        if (event.key === 'Escape') event.preventDefault();
-        menu.hidePopover();
-        trigger.focus();
-      }
-    });
-    update(level);
-    return append(node('div', null, 'cv-field cv-level-filter'), label, trigger, menu);
+    select.value = level;
+    select.addEventListener('change', () => onChange(select.value));
+    const chevron = icon('m6 9 6 6 6-6');
+    return append(node('div', null, 'cv-field cv-level-filter'), select, chevron);
   }
 
   const myCourseIcons = {
@@ -254,22 +182,20 @@
     return row;
   }
   function catalogCard(course, enrolled) {
-    const card = node('article', null, 'cv-card cm-catalog-card');
+    const card = link(null, '/courses/' + course.id, 'cm-catalog-card');
     const state = myCourseState(course);
-    const href = '/courses/' + course.id;
     const meta = append(node('div', null, 'cm-catalog-meta'), course.level ? node('span', course.level, 'cm-catalog-level') : null,
       enrolled ? node('span', { new: 'В моих курсах', active: 'В процессе', done: 'Завершён' }[state], 'cm-status') : node('span', 'Уроков: ' + course.lessons));
-    const title = append(node('h3'), link(course.title, href, 'cm-course-name'));
+    const title = node('h3', course.title);
+    title.id = 'cm-catalog-course-' + course.id;
+    card.setAttribute('aria-labelledby', title.id);
     const description = (course.description || '').trim();
-    const control = enrolled
-      ? button(state === 'done' ? 'Повторить курс' : 'Продолжить', e => run(e.currentTarget, () => continueCourse(course.id, null, state === 'done')), 'cm-catalog-action')
-      : link('Открыть курс', href, 'cm-catalog-action');
-    control.append(icon(myCourseIcons.arrow));
     const body = append(node('div', null, 'cm-catalog-copy'), meta, title,
       description ? node('p', description, 'cm-catalog-description') : null,
-      course.author ? node('span', course.author, 'cm-catalog-author') : null, control);
+      course.author ? node('span', course.author, 'cm-catalog-author') : null);
     card.dataset.state = enrolled ? state : '';
-    return append(card, courseArtwork(course, true), body);
+    return append(card, courseArtwork(course, true), body,
+      append(node('span', null, 'cm-catalog-arrow'), icon(myCourseIcons.arrow)));
   }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
@@ -375,7 +301,7 @@
     }
     searchField.append(searchLabel, append(node('div', null, 'cv-search-control'), input, clear));
     const tools = append(node('div', null, 'cv-tools'), searchField);
-    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }, true));
+    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }));
     const resultsStatus = node('div', null, 'cv-results-status');
     resultsStatus.setAttribute('role', 'status');
     const catalogPanel = authored
