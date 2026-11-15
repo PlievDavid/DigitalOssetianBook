@@ -555,7 +555,10 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await student.screenshot({ path: path.join(out, 'lesson-wide.png'), fullPage: true });
     await page.keyboard.press('Tab'); check(await page.evaluate(() => document.activeElement !== document.body), 'Нет клавиатурного фокуса');
     await page.screenshot({ path: path.join(out, 'catalog-wide.png'), fullPage: true });
-    await page.goto(base + '/editor'); await page.getByRole('heading', { name: 'Что вы хотите добавить?' }).waitFor();
+    await page.goto(base + '/courses/teaching');
+    await page.getByRole('link', { name: 'Материалы упражнений', exact: true }).click();
+    await page.waitForURL(url => url.pathname === '/editor');
+    await page.getByRole('heading', { name: 'Что вы хотите добавить?' }).waitFor();
     check(await page.locator('.editor-choices > a').count() === 10 &&
       await page.locator('.editor-choices a[href="/editor/new/grouping"]').isVisible(), 'При объединении потерялись типы материалов');
     await page.screenshot({ path: path.join(out, 'materials-wide.png'), fullPage: true });
