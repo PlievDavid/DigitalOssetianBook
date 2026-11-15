@@ -2,6 +2,8 @@ using IronLanguage.Db;
 using IronLanguage.Web.Services;
 using IronLanguage.Web.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
 using System.Diagnostics;
 using System.Security.Cryptography;
@@ -64,7 +66,28 @@ try
     var isolated = new NpgsqlConnectionStringBuilder(connection) { SearchPath = schema }.ConnectionString;
     var options = new DbContextOptionsBuilder<AdamDbContext>().UseNpgsql(isolated, o => o.MigrationsHistoryTable("__EFMigrationsHistory", schema)).Options;
     await using var db = new AdamDbContext(options);
-    await db.Database.MigrateAsync();
+    var migrator = db.GetService<IMigrator>();
+    await migrator.MigrateAsync("20261114221728_CoursePracticeSession");
+    var legacyOwner = new UserAccount { Email = "legacy@example.invalid" };
+    db.Users.Add(legacyOwner);
+    await db.SaveChangesAsync();
+    var legacyCourse = new Course { OwnerId = legacyOwner.Id };
+    db.Courses.Add(legacyCourse);
+    await db.SaveChangesAsync();
+    var legacyVersion = new CourseVersion { CourseId = legacyCourse.Id, Number = 1 };
+    db.CourseVersions.Add(legacyVersion);
+    await db.SaveChangesAsync();
+    var linkedPractice = new CoursePracticeRun { UserId = legacyOwner.Id };
+    var orphanPractice = new CoursePracticeRun { UserId = legacyOwner.Id };
+    var legacySession = new CourseLessonSession { UserId = legacyOwner.Id, CourseId = legacyCourse.Id, VersionId = legacyVersion.Id,
+        LessonId = Guid.NewGuid(), AttemptIdsJson = JsonSerializer.Serialize<Guid?[]>([linkedPractice.Id, null]) };
+    db.AddRange(linkedPractice, orphanPractice, legacySession);
+    await db.SaveChangesAsync();
+    await migrator.MigrateAsync();
+    Check(await db.CoursePracticeRuns.AnyAsync(run => run.Id == linkedPractice.Id && run.SessionId == legacySession.Id) &&
+        !await db.CoursePracticeRuns.AnyAsync(run => run.Id == orphanPractice.Id), "Миграция потеряла используемую практику или оставила сироту");
+    Check(await new EfCourseRepository(db).Delete(legacyCourse.Id, legacyOwner.Id, 0, CancellationToken.None) == true,
+        "Не удалось удалить учебные данные после проверки миграции");
     Check(!db.Database.HasPendingModelChanges(), "Модель расходится с миграцией");
     var owner = new UserAccount { Email = "owner@example.invalid" };
     var other = new UserAccount { Email = "other@example.invalid" };
@@ -150,6 +173,17 @@ try
     var audioBlock = new CourseDraftBlock(Guid.NewGuid(), "listening", "Аудирование", "") { MaterialId = audioExercise.Id };
     var audioLesson = new CourseDraftLesson(Guid.NewGuid(), "Урок", [audioBlock]);
     var materialAccess = new EfCourseMaterialRepository(db);
+    var damagedGrammar = new Grammar { Title = "Повреждённая форма", ScriptJson = "{", Published = true };
+    var damagedPairs = new Matching { Title = "Повреждённые пары", ScriptJson = "{\"pairs\":[null]}", Published = true };
+    db.AddRange(damagedGrammar, damagedPairs);
+    db.CourseMaterialAccesses.AddRange(
+        new CourseMaterialAccess { Kind = "grammar", MaterialId = damagedGrammar.Id, OwnerId = owner.Id },
+        new CourseMaterialAccess { Kind = "matching", MaterialId = damagedPairs.Id, OwnerId = owner.Id });
+    await db.SaveChangesAsync(ct);
+    var materialPage = await materialAccess.Search(owner.Id, null, null, true, 1, ct);
+    Check(materialPage.Items.Any(item => item.Id == audioExercise.Id) &&
+        materialPage.Items.All(item => item.Id != damagedGrammar.Id && item.Id != damagedPairs.Id),
+        "Повреждённый материал нарушил выдачу библиотеки");
     Check(await catalog.Exercise(audioExercise.Id, ct: ct) is null, "Личное упражнение доступно в общем каталоге");
     Check(!await materialAccess.CanReadMedia(audioExercise.AudioPath!, null, ct), "Аудио личного материала выдаётся напрямую");
     Check(await materialAccess.CanReadMedia(audioExercise.AudioPath!, owner.Id, ct), "Автор не может прослушать свой материал");

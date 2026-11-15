@@ -17,13 +17,14 @@
         <a href="/editor/new/matching"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "matching")</span><strong>Соотнесение</strong><small>Пары «слово — его пара» и отвлекающие слова</small></a>
         <a href="/editor/new/picture"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "picture")</span><strong>Картинка и слово</strong><small>Картинки и осетинские слова к ним</small></a>
         <a href="/editor/new/grammar"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "grammar")</span><strong>Форма слова</strong><small>Грамматика в контексте предложения</small></a>
+        <a href="/editor/new/grouping"><span aria-hidden="true">@await Html.PartialAsync("_NavIcon", "grouping")</span><strong>Разбить слова на группы</strong><small>Слова и группы для перетаскивания</small></a>
     </div>
 
     <div class="editor-library-header"><h2>Библиотека материалов</h2>
         <div class="editor-tabs" role="tablist" aria-label="Состояние материала"><button type="button" class="is-active" data-editor-tab="drafts" role="tab" aria-selected="true">Черновики</button><button type="button" data-editor-tab="published" role="tab" aria-selected="false">Опубликовано</button><button type="button" data-editor-tab="archived" role="tab" aria-selected="false">Архив</button></div>
         <div class="editor-library-controls">
             <label class="editor-filter"><span>Поиск</span><input id="editor-search" type="search" placeholder="Название материала" /></label>
-            <label class="editor-filter"><span>Тип</span><select id="editor-kind-filter"><option value="all">Все материалы</option><option value="word">Слова</option><option value="audio">Аудиопазлы</option><option value="translation">Собери фразу</option><option value="listening">Аудирование</option><option value="book">Произведения</option><option value="dialogue">Диалоги</option><option value="matching">Соотнесения</option><option value="picture">Картинки и слова</option><option value="grammar">Формы слова</option></select></label>
+            <label class="editor-filter"><span>Тип</span><select id="editor-kind-filter" aria-label="Тип материала"><option value="all">Все материалы</option><option value="word">Слова</option><option value="audio">Аудиопазлы</option><option value="translation">Собери фразу</option><option value="listening">Аудирование</option><option value="book">Произведения</option><option value="dialogue">Диалоги</option><option value="matching">Соотнесения</option><option value="picture">Картинки и слова</option><option value="grammar">Формы слова</option><option value="grouping">Разбить слова на группы</option></select></label>
             <label class="editor-filter"><span>Сортировка</span><select id="editor-sort"><option value="original">По умолчанию</option><option value="title-asc">Название: А–Я</option><option value="title-desc">Название: Я–А</option><option value="kind">По типу</option></select></label>
         </div>
     </div>
@@ -56,5 +57,5 @@
 @section Styles { <link rel="stylesheet" href="~/css/editor-library-refined.css" asp-append-version="true" /> }
 @section Scripts { <script src="~/js/editor.js" asp-append-version="true" defer></script> }
 @functions {
-    private static string TypeName(string kind) => kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "book" => "Произведение", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", _ => kind };
+    private static string TypeName(string kind) => kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "book" => "Произведение", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", "grouping" => "Разбить слова на группы", _ => kind };
 }

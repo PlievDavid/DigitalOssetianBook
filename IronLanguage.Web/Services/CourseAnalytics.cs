@@ -4,17 +4,20 @@ namespace IronLanguage.Web.Services;
 
 public sealed class CourseAnalytics(ICourseRepository courses, ICourseLearningRepository learning)
 {
+    private sealed record StudentSummary(Guid Id, string Name, DateTimeOffset StartedAt, DateTimeOffset LastActive,
+        DateTimeOffset? FinishedAt, CourseLearningService.CourseCounts Counts, string Status);
+
     public async Task<object?> Report(Guid course, Guid owner, Guid? learner, int days, int page, CancellationToken ct)
     {
         if (await courses.Owned(course, owner, ct) is not { PublishedVersionId: Guid versionId } ||
             await learning.Snapshot(versionId, ct) is not { } version) return null;
 
-        var enrollments = await learning.Learners(course, ct);
+        var enrollments = (await learning.Learners(course, ct)).ToDictionary(e => e.Id);
+        if (learner is Guid requested && !enrollments.ContainsKey(requested)) return null;
         var cutoff = new DateTimeOffset(DateTimeOffset.UtcNow.UtcDateTime.Date.AddDays(1 - days), TimeSpan.Zero);
-        var history = await learning.History([course], learner, ct);
-        var versions = (await learning.Snapshots(history.Select(s => s.VersionId).Append(versionId).Distinct().ToArray(), ct)).ToDictionary(x => x.Id);
+        var versionIds = await learning.ReportVersionIds(course, learner, ct);
+        var versions = (await learning.Snapshots(versionIds.Append(versionId).Distinct().ToArray(), ct)).ToDictionary(x => x.Id);
         var events = await learning.Activity(course, learner, cutoff, ct);
-        var byUser = history.ToLookup(s => s.UserId);
         var byActivity = events.ToLookup(a => a.UserId);
         var title = CourseLearningService.Read(version).Title;
         var program = CourseLearningService.Read(version).Modules;
@@ -26,23 +29,35 @@ public sealed class CourseAnalytics(ICourseRepository courses, ICourseLearningRe
             .Select(b => b.Id).ToHashSet());
         var comparable = events.Where(a => comparableBlocks.TryGetValue(a.VersionId, out var blocks) && blocks.Contains(a.BlockId)).ToArray();
 
-        var summaries = enrollments.Where(e => byUser[e.Id].Any()).Select(e =>
+        StudentSummary Summarize(CourseLearner enrollment, IReadOnlyList<CourseLessonSession> sessions)
         {
-            var sessions = byUser[e.Id];
             var credits = CourseLearningService.CalculateCredits(version, sessions, versions);
             var counts = CourseLearningService.Count(version, credits);
             var finishedAt = CourseLearningService.FirstCompletion(sessions, versions);
-            var lastActive = byActivity[e.Id].Select(a => a.At).Concat(sessions.Select(s => s.CompletedAt ?? s.StartedAt)).Max();
+            var lastActive = byActivity[enrollment.Id].Select(a => a.At).Concat(sessions.Select(s => s.CompletedAt ?? s.StartedAt)).Max();
             var startedAt = sessions.Min(s => s.StartedAt);
-            return new { e.Id, e.Name, startedAt, lastActive, finishedAt, counts,
-                status = counts.Percent == 100 ? "Завершён" : finishedAt is not null ? "Есть новые блоки" : "В процессе" };
-        }).OrderByDescending(s => s.lastActive).ThenBy(s => s.Id).ToArray();
+            return new(enrollment.Id, enrollment.Name, startedAt, lastActive, finishedAt, counts,
+                counts.Percent == 100 ? "Завершён" : finishedAt is not null ? "Есть новые блоки" : "В процессе");
+        }
+
+        var students = new List<StudentSummary>();
+        var sessions = new List<CourseLessonSession>();
+        await foreach (var session in learning.ReportHistory(course, learner).WithCancellation(ct))
+        {
+            if (!enrollments.ContainsKey(session.UserId)) continue;
+            if (sessions.Count > 0 && sessions[0].UserId != session.UserId)
+            {
+                students.Add(Summarize(enrollments[sessions[0].UserId], sessions));
+                sessions.Clear();
+            }
+            sessions.Add(session);
+        }
 
         if (learner is Guid learnerId)
         {
-            var student = summaries.FirstOrDefault(x => x.Id == learnerId);
-            if (student is null) return null;
-            var credits = CourseLearningService.CalculateCredits(version, byUser[learnerId], versions);
+            if (sessions.Count == 0) return null;
+            var student = Summarize(enrollments[learnerId], sessions);
+            var credits = CourseLearningService.CalculateCredits(version, sessions, versions);
             var ownEvents = comparable.Where(e => e.UserId == learnerId).ToLookup(e => e.BlockId);
             return new { title, student, modules = program.Select(module => new { module.Title,
                 lessons = module.Lessons.Select(lesson => new { lesson.Title, blocks = lesson.Blocks.Select(block =>
@@ -54,15 +69,17 @@ public sealed class CourseAnalytics(ICourseRepository courses, ICourseLearningRe
                 }) }) }) };
         }
 
+        if (sessions.Count > 0) students.Add(Summarize(enrollments[sessions[0].UserId], sessions));
+        var summaries = students.OrderByDescending(s => s.LastActive).ThenBy(s => s.Id).ToArray();
         var period = comparable.Where(a => a.At >= cutoff).ToLookup(a => a.BlockId);
         var firstAnswers = comparable.Where(a => a.Correct.HasValue).GroupBy(a => (a.UserId, a.BlockId))
             .Select(g => g.OrderBy(a => a.At).First()).Where(a => a.At >= cutoff).ToLookup(a => a.BlockId);
         return new
         {
-            title, days, started = summaries.Length, finished = summaries.Count(s => s.counts.Percent == 100),
-            averageProgress = summaries.Length == 0 ? 0 : (int)summaries.Average(s => s.counts.Percent),
-            startedInPeriod = summaries.Count(s => s.startedAt >= cutoff),
-            finishedInPeriod = summaries.Count(s => s.finishedAt >= cutoff),
+            title, days, started = summaries.Length, finished = summaries.Count(s => s.Counts.Percent == 100),
+            averageProgress = summaries.Length == 0 ? 0 : (int)summaries.Average(s => s.Counts.Percent),
+            startedInPeriod = summaries.Count(s => s.StartedAt >= cutoff),
+            finishedInPeriod = summaries.Count(s => s.FinishedAt >= cutoff),
             students = summaries.Skip((page - 1) * 20).Take(20), hasMore = page * 20 < summaries.Length,
             blocks = currentBlocks.Select(block =>
             {

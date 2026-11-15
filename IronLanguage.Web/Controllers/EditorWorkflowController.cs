@@ -12,7 +12,7 @@ namespace IronLanguage.Web.Controllers;
 public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment, ICurriculumRepository curriculum, ICourseMaterialRepository materials) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "grammar", "book", "dialogue", "matching", "picture"];
+    private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "grammar", "book", "dialogue", "matching", "picture", "grouping"];
 
     public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -40,10 +40,10 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpPost("published/{kind}/{id:guid}/access"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> ConfigureAccess(string kind, Guid id, bool inCatalog, bool shared, CancellationToken ct)
+    public async Task<IActionResult> ConfigureAccess(string kind, Guid id, bool inCatalog, bool shared, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
         if (!await materials.Configure(User.UserId()!.Value, kind, id, inCatalog, shared, ct)) return NotFound();
-        return Redirect($"/editor/{kind}/{id}/preview");
+        return Redirect($"/editor/{kind}/{id}/preview{CourseEditorReturn.Query(courseId, lessonId)}");
     }
 
     [HttpGet("new/{kind}")]
@@ -92,11 +92,11 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpPost("published/{kind}/{id:guid}/revise"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> Revise(string kind, Guid id, CancellationToken ct)
+    public async Task<IActionResult> Revise(string kind, Guid id, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
         if (!Kinds.Contains(kind)) return NotFound();
         var revisionId = await editor.StartRevision(kind, id, User.UserId()!.Value, ct);
-        return revisionId is null ? NotFound() : Redirect($"/editor/revisions/{revisionId}/edit");
+        return revisionId is null ? NotFound() : Redirect($"/editor/revisions/{revisionId}/edit{CourseEditorReturn.Query(courseId, lessonId)}");
     }
 
     [HttpPost("draft/{kind}/{id:guid}/delete"), ValidateAntiForgeryToken]
@@ -129,15 +129,17 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         await editor.SetArchived(kind, id, false, ct) ? Redirect("/editor") : NotFound();
 
     [HttpGet("revisions/{id:guid}/edit")]
-    public async Task<IActionResult> EditRevision(Guid id, CancellationToken ct)
+    public async Task<IActionResult> EditRevision(Guid id, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
+        SetReturn(courseId, lessonId);
         var revision = await editor.Revision(id, ct);
         return revision is null || revision.Published ? NotFound() : View("Form", EditorFormModel.FromPayload(revision.Kind, revision.PayloadJson, revision.ContentId, id));
     }
 
     [HttpPost("revisions/{id:guid}/edit"), ValidateAntiForgeryToken, RequestSizeLimit(12_000_000)]
-    public async Task<IActionResult> EditRevision(Guid id, EditorFormModel model, CancellationToken ct)
+    public async Task<IActionResult> EditRevision(Guid id, EditorFormModel model, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
+        SetReturn(courseId, lessonId);
         var revision = await editor.Revision(id, ct);
         if (revision is null || revision.Published) return NotFound();
         model.Kind = revision.Kind; model.ContentId = revision.ContentId; model.RevisionId = id;
@@ -148,7 +150,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         var payload = await BuildPayload(model, audio, cover, ct);
         if (payload is null) return View("Form", model);
         if (!await editor.UpdateRevision(id, payload, ct)) return Conflict();
-        return Redirect($"/editor/revisions/{id}/preview");
+        return Redirect($"/editor/revisions/{id}/preview{CourseEditorReturn.Query(courseId, lessonId)}");
     }
 
     [HttpGet("{kind}/{id:guid}/preview")]
@@ -160,8 +162,9 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpGet("revisions/{id:guid}/preview")]
-    public async Task<IActionResult> PreviewRevision(Guid id, CancellationToken ct)
+    public async Task<IActionResult> PreviewRevision(Guid id, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
+        SetReturn(courseId, lessonId);
         var revision = await editor.Revision(id, ct);
         return revision is null ? NotFound() : View("Preview", await PreviewModel(revision.Kind, revision.ContentId, id, revision.Version, revision.Published, revision.Published, revision.PayloadJson, ct));
     }
@@ -174,8 +177,9 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     }
 
     [HttpPost("revisions/{id:guid}/publish"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> PublishRevision(Guid id, bool confirmReviewed, CancellationToken ct)
+    public async Task<IActionResult> PublishRevision(Guid id, bool confirmReviewed, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
+        SetReturn(courseId, lessonId);
         var revision = await editor.Revision(id, ct);
         if (revision is null || revision.Published) return NotFound();
         var model = await PreviewModel(revision.Kind, revision.ContentId, id, revision.Version, false, false, revision.PayloadJson, ct);
@@ -186,7 +190,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         { model.Error = "Сначала опубликуйте связанные слова."; return View("Preview", model); }
         if (!await editor.PublishRevision(id))
         { model.Error = "Материал уже изменился. Откройте его заново перед публикацией."; return View("Preview", model); }
-        return Redirect($"/editor/{revision.Kind}/{revision.ContentId}/preview");
+        return Redirect($"/editor/{revision.Kind}/{revision.ContentId}/preview{CourseEditorReturn.Query(courseId, lessonId)}");
     }
 
     private void SetReturn(Guid? courseId, Guid? lessonId)
@@ -209,6 +213,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             Matching = kind == "matching" ? JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions) : null,
             Picture = kind == "picture" ? JsonSerializer.Deserialize<PictureMaterial>(payload, JsonOptions) : null,
             Grammar = kind == "grammar" ? JsonSerializer.Deserialize<GrammarMaterial>(payload, JsonOptions) : null,
+            Grouping = kind == "grouping" ? JsonSerializer.Deserialize<GroupingMaterial>(payload, JsonOptions) : null,
             History = await editor.History(kind, id, ct), Words = words
         };
     }
@@ -225,6 +230,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         model.MatchingTitle ??= ""; model.PairsText ??= "";
         model.PictureTitle ??= ""; model.PicturePath ??= ""; model.PictureWord ??= ""; model.PictureMode ??= "";
         model.PictureDistractor1 ??= ""; model.PictureDistractor2 ??= "";
+        model.GroupingTitle ??= ""; model.GroupingGroupsText ??= ""; model.GroupingWordsText ??= "";
         var kind = model.Kind;
         CleanOssetianText(kind, model);
         var publishedWords = (await catalog.Words(ct)).Select(x => x.Id).ToHashSet();
@@ -431,6 +437,19 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             if (material is not null && ModelState.IsValid)
                 payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
         }
+        else if (kind == "grouping")
+        {
+            var wordIds = new List<Guid>();
+            foreach (var value in model.WordIdsCsv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!Guid.TryParse(value, out var id) || !publishedWords.Contains(id)) ModelState.AddModelError(nameof(model.WordIdsCsv), "Выберите опубликованные слова из списка.");
+                else wordIds.Add(id);
+            }
+            var (material, errors) = GroupingScript.Parse(model.GroupingTitle, model.GroupingGroupsText, model.GroupingWordsText);
+            foreach (var error in errors) ModelState.AddModelError("", error);
+            if (material is not null && ModelState.IsValid)
+                payload = JsonSerializer.Serialize(material with { WordIds = wordIds.Distinct().ToArray() }, JsonOptions);
+        }
         else if (kind == "grammar")
         {
             var wordIds = new List<Guid>();
@@ -484,6 +503,12 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
             model.PictureWord = OssetianText.FixAe(model.PictureWord);
             model.PictureDistractor1 = OssetianText.FixAe(model.PictureDistractor1);
             model.PictureDistractor2 = OssetianText.FixAe(model.PictureDistractor2);
+        }
+        else if (kind == "grouping")
+        {
+            model.GroupingTitle = OssetianText.FixAe(model.GroupingTitle);
+            model.GroupingGroupsText = OssetianText.FixAe(model.GroupingGroupsText);
+            model.GroupingWordsText = OssetianText.FixAe(model.GroupingWordsText);
         }
         else if (kind == "grammar")
         {
@@ -564,6 +589,7 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         "matching" => (JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         "picture" => (JsonSerializer.Deserialize<PictureMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         "grammar" => (JsonSerializer.Deserialize<GrammarMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
+        "grouping" => (JsonSerializer.Deserialize<GroupingMaterial>(payload, JsonOptions)?.WordIds ?? []).All(words.Contains),
         _ => true
     };
 

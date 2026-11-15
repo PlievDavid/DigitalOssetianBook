@@ -23,6 +23,7 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
     public DbSet<Matching> Matchings => Set<Matching>();
     public DbSet<PictureMatching> PictureMatchings => Set<PictureMatching>();
     public DbSet<Grammar> Grammars => Set<Grammar>();
+    public DbSet<Grouping> Groupings => Set<Grouping>();
     public DbSet<DialogueSession> DialogueSessions => Set<DialogueSession>();
     public DbSet<DialogueReward> DialogueRewards => Set<DialogueReward>();
     public DbSet<CrosswordSolvedWord> CrosswordSolvedWords => Set<CrosswordSolvedWord>();

@@ -417,7 +417,10 @@ window.AdamCourseStudio = async function (ui) {
           card.append(node('p', material?.title ?? (b.materialId ? 'Сведения об упражнении недоступны' : 'Выберите упражнение'), 'cs-block-body'),
             material ? node('p', material.author, 'cs-help') : null,
             actions(action(b.materialId ? 'Заменить' : 'Выбрать упражнение', () => chooseMaterial(b.kind, item => mutate(() => { b.materialId = item.id; }))),
-              material?.own ? link('Открыть оригинал', `/editor/${b.kind}/${b.materialId}/preview`, 'cs-text-link') : null));
+              material?.own ? action('Открыть оригинал', e => run(e.currentTarget, async () => {
+                await save();
+                location.href = `/editor/${b.kind}/${b.materialId}/preview?` + new URLSearchParams({ courseId: id, lessonId: lesson.id });
+              }), null, 'cs-action') : null));
         }
         card.append(done);
       } else {

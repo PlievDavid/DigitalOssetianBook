@@ -900,6 +900,34 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("Grammars");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.Grouping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Archived")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Published")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ScriptJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Groupings");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.LessonRun", b =>
                 {
                     b.Property<Guid>("Id")

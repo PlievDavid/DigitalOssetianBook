@@ -80,33 +80,63 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
                           && (own ? access.OwnerId == owner : access.OwnerId != owner && access.Shared)
                       select new { material.Id, material.Kind, material.Title, material.ScriptJson, material.AudioPath, material.Fragment,
                           Author = author.PublicName ?? "Преподаватель", Own = access.OwnerId == owner };
-        if (!string.IsNullOrWhiteSpace(query))
+        var term = query?.Trim();
+        if (!string.IsNullOrEmpty(term))
         {
-            var pattern = "%" + query.Trim().Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
-            choices = choices.Where(x => EF.Functions.ILike(x.Title, pattern) || x.Fragment != null && EF.Functions.ILike(x.Fragment, pattern));
+            var pattern = "%" + term.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
+            choices = choices.Where(x => x.Kind == "grammar" || EF.Functions.ILike(x.Title, pattern) ||
+                x.Fragment != null && EF.Functions.ILike(x.Fragment, pattern));
         }
-        var rows = await choices.OrderBy(x => x.Title).ThenBy(x => x.Id).Skip((page - 1) * size).Take(size + 1).ToArrayAsync(ct);
-        return new(rows.Take(size).Select(row =>
+        var items = new List<CourseMaterialChoice>(size);
+        var skip = (page - 1) * size;
+        await foreach (var row in choices.OrderBy(x => x.Title).ThenBy(x => x.Id).AsAsyncEnumerable().WithCancellation(ct))
         {
-            using var script = row.ScriptJson is null ? null : System.Text.Json.JsonDocument.Parse(row.ScriptJson);
-            string? Read(string key) => script is not null && script.RootElement.TryGetProperty(key, out var field)
-                && field.ValueKind == System.Text.Json.JsonValueKind.String ? field.GetString() : null;
-            return new CourseMaterialChoice(row.Id, row.Kind, row.Title, row.Fragment ?? row.Title,
-                row.AudioPath, row.Kind == "picture" ? Read("picturePath") : null, row.Author, row.Own,
-                script is null ? [] : PreviewAnswers(row.Kind, script.RootElement));
-        }).ToArray(), rows.Length > size);
+            var preview = ReadPreview(row.Kind, row.ScriptJson);
+            if (preview is null) continue;
+            var (fragment, image, answers) = preview.Value;
+            if (row.Kind == "grammar" && !string.IsNullOrEmpty(term) &&
+                !row.Title.Contains(term, StringComparison.OrdinalIgnoreCase) &&
+                fragment?.Contains(term, StringComparison.OrdinalIgnoreCase) != true) continue;
+            if (skip > 0) { skip--; continue; }
+            if (items.Count == size) return new(items.ToArray(), true);
+            items.Add(new(row.Id, row.Kind, row.Title, fragment ?? row.Fragment ?? row.Title, row.AudioPath, image, row.Author, row.Own, answers));
+        }
+        return new(items.ToArray(), false);
     }
 
-    private static string[] PreviewAnswers(string kind, JsonElement script) => kind switch
+    private sealed record ExercisePreview(string? Answer, string? Values, int Correct);
+
+    private static (string? Fragment, string? Image, string[] Answers)? ReadPreview(string kind, string? payload)
     {
-        "matching" => script.Deserialize<MatchingMaterial>(Json)!.Pairs.Select(pair => $"{pair.Left} — {pair.Right}").ToArray(),
-        "dialogue" => script.Deserialize<DialogueMaterial>(Json)!.Turns
-            .Where(turn => turn.References.Length > 0)
-            .Select(turn => $"{turn.LineNumber}: {string.Join(" / ", turn.References)}").ToArray(),
-        "picture" => [script.GetProperty("word").GetString()!],
-        "grammar" => [script.GetProperty("correct").GetString()!],
-        _ => script.Deserialize<string[]>()!.Where(answer => !string.IsNullOrWhiteSpace(answer)).Distinct().ToArray()
-    };
+        if (payload is null) return null;
+        try
+        {
+            switch (kind)
+            {
+                case "matching" when JsonSerializer.Deserialize<MatchingMaterial>(payload, Json)?.Pairs is { Length: > 0 } pairs &&
+                    pairs.All(pair => pair is not null && !string.IsNullOrWhiteSpace(pair.Left) && !string.IsNullOrWhiteSpace(pair.Right)):
+                    return (null, null, pairs.Select(pair => $"{pair.Left} — {pair.Right}").ToArray());
+                case "dialogue" when JsonSerializer.Deserialize<DialogueMaterial>(payload, Json)?.Turns is { } turns &&
+                    turns.All(turn => turn?.References is not null):
+                    return (null, null, turns.Where(turn => turn.References.Length > 0)
+                        .Select(turn => $"{turn.LineNumber}: {string.Join(" / ", turn.References)}").ToArray());
+                case "picture" when JsonSerializer.Deserialize<PictureMaterial>(payload, Json) is { Word.Length: > 0, PicturePath.Length: > 0 } picture:
+                    return (null, picture.PicturePath, [picture.Word]);
+                case "grammar" when JsonSerializer.Deserialize<GrammarMaterial>(payload, Json) is { Correct.Length: > 0, Prompt.Length: > 0 } grammar:
+                    return (grammar.Prompt, null, [grammar.Correct]);
+                case "audio" or "translation" or "listening":
+                    if (JsonSerializer.Deserialize<ExercisePreview>(payload, Json) is not { Values: { } values } exercise ||
+                        JsonSerializer.Deserialize<string[]>(values) is not { } options) return null;
+                    if (kind == "listening")
+                        return exercise.Correct >= 0 && exercise.Correct < options.Length && !string.IsNullOrWhiteSpace(options[exercise.Correct])
+                            ? (null, null, [options[exercise.Correct]]) : null;
+                    return !string.IsNullOrWhiteSpace(exercise.Answer)
+                        ? (null, null, options.Prepend(exercise.Answer).Where(answer => !string.IsNullOrWhiteSpace(answer)).Distinct().ToArray()) : null;
+                default: return null;
+            }
+        }
+        catch (JsonException) { return null; }
+    }
 
     public Task<CourseMaterialSummary[]> Selected(Guid owner, Guid[] ids, CancellationToken ct)
     {
@@ -121,8 +151,9 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
 
     private IQueryable<CourseMaterialItem> Inventory() => db.Database.SqlQueryRaw<CourseMaterialItem>("""
         SELECT "Id", "Kind", "RussianPrompt" AS "Title",
-            CASE WHEN "Kind" = 'listening' THEN jsonb_build_array("OptionsJson"::jsonb -> "CorrectOption")::text
-                 ELSE (jsonb_build_array("OssetianAnswer") || "AlternativesJson"::jsonb)::text END AS "ScriptJson",
+            json_build_object('answer', "OssetianAnswer", 'values',
+                CASE WHEN "Kind" = 'listening' THEN "OptionsJson" ELSE "AlternativesJson" END,
+                'correct', "CorrectOption")::text AS "ScriptJson",
             "AudioPath", "RussianPrompt" AS "Fragment"
         FROM "Exercises" WHERE "Published" AND NOT "Archived"
         UNION ALL
@@ -130,7 +161,7 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
         UNION ALL
         SELECT "Id", 'picture', "Title", "ScriptJson", NULL, NULL FROM "PictureMatchings" WHERE "Published" AND NOT "Archived"
         UNION ALL
-        SELECT "Id", 'grammar', "Title", "ScriptJson", NULL, "ScriptJson"::jsonb ->> 'prompt' FROM "Grammars" WHERE "Published" AND NOT "Archived"
+        SELECT "Id", 'grammar', "Title", "ScriptJson", NULL, NULL FROM "Grammars" WHERE "Published" AND NOT "Archived"
         UNION ALL
         SELECT "Id", 'dialogue', "Title", "ScriptJson", NULL, NULL FROM "Dialogues" WHERE "Published" AND NOT "Archived"
         """);

@@ -58,6 +58,8 @@ public interface ICourseLearningRepository
     Task<CourseVersion[]> Mine(Guid user, CancellationToken ct);
     Task<CourseVersion[]> Snapshots(Guid[] versions, CancellationToken ct);
     Task<CourseLessonSession[]> History(Guid[] courseIds, Guid? user, CancellationToken ct);
+    Task<Guid[]> ReportVersionIds(Guid course, Guid? learner, CancellationToken ct);
+    IAsyncEnumerable<CourseLessonSession> ReportHistory(Guid course, Guid? learner);
     Task<CourseLearner[]> Learners(Guid course, CancellationToken ct);
     Task<CourseBlockActivity[]> Activity(Guid course, Guid? learner, DateTimeOffset cutoff, CancellationToken ct);
     Task Record(CourseLessonSession session, Guid block, string key, bool? correct, CancellationToken ct);
@@ -93,6 +95,15 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
     public Task<CourseLessonSession[]> History(Guid[] courseIds, Guid? user, CancellationToken ct) =>
         db.CourseLessonSessions.AsNoTracking().Where(s => courseIds.Contains(s.CourseId) && (user == null || s.UserId == user))
             .OrderByDescending(s => s.StartedAt).ToArrayAsync(ct);
+    public Task<Guid[]> ReportVersionIds(Guid course, Guid? learner, CancellationToken ct) =>
+        ReportSessions(course, learner).Select(s => s.VersionId).Distinct().ToArrayAsync(ct);
+    public IAsyncEnumerable<CourseLessonSession> ReportHistory(Guid course, Guid? learner) =>
+        ReportSessions(course, learner).OrderBy(s => s.UserId).ThenByDescending(s => s.StartedAt)
+            .Select(s => new CourseLessonSession { UserId = s.UserId, VersionId = s.VersionId, LessonId = s.LessonId,
+                Step = s.Step, CompletedSteps = s.CompletedSteps, StartedAt = s.StartedAt, CompletedAt = s.CompletedAt })
+            .AsAsyncEnumerable();
+    private IQueryable<CourseLessonSession> ReportSessions(Guid course, Guid? learner) =>
+        db.CourseLessonSessions.AsNoTracking().Where(s => s.CourseId == course && (learner == null || s.UserId == learner));
     public Task<CourseLearner[]> Learners(Guid course, CancellationToken ct) =>
         (from enrollment in db.CourseEnrollments
          join account in db.Users on enrollment.UserId equals account.Id
