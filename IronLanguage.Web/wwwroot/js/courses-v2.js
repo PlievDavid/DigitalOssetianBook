@@ -193,7 +193,7 @@
     const title = { new: 'Начать курс', active: 'Продолжить', done: 'Повторить курс' }[state];
     const control = button(title, e => run(e.currentTarget, () => continueCourse(course.id, null, state !== 'active')), featured ? 'cm-cta' : 'cm-row-action');
     control.setAttribute('aria-label', title + ': ' + course.title);
-    if (featured) control.append(icon(myCourseIcons.arrow));
+    control.append(icon(myCourseIcons.arrow));
     return control;
   }
   function myCourseOverview(rows) {
@@ -359,8 +359,13 @@
         filter.setAttribute('aria-pressed', String(status === key));
         filters.append(filter);
       }
-      root.append(append(node('section', null, 'cm-library'),
-        append(node('header', null, 'cm-library-heading'), node('h2', 'Ваши курсы'), filters), tools, resultsStatus, grid));
+      const library = node('section', null, 'cm-library');
+      const title = node('h2', 'Ваши курсы');
+      title.id = 'cm-library-title';
+      library.setAttribute('aria-labelledby', title.id);
+      append(library, append(node('header', null, 'cm-library-heading'), title,
+        append(node('div', null, 'cm-library-toolbar'), filters, tools)), resultsStatus, grid);
+      root.append(library);
     } else root.append(tools, resultsStatus, grid);
     if (authored) {
       const library = node('section', null, 'cv-report-panel cv-teaching-panel cv-library');
