@@ -40,10 +40,13 @@ public interface IWordReviewRepository
     Task Start(WordReviewSession session, CancellationToken ct);
     Task<WordReviewSession?> Mutate(Guid userId, Guid id, Guid? wordId, bool reverse, DateTimeOffset now,
         Func<WordReviewSession, WordReviewState?, SavedWord?, ReviewWrite> action, CancellationToken ct);
+    Task<WordReviewSession?> MutateBatch(Guid userId, Guid id, (Guid WordId, bool Reverse)[] words, DateTimeOffset now,
+        Func<WordReviewSession, (WordReviewState? State, SavedWord? Saved)[], bool[]> action, CancellationToken ct);
     Task<DictionarySense[]> TopicSenses(int[] rows, CancellationToken ct);
     Task<Guid[]> SavedSenseIds(Guid userId, CancellationToken ct);
     Task<Guid[]> SavedWordIds(Guid userId, CancellationToken ct);
     Task<Guid> EnsureTopicWord(WordEntry word, CancellationToken ct);
+    Task<int> AddTopicWords(Guid userId, WordEntry[] words, CancellationToken ct);
 }
 
 public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewRepository
@@ -209,7 +212,6 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await Lock(userId, ct);
-        // A matching batch uses this context for several short, independently retryable writes.
         // Reload under the user lock rather than reusing an earlier tracked copy from this request.
         foreach(var entry in db.ChangeTracker.Entries<WordReviewSession>().Where(x=>x.Entity.UserId==userId).ToArray())entry.State=EntityState.Detached;
         foreach(var entry in db.ChangeTracker.Entries<WordReviewState>().Where(x=>x.Entity.UserId==userId&&x.Entity.WordId==wordId&&x.Entity.Reverse==reverse).ToArray())entry.State=EntityState.Detached;
@@ -249,6 +251,42 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
         return session;
     }
 
+    public async Task<WordReviewSession?> MutateBatch(Guid userId, Guid id, (Guid WordId, bool Reverse)[] words, DateTimeOffset now,
+        Func<WordReviewSession, (WordReviewState? State, SavedWord? Saved)[], bool[]> action, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await Lock(userId, ct);
+        foreach (var entry in db.ChangeTracker.Entries<WordReviewSession>().Where(x => x.Entity.UserId == userId).ToArray()) entry.State = EntityState.Detached;
+        foreach (var entry in db.ChangeTracker.Entries<WordReviewState>().Where(x => x.Entity.UserId == userId).ToArray()) entry.State = EntityState.Detached;
+        foreach (var entry in db.ChangeTracker.Entries<SavedWord>().Where(x => x.Entity.UserId == userId).ToArray()) entry.State = EntityState.Detached;
+        var session = await db.WordReviewSessions.SingleOrDefaultAsync(x => x.UserId == userId && x.Id == id, ct);
+        if (session is null) return null;
+        var ids = words.Select(x => x.WordId).Distinct().ToArray();
+        var saved = await db.SavedWords.Include(x => x.Word).Where(x => x.UserId == userId && ids.Contains(x.WordId)).ToArrayAsync(ct);
+        var states = await db.WordReviewStates.Where(x => x.UserId == userId && ids.Contains(x.WordId)).ToArrayAsync(ct);
+        var entries = words.Select(x => (State: states.FirstOrDefault(s => s.WordId == x.WordId && s.Reverse == x.Reverse), Saved: saved.FirstOrDefault(s => s.WordId == x.WordId))).ToArray();
+        for (var i = 0; i < entries.Length; i++)
+            if (entries[i].State is null && entries[i].Saved is not null)
+                entries[i].State = new() { UserId = userId, WordId = words[i].WordId, Reverse = words[i].Reverse };
+        var awards = action(session, entries);
+        foreach (var (state, _) in entries)
+            if (state?.DueAt is not null && db.Entry(state).State == EntityState.Detached) db.WordReviewStates.Add(state);
+        var day = DateOnly.FromDateTime(now.UtcDateTime);
+        var rewarded = (await db.WordReviewRewards.Where(x => x.UserId == userId && x.Day == day).Select(x => x.WordId).ToArrayAsync(ct)).ToHashSet();
+        var points = 0;
+        for (var i = 0; i < words.Length; i++)
+            if (awards[i] && rewarded.Count < 20 && rewarded.Add(words[i].WordId))
+            {
+                db.WordReviewRewards.Add(new() { UserId = userId, WordId = words[i].WordId, Day = day });
+                points++;
+            }
+        session.Points += points;
+        if (awards.Any(x => x)) await DailyActivityWriter.Record(db, userId, day, now, points, ct);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return session;
+    }
+
     public Task<DictionarySense[]> TopicSenses(int[] rows, CancellationToken ct) =>
         db.DictionarySenses.AsNoTracking().Where(x => x.Active && rows.Contains(x.SourceRow)).ToArrayAsync(ct);
 
@@ -258,6 +296,31 @@ public sealed class EfWordReviewRepository(AdamDbContext db) : IWordReviewReposi
 
     public Task<Guid[]> SavedWordIds(Guid userId, CancellationToken ct) =>
         db.SavedWords.Where(x => x.UserId == userId).Select(x => x.WordId).ToArrayAsync(ct);
+
+    public async Task<int> AddTopicWords(Guid userId, WordEntry[] words, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await Lock(userId, ct);
+        var ids = words.Select(x => x.Id).ToArray();
+        var senses = words.Where(x => x.DictionarySenseId != null).Select(x => x.DictionarySenseId!.Value).ToArray();
+        var existing = await db.Words.Where(x => ids.Contains(x.Id) || x.DictionarySenseId != null && senses.Contains(x.DictionarySenseId.Value)).ToArrayAsync(ct);
+        var resolved = new List<WordEntry>();
+        foreach (var word in words)
+        {
+            var found = existing.Concat(resolved).FirstOrDefault(x => x.Id == word.Id || word.DictionarySenseId != null && x.DictionarySenseId == word.DictionarySenseId);
+            if (found is not null && (!found.Published || found.Archived)) throw new ArgumentException("Слово из этой темы сейчас недоступно.");
+            if (found is null) { found = word; db.Words.Add(found); }
+            resolved.Add(found);
+        }
+        var wordIds = resolved.Select(x => x.Id).Distinct().ToArray();
+        var alreadySaved = (await db.SavedWords.Where(x => x.UserId == userId && wordIds.Contains(x.WordId)).Select(x => x.WordId).ToArrayAsync(ct)).ToHashSet();
+        var added = 0;
+        foreach (var wordId in wordIds)
+            if (alreadySaved.Add(wordId)) { db.SavedWords.Add(new SavedWord { UserId = userId, WordId = wordId }); added++; }
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return added;
+    }
 
     public async Task<Guid> EnsureTopicWord(WordEntry word, CancellationToken ct)
     {

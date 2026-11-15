@@ -140,12 +140,8 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
         var session=await repository.Session(userId,ct);
         var now = Now;
         if (session is null || session.StartedAt < now.AddDays(-7)) return null;
-        if (IsImmediatePractice(session, Cards(session)))
-            session = await repository.Mutate(userId, session.Id, null, false, now, (current, _, _) =>
-            {
-                DeferImmediatePractice(current);
-                return false;
-            }, ct);
+        // Present old snapshots in their migrated form without writing during GET.
+        if (IsImmediatePractice(session, Cards(session))) DeferImmediatePractice(session);
         return session is null ? null : View(session);
     }
     private static ReviewCardSnapshot[] PairRounds(ReviewCardSnapshot[] cards)
@@ -173,20 +169,28 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
         if(mode is not("new" or "due" or "mixed"))throw new ArgumentException("Выберите режим занятия.");
         var settings=await repository.Settings(userId,ct);var sources=await repository.Sources(userId,ct);var now=Now;
         var pool=sources.Select(x=>x.Saved.Word).ToArray();var candidates=new List<ReviewCardSnapshot>();
+        var forwardAnswers = pool.Where(x => !string.IsNullOrWhiteSpace(x.Ossetian) && !string.IsNullOrWhiteSpace(x.Russian))
+            .GroupBy(x => WordReviewRules.Normalize(x.Ossetian)).ToDictionary(x => x.Key, x => x.Select(w => w.Russian).Distinct().ToArray());
+        var backwardAnswers = pool.Where(x => !string.IsNullOrWhiteSpace(x.Ossetian) && !string.IsNullOrWhiteSpace(x.Russian))
+            .GroupBy(x => WordReviewRules.Normalize(x.Russian)).ToDictionary(x => x.Key, x => x.Select(w => w.Ossetian).Distinct().ToArray());
+        var forwardOptions = forwardAnswers.Values.SelectMany(x => x).DistinctBy(WordReviewRules.Normalize).ToArray();
+        var backwardOptions = backwardAnswers.Values.SelectMany(x => x).DistinctBy(WordReviewRules.Normalize).ToArray();
         foreach(var source in sources.OrderBy(x=>x.Forward?.DueAt??x.Backward?.DueAt??DateTimeOffset.MaxValue).ThenBy(x=>x.Saved.AddedAt))
         {
             var word=source.Saved.Word;var fresh=(source.Forward is null||source.Forward.Stage<0&&source.Forward.DueAt is null) && (source.Backward is null||source.Backward.Stage<0&&source.Backward.DueAt is null);
             if(mode=="new"&&!fresh || mode=="due"&&fresh)continue;
             ReviewCardSnapshot Practice(bool reverse,WordReviewState? state)
             {
-                var answers=pool.Where(x=>WordReviewRules.Normalize(reverse?x.Russian:x.Ossetian)==WordReviewRules.Normalize(reverse?word.Russian:word.Ossetian))
-                    .Select(x=>reverse?x.Ossetian:x.Russian).Where(x=>!string.IsNullOrWhiteSpace(x)).Distinct().ToArray();
+                var answers=(reverse ? backwardAnswers : forwardAnswers)[WordReviewRules.Normalize(reverse ? word.Russian : word.Ossetian)];
                 var kind=!settings.DirectInput&&(state?.ChoiceDays??0)<3&&(state?.Stage??-1)<3?"choice":"input";string[] options=[];
                 if(kind=="choice")
                 {
                     var correct=answers.Select(WordReviewRules.Normalize).ToHashSet();
-                    var distractors=pool.Select(x=>reverse?x.Ossetian:x.Russian).Where(x=>!string.IsNullOrWhiteSpace(x)&&!correct.Contains(WordReviewRules.Normalize(x)))
-                        .DistinctBy(WordReviewRules.Normalize).OrderBy(_=>Random.Shared.Next()).Take(3).ToArray();
+                    var optionsPool = reverse ? backwardOptions : forwardOptions;
+                    // Randomly probe the precomputed distinct options; stop as soon as three alternatives are found.
+                    var start = Random.Shared.Next(optionsPool.Length);
+                    var distractors = Enumerable.Range(0, optionsPool.Length).Select(i => optionsPool[(start + i) % optionsPool.Length])
+                        .Where(x => !correct.Contains(WordReviewRules.Normalize(x))).Take(3).ToArray();
                     if(distractors.Length==0)kind="input";else options=distractors.Append(answers[0]).OrderBy(_=>Random.Shared.Next()).ToArray();
                 }
                 return new(word.Id,reverse,reverse?word.Russian:word.Ossetian,answers,kind,options,state?.Stage??-1,state?.DueAt,fresh);
@@ -200,40 +204,55 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
                 if(source.Backward?.DueAt is null || source.Backward.DueAt<=now)candidates.Add(backward);
             }
         }
-        var session=new WordReviewSession {UserId=userId,StartedAt=now,Mode=mode,ItemsJson=JsonSerializer.Serialize(PairRounds(WordReviewRules.Order(candidates,mode)),Json)};
+        if (candidates.Count == 0) throw new ArgumentException("Нет слов для выбранного режима занятия.");
+        var session=new WordReviewSession {UserId=userId,StartedAt=now,Mode=mode,ItemsJson=JsonSerializer.Serialize(PairRounds(WordReviewRules.Order(candidates.Take(100),mode)),Json)};
         await repository.Start(session,ct);return View(session);
     }
     private async Task<ReviewSessionView?> Match(Guid userId,Guid id,ReviewCommand input,ReviewCardSnapshot round,DateTimeOffset now,CancellationToken ct)
     {
         var choices=input.PairIndices??[];var pairs=round.Pairs!;
         if(choices.Length!=pairs.Length || choices.Any(x=>x<0||x>=round.Options.Length) || choices.Distinct().Count()!=choices.Length)throw new ArgumentException("Соедините каждое слово с одним переводом.");
-        WordReviewSession? result=null;
-        for(var index=0;index<pairs.Length;index++)
+        var result = await repository.MutateBatch(userId, id, pairs.Select(x => (x.WordId, x.Reverse)).ToArray(), now, (current, entries) =>
         {
-            var pair=pairs[index];var slot=index;
-            result=await repository.Mutate(userId,id,pair.WordId,pair.Reverse,now,(current,state,saved)=>
+            if (input.Index < current.Index) return new bool[pairs.Length];
+            if (input.Index != current.Index || Cards(current).ElementAtOrDefault(input.Index)?.Kind != "pairs")
+                throw new InvalidOperationException("Занятие изменилось. Обновите страницу.");
+            var batch = Batch(current) ?? new ReviewPairBatch(choices, new ReviewAnswerResult?[pairs.Length]);
+            if (!batch.Submission.SequenceEqual(choices)) throw new InvalidOperationException("Эти пары уже отправлены. Продолжите занятие.");
+            // Validate every remaining pair before changing any state.
+            for (var i = 0; i < pairs.Length; i++)
             {
-                if(input.Index<current.Index)return false;
-                if(input.Index!=current.Index || Cards(current).ElementAtOrDefault(input.Index)?.Kind!="pairs")throw new InvalidOperationException("Занятие изменилось. Обновите страницу.");
-                var batch=Batch(current)??new ReviewPairBatch(choices,new ReviewAnswerResult?[pairs.Length]);
-                if(!batch.Submission.SequenceEqual(choices))throw new InvalidOperationException("Эти пары уже отправлены. Продолжите занятие.");
-                if(batch.Results[slot] is not null)return false;
-                if(saved is null||!saved.Word.Published||saved.Word.Archived||state is null)throw new InvalidOperationException("Слово недоступно. Пропустите это задание.");
-                if(state.Stage!=pair.Stage || state.DueAt!=pair.DueAt)throw new InvalidOperationException("Расписание изменилось. Начните новое занятие.");
-                var correct=pair.Answers.Any(x=>WordReviewRules.Normalize(x)==WordReviewRules.Normalize(round.Options[choices[slot]]));
-                WordReviewRules.Apply(state,correct,true,now);saved.ReviewedAt=now;
-                if(correct)current.Correct++;else current.Errors++;
-                batch.Results[slot]=new(correct,pair.Answers[0],state.DueAt!.Value);current.ResultJson=JsonSerializer.Serialize(batch,Json);return correct;
-            },ct);
-            if(result is null)return null;
-        }
-        return View(result!);
+                if (batch.Results[i] is not null) continue;
+                var (state, saved) = entries[i]; var pair = pairs[i];
+                if (saved is null || !saved.Word.Published || saved.Word.Archived || state is null) throw new InvalidOperationException("Слово недоступно. Пропустите это задание.");
+                if (state.Stage != pair.Stage || state.DueAt != pair.DueAt) throw new InvalidOperationException("Расписание изменилось. Начните новое занятие.");
+            }
+            var awards = new bool[pairs.Length];
+            for (var i = 0; i < pairs.Length; i++)
+            {
+                if (batch.Results[i] is not null) continue;
+                var (state, saved) = entries[i]; var pair = pairs[i];
+                var correct = pair.Answers.Any(x => WordReviewRules.Normalize(x) == WordReviewRules.Normalize(round.Options[choices[i]]));
+                WordReviewRules.Apply(state!, correct, true, now); saved!.ReviewedAt = now;
+                if (correct) current.Correct++; else current.Errors++;
+                batch.Results[i] = new(correct, pair.Answers[0], state!.DueAt!.Value); awards[i] = correct;
+            }
+            current.ResultJson = JsonSerializer.Serialize(batch, Json);
+            return awards;
+        }, ct);
+        return result is null ? null : View(result);
     }
     public async Task<ReviewSessionView?> Command(Guid userId,Guid id,ReviewCommand command,CancellationToken ct)
     {
         if(command.Index<0||command.Answer?.Length>1000||command.PairIndices?.Length>4||command.Action is not("reveal" or "answer" or "next" or "skip" or "finish"))throw new ArgumentException("Некорректное действие.");
         var snapshot=await repository.Session(userId,ct);if(snapshot is null||snapshot.Id!=id||snapshot.StartedAt<Now.AddDays(-7))return null;
-        var item=Cards(snapshot).ElementAtOrDefault(command.Index);var now=Now;
+        var now=Now;
+        if (IsImmediatePractice(snapshot, Cards(snapshot)))
+        {
+            snapshot = await repository.Mutate(userId,id,null,false,now,(current,_,_) => { DeferImmediatePractice(current); return false; },ct);
+            if (snapshot is null) return null;
+        }
+        var item=Cards(snapshot).ElementAtOrDefault(command.Index);
         if(item?.Kind=="pairs"&&command.Action=="answer")return await Match(userId,id,command,item,now,ct);
         var session=await repository.Mutate(userId,id,item?.WordId,item?.Reverse??false,now,(current,state,saved)=>
         {

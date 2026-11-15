@@ -45,7 +45,8 @@ var memory = new ReviewMemoryRepository();
 var memoryOwner = Guid.NewGuid();
 var memoryClock = new TestClock(now);
 var memoryService = new WordReviewService(memory, memoryClock);
-var controller = new WordReviewController(memory, memoryService, memoryClock, null!) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+var topicService = new VocabularyTopicService(new VocabularyTopicCatalog(new TestEnvironment()), memory, memoryClock);
+var controller = new WordReviewController(memory, memoryService, memoryClock, topicService) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
 await controller.Available("  ФÆЛǼ   ", 1, default);
 Check(memory.LastAvailableSearch == "фӕлӕ", "Available search normalizes stress, ligature and whitespace");
 var singleWord = new WordEntry { Ossetian = "чиныг", Russian = "книга", Published = true };
@@ -115,7 +116,11 @@ var legacy = new WordReviewSession
     ItemsJson = JsonSerializer.Serialize(new[] { Card(singleWord.Id, false, false) with { Kind = "input", InitialPractice = true } })
 };
 await memory.Start(legacy, default);
+var legacyJson = legacy.ItemsJson;
 Check((await memoryService.Current(shortOwner, default))?.Card is null, "An old snapshot defers its immediate practice when reopened");
+Check(memory.Sessions[shortOwner].ItemsJson == legacyJson, "Reading a legacy session does not persist changes");
+await Fails<ArgumentException>(() => memoryService.Start(shortOwner, "new", default));
+Check(memory.Sessions[shortOwner].Id == legacy.Id, "Empty start does not replace an existing session");
 var matchingMemory=new ReviewMemoryRepository();
 foreach(var entry in memory.Words.TakeLast(4)) {
     matchingMemory.Words.Add(entry);
@@ -129,6 +134,13 @@ var mapping=round.Card!.Pairs!.Select(pair=>{
     var expected=round.Card.Direction.StartsWith("Русский")?word.Ossetian:word.Russian;
     return Array.FindIndex(round.Card.Options,x=>WordReviewRules.Normalize(x)==WordReviewRules.Normalize(expected));
 }).ToArray();
+var staleId = round.Card.Pairs![^1].WordId;
+var staleDirection = round.Card.Direction.StartsWith("Русский");
+var staleState = matchingMemory.States[(memoryOwner,staleId,staleDirection)];
+staleState.Stage++;
+await Fails<InvalidOperationException>(() => matchingService.Command(memoryOwner,round.Id,new(round.Index,"answer",PairIndices:mapping),default));
+Check(matchingMemory.Rewards.Count == 0 && matchingMemory.Sessions[memoryOwner].Correct == 0, "Stale pair rejects the whole batch without awards");
+staleState.Stage--;
 round=(await matchingService.Command(memoryOwner,round.Id,new(round.Index,"answer",PairIndices:mapping),default))!;
 Check(round.Result?.Correct==true && round.Points==mapping.Length,"Matching checks and awards each word through review schedule");
 var retry=(await matchingService.Command(memoryOwner,round.Id,new(round.Index,"answer",PairIndices:mapping),default))!;
@@ -264,3 +276,13 @@ try {
     await db.Words.Where(x => cleanupWords.Contains(x.Id) && !db.SavedWords.Any(saved => saved.WordId == x.Id)).ExecuteDeleteAsync();
 }
 sealed class TestClock(DateTimeOffset now) : TimeProvider { public DateTimeOffset Now = now; public override DateTimeOffset GetUtcNow() => Now; }
+
+sealed class TestEnvironment : Microsoft.AspNetCore.Hosting.IWebHostEnvironment
+{
+    public string ApplicationName { get; set; } = "WordReviewChecks";
+    public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = new Microsoft.Extensions.FileProviders.NullFileProvider();
+    public string WebRootPath { get; set; } = "";
+    public string EnvironmentName { get; set; } = "Development";
+    public string ContentRootPath { get; set; } = Path.GetFullPath("IronLanguage.Web");
+    public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = new Microsoft.Extensions.FileProviders.NullFileProvider();
+}

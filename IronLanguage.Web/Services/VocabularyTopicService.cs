@@ -33,7 +33,7 @@ public sealed class VocabularyTopicCatalog
     }
 }
 
-public sealed class VocabularyTopicService(VocabularyTopicCatalog catalog, IWordReviewRepository repository, IProgressRepository progress, TimeProvider clock)
+public sealed class VocabularyTopicService(VocabularyTopicCatalog catalog, IWordReviewRepository repository, TimeProvider clock)
 {
     public async Task<VocabularyTopicView[]> Topics(Guid? userId, CancellationToken ct)
     {
@@ -53,16 +53,15 @@ public sealed class VocabularyTopicService(VocabularyTopicCatalog catalog, IWord
     public async Task<int> Add(Guid userId, int topicId, Guid[] ids, CancellationToken ct)
     {
         if (ids.Length is 0 or > 64) throw new ArgumentException("Выберите слова из темы.");
-        var topic = (await Topics(userId, ct)).SingleOrDefault(x => x.Id == topicId);
-        if (topic is null || ids.Any(id => !topic.Words.Any(x => x.SenseId == id))) throw new ArgumentException("Слова не принадлежат выбранной теме.");
-        var added = 0;
-        foreach (var id in ids.Distinct())
-        {
-            if (topic.Words.Single(x => x.SenseId == id).Saved) continue;
-            var wordId = await ResolveWord(topicId, id, ct);
-            if (await progress.AddWord(userId, wordId, ct)) added++;
-        }
-        return added;
+        var topic = catalog.Topics.SingleOrDefault(x => x.Id == topicId);
+        if (topic is null || ids.Any(id => !topic.Words.Any(x => x.Key == id))) throw new ArgumentException("Слова не принадлежат выбранной теме.");
+        var selected = topic.Words.Where(x => ids.Contains(x.Key)).ToArray();
+        var senses = await repository.TopicSenses(selected.Select(x => x.SourceRow).Distinct().ToArray(), ct);
+        var words = selected.Select(source => {
+            var sense = senses.FirstOrDefault(s => s.SourceRow == source.SourceRow && s.SourceColumn == source.SourceColumn && DictionaryService.Key(s.Ossetian) == DictionaryService.Key(source.Answer));
+            return new WordEntry { Id = source.Key, Ossetian = source.Answer, Russian = source.Clue, Published = true, DictionarySenseId = sense?.Id };
+        }).ToArray();
+        return await repository.AddTopicWords(userId, words, ct);
     }
 
     public async Task Rate(Guid userId, int topicId, Guid senseId, bool known, CancellationToken ct)
