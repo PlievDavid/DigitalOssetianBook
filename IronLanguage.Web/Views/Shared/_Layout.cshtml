@@ -32,11 +32,11 @@
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
             <div class="nav-menu nav-menu-section">
-                <a class="nav-section-link nav-menu-trigger @(currentPath.StartsWith("/courses") || currentPath.StartsWith("/author") || currentPath == "/my-courses" ? "is-current" : "")" href="/courses" aria-controls="courses-menu" aria-haspopup="true" aria-expanded="false">Курсы</a>
+                <button type="button" class="nav-section-link nav-menu-trigger courses-menu-trigger @(currentPath.StartsWith("/courses") || currentPath.StartsWith("/author") || currentPath == "/my-courses" ? "is-current" : "")" aria-controls="courses-menu" aria-expanded="false">Курсы</button>
                 <div id="courses-menu" class="nav-menu-panel">
-                    <a class="nav-menu-item" href="/courses">Каталог курсов</a>
-                    @if (User.Identity?.IsAuthenticated == true) { <a class="nav-menu-item" href="/my-courses">Мои курсы</a> }
-                    @if (User.IsInRole("Editor")) { <a class="nav-menu-item" href="/courses/teaching">Преподавание</a> }
+                    <a class="nav-menu-item" href="/courses" aria-current="@(currentPath == "/courses" ? "page" : null)">Каталог курсов</a>
+                    @if (User.Identity?.IsAuthenticated == true) { <a class="nav-menu-item" href="/my-courses" aria-current="@(currentPath == "/my-courses" ? "page" : null)">Мои курсы</a> }
+                    @if (User.IsInRole("Editor")) { <a class="nav-menu-item" href="/courses/teaching" aria-current="@(currentPath == "/courses/teaching" ? "page" : null)">Преподавание</a> }
                 </div>
             </div>
             <div class="nav-menu nav-menu-section">

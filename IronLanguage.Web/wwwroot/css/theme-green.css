@@ -75,6 +75,7 @@ html { scrollbar-gutter: stable; }
 .green-theme .nav-inner { height: 44px; padding: 0; gap: var(--space-2); overflow: visible; }
 .green-theme .nav-inner > a,.green-theme .nav-menu-trigger { min-height: var(--theme-touch-size); padding: 12px 18px; border-radius: var(--theme-radius-sm); font-size: 14px; font-weight: 600; }
 .green-theme .nav-inner > a { display: flex; align-items: center; }
+.green-theme .courses-menu-trigger { border: 0; background: transparent; color: inherit; }
 .green-theme .nav-inner .is-current { color: var(--theme-green); background: var(--theme-sage); }
 .green-theme .nav-inner a:hover,.green-theme .nav-menu-trigger:hover { color: var(--theme-green); background: var(--theme-sage); }
 .green-theme .nav-menu-panel { top: 100%; border-color: var(--theme-border); border-radius: var(--theme-radius-sm); box-shadow: var(--theme-menu-shadow); }

@@ -42,15 +42,7 @@
     dialog.addEventListener('cancel', e => { e.preventDefault(); finish(false); }); document.body.append(dialog); dialog.showModal();
   });
   const run = async (control, task) => { control.disabled = true; control.setAttribute('aria-busy', 'true'); try { await task(); } catch (e) { showError(e); } finally { control.disabled = false; control.removeAttribute('aria-busy'); } };
-  function shell(showTabs = true) {
-    root.replaceChildren();
-    if (!showTabs) { root.append(message); return; }
-    const nav = node('nav', null, 'cv-tabs'); nav.setAttribute('aria-label', 'Разделы курсов');
-    [['Каталог', '/courses'], ...(window.AdamAuthenticated ? [['Мои курсы', '/my-courses']] : [])].forEach(([t, href]) => {
-      const a = link(t, href, ''); if (path === href) a.setAttribute('aria-current', 'page'); nav.append(a);
-    });
-    root.append(nav, message);
-  }
+  function shell() { root.replaceChildren(message); }
   async function continueCourse(courseId, lessonId = null, fromStart = false) {
     if (!lessonId) {
       const course = await api(`/courses/${courseId}`);
@@ -155,11 +147,36 @@
     done: 'm8 12 3 3 5-6m5 3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
     arrow: 'M4 12h15m-6-6 6 6-6 6'
   };
+  function coursePhoneMenu() {
+    if (!window.AdamAuthenticated) return null;
+    const menu = node('details', null, 'cm-phone-menu');
+    const summary = append(node('summary', 'Курсы'), icon('m6 9 6 6 6-6'));
+    const links = node('nav', null, 'cm-phone-links');
+    links.setAttribute('aria-label', 'Навигация по курсам');
+    const destinations = [['Каталог курсов', '/courses'], ['Мои курсы', '/my-courses']];
+    if (editor) destinations.push(['Преподавание', '/courses/teaching']);
+    for (const [label, href] of destinations) {
+      const item = link(label, href, '');
+      if (path === href) item.setAttribute('aria-current', 'page');
+      links.append(item);
+    }
+    menu.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && menu.open) { menu.open = false; summary.focus(); }
+    });
+    menu.addEventListener('focusout', event => {
+      if (event.relatedTarget && !menu.contains(event.relatedTarget)) menu.open = false;
+    });
+    return append(menu, summary, links);
+  }
+  function courseIntro(title, description, discovery = false) {
+    const copy = append(node('div', null, 'cm-intro-copy'), node('h1', title), node('p', description));
+    return append(node('header', null, discovery ? 'cm-intro cm-discover' : 'cm-intro'), copy, coursePhoneMenu());
+  }
   function myCourseState(course) {
     if (course.totalBlocks > 0 && course.completedBlocks >= course.totalBlocks) return 'done';
     return course.completedBlocks > 0 ? 'active' : 'new';
   }
-  function myCourseImage(course, thumbnail = false) {
+  function courseArtwork(course, thumbnail = false) {
     const art = node('div', null, 'cm-art');
     art.setAttribute('aria-hidden', 'true');
     art.dataset.theme = course.theme || 'sage';
@@ -199,8 +216,7 @@
   function myCourseOverview(rows) {
     const done = rows.filter(course => myCourseState(course) === 'done').length;
     const focus = rows.find(course => myCourseState(course) === 'active') || rows.find(course => myCourseState(course) === 'new') || rows[0];
-    root.append(append(node('header', null, 'cm-intro'), node('h1', 'Мои курсы'),
-      node('p', 'Продолжайте учиться и следите за своим прогрессом.')));
+    root.append(courseIntro('Мои курсы', 'Продолжайте учиться и следите за своим прогрессом.'));
     if (!focus) {
       const mark = append(node('div', null, 'cm-empty-icon'), icon(myCourseIcons.book));
       root.append(append(node('section', null, 'cm-welcome'), mark, node('h2', 'Вы ещё не записались на курс'),
@@ -216,7 +232,7 @@
       append(node('p', null, 'cm-kicker'), icon(myCourseIcons[state === 'done' ? 'done' : 'book']), node('span', kicker)),
       node('h2', focus.title), myCourseProgress(focus),
       actions(myCourseAction(focus, true), link('О курсе', '/courses/' + focus.id, 'cm-feature-link')));
-    feature.append(copy, myCourseImage(focus));
+    feature.append(copy, courseArtwork(focus));
     const stats = node('dl', null, 'cm-stats');
     for (const [key, label, count] of [['book', 'Всего курсов', rows.length], ['active', 'Активные', rows.length - done], ['done', 'Завершённые', done]]) {
       const symbol = append(node('span', null, 'cm-stat-icon is-' + key), icon(myCourseIcons[key]));
@@ -233,9 +249,27 @@
     const detail = append(node('div', null, 'cm-row-copy'),
       append(node('h3'), link(course.title, '/courses/' + course.id, 'cm-course-name')),
       append(node('div', null, 'cm-row-meta'), node('span', status, 'cm-status'), course.level ? node('span', course.level) : null));
-    const info = append(node('div', null, 'cm-row-info'), myCourseImage(course, true), detail);
+    const info = append(node('div', null, 'cm-row-info'), courseArtwork(course, true), detail);
     row.append(info, myCourseProgress(course), myCourseAction(course, false));
     return row;
+  }
+  function catalogCard(course, enrolled) {
+    const card = node('article', null, 'cv-card cm-catalog-card');
+    const state = myCourseState(course);
+    const href = '/courses/' + course.id;
+    const meta = append(node('div', null, 'cm-catalog-meta'), course.level ? node('span', course.level, 'cm-catalog-level') : null,
+      enrolled ? node('span', { new: 'В моих курсах', active: 'В процессе', done: 'Завершён' }[state], 'cm-status') : node('span', 'Уроков: ' + course.lessons));
+    const title = append(node('h3'), link(course.title, href, 'cm-course-name'));
+    const description = (course.description || '').trim();
+    const control = enrolled
+      ? button(state === 'done' ? 'Повторить курс' : 'Продолжить', e => run(e.currentTarget, () => continueCourse(course.id, null, state === 'done')), 'cm-catalog-action')
+      : link('Открыть курс', href, 'cm-catalog-action');
+    control.append(icon(myCourseIcons.arrow));
+    const body = append(node('div', null, 'cm-catalog-copy'), meta, title,
+      description ? node('p', description, 'cm-catalog-description') : null,
+      course.author ? node('span', course.author, 'cm-catalog-author') : null, control);
+    card.dataset.state = enrolled ? state : '';
+    return append(card, courseArtwork(course, true), body);
   }
   async function catalog(mine = false, authored = false) {
     const rows = await api(authored ? '/author/courses' : mine ? '/me/courses' : '/courses');
@@ -249,6 +283,9 @@
       root.classList.add('cm-home');
       myCourseOverview(rows);
       if (!rows.length) return;
+    } else if (!authored) {
+      root.classList.add('cm-catalog');
+      root.append(courseIntro('Каталог курсов', 'Выберите курс по осетинскому языку и учитесь в своём темпе.', true));
     }
     const create = button('Создать курс', e => run(e.currentTarget, async () => {
       const trigger = e.currentTarget;
@@ -300,7 +337,7 @@
     }), 'button primary');
     if (authored) root.append(append(node('section', null, 'cv-teaching-hero cv-report-banner'),
       heading('Преподавание', 'Управляйте своими курсами, сохраняйте уроки и следите за результатами учеников.', create)));
-    const grid = node('div', null, mine ? 'cm-list' : authored ? 'cv-author-list' : 'cv-grid'); const params = new URLSearchParams(location.search);
+    const grid = node('div', null, mine ? 'cm-list' : authored ? 'cv-author-list' : 'cm-catalog-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
     let status = mine && ['active', 'done'].includes(params.get('status')) ? params.get('status') : '';
     if (authored || !courseLevels.includes(level)) level = '';
@@ -331,14 +368,14 @@
     const searchField = node('div', null, 'cv-field cv-catalog-search');
     const searchLabel = node('label', 'Поиск по названию');
     searchLabel.htmlFor = input.id;
-    if (mine) {
+    if (!authored) {
       searchLabel.id = 'cv-catalog-query-label';
       searchLabel.hidden = true;
       input.setAttribute('aria-labelledby', searchLabel.id);
     }
     searchField.append(searchLabel, append(node('div', null, 'cv-search-control'), input, clear));
     const tools = append(node('div', null, 'cv-tools'), searchField);
-    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }, mine));
+    if (!authored) tools.append(levelFilter(level, value => { level = value; draw(); }, true));
     const resultsStatus = node('div', null, 'cv-results-status');
     resultsStatus.setAttribute('role', 'status');
     const catalogPanel = authored
@@ -366,7 +403,14 @@
       append(library, append(node('header', null, 'cm-library-heading'), title,
         append(node('div', null, 'cm-library-toolbar'), filters, tools)), resultsStatus, grid);
       root.append(library);
-    } else root.append(tools, resultsStatus, grid);
+    } else {
+      const title = node('h2', 'Все курсы');
+      title.id = 'cm-library-title';
+      const library = append(node('section', null, 'cm-library cm-catalog-library'),
+        append(node('header', null, 'cm-library-heading'), title, tools), resultsStatus, grid);
+      library.setAttribute('aria-labelledby', title.id);
+      root.append(library);
+    }
     if (authored) {
       const library = node('section', null, 'cv-report-panel cv-teaching-panel cv-library');
       const libraryTitle = node('h2', 'Библиотека уроков');
@@ -436,7 +480,12 @@
         } else grid.append(empty('Курсы не найдены', 'Измените запрос или сбросьте фильтры.', link('Сбросить фильтры', '/my-courses')));
         return;
       }
-      if (!filtered.length) { grid.append(empty(rows.length ? 'Курсы не найдены' : authored ? 'Здесь появится ваш первый курс' : 'Курсы готовятся', rows.length ? 'Измените запрос или сбросьте фильтры.' : authored ? 'Начните с названия, затем добавьте модули и уроки.' : 'Выберите опубликованный курс в каталоге.')); return; }
+      if (!filtered.length) {
+        grid.append(empty(rows.length ? 'Курсы не найдены' : authored ? 'Здесь появится ваш первый курс' : 'Курсы готовятся',
+          rows.length ? 'Измените запрос или сбросьте фильтры.' : authored ? 'Начните с названия, затем добавьте модули и уроки.' : 'Опубликованные курсы появятся здесь.',
+          rows.length && !authored ? link('Сбросить фильтры', '/courses') : null));
+        return;
+      }
       filtered.forEach(c => {
         if (authored) {
           const row = node('article', null, 'cv-author-row');
@@ -447,14 +496,7 @@
           row.append(body, actions(link('Редактировать курс', `/author/courses/${c.id}`, 'cv-button cv-teaching-primary'),
             c.published ? link('Результаты учеников', `/author/courses/${c.id}/analytics`, 'cv-button') : null)); grid.append(row); return;
         }
-        const card = node('article', null, 'cv-card'); card.dataset.theme = c.theme || 'sage';
-        if (c.coverPath) { const img = node('img', null, 'cv-course-image'); img.src = c.coverPath; img.alt = ''; img.loading = 'lazy'; card.append(img); }
-        card.append(append(node('div', null, 'cv-cover'), node('span', authored ? c.archived ? 'В архиве' : c.published ? 'Опубликован' : 'Черновик' : c.level)));
-        const body = append(node('div', null, 'cv-card-content'), node('h2', c.title), node('p', c.description.length > 180 ? c.description.slice(0, 180) + '…' : c.description || 'Добавьте описание курса.'));
-        body.append(node('span', enrolled.has(c.id) ? `${c.completedBlocks} из ${c.totalBlocks} блоков завершено` : `Блоков: ${c.totalBlocks}`, 'cv-meta'));
-        if (c.author) body.append(node('span', c.author, 'cv-meta'));
-        const repeat = c.totalBlocks > 0 && c.completedBlocks === c.totalBlocks;
-        body.append(actions(enrolled.has(c.id) ? button(repeat ? 'Повторить курс' : 'Продолжить', e => run(e.currentTarget, () => continueCourse(c.id, null, repeat)), 'button primary') : link('Открыть курс', `/courses/${c.id}`, 'button primary'))); card.append(body); grid.append(card);
+        grid.append(catalogCard(c, enrolled.has(c.id)));
       });
     }
     draw();
@@ -488,7 +530,7 @@
     document.body.append(dialog); dialog.showModal();
   }
   async function analytics(id) {
-    shell(false);
+    shell();
     root.classList.add('cv-report');
     const params = new URLSearchParams(location.search);
     const report = await api(`/author/courses/${id}/analytics?` + params);
@@ -589,7 +631,7 @@
   }
   async function details(id) {
     await import('/js/course-rich-text.js');
-    const c = await api(`/courses/${id}`); shell(false); root.append(link('← Каталог курсов', '/courses', 'back-link'));
+    const c = await api(`/courses/${id}`); shell(); root.append(link('← Каталог курсов', '/courses', 'back-link'));
     root.classList.add('cv-course-detail');
     const lessons = c.modules.flatMap(m => m.lessons), completed = lessons.filter(l => l.completed).length;
     const first = lessons.find(l => l.available);
@@ -637,7 +679,7 @@
     const { renderTheoryMedia } = await import('/js/course-theory-media.js');
     const entry = new URLSearchParams(location.search);
     let state, picked = [], practiceFeedback = '', refreshing = false;
-    shell(false); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
+    shell(); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
     async function refresh(blockId = null, showCompletion = false, fromStart = false) {
       refreshing = true;
       try {
