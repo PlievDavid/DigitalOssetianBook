@@ -381,6 +381,22 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     for (const word of fixture.expected.split(/\s+/)) await student.locator('#exercise-tiles').getByRole('button', { name: word, exact: true }).first().click();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
     await student.locator('#exercise-result.is-correct').waitFor();
+    const phraseUrl = `/course-sessions/${sessionId}?block=${lesson.blocks[1].id}`;
+    const completedPhrase = (await api(student, phraseUrl)).data;
+    const replay = student.getByRole('button', { name: 'Собрать заново', exact: true });
+    await replay.press('Enter');
+    await student.locator('#exercise-result.is-correct').waitFor({ state: 'hidden' });
+    const replayedPhrase = (await api(student, phraseUrl)).data;
+    check(replayedPhrase.completed && replayedPhrase.steps[1].completed && !replayedPhrase.block.result &&
+      replayedPhrase.block.attemptId !== completedPhrase.block.attemptId, 'Повтор фразы сбросил зачёт или не открыл новую попытку');
+    check(await student.locator('#exercise-picked button').count() === 0 &&
+      await student.locator('#exercise-tiles button').first().evaluate(el => el === document.activeElement),
+      'Повтор фразы не очистил ответ или не вернул фокус');
+    for (const word of fixture.expected.split(/\s+/)) {
+      await student.locator('#exercise-tiles').getByRole('button', { name: word, exact: true }).first().click();
+    }
+    await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
+    await replay.waitFor();
     await student.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await student.getByRole('heading', { name: 'Урок пройден', exact: true }).waitFor();
     await drawerToggle.click();

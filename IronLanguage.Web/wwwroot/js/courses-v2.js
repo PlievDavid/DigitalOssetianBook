@@ -682,6 +682,12 @@
         await reload();
       }
       const embedded = {
+        replay: block.kind === 'translation' ? async event => {
+          await run(event.currentTarget, async () => {
+            await retryAttempt();
+            area.querySelector('#exercise-tiles button')?.focus();
+          });
+        } : null,
         load: () => block.practice ? practiceData(block.practice) : {
           card: block.card, attemptId: block.attemptId, draftIndices: block.draftIndices,
           completed: Boolean(block.result), result: block.result

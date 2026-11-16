@@ -165,6 +165,12 @@
       result.textContent = audioFlow
         ? (answer.correct ? `Верно! ${answer.explanation || ""}`.trim() : `Пока неверно. Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`)
         : `${answer.correct ? "Верно!" : "Пока неверно."} Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`;
+      if (answer.correct && embedded?.replay) {
+        const actions = document.createElement("div");
+        actions.className = "exercise-actions";
+        actions.append(button("Собрать заново", embedded.replay, "button secondary"));
+        result.append(actions);
+      }
       if (!inLesson) result.append(button(audioFlow ? "К аудиопазлам" : "К заданиям «Собери фразу»", back));
       const words = $("exercise-words"); words.replaceChildren();
       for (const word of card.words) {

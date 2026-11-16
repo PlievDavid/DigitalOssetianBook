@@ -53,7 +53,7 @@ public interface ICourseLearningRepository
     Task<bool> SavePractice(CoursePracticeRun run, int revision, CancellationToken ct);
     Task<bool> Advance(Guid user, Guid id, int step, int count, Guid? attempt, CancellationToken ct);
     Task<bool> Archive(Guid course, Guid owner, CancellationToken ct);
-    Task<bool> Retry(CourseLessonSession session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct);
+    Task<bool> Retry(CourseLessonSession session, int index, Guid expectedAttempt, ExerciseAttempt replacement, bool allowCorrect, CancellationToken ct);
     Task<List<CourseEnrollment>> Enrollments(Guid user, CancellationToken ct);
     Task<CourseVersion[]> Mine(Guid user, CancellationToken ct);
     Task<CourseVersion[]> Snapshots(Guid[] versions, CancellationToken ct);
@@ -187,7 +187,7 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.StateJson, run.StateJson).SetProperty(x => x.Complete, run.Complete)
                 .SetProperty(x => x.Revision, revision + 1), ct) == 1;
 
-    public async Task<bool> Retry(CourseLessonSession session, int index, Guid expectedAttempt, ExerciseAttempt replacement, CancellationToken ct)
+    public async Task<bool> Retry(CourseLessonSession session, int index, Guid expectedAttempt, ExerciseAttempt replacement, bool allowCorrect, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await EfCourseRepository.Lock(db, session.CourseId, ct, shared: true);
@@ -197,7 +197,8 @@ public sealed class EfCourseLearningRepository(AdamDbContext db) : ICourseLearni
         var ids = System.Text.Json.JsonSerializer.Deserialize<Guid?[]>(current.AttemptIdsJson)!;
         if (index < 0 || index >= ids.Length) return false;
         if (ids[index] != expectedAttempt) return true; // A duplicate retry must not replace the new attempt.
-        if (!await db.Attempts.AnyAsync(a => a.Id == expectedAttempt && a.UserId == session.UserId && a.CompletedAt != null && a.Correct == false, ct)) return false;
+        if (!await db.Attempts.AnyAsync(a => a.Id == expectedAttempt && a.UserId == session.UserId && a.CompletedAt != null &&
+                (a.Correct == false || allowCorrect && a.Correct == true), ct)) return false;
         ids[index] = replacement.Id;
         db.Attempts.Add(replacement);
         await db.SaveChangesAsync(ct);

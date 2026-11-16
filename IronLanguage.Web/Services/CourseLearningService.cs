@@ -392,9 +392,10 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         var index = Array.FindIndex(lesson.Blocks, b => b.Id == blockId);
         if (index < 0 || lesson.Blocks[index].PublishedExercise is not { } exercise) return false;
         if (!await CanUse(found.Session.CourseId, lesson.Blocks[index], found.Temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview, ct)) return false;
+        var allowCorrect = lesson.Blocks[index].Kind == "translation";
         var replacement = CreateAttempt(exercise, found.Session.UserId);
         replacement.LessonRunId = found.Session.Id;
-        if (!found.Temporary) return await repository.Retry(found.Session, index, expectedAttempt, replacement, ct);
+        if (!found.Temporary) return await repository.Retry(found.Session, index, expectedAttempt, replacement, allowCorrect, ct);
         var entry = guests.Find<GuestCourseSession>(owner, id);
         if (entry is null) return false;
         await entry.Gate.WaitAsync(ct);
@@ -402,7 +403,8 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         {
             var ids = Attempts(entry.Value.Session);
             if (ids[index] != expectedAttempt) return true;
-            if (guests.Find<ExerciseAttempt>(owner, expectedAttempt)?.Value is not { CompletedAt: not null, Correct: false }) return false;
+            var previous = guests.Find<ExerciseAttempt>(owner, expectedAttempt)?.Value;
+            if (previous is not { CompletedAt: not null, Correct: { } correct } || correct && !allowCorrect) return false;
             guests.Add(owner, replacement.Id, replacement);
             ids[index] = replacement.Id;
             entry.Value.Session.AttemptIdsJson = JsonSerializer.Serialize(ids);
