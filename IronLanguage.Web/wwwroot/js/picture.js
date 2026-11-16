@@ -1,7 +1,5 @@
-(() => {
-  const root = document.getElementById("picture-app");
-  if (!root) return;
-  const $ = id => document.getElementById(id);
+(window.AdamExercisePlayers ??= {}).picture = function (root, embedded) {
+  const $ = id => root.querySelector("#" + id);
   const status = $("picture-status");
   const list = $("picture-list");
   const play = $("picture-play");
@@ -72,11 +70,11 @@
     busy = true;
     const gen = ++generation;
     try {
-      const next = await AdamApi(`/pictures/${id}/sessions`, { method: "POST" });
+      const next = embedded ? await embedded.load() : await AdamApi(`/pictures/${id}/sessions`, { method: "POST" });
       if (gen !== generation) return;
       busy = false;
       session = next;
-      sessionStorage.setItem("adam.picture.session", session.sessionId);
+      if (!embedded) sessionStorage.setItem("adam.picture.session", session.sessionId);
       list.hidden = true; play.hidden = false;
       render();
       status.textContent = "";
@@ -147,7 +145,7 @@
     for (const node of $("picture-options").children) node.disabled = true;
     $("picture-submit").disabled = true;
     try {
-      const response = await AdamApi(`/pictures/sessions/${sid}/check`, {
+      const response = embedded ? await embedded.answer(payload) : await AdamApi(`/pictures/sessions/${sid}/check`, {
         method: "POST",
         body: JSON.stringify(payload)
       });
@@ -155,7 +153,7 @@
       session.answered = true;
       session.correct = response.correct;
       session.correctWord = response.correctWord;
-      session.words = response.words || [];
+      session.words = response.words || session.words || [];
       showResult(response.correct, response.correctWord, selectedIndex);
     } catch (error) {
       if (gen !== generation || !session || session.sessionId !== sid) return;
@@ -202,11 +200,12 @@
     message.textContent = correct ? "Верно!" : `Пока неверно. Правильное слово: «${correctWord}».`;
     const actions = document.createElement("div");
     actions.className = "picture-result-actions";
-    actions.append(
+    if (!embedded) actions.append(
       button("Пройти заново", () => start(session.materialId), "button primary"),
       button("К списку", back, "button secondary")
     );
-    result.replaceChildren(message, actions);
+    result.replaceChildren(message);
+    if (!embedded) result.append(actions);
 
     if (session.mode === "free" || !correct) {
       answerWord.hidden = false;
@@ -254,5 +253,10 @@
 
   $("picture-free-form").addEventListener("submit", submitFree);
   $("picture-back-link").addEventListener("click", event => { event.preventDefault(); back(); });
-  load();
+  if (embedded) start(); else load();
+  return () => { generation++; };
+};
+(() => {
+  const root = document.getElementById("picture-app");
+  if (root) window.AdamExercisePlayers.picture(root);
 })();

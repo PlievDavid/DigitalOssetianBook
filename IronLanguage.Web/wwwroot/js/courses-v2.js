@@ -616,13 +616,13 @@
     await import('/js/course-rich-text.js');
     const { renderTheoryMedia } = await import('/js/course-theory-media.js');
     const entry = new URLSearchParams(location.search);
-    let state, picked = [], practiceFeedback = '', refreshing = false;
+    let state, disposePlayer, refreshing = false, pendingExerciseRequests = 0;
     shell(); root.classList.add('cv-lesson-page'); const area = node('div', null, 'cv-player'); root.append(area);
     async function refresh(blockId = null, showCompletion = false, entryStep = null) {
       refreshing = true;
       try {
       const blockQuery = blockId ? '?block=' + encodeURIComponent(blockId) : '';
-      state = await api(`/course-sessions/${id}${blockQuery}`); picked = [];
+      state = await api(`/course-sessions/${id}${blockQuery}`);
       const updated = state.updateRequired;
       if (updated) {
         state = await post(`/course-sessions/${id}/update${blockQuery}`);
@@ -647,75 +647,90 @@
         post(`/course-sessions/${id}/view`, { blockId: state.block.id }).catch(() => {});
       } finally { refreshing = false; }
     }
-    function exerciseAudio(src) {
-      const status = node('p', null, 'cv-meta'); status.setAttribute('role', 'status');
-      const audio = node('audio'); audio.controls = true; audio.src = src; audio.preload = 'metadata';
-      audio.addEventListener('error', () => { status.textContent = 'Не удалось загрузить запись. Обновите страницу или вернитесь к упражнению позже.'; });
-      return append(node('div'), audio, status);
-    }
-    function practiceBlock(card, block) {
-      const { board, revision, complete } = block.practice;
-      const status = node('p', practiceFeedback, 'cv-meta'); status.setAttribute('role', 'status');
-      practiceFeedback = '';
-      async function answer(trigger, value) {
-        await run(trigger, async () => {
-          const result = await post(`/course-sessions/${id}/practice`, { blockId: block.id, revision, ...value });
-          practiceFeedback = result.stale ? 'Упражнение обновлено.' : result.correct ? 'Верно!' : 'Пока неверно. Попробуйте ещё раз.';
-          if (result.hint && typeof result.hint === 'string') practiceFeedback += ' ' + result.hint;
-          if (result.hint?.prefix) practiceFeedback += ' Начало реплики: ' + result.hint.prefix;
-          if (result.hint?.expected) practiceFeedback += ' Подсказка: ' + result.hint.expected;
-          if (result.expected && !result.correct) practiceFeedback += ' Ответ: ' + result.expected;
-          await refresh(block.id);
-        });
+    function mountExercise(host, block, next) {
+      const template = document.getElementById('course-exercise-' + block.kind);
+      const player = window.AdamExercisePlayers?.[block.kind];
+      if (!template || !player) throw new Error('Не удалось загрузить задание.');
+      const sessionPath = `/course-sessions/${id}`;
+      let revision = block.practice?.revision;
+      const titles = { matching: 'Соотнесение', grammar: 'Форма слова', picture: 'Картинка и слово' };
+      const practiceData = practice => ({ title: titles[block.kind], sessionId: block.attemptId, ...practice.board });
+      const request = async action => {
+        pendingExerciseRequests++;
+        try { return await action(); }
+        finally { pendingExerciseRequests--; }
+      };
+      function allowNext() {
+        if (!host.isConnected || state.block?.id !== block.id) return;
+        state.steps[state.viewStep].completed = true;
+        const step = area.querySelector('.cv-step[aria-current="step"]');
+        if (step && !step.classList.contains('is-complete')) {
+          step.classList.add('is-complete');
+          step.setAttribute('aria-label', step.getAttribute('aria-label') + ', пройден');
+          step.title += ' — пройден';
+        }
+        next.disabled = next.hidden = false;
       }
-      if (complete) {
-        card.append(node('p', 'Упражнение выполнено.', 'cv-result'));
-        return;
+      function offerRetry(action) {
+        if (!host.isConnected || host.querySelector('.cv-exercise-retry')) return;
+        host.append(button('Попробовать снова', event => run(event.currentTarget, action), 'button primary cv-exercise-retry'));
       }
-      if (block.kind === 'matching') {
-        let left;
-        const leftGroup = node('div', null, 'cv-tokens'), rightGroup = node('div', null, 'cv-tokens');
-        const leftButtons = board.left.map(tile => {
-          const control = button(tile.text, () => {
-            left = tile.index;
-            leftButtons.forEach(x => x.setAttribute('aria-pressed', String(x === control)));
-            rightButtons.forEach((x, index) => { x.disabled = board.right[index].matched; });
-          }, 'cv-token');
-          control.disabled = tile.matched; control.setAttribute('aria-pressed', 'false'); return control;
-        });
-        const rightButtons = board.right.map(tile => {
-          const control = button(tile.text, e => answer(e.currentTarget, { pair: { left, right: tile.index } }), 'cv-token');
-          control.disabled = true; return control;
-        });
-        leftGroup.append(...leftButtons); rightGroup.append(...rightButtons);
-        card.append(node('p', 'Выберите слово в первом ряду и его пару во втором.'), leftGroup, rightGroup, node('p', `Пар собрано: ${board.matched} из ${board.total}`, 'cv-meta'));
-      } else if (block.kind === 'dialogue') {
-        board.lines.forEach(line => card.append(node('p', [line.name, line.text].filter(Boolean).join(' · '), 'cv-prose')));
-        const turn = board.turn;
-        if (turn) {
-          const submit = (event, value, skip = false) => answer(event.currentTarget, { dialogue: { turnId: turn.line, value, skip } });
-          if (turn.options.length) card.append(actions(...turn.options.map(option => button(option, e => submit(e, option), 'cv-token'))));
-          else {
-            const control = field('Ваша реплика', '', () => {});
-            card.append(control, button('Ответить', e => submit(e, control.querySelector('input').value), 'button primary'));
+      const reload = () => refresh(block.id);
+      if (block.result && !block.result.correct) offerRetry(retryAttempt);
+      async function retryAttempt() {
+        await post(sessionPath + '/retry', { blockId: block.id, attemptId: block.attemptId });
+        await reload();
+      }
+      const embedded = {
+        load: () => block.practice ? practiceData(block.practice) : {
+          card: block.card, attemptId: block.attemptId, draftIndices: block.draftIndices,
+          completed: Boolean(block.result), result: block.result
+        },
+        resync: async () => {
+          const latest = await api(sessionPath + '?block=' + block.id);
+          const practice = latest.block?.practice;
+          if (!practice) throw new Error('Не удалось обновить задание.');
+          revision = practice.revision;
+          if (practice.complete) allowNext();
+          return practiceData(practice);
+        },
+        saveDraft: tokenIndices => request(() => api(sessionPath + '/draft', {
+          method: 'PUT', body: JSON.stringify({ blockId: block.id, attemptId: block.attemptId, tokenIndices })
+        })),
+        answer: payload => request(async () => {
+          if (!block.practice) {
+            let result = await post(sessionPath + '/answers', { blockId: block.id, attemptId: block.attemptId, tokenIndices: payload });
+            if (block.kind === 'listening') {
+              const latest = await api(sessionPath + '?block=' + block.id);
+              result = latest.block?.result;
+              if (!result) throw new Error('Не удалось обновить результат аудирования.');
+            }
+            if (result.correct) allowNext();
+            else offerRetry(retryAttempt);
+            return result;
           }
-          if (turn.skippable) card.append(button('Пропустить реплику', e => submit(e, null, true), 'cv-button'));
-        }
-      } else {
-        if (block.kind === 'picture') {
-          const image = node('img'); image.src = board.picturePath; image.alt = 'Назовите предмет на изображении'; image.style.maxWidth = '100%';
-          image.addEventListener('error', () => { status.textContent = 'Не удалось загрузить изображение.'; });
-          card.append(image);
-        } else card.append(node('p', board.prompt, 'cv-prose'));
-        if (board.options.length) card.append(actions(...board.options.map((option, index) => button(option, e => answer(e.currentTarget, { choice: { index } }), 'cv-token'))));
-        else {
-          const control = field('Ваш ответ', '', () => {});
-          card.append(control, button('Проверить ответ', e => answer(e.currentTarget, { choice: { text: control.querySelector('input').value } }), 'button primary'));
-        }
-      }
-      card.append(status);
+          let input;
+          if (block.kind === 'matching') input = { pair: payload };
+          if (block.kind === 'picture') input = { choice: { index: payload.optionIndex, text: payload.answer } };
+          if (block.kind === 'grammar') input = { choice: { index: payload.optionIndex } };
+          if (block.kind === 'dialogue') input = { dialogue: payload };
+          const result = await post(sessionPath + '/practice', { blockId: block.id, revision, ...input });
+          if (result.stale) {
+            if (host.isConnected) await reload();
+            throw new Error('Задание обновилось.');
+          }
+          revision++;
+          if (result.finished && (result.correct || block.kind === 'dialogue')) allowNext();
+          else if (result.finished && (block.kind === 'picture' || block.kind === 'grammar')) offerRetry(reload);
+          return result;
+        })
+      };
+      host.prepend(template.content.cloneNode(true));
+      disposePlayer = player(host.firstElementChild, embedded);
     }
     function draw() {
+      disposePlayer?.();
+      disposePlayer = null;
       area.replaceChildren(); root.dataset.theme = state.theme || "sage";
       area.append(link(state.preview ? '← В конструктор' : '← К программе курса', state.preview ? `/author/courses/${state.courseId}` : `/courses/${state.courseId}`, 'back-link'));
       if (state.preview) area.append(node('p', 'Предпросмотр. Прогресс и очки не сохраняются.', 'cv-notice'));
@@ -808,38 +823,14 @@
         body.dataset.alignment = b.alignment || '';
         card.append(body);
       }
-      else if (b.practice) {
-        practiceBlock(card, b);
-        next.hidden = !b.practice.complete; next.disabled = next.hidden;
-      }
       else {
-        if (b.kind === 'listening' || b.kind === 'audio') card.append(exerciseAudio(b.card.audioPath));
-        if (b.kind !== 'audio') card.append(node('p', b.card.russianPrompt, 'cv-prose'));
-        const instructions = { listening: 'Прослушайте запись и выберите один ответ.', audio: 'Прослушайте запись и соберите фразу из слов.', translation: 'Соберите осетинский перевод из слов.' };
-        card.append(node('p', instructions[b.kind], 'cv-meta'));
-        const selected = node('div', null, 'cv-picked'), tokens = node('div', null, 'cv-tokens');
-        selected.setAttribute('aria-label', 'Собранная фраза'); tokens.setAttribute('aria-label', 'Доступные слова');
-        const check = button('Проверить ответ', e => run(e.currentTarget, async () => {
-          await post(`/course-sessions/${id}/answers`, { blockId: b.id, attemptId: b.attemptId, tokenIndices: picked }); await refresh(b.id);
-        }), 'button primary');
-        function renderTokens() {
-          selected.replaceChildren(); tokens.replaceChildren();
-          if (!picked.length) selected.append(node('span', 'Выберите слова ниже', 'cv-meta'));
-          picked.forEach((index, position) => selected.append(button(b.card.tokens[index], () => { picked.splice(position, 1); renderTokens(); }, 'cv-token')));
-          b.card.tokens.forEach((text, index) => { const t = button(text, () => { if (b.kind === 'listening') picked = [index]; else picked.push(index); renderTokens(); }, 'cv-token'); t.disabled = picked.includes(index); tokens.append(t); });
-          check.disabled = !picked.length;
-        }
-        if (!b.result) { renderTokens(); card.append(selected, tokens, check); next.disabled = true; next.hidden = true; }
-        else {
-          card.append(append(node('div', null, `cv-result${b.result.correct ? '' : ' incorrect'}`), node('strong', b.result.correct ? 'Верно!' : 'Пока неверно. Попробуйте ещё раз'), node('p', b.result.expectedAnswer), b.result.explanation ? node('p', b.result.explanation) : null));
-          if (!b.result.correct) {
-            next.hidden = true; next.disabled = true;
-            card.append(button('Попробовать снова', e => run(e.currentTarget, async () => {
-              await post(`/course-sessions/${id}/retry`, { blockId: b.id, attemptId: b.attemptId }); await refresh(b.id);
-              area.querySelector('.cv-token')?.focus();
-            }), 'button primary'));
-          }
-        }
+        const host = node('div', null, 'cv-course-exercise');
+        card.classList.add('cv-exercise-block');
+        next.disabled = next.hidden = !state.steps[state.viewStep].completed;
+        card.append(host, actions(next));
+        area.append(card);
+        mountExercise(host, b, next);
+        return;
       }
       card.append(actions(next)); area.append(card);
     }
@@ -847,12 +838,12 @@
     const entryStep = entry.has('block') ? null : startAt === '1' ? 'first' : startAt === 'last' ? 'last' : null;
     await refresh(entry.get('block'), false, entryStep);
     document.addEventListener('visibilitychange', async () => {
-      if (document.hidden || state?.preview || refreshing || picked.length || area.querySelector('dialog[open], button[aria-busy="true"]') ||
+      if (document.hidden || state?.preview || refreshing || pendingExerciseRequests || area.querySelector('dialog[open], button[aria-busy="true"]') ||
           [...area.querySelectorAll('input, textarea')].some(input => input.value)) return;
       const current = state;
       try {
         const latest = await api(`/course-sessions/${id}`);
-        if (latest.updateRequired && state === current && !refreshing && !picked.length &&
+        if (latest.updateRequired && state === current && !refreshing && !pendingExerciseRequests &&
             ![...area.querySelectorAll('input, textarea')].some(input => input.value)) await refresh(state.block?.id);
       } catch (error) { showError(error); }
     });

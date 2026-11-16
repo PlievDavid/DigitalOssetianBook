@@ -36,7 +36,7 @@
         const a = op.attributes || {}, span = document.createElement(a.strike ? 's' : 'span');
         span.textContent = line;
         if (a.bold) span.style.fontWeight = '700'; if (a.italic) span.style.fontStyle = 'italic';
-        if (a.underline) span.style.textDecoration = 'underline';
+        if (a.underline) span.style.textDecorationLine = a.strike ? 'underline line-through' : 'underline';
         if (fonts[a.font]) span.style.fontFamily = fonts[a.font]; if (sizes.includes(a.size)) span.style.fontSize = a.size;
         if (/^#[\da-f]{6}$/i.test(a.color || '')) span.style.color = a.color;
         if (/^#[\da-f]{6}$/i.test(a.background || '')) span.style.backgroundColor = a.background;

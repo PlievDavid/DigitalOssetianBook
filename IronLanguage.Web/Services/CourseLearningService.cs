@@ -12,7 +12,7 @@ public sealed class CourseVisit(CourseVersion version)
 public sealed record GuestCourseSession(CourseLessonSession Session, CourseVersion Version, bool Preview, Guid? PreviewUserId);
 
 public sealed class CourseLearningService(ICourseRepository courses, ICourseLearningRepository repository,
-    IProgressRepository progress, LearningService learning, GuestLearningStore guests, ICourseMaterialRepository? materials = null)
+    IProgressRepository progress, LearningService learning, GuestLearningStore guests, ICourseMaterialRepository? materials = null, ICatalogRepository? catalog = null)
 {
     public static CourseDraft Read(CourseVersion version) => JsonSerializer.Deserialize<CourseDraft>(version.SnapshotJson, CourseAuthoringService.JsonOptions)!;
     private static CourseDraftLesson? Lesson(CourseVersion version, Guid id) => Read(version).Modules.SelectMany(x => x.Lessons).SingleOrDefault(x => x.Id == id);
@@ -189,13 +189,6 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
             ? ListeningService.CreateSnapshot(exercise, user) ?? throw new ArgumentException("Некорректное аудирование.")
             : LearningService.CreateSnapshot(exercise, user);
         if (exercise.Kind == "listening") attempt.TokensJson = attempt.OptionsJson;
-        if (exercise.Kind == "audio")
-        {
-            var distractors = JsonSerializer.Deserialize<string[][]>(exercise.DistractorsJson) ?? [];
-            string[] words = [.. LearningService.ParseTokens(attempt.TokensJson), .. distractors.SelectMany(x => x)];
-            Random.Shared.Shuffle(words);
-            attempt.TokensJson = JsonSerializer.Serialize(words);
-        }
         return attempt;
     }
 
@@ -254,7 +247,10 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         if (viewStep < lesson.Blocks.Length)
         {
             var block = lesson.Blocks[viewStep];
-            ExerciseCard? card = null; object? result = null; object? practice = null;
+            object? card = null;
+            object? result = null;
+            object? practice = null;
+            int[] draftIndices = [];
             var unavailable = await Blocked(block, ct);
             if (!unavailable && Attempts(session)[viewStep] is Guid aid)
             {
@@ -262,15 +258,28 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
                 {
                     var run = temporary ? guests.Find<CoursePracticeRun>(owner, aid)?.Value : await repository.Practice(user!.Value, aid, ct);
                     if (run is null) throw new ArgumentException("Занятие истекло. Откройте урок заново.");
-                    practice = CoursePractice.View(block.Kind, run, $"/api/v1/course-sessions/{id}/media/{block.Id}");
+                    practice = await CoursePractice.View(block.Kind, run, block.PublishedActivity, catalog, $"/api/v1/course-sessions/{id}/media/{block.Id}", ct);
                 }
                 else
                 {
                     var attempt = temporary ? guests.Find<ExerciseAttempt>(owner, aid)?.Value : await progress.Attempt(user!.Value, aid, ct);
                     if (attempt is null) throw new ArgumentException("Занятие истекло. Откройте урок заново.");
-                    card = await learning.SnapshotCard(block.Kind == "audio" ? "translation" : block.Kind, attempt, ct);
-                    if (card.AudioPath is not null) card = card with { AudioPath = $"/api/v1/course-sessions/{id}/media/{block.Id}" };
-                    if (attempt.CompletedAt is not null) result = new { correct = attempt.Correct, expectedAnswer = attempt.ExpectedAnswer, explanation = attempt.Explanation };
+                    var audioPath = attempt.AudioPath is null ? null : $"/api/v1/course-sessions/{id}/media/{block.Id}";
+                    if (block.Kind == "listening")
+                    {
+                        card = ListeningService.Card(attempt) with { AudioPath = audioPath };
+                        result = ListeningService.Result(attempt);
+                    }
+                    else
+                    {
+                        var tokens = block.Kind == "audio" ? block.PublishedExercise?.TokensJson : null;
+                        card = (await learning.SnapshotCard(block.Kind, attempt, ct, tokens)) with { AudioPath = audioPath };
+                        draftIndices = block.Kind == "audio" && attempt.Correct == true && tokens is not null
+                            ? Enumerable.Range(0, LearningService.ParseTokens(tokens).Length).ToArray()
+                            : JsonSerializer.Deserialize<int[]>(attempt.DraftIndicesJson) ?? [];
+                        if (attempt.CompletedAt is not null)
+                            result = new { correct = attempt.Correct, expectedAnswer = attempt.ExpectedAnswer, explanation = attempt.Explanation };
+                    }
                 }
             }
             var theoryMedia = block.TheoryMedia is { } attachment ? new
@@ -279,7 +288,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
                 url = $"/api/v1/course-sessions/{id}/theory-media/{block.Id}"
             } : null;
             blockData = new { block.Id, block.Kind, block.Title, block.Text, block.RichText, block.Alignment, theoryMedia,
-                attemptId = Attempts(session)[viewStep], card, result, practice, unavailable };
+                attemptId = Attempts(session)[viewStep], card, result, draftIndices, practice, unavailable };
         }
         var history = isPreview ? [] : await History(session.CourseId, user, owner, ct);
         var credits = isPreview ? [] : await Credits(version, history, ct);
@@ -308,12 +317,72 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         if (!await CanUse(found.Session.CourseId, lesson.Blocks[index], found.Temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview, ct)) return null;
         if (expectedAttempt is Guid expected && expected != attemptId) throw new ArgumentException("Попытка уже обновлена. Откройте блок заново.");
         if (lesson.Blocks[index].Kind == "listening" && indices.Length != 1) throw new ArgumentException("Выберите один ответ.");
+        if (lesson.Blocks[index] is { Kind: "audio", PublishedExercise: { } audio })
+        {
+            var attempt = found.Temporary ? guests.Find<ExerciseAttempt>(owner, attemptId)?.Value
+                : await progress.Attempt(user!.Value, attemptId, ct);
+            if (attempt is null) return null;
+            indices = MapAudioIndices(audio, attempt, indices);
+        }
         var answer = found.Temporary
             ? await learning.AnswerGuest(owner, attemptId, indices, ct, withinLesson: true)
             : await learning.Answer(user!.Value, attemptId, indices, ct, withinLesson: true);
         if (!found.Temporary && answer is { AlreadySubmitted: false }) await repository.Record(found.Session, blockId, attemptId.ToString("N"), answer.Correct, ct);
         if (answer?.Correct == true) await Advance(id, blockId, user, owner, ct);
         return answer;
+    }
+
+    // Earlier course attempts stored a shuffled deck. Keep their snapshots and map
+    // the indices from the step-by-step player to the original attempt.
+    private static int[] MapAudioIndices(Exercise exercise, ExerciseAttempt attempt, int[] indices)
+    {
+        var words = LearningService.ParseTokens(exercise.TokensJson);
+        var deck = LearningService.ParseTokens(attempt.TokensJson);
+        if (indices.Any(index => index < 0 || index >= words.Length))
+            throw new ArgumentException("Неверный набор слов.");
+        if (words.SequenceEqual(deck)) return indices;
+        var available = deck.Select((word, index) => (word, index))
+            .GroupBy(item => item.word).ToDictionary(group => group.Key, group => new Queue<int>(group.Select(item => item.index)));
+        var mapping = words.Select(word => available.TryGetValue(word, out var matches) && matches.Count > 0
+            ? matches.Dequeue() : -1).ToArray();
+        return indices.Select(index => mapping[index]).ToArray();
+    }
+
+    public async Task<bool?> SaveDraft(Guid id, Guid blockId, Guid expectedAttempt, int[] indices, Guid? user, Guid owner, CancellationToken ct)
+    {
+        if (await Find(id, user, owner, ct) is not { } found) return null;
+        var lesson = Lesson(found.Version, found.Session.LessonId)!;
+        var index = Array.FindIndex(lesson.Blocks, block => block.Id == blockId);
+        if (index < 0 || lesson.Blocks[index] is not { Kind: "translation" or "audio" } block ||
+            Attempts(found.Session)[index] != expectedAttempt) return null;
+        if (!await CanUse(found.Session.CourseId, block, found.Temporary && guests.Find<GuestCourseSession>(owner, id)!.Value.Preview, ct)) return null;
+
+        if (!found.Temporary)
+        {
+            var attempt = await progress.Attempt(user!.Value, expectedAttempt, ct);
+            if (attempt is null) return null;
+            ValidateDraft(block, attempt, indices);
+            return await progress.SaveDraft(user.Value, expectedAttempt, JsonSerializer.Serialize(indices), ct);
+        }
+        var entry = guests.Find<ExerciseAttempt>(owner, expectedAttempt);
+        if (entry is null) return null;
+        await entry.Gate.WaitAsync(ct);
+        try
+        {
+            if (entry.Value.CompletedAt is not null) return false;
+            ValidateDraft(block, entry.Value, indices);
+            entry.Value.DraftIndicesJson = JsonSerializer.Serialize(indices);
+            return true;
+        }
+        finally { entry.Gate.Release(); }
+    }
+
+    private static void ValidateDraft(CourseDraftBlock block, ExerciseAttempt attempt, int[] indices)
+    {
+        var tokens = block.Kind == "audio" ? block.PublishedExercise?.TokensJson ?? attempt.TokensJson : attempt.TokensJson;
+        var length = LearningService.ParseTokens(tokens).Length;
+        if (indices.Length > length || indices.Distinct().Count() != indices.Length || indices.Any(i => i < 0 || i >= length))
+            throw new ArgumentException("Неверный набор слов.");
     }
 
     public async Task<bool> Retry(Guid id, Guid blockId, Guid expectedAttempt, Guid? user, Guid owner, CancellationToken ct)
@@ -354,7 +423,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         {
             if (await repository.Practice(user!.Value, runId, ct) is not { } run) return null;
             if (run.Complete || run.Revision != input.Revision) return new { stale = true };
-            var (reply, correct) = await CoursePractice.Answer(kind, run, input);
+            var (reply, correct) = await CoursePractice.Answer(kind, run, input, lesson.Blocks[index].PublishedActivity, catalog, ct);
             if (!await repository.SavePractice(run, input.Revision, ct)) return new { stale = true };
             await repository.Record(found.Session, input.BlockId, $"{runId:N}:{input.Revision}", correct, ct);
             if (run.Complete) await Advance(id, input.BlockId, user, owner, ct);
@@ -368,7 +437,7 @@ public sealed class CourseLearningService(ICourseRepository courses, ICourseLear
         try
         {
             if (entry.Value.Complete || entry.Value.Revision != input.Revision) return new { stale = true };
-            var (reply, _) = await CoursePractice.Answer(kind, entry.Value, input);
+            var (reply, _) = await CoursePractice.Answer(kind, entry.Value, input, lesson.Blocks[index].PublishedActivity, catalog, ct);
             entry.Value.Revision++;
             response = reply;
             completed = entry.Value.Complete;

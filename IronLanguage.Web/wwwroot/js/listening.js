@@ -1,7 +1,5 @@
-(() => {
-  const root = document.getElementById("listening-app");
-  if (!root) return;
-  const $ = id => document.getElementById(id);
+(window.AdamExercisePlayers ??= {}).listening = function (root, embedded) {
+  const $ = id => root.querySelector("#" + id);
   const lessonPath = root.dataset.lessonPath;
   const status = $("listening-status");
   const list = $("listening-list");
@@ -45,7 +43,7 @@
     if (checking) return;
     checking = true;
     try {
-      const data = lessonPath ? await AdamApi(lessonPath) :
+      const data = embedded ? await embedded.load() : lessonPath ? await AdamApi(lessonPath) :
         await AdamApi(`/listening/${id}/attempts`, { method: "POST" });
       card = data.card; attemptId = data.attemptId;
       chosenIndex = null; answer = null; submitted = false; audioReady = false;
@@ -57,8 +55,8 @@
       audio.pause(); audio.hidden = false;
       if (card.audioPath) {
         audio.src = card.audioPath; audio.load();
-        audioReady = true;
-        if (!lessonPath) audio.play().catch(() => {});
+        audioReady = !embedded;
+        if (!embedded && !lessonPath) audio.play().catch(() => {});
       } else {
         audio.removeAttribute("src"); audio.hidden = true;
         audioError.hidden = false;
@@ -69,6 +67,7 @@
     } catch (error) { status.textContent = error.message; }
     finally {
       checking = false;
+      renderOptions();
     }
   }
 
@@ -98,7 +97,7 @@
     checking = true; chosenIndex = index;
     renderOptions();
     try {
-      answer = await AdamApi(`/listening/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ optionIndex: index }) });
+      answer = embedded ? await embedded.answer([index]) : await AdamApi(`/listening/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ optionIndex: index }) });
       showAnswer(answer);
       renderOptions();
     } catch (error) {
@@ -162,6 +161,11 @@
     renderOptions();
   });
   $("listening-back")?.addEventListener("click", event => { event.preventDefault(); back(); });
-  if (lessonPath) start();
+  if (embedded || lessonPath) start();
   else load();
+  return () => audio.pause();
+};
+(() => {
+  const root = document.getElementById("listening-app");
+  if (root) window.AdamExercisePlayers.listening(root);
 })();

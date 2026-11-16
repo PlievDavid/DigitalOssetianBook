@@ -1,8 +1,8 @@
 @model string
 @inject IronLanguage.Web.Services.AvatarService Avatars
-@{ var isAudio = Model == "audio"; if (ViewData["LessonStartUrl"] is null) { ViewData["Title"] = isAudio ? "Аудиопазлы" : "Собери фразу"; } }
+@{ var isAudio = Model == "audio"; if (ViewData["LessonStartUrl"] is null && ViewData["EmbeddedExercise"] is null) { ViewData["Title"] = isAudio ? "Аудиопазлы" : "Собери фразу"; } }
 <section class="feature-shell exercise-page @(isAudio ? "audio-page" : "translate-page")" id="exercise-app" data-kind="@Model" data-start-url="@ViewData["LessonStartUrl"]">
-    @if (ViewData["LessonStartUrl"] is null) {
+    @if (ViewData["LessonStartUrl"] is null && ViewData["EmbeddedExercise"] is null) {
     <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel(isAudio ? "Аудиопазлы" : "Собери фразу", isAudio ? "Слушайте осетинскую запись и выбирайте слова по одному." : "Соберите осетинский перевод русской фразы.", isAudio ? "audio" : "translate", isAudio ? "blue" : "sand"))
     }
@@ -11,7 +11,7 @@
     <div id="exercise-play" class="exercise-play" hidden>
         <div class="exercise-avatar" id="exercise-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel((await Avatars.Current(User)).With("Background", "plain"), Emotion: AvatarEmotion.Thinking))</div>
         <div class="exercise-play-body">
-        <a id="exercise-back" class="back-link" href="/audio-puzzles" hidden="@(ViewData["LessonStartUrl"] is not null)">← К списку</a>
+        <a id="exercise-back" class="back-link" href="/audio-puzzles" hidden="@(ViewData["LessonStartUrl"] is not null || ViewData["EmbeddedExercise"] is not null)">← К списку</a>
         <span id="exercise-eyebrow" class="eyebrow" hidden></span>
         <h2 id="exercise-prompt"></h2>
         <p id="exercise-instruction">@(isAudio ? "Прослушайте запись и выбирайте слова по одному. Неверный вариант можно заменить другим." : "Соберите осетинскую фразу из слов ниже.")</p>

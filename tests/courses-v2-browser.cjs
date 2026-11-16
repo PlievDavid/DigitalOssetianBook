@@ -330,7 +330,7 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check(await student.locator('.cr-text s').first().evaluate(el => {
       const style = getComputedStyle(el), paragraph = getComputedStyle(el.parentElement);
       return style.fontSize === '22px' && style.fontStyle === 'italic' && style.fontSynthesisStyle === 'auto'
-        && style.backgroundPosition === '50% 50%' && style.backgroundImage !== 'none'
+        && style.textDecorationLine.includes('line-through') && style.backgroundImage === 'none'
         && paragraph.textAlign === 'center' && parseFloat(paragraph.paddingInlineStart) > 0;
     }), 'Публикация потеряла курсив, зачёркивание или оформление абзаца');
     check(await student.locator('.cr-block-content').evaluate(el => getComputedStyle(el).textAlign === 'right'),
@@ -362,17 +362,25 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check(await student.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Урок выходит за мобильный экран');
     await student.screenshot({ path: path.join(out, 'lesson-phone.png'), fullPage: true });
     // A failed attempt remains in history, but must not complete a course block.
-    await student.locator('.cv-tokens button').first().click();
+    const tiles = student.locator('#exercise-tiles button');
+    const draftRequest = student.waitForResponse(response => response.request().method() === 'PUT' &&
+      response.url().endsWith('/draft') && response.status() === 204);
+    await tiles.first().click();
+    await draftRequest;
+    const selectedWord = await student.locator('#exercise-picked button').textContent();
+    await student.reload();
+    await student.locator('#exercise-picked button').waitFor();
+    check(await student.locator('#exercise-picked button').textContent() === selectedWord, 'Выбранное слово не восстановилось');
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
-    await student.locator('.cv-result').waitFor();
+    await student.locator('#exercise-result.is-incorrect').waitFor();
     const repeated = await api(student, `/course-sessions/${sessionId}/answers`, 'POST', { blockId: lesson.blocks[1].id, tokenIndices: [0] });
     check(repeated.status === 200 && repeated.data.alreadySubmitted, 'Повтор ответа создал новый результат');
     check((await api(student, `/course-sessions/${sessionId}/next`, 'POST', { blockId: lesson.blocks[1].id })).status === 409, 'Неверный ответ завершил блок');
     await student.getByRole('button', { name: 'Попробовать снова', exact: true }).click();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();
-    for (const word of fixture.expected.split(/\s+/)) await student.locator('.cv-tokens').getByRole('button', { name: word, exact: true }).first().click();
+    for (const word of fixture.expected.split(/\s+/)) await student.locator('#exercise-tiles').getByRole('button', { name: word, exact: true }).first().click();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
-    await student.getByText('Верно!', { exact: true }).waitFor();
+    await student.locator('#exercise-result.is-correct').waitFor();
     await student.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await student.getByRole('heading', { name: 'Урок пройден', exact: true }).waitFor();
     await drawerToggle.click();
@@ -604,6 +612,13 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const range = await learner.request.get(base + streamUrl, { headers: { Range: 'bytes=0-43' } });
     check(range.status() === 206 && (await range.body()).subarray(0, 4).toString() === 'RIFF', 'Плеер не может загружать запись по частям');
     check((await guest.request.get(base + streamUrl)).status() === 404 && (await author.request.get(base + streamUrl)).status() === 404, 'Чужая сессия открывает запись');
+    const listeningOptions = student.locator('#listening-options button');
+    check(await listeningOptions.count() === 4 && await student.locator('#listening-transcript-block').isHidden(), 'У аудирования неверный формат или открыт текст записи до ответа');
+    await listeningOptions.nth(2).click();
+    await student.locator('#listening-result.is-correct').waitFor();
+    check(await listeningOptions.nth(2).evaluate(option => option.classList.contains('is-correct')), 'Правильный вариант аудирования не выделен');
+    check(await student.getByRole('button', { name: 'Продолжить', exact: true }).isVisible(), 'Верный ответ аудирования не завершил блок');
+
 
     const admin = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const adminPage = await admin.newPage();
@@ -680,6 +695,64 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.setViewportSize({ width: 1440, height: 1000 });
 
     await require('./course-theory-media.cjs')({ api, base, page, student, author, learner, guest, browser, login, fixture, check, out });
+    const shared = await guest.newPage();
+    shared.on('pageerror', error => errors.push(error.message));
+    await shared.goto(base + '/courses/' + fixture.practiceCourseId);
+    const practice = await api(shared, `/courses/${fixture.practiceCourseId}/lessons/${fixture.practiceLessonId}/sessions`, 'POST', {});
+    check(practice.status === 200, 'Гостевая сессия для общих проигрывателей не открылась: ' + practice.status);
+    const practiceUrl = '/course-sessions/' + practice.data.id;
+    const practiceState = (await api(shared, practiceUrl)).data;
+    const media = await author.request.get(base + fixture.audioPath);
+    const wave = await media.body();
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2uoAAAAASUVORK5CYII=', 'base64');
+    await shared.route('**/api/v1' + practiceUrl + '/media/*', route => {
+      const audioBlock = route.request().url().endsWith(practiceState.steps[0].id);
+      return route.fulfill({ contentType: audioBlock ? 'audio/wav' : 'image/png', body: audioBlock ? wave : png });
+    });
+    await shared.goto(base + '/courses/sessions/' + practice.data.id);
+    const audioOptions = shared.locator('#exercise-options');
+    await audioOptions.getByRole('button', { name: 'А', exact: true }).click();
+    check(await audioOptions.getByRole('button', { name: 'А', exact: true }).isDisabled() &&
+      await shared.locator('#exercise-hint').isVisible(), 'Аудиопазл не обрабатывает неверный выбор по шагам');
+    await audioOptions.getByRole('button', { name: 'Ӕ', exact: true }).click();
+    await audioOptions.getByRole('button', { name: 'ӕ', exact: true }).click();
+    await shared.locator('#exercise-result.is-correct').waitFor();
+    const nextShared = shared.getByRole('button', { name: 'Продолжить', exact: true });
+    await nextShared.click();
+
+    const match = (side, name) => shared.locator('#matching-' + side).getByRole('button', { name, exact: true });
+    await match('left', 'А').click();
+    await match('right', 'Б').click();
+    await shared.locator('#matching-threads .game-thread-matched').waitFor();
+    await shared.reload();
+    await shared.locator('#matching-threads .game-thread-matched').waitFor();
+    check(await match('left', 'А').isDisabled(), 'Сохранённая пара потерялась после перезагрузки');
+    await match('left', 'В').click();
+    await match('right', 'Г').click();
+    await nextShared.click();
+
+    const picture = shared.locator('#picture-play');
+    await picture.getByRole('textbox', { name: 'Осетинское слово' }).fill('Ӕ');
+    await picture.getByRole('button', { name: 'Проверить ответ' }).click();
+    await picture.locator('#picture-result.is-correct').waitFor();
+    await nextShared.click();
+
+    const grammar = shared.locator('#grammar-play');
+    await grammar.getByRole('button', { name: 'А', exact: true }).click();
+    await grammar.locator('#grammar-rule').waitFor();
+    check((await grammar.locator('#grammar-rule').textContent()).includes('Правило'), 'Форма слова не показала подсказку');
+    await grammar.getByRole('button', { name: 'ӕ', exact: true }).click();
+    await grammar.locator('.grammar-inserted').waitFor();
+    check((await grammar.locator('.grammar-inserted').textContent()) === 'ӕ', 'Форма слова не вставлена в предложение');
+    await nextShared.click();
+
+    const dialog = shared.locator('#dialog-play');
+    await dialog.locator('#dialog-options').getByRole('button', { name: 'ӕ', exact: true }).click();
+    await dialog.locator('#dialog-summary').waitFor();
+    await nextShared.click();
+    await shared.getByRole('heading', { name: 'Урок пройден', exact: true }).waitFor();
+    check(await shared.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Общий проигрыватель выходит за экран телефона');
+    await shared.close();
     check(errors.length === 0, 'Ошибки JavaScript: ' + errors.join('; '));
     console.log(`Course browser checks: ${checks} passed.`);
   } catch (e) {

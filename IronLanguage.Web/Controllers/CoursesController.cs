@@ -328,6 +328,23 @@ public sealed class CoursesController(ICourseRepository courses, ICourseLearning
         try { return await learning.PracticeAnswer(id, input, User.UserId(), guests.Owner(HttpContext), ct) is { } answer ? Json(answer) : NotFound(); }
         catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
     }
+    [HttpPut("api/v1/course-sessions/{id:guid}/draft")]
+    public async Task<IActionResult> SaveDraft(Guid id, [FromBody] AnswerInput input, CancellationToken ct)
+    {
+        if (!CanAccessSession(id)) return NotFound();
+        if (!ModelState.IsValid || input?.TokenIndices is null || input.AttemptId is not Guid attempt) return BadRequest();
+        try
+        {
+            return await learning.SaveDraft(id, input.BlockId, attempt, input.TokenIndices, User.UserId(), guests.Owner(HttpContext), ct) switch
+            {
+                true => NoContent(),
+                false => Conflict(new { error = "Попытка уже завершена." }),
+                null => NotFound()
+            };
+        }
+        catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
+    }
+
     [HttpPost("api/v1/course-sessions/{id:guid}/answers")]
     public async Task<IActionResult> Answer(Guid id, [FromBody] AnswerInput input, CancellationToken ct)
     {

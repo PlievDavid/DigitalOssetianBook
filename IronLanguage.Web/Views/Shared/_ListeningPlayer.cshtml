@@ -3,7 +3,7 @@
     <div id="listening-list" class="exercise-list" hidden></div>
     <div id="listening-play" class="exercise-play" hidden>
         <div class="exercise-play-body">
-            @if (ViewData["LessonListeningPath"] is null)
+            @if (ViewData["LessonListeningPath"] is null && ViewData["EmbeddedExercise"] is null)
             {
                 <a id="listening-back" class="back-link" href="/listening">← К аудированию</a>
             }

@@ -1,8 +1,8 @@
-(() => {
-  const root = document.getElementById("dialog-app");
-  if (!root) return;
+(window.AdamExercisePlayers ??= {}).dialogue = function (root, embedded) {
   const lessonUrl = root.dataset.startUrl;
-  const $ = id => document.getElementById(id);
+  const inLesson = Boolean(embedded || lessonUrl);
+  const events = new AbortController();
+  const $ = id => root.querySelector("#" + id);
   const status = $("dialog-status");
   const list = $("dialog-list");
   const play = $("dialog-play");
@@ -55,7 +55,7 @@
   async function resync(captured, token) {
     if (!captured || !captured.sessionId) return false;
     try {
-      const fresh = await AdamApi(`/dialogs/sessions/${captured.sessionId}`);
+      const fresh = embedded ? await embedded.resync() : await AdamApi(`/dialogs/sessions/${captured.sessionId}`);
       if (isStale(token)) return false;
       if (!session || session.sessionId !== fresh.sessionId) return false;
       session = fresh;
@@ -124,7 +124,7 @@
   async function start(id) {
     cancelPending();
     try {
-      session = lessonUrl ? await AdamApi(lessonUrl) : await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
+      session = embedded ? await embedded.load() : lessonUrl ? await AdamApi(lessonUrl) : await AdamApi(`/dialogs/${id}/sessions`, { method: "POST" });
       hideSyncActions();
       list.hidden = true; if ($("dialog-history-block")) $("dialog-history-block").hidden = true; play.hidden = false;
       $("dialog-title").textContent = session.title;
@@ -278,7 +278,7 @@
       ? `Диалог пройден. Ходов: ${s.turns}, ошибок: ${s.errors}, подсказок: ${s.hints}.`
       : "Диалог уже завершён.";
     summaryBox.append(text);
-    if (!lessonUrl) summaryBox.append(
+    if (!inLesson) summaryBox.append(
       button("Пройти заново", () => start(session.dialogueId), "button primary"),
       button("К списку", back, "button secondary"));
   }
@@ -347,10 +347,11 @@
     setBusy(true);
     result.textContent = "";
     try {
-      const response = await AdamApi(`/dialogs/sessions/${captured.sessionId}/answer`, {
+      const payload = { turnId: captured.turnId, value, skip };
+      const response = embedded ? await embedded.answer(payload) : await AdamApi(`/dialogs/sessions/${captured.sessionId}/answer`, {
         method: "POST",
         signal: current.signal,
-        body: JSON.stringify({ turnId: captured.turnId, value, skip })
+        body: JSON.stringify(payload)
       });
       if (isStale(token)) return;
       lastValue = skip ? "" : (value || "").trim();
@@ -397,6 +398,11 @@
   skipButton.addEventListener("click", () => send(null, true));
   input.addEventListener("keydown", event => { if (event.key === "Enter") send(input.value); });
   $("dialog-back-link").addEventListener("click", event => { event.preventDefault(); back(); });
-  document.addEventListener("keydown", event => { if (event.key === "Escape") closeWord(); });
-  if (lessonUrl) start(); else load();
+  document.addEventListener("keydown", event => { if (event.key === "Escape") closeWord(); }, { signal: events.signal });
+  if (inLesson) start(); else load();
+  return () => { events.abort(); controller?.abort(); generation++; };
+};
+(() => {
+  const root = document.getElementById("dialog-app");
+  if (root) window.AdamExercisePlayers.dialogue(root);
 })();

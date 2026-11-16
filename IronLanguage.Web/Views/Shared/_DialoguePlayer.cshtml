@@ -1,6 +1,6 @@
-@{ if (ViewData["LessonStartUrl"] is null) { ViewData["Title"] = "Диалоги"; } }
+@{ if (ViewData["LessonStartUrl"] is null && ViewData["EmbeddedExercise"] is null) { ViewData["Title"] = "Диалоги"; } }
 <section class="feature-shell dialog-page" id="dialog-app" data-start-url="@ViewData["LessonStartUrl"]">
-    @if (ViewData["LessonStartUrl"] is null) {
+    @if (ViewData["LessonStartUrl"] is null && ViewData["EmbeddedExercise"] is null) {
     <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Диалоги", "Читайте реплики собеседника и отвечайте на осетинском. Подсказки помогут продолжить разговор.", "dialogs"))
     }
@@ -8,7 +8,7 @@
     <div id="dialog-list" class="exercise-list"></div>
     <div id="dialog-play" hidden>
         <div class="dialog-play-head">
-            <a id="dialog-back-link" class="back-link" href="/dialogs" hidden="@(ViewData["LessonStartUrl"] is not null)">← К списку</a>
+            <a id="dialog-back-link" class="back-link" href="/dialogs" hidden="@(ViewData["LessonStartUrl"] is not null || ViewData["EmbeddedExercise"] is not null)">← К списку</a>
             <span id="dialog-counters" class="dialog-counters" aria-live="polite"></span>
         </div>
         <h2 id="dialog-title"></h2>
@@ -25,7 +25,7 @@
         <div id="dialog-summary" class="dialog-summary" hidden></div>
         <aside id="dialog-word-popup" class="reader-popup" aria-label="Словарная статья" hidden></aside>
     </div>
-    @if (User.Identity?.IsAuthenticated == true && ViewData["LessonStartUrl"] is null)
+    @if (User.Identity?.IsAuthenticated == true && ViewData["LessonStartUrl"] is null && ViewData["EmbeddedExercise"] is null)
     {
     <div id="dialog-history-block">
         <h2>История прохождений</h2>

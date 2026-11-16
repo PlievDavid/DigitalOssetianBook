@@ -18,8 +18,8 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         RussianPrompt = exercise.RussianPrompt, Explanation = exercise.Explanation, AudioPath = exercise.AudioPath
     };
 
-    public Task<ExerciseCard> SnapshotCard(string kind, ExerciseAttempt attempt, CancellationToken ct) =>
-        Card(new Exercise { Id = attempt.ExerciseId, Kind = kind }, attempt, ct);
+    public Task<ExerciseCard> SnapshotCard(string kind, ExerciseAttempt attempt, CancellationToken ct, string? tokensJson = null) =>
+        Card(new Exercise { Id = attempt.ExerciseId, Kind = kind }, attempt, ct, tokensJson);
 
     public static string[] ParseTokens(string json) => JsonSerializer.Deserialize<string[]>(json) ?? [];
     public static string Normalize(string value) => string.Join(' ', value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
@@ -44,9 +44,9 @@ public sealed class LearningService(ICatalogRepository catalog, IProgressReposit
         return (await Card(exercise, attempt, ct), attempt);
     }
 
-    private async Task<ExerciseCard> Card(Exercise exercise, ExerciseAttempt? attempt, CancellationToken ct)
+    private async Task<ExerciseCard> Card(Exercise exercise, ExerciseAttempt? attempt, CancellationToken ct, string? tokensJson = null)
     {
-        var tokensJson = attempt?.TokensJson is { Length: > 2 } ? attempt.TokensJson : exercise.TokensJson;
+        tokensJson ??= attempt?.TokensJson is { Length: > 2 } ? attempt.TokensJson : exercise.TokensJson;
         var wordIdsJson = attempt?.WordIdsJson ?? exercise.WordIdsJson;
         var wordIds = JsonSerializer.Deserialize<Guid[]>(wordIdsJson) ?? [];
         var words = new List<ExerciseWord>();

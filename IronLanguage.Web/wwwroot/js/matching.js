@@ -1,7 +1,5 @@
-(() => {
-  const root = document.getElementById("matching-app");
-  if (!root) return;
-  const $ = id => document.getElementById(id);
+(window.AdamExercisePlayers ??= {}).matching = function (root, embedded) {
+  const $ = id => root.querySelector("#" + id);
   const status = $("matching-status");
   const list = $("matching-list");
   const play = $("matching-play");
@@ -76,7 +74,8 @@
     if (event.key !== 'Escape' || busy || !session) return;
     cancelDrag(); selectedLeft = null; renderBoard(); result.textContent = 'Выбор отменён.';
   });
-  new ResizeObserver(drawThreads).observe(board);
+  const resize = new ResizeObserver(drawThreads);
+  resize.observe(board);
 
 
 
@@ -109,13 +108,14 @@
 
   async function start(id) {
     try {
-      const next = await AdamApi(`/matching/${id}/sessions`, { method: "POST" });
+      const next = embedded ? await embedded.load() : await AdamApi(`/matching/${id}/sessions`, { method: "POST" });
       resetThreads();
       selectedLeft = null;
       generation++;
       busy = false;
       session = next;
-      sessionStorage.setItem("adam.matching.session", session.sessionId);
+      session.matchedByLeft?.forEach((right, left) => { if (right >= 0) connections.set(left, right); });
+      if (!embedded) sessionStorage.setItem("adam.matching.session", session.sessionId);
       list.hidden = true; play.hidden = false;
       render();
       status.textContent = "";
@@ -173,7 +173,7 @@
     const gen = generation;
     const sid = session.sessionId;
     try {
-      const response = await AdamApi(`/matching/sessions/${sid}/check`, {
+      const response = embedded ? await embedded.answer({ left: leftIndex, right: rightIndex }) : await AdamApi(`/matching/sessions/${sid}/check`, {
         method: "POST",
         body: JSON.stringify({ leftIndex, rightIndex })
       });
@@ -243,6 +243,7 @@
     summaryBox.replaceChildren();
     const text = document.createElement("p");
     text.textContent = `Все пары найдены: ${session.total} из ${session.total}.`;
+    if (embedded) { summaryBox.append(text); return; }
     summaryBox.append(text,
       button("Пройти заново", () => start(session.materialId), "button primary"),
       button("К списку", back, "button secondary"));
@@ -283,5 +284,10 @@
   }
 
   $("matching-back-link").addEventListener("click", event => { event.preventDefault(); back(); });
-  load();
+  if (embedded) start(); else load();
+  return () => { generation++; resize.disconnect(); };
+};
+(() => {
+  const root = document.getElementById("matching-app");
+  if (root) window.AdamExercisePlayers.matching(root);
 })();
