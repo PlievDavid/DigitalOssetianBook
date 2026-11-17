@@ -238,6 +238,7 @@ try
     var groupingPayload = new GroupingMaterial("Группировка", ["А", "Б"],
         [new("один", 0), new("два", 0), new("три", 1), new("четыре", 1)], []);
     var groupingId = await materialEditor.Create("grouping", JsonSerializer.Serialize(groupingPayload, CourseAuthoringService.JsonOptions), ct, owner.Id);
+    Check(await db.CourseMaterialAccesses.AnyAsync(x => x.Kind == "grouping" && x.MaterialId == groupingId && x.OwnerId == owner.Id, ct), "Владелец группировки не сохранён");
     Check(await materialEditor.PublishDraft("grouping", groupingId, owner.Id, ct), "Не опубликована группировка");
     var groupingRevision = (await materialEditor.StartRevision("grouping", groupingId, owner.Id, ct))!.Value;
     var newerGrouping = groupingPayload with { Title = "Новая группировка" };

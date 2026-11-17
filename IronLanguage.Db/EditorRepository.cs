@@ -181,7 +181,7 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         {
             var p = Parse<GroupingMaterial>(payloadJson);
             var grouping = new Grouping { Title = p.Title, ScriptJson = payloadJson };
-            db.Groupings.Add(grouping); await db.SaveChangesAsync(ct); return grouping.Id;
+            db.Groupings.Add(grouping); return await SaveNew(grouping.Id);
         }
         if (kind == "grammar")
         {

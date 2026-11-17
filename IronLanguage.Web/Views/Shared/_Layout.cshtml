@@ -41,7 +41,7 @@
             </a>
         <nav id="main-navigation" class="main-nav" aria-label="Разделы"><div class="nav-inner">
             <div class="nav-menu nav-menu-section">
-                <a class="nav-section-link nav-menu-trigger @(isCourseSection ? "is-current" : "")" href="/courses" aria-current="@(normalizedPath == "/courses" ? "page" : null)" aria-controls="courses-menu" aria-expanded="false">Курсы</a>
+                <a class="nav-section-link nav-menu-trigger @(isCourseSection ? "is-current" : "")" href="/courses" aria-current="@(normalizedPath == "/courses" ? "page" : null)" aria-haspopup="true" aria-controls="courses-menu" aria-expanded="false">Курсы</a>
                 <div id="courses-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/courses" aria-current="@(normalizedPath == "/courses" ? "page" : null)">Каталог курсов</a>
                     @if (User.Identity?.IsAuthenticated == true) { <a class="nav-menu-item" href="/my-courses" aria-current="@(normalizedPath == "/my-courses" ? "page" : null)">Мои курсы</a> }
