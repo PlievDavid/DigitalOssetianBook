@@ -28,10 +28,7 @@
                 <a href="/progress">Все результаты</a>
             </div>
             <p id="progress-status" role="status">Загрузка…</p>
-            <dl class="profile-stats">
-                <div><dt>Очки</dt><dd id="progress-points">—</dd></div>
-                <div><dt>Дней подряд</dt><dd id="progress-streak">—</dd></div>
-            </dl>
+            @await Html.PartialAsync("_ProgressStats")
         </section>
 
         <section class="profile-settings" aria-labelledby="profile-settings-title">

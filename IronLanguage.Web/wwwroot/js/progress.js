@@ -1,13 +1,54 @@
 (() => {
-  if (!document.getElementById("progress-app")) return;
-  AdamApi("/progress").then(data => {
-    document.getElementById("progress-points").textContent = data.points;
-    document.getElementById("progress-streak").textContent = data.streak;
+    const root = document.getElementById("progress-app");
+    if (!root) return;
+
+    const status = document.getElementById("progress-status");
+    const retry = document.getElementById("progress-retry");
+    const awards = document.getElementById("progress-awards");
     const list = document.getElementById("progress-achievements");
-    if (!list) { document.getElementById("progress-status").textContent = ""; return; }
-    const names = { first: "Первое занятие", "streak-7": "7 дней подряд", "streak-30": "30 дней подряд" };
-    data.achievements.forEach(code => { const li = document.createElement("li"); li.textContent = names[code] || code; list.append(li); });
-    if (!data.achievements.length) { const empty = document.createElement("li"); empty.textContent = "Пока нет наград. Продолжайте заниматься, чтобы получить первую."; list.append(empty); }
-    document.getElementById("progress-status").textContent = data.achievements.length ? "Продолжайте заниматься!" : "Первая награда появится после завершения занятия.";
-  }).catch(error => { document.getElementById("progress-status").textContent = error.message; });
+    const empty = document.getElementById("progress-empty");
+    const template = document.getElementById("progress-award-template");
+    const names = new Map([
+        ["first", "Первое занятие"],
+        ["streak-7", "7 дней подряд"],
+        ["streak-30", "30 дней подряд"]
+    ]);
+
+    function showAwards(codes) {
+        if (!awards) return;
+        const items = codes.map(code => {
+            const item = template.content.cloneNode(true);
+            item.querySelector("strong").textContent = names.get(code) ?? code;
+            return item;
+        });
+        list.replaceChildren(...items);
+        list.hidden = items.length === 0;
+        empty.hidden = items.length > 0;
+        awards.hidden = false;
+    }
+
+    async function load() {
+        if (retry?.getAttribute("aria-disabled") === "true") return;
+        retry?.setAttribute("aria-disabled", "true");
+        status.textContent = "Загружаем результаты…";
+        try {
+            const data = await AdamApi("/progress");
+            document.getElementById("progress-points").textContent = data.points;
+            document.getElementById("progress-streak").textContent = data.streak;
+            showAwards(data.achievements);
+            status.textContent = "";
+            if (retry) {
+                if (document.activeElement === retry) root.querySelector("h1").focus();
+                retry.hidden = true;
+            }
+        } catch {
+            status.textContent = "Не удалось загрузить результаты.";
+            if (retry) retry.hidden = false;
+        } finally {
+            retry?.removeAttribute("aria-disabled");
+        }
+    }
+
+    retry?.addEventListener("click", load);
+    load();
 })();

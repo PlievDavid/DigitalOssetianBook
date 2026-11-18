@@ -25,11 +25,9 @@
     .home-hero .hero-actions { animation: home-arrive 360ms cubic-bezier(.2, .65, .3, 1) both; }
     .home-motion-section.home-arrived { animation: home-arrive 420ms cubic-bezier(.2, .65, .3, 1) both; }
 
-    @media (hover: hover) {
-        .home-shell .round-arrow { transition: transform 180ms ease; }
-        .home-shell .format-card:hover .round-arrow { transform: translateX(3px); }
-    }
 }
+
+.green-theme .home-games h2 a { text-decoration: underline; text-underline-offset: .16em; text-decoration-thickness: .06em; }
 
 @keyframes home-arrive {
     from { opacity: .72; transform: translateY(8px); }
@@ -103,5 +101,5 @@
     }
     .green-theme .home-shell .home-formats .format-icon svg { width: 21px; height: 21px; }
     .green-theme .home-shell .home-formats .format-card h3 { grid-area: 2 / 1; font-size: 14px; text-align: center; }
-    .green-theme .home-shell .home-formats .format-card :is(p, .round-arrow) { display: none; }
+    .green-theme .home-shell .home-formats .format-card p { display: none; }
 }

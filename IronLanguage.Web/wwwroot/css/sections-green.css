@@ -136,12 +136,6 @@
 .green-theme .profile-links a:hover { border-color: #a6bda9; background: var(--theme-sage); }
 .green-theme .profile-links span, .green-theme .profile-caption { color: var(--theme-muted); }
 .green-theme .profile-logout button { min-height: 44px; padding: 10px 18px; color: var(--theme-muted); border: 1px solid var(--theme-border); border-radius: 10px; }
-.green-theme .progress-stat { background: var(--theme-sage); border: 0; }
-.green-theme .progress-stat:nth-child(2) { background: var(--theme-sand); }
-.progress-stat strong { display: block; font: 600 48px var(--theme-heading-font); margin-top: 12px; }
-.progress-stat svg { float: right; width: 36px; height: 36px; color: var(--theme-green); }
-.green-theme #progress-achievements { display: grid; gap: 12px; padding: 0; list-style: none; }
-.green-theme #progress-achievements li { padding: 24px; border: 1px solid var(--theme-border); border-radius: 12px; line-height: 1.6; }
 .green-theme .home-reading-card { background-image: none; background-color: var(--theme-blue); }
 .art-credit-link { margin-left: auto; color: var(--theme-muted); text-decoration: underline; font-size: 12px; }
 .illustration-credits { border-top: 1px solid var(--theme-border); padding-top: 24px; margin-top: 32px; line-height: 1.7; }
