@@ -59,8 +59,17 @@ public sealed class AccountController(IAccountRepository accounts, AvatarService
     public async Task<IActionResult> SavePublicName(string? publicName, CancellationToken ct)
     {
         var name = publicName?.Trim();
-        if (string.IsNullOrWhiteSpace(name)) { TempData["PublicNameError"] = "Введите имя."; return Redirect("/profile"); }
-        if (name?.Length > 100) { TempData["PublicNameError"] = "Имя должно содержать не более 100 символов."; return Redirect("/profile"); }
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 100)
+        {
+            TempData["PublicNameError"] = string.IsNullOrWhiteSpace(name)
+                ? "Введите имя."
+                : "Имя должно содержать не более 100 символов.";
+            var attemptedName = publicName;
+            if (attemptedName is null && Request.HasFormContentType)
+                attemptedName = (await Request.ReadFormAsync(ct))["publicName"].ToString();
+            if (attemptedName is { Length: <= 256 }) TempData["PublicNameAttempt"] = attemptedName;
+            return Redirect("/profile");
+        }
         await accounts.SavePublicName(User.UserId()!.Value, name, ct);
         TempData["PublicNameSaved"] = true;
         return Redirect("/profile");

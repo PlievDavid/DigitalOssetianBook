@@ -125,7 +125,7 @@
 .green-theme .auth-shell .stack-form input:focus { outline: 3px solid var(--theme-focus); outline-offset: 2px; }
 .green-theme .auth-shell .auth-switch a { text-decoration: underline; }
 .account-layout { max-width: 1200px; margin: auto; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; padding: 32px 40px 64px; }
-.account-navigation { display: grid; align-content: start; gap: 8px; padding: 8px 20px 8px 0; border-right: 1px solid var(--theme-border); }
+.account-navigation { display: grid; align-content: start; gap: 8px; padding: 0 20px 8px 0; border-right: 1px solid var(--theme-border); }
 .account-navigation a { display: flex; align-items: center; gap: 12px; padding: 14px 12px; border-radius: 10px; font-size: 14px; color: var(--theme-muted); }
 .account-navigation svg { width: 22px; height: 22px; flex: none; }
 .account-navigation a:hover, .account-navigation a[aria-current="page"] { color: var(--theme-green); background: var(--theme-sage); }
