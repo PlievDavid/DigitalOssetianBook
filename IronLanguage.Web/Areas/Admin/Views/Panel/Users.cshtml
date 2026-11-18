@@ -1,0 +1,17 @@
+@model AdminUserPage
+@{ ViewData["Title"] = "Пользователи"; }
+<form method="get" class="panel filters" novalidate>
+<div class="search-field"><label for="q">Имя или email</label><div><input id="q" name="q" value="@Model.Query" maxlength="254" type="search" /><button type="button" class="clear-search" aria-label="Очистить поиск" hidden="@(Model.Query.Length == 0)">×</button></div></div>
+<div><label for="role">Роль</label><select id="role" name="role"><option value="">Все роли</option><option value="Admin" selected="@(Model.Role == "Admin")">Admin</option><option value="Editor" selected="@(Model.Role == "Editor")">Editor</option></select></div>
+<div><label for="status">Статус</label><select id="status" name="status"><option value="">Все</option><option value="active" selected="@(Model.Status == "active")">Активные</option><option value="blocked" selected="@(Model.Status == "blocked")">Заблокированные</option></select></div>
+<div><label for="sort">Порядок</label><select id="sort" name="sort"><option value="newest" selected="@(Model.Sort == "newest")">Сначала новые</option><option value="oldest" selected="@(Model.Sort == "oldest")">Сначала ранние</option><option value="name" selected="@(Model.Sort == "name")">По имени</option></select></div>
+<button class="primary" type="submit">Найти</button>
+</form>
+<section class="panel"><div class="section-bar"><h2>Учётные записи</h2><span class="muted">Найдено: @Model.Total</span></div>
+@if (Model.Rows.Count == 0) { <p class="empty">Пользователей не найдено. Измените условия поиска.</p> }
+else { <div class="table-wrap"><table><thead><tr><th>Пользователь</th><th>Роли</th><th>Статус</th><th>Регистрация, UTC</th></tr></thead><tbody>@foreach (var user in Model.Rows) { <tr><td><a class="user-link" href="/admin/users/@user.Id">@(string.IsNullOrWhiteSpace(user.Name) ? user.Email : user.Name)</a><small>@user.Email</small></td><td>@(user.Roles.Length == 0 ? "Ученик" : string.Join(", ", user.Roles))</td><td><span class="badge @(user.Blocked ? "warning" : "")">@(user.Blocked ? "Заблокирован" : "Активен")</span></td><td>@user.CreatedAt.UtcDateTime.ToString("dd.MM.yyyy")</td></tr> }</tbody></table></div> }
+<nav class="pagination" aria-label="Страницы пользователей">
+@if (Model.Page > 1) { <a asp-action="Users" asp-route-q="@Model.Query" asp-route-role="@Model.Role" asp-route-status="@Model.Status" asp-route-sort="@Model.Sort" asp-route-page="@(Model.Page - 1)">Назад</a> }
+<span>Страница @Model.Page из @Model.Pages</span>
+@if (Model.Page < Model.Pages) { <a asp-action="Users" asp-route-q="@Model.Query" asp-route-role="@Model.Role" asp-route-status="@Model.Status" asp-route-sort="@Model.Sort" asp-route-page="@(Model.Page + 1)">Далее</a> }
+</nav></section>

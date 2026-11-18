@@ -14,7 +14,12 @@ public sealed class AvatarService(IAccountRepository accounts)
     private async Task<AvatarOptions> Load(ClaimsPrincipal principal)
     {
         if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return new();
-        var user = await accounts.FindById(id);
+        return await ForUser(id);
+    }
+
+    public async Task<AvatarOptions> ForUser(Guid id, CancellationToken ct = default)
+    {
+        var user = await accounts.FindById(id, ct);
         return AvatarOptions.Read(user?.AvatarJson);
     }
 }

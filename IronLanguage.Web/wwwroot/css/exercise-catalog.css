@@ -1,0 +1,140 @@
+.exercises-shell {
+    display: grid;
+    gap: clamp(18px, 2.5vw, 28px);
+    padding-block: clamp(18px, 2.6vw, 34px) clamp(32px, 5vw, 62px);
+}
+.exercises-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 42%);
+    align-items: center;
+    gap: clamp(10px, 2vw, 24px);
+    padding: clamp(20px, 3.5vw, 42px);
+    border: 1px solid #e7e2d7;
+    border-radius: 28px;
+    background: linear-gradient(115deg, #f5f1e9, #faf8f3 68%, #f3f1e8);
+}
+.exercises-heading-copy { min-width: 0; }
+.exercises-kicker {
+    color: #4c5e59;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+.green-theme .exercises-heading h1 {
+    font-size: clamp(40px, 6vw, 76px);
+    line-height: 1;
+    letter-spacing: -.055em;
+    margin: 9px 0 12px;
+}
+.exercises-heading p {
+    margin: 0;
+    max-width: 35ch;
+    color: var(--theme-muted);
+    font-size: clamp(15px, 1.55vw, 19px);
+    line-height: 1.45;
+}
+.exercises-motif { display: block; width: 100%; max-height: 178px; }
+.exercises-motif text { font-family: var(--theme-heading-font); }
+
+.exercise-tracks { display: grid; gap: clamp(12px, 1.4vw, 18px); }
+.exercise-category {
+    --track-paper: #f0f5fb;
+    --track-swatch: #dceafa;
+    --track-edge: #d5e3f1;
+    --track-ink: #24527c;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--track-edge);
+    border-radius: 24px;
+    background: var(--track-paper);
+}
+.exercise-category--phrases {
+    --track-paper: #fbf5e9;
+    --track-swatch: #f6e7c9;
+    --track-edge: #efe2ca;
+    --track-ink: #784719;
+}
+.exercise-category--words {
+    --track-paper: #f1f5e9;
+    --track-swatch: #e3ebd3;
+    --track-edge: #e0e8d4;
+    --track-ink: #315948;
+}
+.exercise-category-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+    padding: 8px 7px 17px;
+}
+.exercise-category-number {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 39px;
+    height: 39px;
+    border-radius: 50%;
+    background: var(--track-swatch);
+    color: var(--track-ink);
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.exercise-category h2 { margin: 0 0 3px; font-size: clamp(19px, 2vw, 25px); line-height: 1.14; }
+.exercise-category-heading p { margin: 0; font-size: 13px; color: var(--track-ink); }
+.exercise-catalog-grid { display: grid; gap: 7px; }
+.exercise-catalog-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    min-height: 79px;
+    border: 1px solid var(--track-edge);
+    border-radius: 14px;
+    background: #fff;
+    color: inherit;
+    text-decoration: none;
+}
+.exercise-catalog-card:is(:hover, :focus-visible) {
+    background: color-mix(in srgb, #fff 76%, var(--track-swatch));
+    border-color: color-mix(in srgb, var(--track-edge) 75%, var(--track-ink));
+}
+.exercise-catalog-card h3 { margin: 0 0 4px; font-size: 16px; line-height: 1.2; }
+.exercise-catalog-card p { margin: 0; color: var(--theme-muted); font-size: 13px; line-height: 1.35; }
+.exercise-catalog-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--track-paper);
+    color: var(--track-ink);
+}
+.exercise-catalog-icon svg { width: 21px; height: 21px; }
+.exercise-catalog-arrow { color: var(--track-ink); font-size: 18px; }
+
+@media (min-width: 600px) and (max-width: 959px) {
+    .exercise-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 960px) {
+    .exercise-tracks { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+}
+@media (max-width: 599px) {
+    .exercises-shell { padding-top: 10px; gap: 14px; }
+    .exercises-heading { grid-template-columns: minmax(0, 1fr); gap: 7px; border-radius: 22px; padding: 19px 20px 8px; }
+    .exercises-motif { max-height: 113px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .exercises-motif { animation: exercise-motif-enter 480ms cubic-bezier(.18,.65,.3,1) both; }
+    .exercise-catalog-card { transition: background-color 160ms, border-color 160ms; }
+    @media (hover: hover) {
+        .exercise-catalog-arrow { transition: transform 180ms ease; }
+        .exercise-catalog-card:hover .exercise-catalog-arrow { transform: translateX(3px); }
+    }
+}
+@keyframes exercise-motif-enter {
+    from { opacity: .65; transform: translateY(7px); }
+    to { opacity: 1; transform: translateY(0); }
+}

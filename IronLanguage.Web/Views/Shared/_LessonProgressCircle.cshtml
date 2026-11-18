@@ -1,0 +1,19 @@
+@model int
+@{
+    var percent = Math.Clamp(Model, 0, 100);
+    var angle = percent * Math.Tau / 100;
+    var endX = 10 + 8.5 * Math.Sin(angle);
+    var endY = 10 - 8.5 * Math.Cos(angle);
+    var sector = FormattableString.Invariant($"M10 10 V1.5 A8.5 8.5 0 {(percent > 50 ? 1 : 0)} 1 {endX:0.###} {endY:0.###} Z");
+}
+<svg class="lesson-progress-circle" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
+    <circle cx="10" cy="10" r="8.5" class="lesson-progress-track" />
+    @if (percent == 100)
+    {
+        <circle cx="10" cy="10" r="8.5" class="lesson-progress-fill" />
+    }
+    else if (percent > 0)
+    {
+        <path d="@sector" class="lesson-progress-fill" />
+    }
+</svg>

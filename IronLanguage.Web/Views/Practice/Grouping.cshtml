@@ -1,6 +1,6 @@
 @{ ViewData["Title"] = "Разбить слова на группы"; }
 <section class="feature-shell grouping-page game-shell" id="grouping-app">
-    <a class="back-link" href="/">← К заданиям</a>
+    <a class="back-link" href="/exercises">← К заданиям</a>
     @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Разбить слова на группы", "Перетащите каждое слово в подходящую группу. Ошибочное слово можно вернуть и попробовать снова.", "grouping", "plum"))
     <div id="grouping-status" role="status"></div>
     <div id="grouping-list" class="exercise-list"></div>

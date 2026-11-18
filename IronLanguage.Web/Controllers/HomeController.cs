@@ -8,6 +8,9 @@ public class HomeController : Controller
 {
     public IActionResult Index() => View();
 
+    [HttpGet("/exercises")]
+    public IActionResult Exercises() => View();
+
     public IActionResult Illustrations() => View();
 
     public IActionResult Privacy()

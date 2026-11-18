@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Курсы";
+    var lesson = Context.Request.Path.StartsWithSegments("/courses/sessions");
+}
+<section class="feature-shell courses-v2" id="courses-workspace" data-editor="@User.IsInRole("Editor").ToString().ToLowerInvariant()">
+    <p class="cv-loading" role="status">Загружаем курсы…</p>
+</section>
+<noscript><p class="feature-shell">Для конструктора и прохождения курса включите JavaScript.</p></noscript>
+@if (lesson)
+{
+    var embedded = new ViewDataDictionary(ViewData) { ["EmbeddedExercise"] = true };
+    <template id="course-exercise-translation">@await Html.PartialAsync("_ExercisePlayer", "translation", embedded)</template>
+    <template id="course-exercise-audio">@await Html.PartialAsync("_ExercisePlayer", "audio", embedded)</template>
+    <template id="course-exercise-listening">@await Html.PartialAsync("_ListeningPlayer", null, embedded)</template>
+    <template id="course-exercise-matching">@await Html.PartialAsync("_MatchingPlayer", null, embedded)</template>
+    <template id="course-exercise-picture">@await Html.PartialAsync("_PicturePlayer", null, embedded)</template>
+    <template id="course-exercise-grammar">@await Html.PartialAsync("_GrammarPlayer", null, embedded)</template>
+    <template id="course-exercise-dialogue">@await Html.PartialAsync("_DialoguePlayer", null, embedded)</template>
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/courses-v2.css" asp-append-version="true" />
+    @if (lesson)
+    {
+        <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/matching.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/picture.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/grammar.css" asp-append-version="true" />
+    }
+}
+@section Scripts {
+    @if (lesson)
+    {
+        <script src="~/js/letter-keys.js" asp-append-version="true" defer></script>
+        <script src="~/js/practice.js" asp-append-version="true" defer></script>
+        <script src="~/js/listening.js" asp-append-version="true" defer></script>
+        <script src="~/js/matching.js" asp-append-version="true" defer></script>
+        <script src="~/js/picture.js" asp-append-version="true" defer></script>
+        <script src="~/js/grammar.js" asp-append-version="true" defer></script>
+        <script src="~/js/dialog.js" asp-append-version="true" defer></script>
+    }
+    <script src="~/js/courses-v2.js" asp-append-version="true" defer></script>
+}

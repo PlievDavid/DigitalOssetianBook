@@ -114,7 +114,7 @@ public sealed class DialogueSeedService(IEditorRepository editor, IAccountReposi
         {
             var user = await accounts.FindByEmail(editorEmail.Trim(), ct);
             if (user is null) throw new InvalidOperationException($"Пользователь «{editorEmail}» не найден.");
-            if (!user.IsEditor) throw new InvalidOperationException($"У пользователя «{user.Email}» нет роли редактора.");
+            if (!await accounts.CanEdit(user.Id, ct)) throw new InvalidOperationException($"У пользователя «{user.Email}» нет роли редактора.");
             return user.Id;
         }
 

@@ -142,7 +142,6 @@
 .progress-stat svg { float: right; width: 36px; height: 36px; color: var(--theme-green); }
 .green-theme #progress-achievements { display: grid; gap: 12px; padding: 0; list-style: none; }
 .green-theme #progress-achievements li { padding: 24px; border: 1px solid var(--theme-border); border-radius: 12px; line-height: 1.6; }
-.green-theme .home-hero { background-image: linear-gradient(90deg, var(--theme-sage) 0%, #eff2e8f5 40%, #eff2e800 72%), url('../images/green/kurt-tag-watercolor.png'); background-size: 100% 100%, auto 125%; background-position: center, right 60%; }
 .green-theme .home-reading-card { background-image: none; background-color: var(--theme-blue); }
 .art-credit-link { margin-left: auto; color: var(--theme-muted); text-decoration: underline; font-size: 12px; }
 .illustration-credits { border-top: 1px solid var(--theme-border); padding-top: 24px; margin-top: 32px; line-height: 1.7; }
@@ -206,9 +205,6 @@
   .green-theme .book-card { transition: none; }
   .green-theme .book-card:hover { transform: none; }
 }
-/* Fade the artwork itself so its paper edge cannot form a seam in the hero. */
-.green-theme .home-hero { background-image: none; }
-.green-theme .home-hero::before { content: ""; position: absolute; inset: 0 0 0 auto; width: 48%; background: url('../images/green/kurt-tag-watercolor.png') right 58% / auto 135% no-repeat; mask-image: linear-gradient(90deg, transparent, #000 35%); }
 @media (max-width: 700px) {
 }
 .green-theme .footer-inner { border-top: 1px solid var(--theme-border); margin: 12px 40px 0; padding: 24px 0; flex-wrap: wrap; }
@@ -271,10 +267,8 @@
 .green-theme .button, .green-theme .theme-button { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
 .green-theme .auth-switch { overflow-wrap: anywhere; }
 /* Size the image to its own painted area so the mask fades its paper boundary. */
-@media (min-width: 701px) { .green-theme .home-hero::before { width: min(48%, 420px); background-size: 100% auto; background-position: right 55%; mask-image: linear-gradient(90deg, transparent, #000 48%); } }
 
 /* Mobile hero: clear type and a separate illustration, with no image under the copy. */
-.hero-mobile-art { display: none; }
 /* Phones use bottom navigation; the upper menu is available from tablet width. */
 @media (max-width: 599px) {
   .green-theme .feature-shell { padding-inline: 16px; }
@@ -285,17 +279,14 @@
 }
 @media (max-width: 700px) {
   .green-theme .home-hero { min-height: 0; background: var(--theme-sage); border: 1px solid #e6eadf; }
-  .green-theme .home-hero::before { display: none; }
   .green-theme .hero-copy { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 20px; }
-  .hero-mobile-art { display: block; grid-column: 1; grid-row: 1; overflow: hidden; border-radius: 12px; width: 100%; aspect-ratio: 4 / 3; }
-  .hero-mobile-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
-  .green-theme .hero-copy h1 { grid-column: 1; grid-row: 2; max-width: none; margin: 0; font-size: clamp(25px, 5.7vw, 34px); line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; }
-  .green-theme .hero-copy > p { grid-column: 1; grid-row: 3; max-width: none; min-height: 0; margin: 0; font-size: 14px; line-height: 1.55; }
-  .green-theme .hero-actions { grid-column: 1; grid-row: 4; display: grid; gap: 4px; margin-top: 0; }
+  .green-theme .hero-copy h1 { max-width: none; margin: 0; font-size: clamp(25px, 5.7vw, 34px); line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; }
+  .green-theme .hero-copy > p { max-width: none; min-height: 0; margin: 0; font-size: 14px; line-height: 1.55; }
+  .green-theme .hero-actions { display: grid; gap: 4px; margin-top: 0; }
   .green-theme .hero-actions .theme-button { width: 100%; min-height: 48px; padding: 12px 16px; font-size: 15px; border-radius: 10px; }
   .green-theme .hero-actions .theme-button-secondary { min-width: 0; min-height: 44px; background: transparent; border: 0; box-shadow: none; font-weight: 500; }
   .green-theme .hero-actions .theme-button-secondary:hover { background: #173f3108; }
-  .green-theme .hero-note { grid-column: 1; grid-row: 5; margin: 0; text-align: center; font-size: 12px; color: var(--theme-muted); }
+  .green-theme .hero-note { margin: 0; text-align: center; font-size: 12px; color: var(--theme-muted); }
 }
 .green-theme .home-learning-grid > :is(.home-reading-card, .home-words-card) { display: flex; flex-direction: column; padding: 24px; border: 1px solid var(--theme-border); }
 .green-theme .home-learning-grid :is(.home-reading-card, .home-words-card) .theme-button { width: fit-content; align-self: flex-start; min-height: 48px; margin-top: auto; padding: 12px 16px; border: 1px solid transparent; border-radius: 10px; background: var(--theme-green); color: white; font-size: 15px; font-weight: 600; }
