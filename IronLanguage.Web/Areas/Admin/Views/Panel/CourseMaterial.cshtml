@@ -1,0 +1,32 @@
+@using IronLanguage.Web.Services
+@model CourseMaterialAdminItem
+@{
+    ViewData["Title"] = Model.Title;
+    var affected = (CourseAdminItem[])ViewData["Affected"]!;
+}
+<p><a href="/admin/course-materials">К упражнениям</a></p>
+<section class="panel">
+    <h2>Курсы с этим упражнением</h2>
+    @if (affected.Length == 0) { <p>В текущих публикациях упражнение не найдено.</p> }
+    <ul>
+    @foreach (var row in affected)
+    {
+        <li><a href="/admin/courses/@row.Course.Id">@CourseLearningService.Read(row.Publication!).Title</a></li>
+    }
+    </ul>
+    <form method="post" action="/admin/course-materials/@Model.Kind/@Model.Id">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="blocked" value="@(!Model.Blocked ? "true" : "false")" />
+        <label>Причина <input name="reason" required minlength="3" maxlength="500" /></label>
+        <button type="submit">@(Model.Blocked ? "Разблокировать упражнение" : "Заблокировать упражнение")</button>
+    </form>
+    @if (Model.OwnerId is null)
+    {
+        <form method="post" action="/admin/course-materials/@Model.Kind/@Model.Id">
+            @Html.AntiForgeryToken()
+            <label>Идентификатор подтверждённого владельца <input name="owner" required /></label>
+            <label>Причина <input name="reason" required minlength="3" maxlength="500" /></label>
+            <button type="submit">Назначить владельца</button>
+        </form>
+    }
+</section>

@@ -1,7 +1,5 @@
-(() => {
-  const root = document.getElementById("grammar-app");
-  if (!root) return;
-  const $ = id => document.getElementById(id);
+(window.AdamExercisePlayers ??= {}).grammar = function (root, embedded) {
+  const $ = id => root.querySelector("#" + id);
   const status = $("grammar-status");
   const list = $("grammar-list");
   const play = $("grammar-play");
@@ -16,6 +14,7 @@
   let generation = 0;
   // Отправка, чей ответ потерян: повтор использует тот же идентификатор и не жрёт попытку.
   let pending = null;
+  const events = new AbortController();
 
   const button = (label, action, className = "button secondary") => {
     const b = document.createElement("button"); b.type = "button"; b.className = className;
@@ -63,14 +62,14 @@
     busy = true;
     const gen = ++generation;
     try {
-      const next = await AdamApi(`/grammars/${id}/sessions`, { method: "POST" });
+      const next = embedded ? await embedded.load() : await AdamApi(`/grammars/${id}/sessions`, { method: "POST" });
       if (gen !== generation) return;
       busy = false;
       session = next;
       meanings.clear();
       pending = null;
       rememberDictionary(session);
-      sessionStorage.setItem("adam.grammar.session", session.sessionId);
+      if (!embedded) sessionStorage.setItem("adam.grammar.session", session.sessionId);
       list.hidden = true; play.hidden = false;
       closeWord();
       render();
@@ -232,7 +231,7 @@
     const sid = session.sessionId;
     for (const node of $("grammar-options").children) node.disabled = true;
     try {
-      const response = await AdamApi(`/grammars/sessions/${sid}/check`, {
+      const response = embedded ? await embedded.answer(payload) : await AdamApi(`/grammars/sessions/${sid}/check`, {
         method: "POST",
         body: JSON.stringify(payload)
       });
@@ -321,11 +320,12 @@
     message.textContent = correct ? "Верно!" : `Пока неверно. Правильная форма: «${correctForm}».`;
     const actions = document.createElement("div");
     actions.className = "grammar-result-actions";
-    actions.append(
+    if (!embedded) actions.append(
       button("Пройти заново", () => start(session.materialId), "button primary"),
       button("К списку", back, "button secondary")
     );
-    result.replaceChildren(message, actions);
+    result.replaceChildren(message);
+    if (!embedded) result.append(actions);
 
     ruleBox.hidden = !rule;
     ruleBox.textContent = rule ? `Подсказка: ${rule}` : "";
@@ -375,6 +375,11 @@
   $("grammar-back-link").addEventListener("click", event => { event.preventDefault(); back(); });
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && wordPopup && !wordPopup.hidden) closeWord();
-  });
-  load();
+  }, { signal: events.signal });
+  if (embedded) start(); else load();
+  return () => { generation++; events.abort(); };
+};
+(() => {
+  const root = document.getElementById("grammar-app");
+  if (root) window.AdamExercisePlayers.grammar(root);
 })();

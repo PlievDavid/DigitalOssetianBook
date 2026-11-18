@@ -42,7 +42,7 @@
 
 ## Иллюстрации и компоненты
 
-В `wwwroot/images/green` используются `kurt-tag-watercolor.png` (главная), `tsey-sage-watercolor.png` (библиотека и аккаунт) и декоративная книга `book.png`. Маска на самой иллюстрации башни растворяет края в фоне. Иллюстрации не содержат текстов и кнопок. Прежние `hero.png`, `lesson.png` и `mountains.png` сохранены как исторические исходники темы и в действующих страницах не показываются.
+В `wwwroot/images/green` используются `kurt-tag-watercolor-440.webp` и `kurt-tag-watercolor-880.webp` (главная, исходник в `kurt-tag-watercolor.png`), `tsey-sage-watercolor.png` (библиотека и аккаунт) и декоративная книга `book.png`. Маска на самой иллюстрации башни растворяет края в фоне. Иллюстрации не содержат текстов и кнопок. Прежние `hero.png`, `lesson.png` и `mountains.png` сохранены как исторические исходники темы и в действующих страницах не показываются.
 
 Основные кнопки: `.theme-button.theme-button-primary`; вторичные: `.theme-button.theme-button-secondary`. Карточки направлений: `.format-card`; чтение: `.home-reading-card`; слова: `.home-words-card`. Иконки нижней панели берутся из `_NavIcon`.
 

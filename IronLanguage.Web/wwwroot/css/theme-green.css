@@ -108,10 +108,6 @@ html { scrollbar-gutter: stable; }
 .home-hero {
     border-radius: var(--theme-radius-shell);
     background-color: var(--theme-sage);
-    background-image: linear-gradient(90deg, var(--theme-sage) 0%, #eff2e8ef 35%, #eff2e820 75%), linear-gradient(0deg, var(--theme-sage) 0%, #eff2e800 28%), url('../images/green/hero.png');
-    background-position: center, center, right center;
-    background-size: 100% 100%, 100% 100%, auto 105%;
-    background-repeat: no-repeat;
     min-height: 374px;
     position: relative;
     overflow: hidden;
@@ -167,7 +163,6 @@ html { scrollbar-gutter: stable; }
     .green-theme .nav-menu-trigger { width: 100%; text-align: left; }
     .green-theme .nav-menu-panel { position: static; width: 100%; box-shadow: none; margin-top: 4px; }
     .green-theme .nav-menu-words .nav-menu-panel,.green-theme .nav-menu-games .nav-menu-panel { left: auto; }
-    .home-hero { background-image: linear-gradient(90deg, var(--theme-sage) 0%, #eff2e8e6 40%, #eff2e830 100%), linear-gradient(0deg, var(--theme-sage), #eff2e800 28%), url('../images/green/hero.png'); }
     .hero-copy { padding: 40px 24px; }
     .hero-copy h1 { font-size: 44px; }
     .hero-copy > p { max-width: 420px; font-size: 18px; }
@@ -184,7 +179,7 @@ html { scrollbar-gutter: stable; }
     .green-theme .brand-copy strong { font-size: 21px; }
     .green-theme .brand-copy small { font-size: 10px; }
     .home-shell { padding: 0 14px; }
-    .home-hero { min-height: 308px; border-radius: 16px; background-image: linear-gradient(90deg, #eff2e8f5 0%, #eff2e8db 45%, #eff2e850 100%), linear-gradient(0deg, var(--theme-sage) 0%, #eff2e800 48%), url('../images/green/hero.png'); background-size: 100% 100%, 100% 100%, auto 100%; background-position: center, center, right top; }
+    .home-hero { min-height: 308px; border-radius: 16px; }
     .hero-copy { padding: 32px 16px 20px; }
     .hero-copy h1 { font: 650 34px/1.12 var(--theme-heading-font); letter-spacing: -.025em; max-width: 245px; margin-bottom: 12px; }
     .hero-copy > p { font-size: 14px; line-height: 1.5; max-width: 235px; min-height: 36px; margin-bottom: 22px; }
@@ -212,11 +207,10 @@ html { scrollbar-gutter: stable; }
     .home-words-card img { width: 54px; right: 44px; top: 4px; height: 74px; }
     .home-words-card .theme-button { position: absolute; right: 6px; bottom: 12px; min-height: 44px; width: 44px; padding: 0; border: 0; border-radius: 50%; background: white; }
     .words-action-label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    .mobile-bottom-nav { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; min-height: calc(var(--theme-bottom-height) + env(safe-area-inset-bottom)); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); background: #fffffffa; border-radius: 18px 18px 0 0; box-shadow: 0 -4px 24px #172c230a; }
+    .mobile-bottom-nav { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; min-height: calc(var(--theme-bottom-height) + env(safe-area-inset-bottom)); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); background: #fffffffa; border-radius: 18px 18px 0 0; box-shadow: 0 -4px 24px #172c230a; }
     .mobile-bottom-nav a,.mobile-bottom-nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 52px; padding: 4px; border: 0; background: none; color: #627797; font-size: 10px; line-height: 14px; }
     .mobile-bottom-nav svg { width: 24px; height: 24px; }
     .mobile-bottom-nav .is-current { color: var(--theme-green); font-weight: 700; }
-    .mobile-bottom-nav .is-current svg { stroke-width: 2.2; }
 }
 @media (prefers-reduced-motion: reduce) { .format-card { transition: none; } }
 

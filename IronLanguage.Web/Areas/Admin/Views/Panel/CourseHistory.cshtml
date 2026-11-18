@@ -1,0 +1,37 @@
+@using IronLanguage.Web.Services
+@model CourseVersion[]
+@{
+    ViewData["Title"] = "Публикации и доступ к курсу";
+    var item = (CourseAdminItem)ViewData["Course"]!;
+    var blocked = item.Course.BlockReason != null;
+}
+<p><a href="/admin/courses">К списку курсов</a></p>
+<section class="panel">
+    <h2>@item.Author</h2>
+    @if (blocked) { <p>Курс заблокирован. @item.Course.BlockReason</p> }
+    <form method="post" action="/admin/courses/@item.Course.Id/access">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="blocked" value="@(!blocked ? "true" : "false")" />
+        <label>Причина <input name="reason" required minlength="3" maxlength="500" /></label>
+        <button type="submit">@(blocked ? "Разблокировать курс" : "Заблокировать курс")</button>
+    </form>
+</section>
+@foreach (var version in Model)
+{
+    var draft = CourseLearningService.Read(version);
+    <section class="panel">
+        <details>
+            <summary>Версия @version.Number · @draft.Title · @version.PublishedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</summary>
+            <p>@draft.Description</p>
+            @foreach (var module in draft.Modules)
+            {
+                <h3>@module.Title</h3>
+                @foreach (var lesson in module.Lessons)
+                {
+                    <h4>@lesson.Title</h4>
+                    <ul>@foreach (var block in lesson.Blocks) { <li>@block.Title @block.Text</li> }</ul>
+                }
+            }
+        </details>
+    </section>
+}

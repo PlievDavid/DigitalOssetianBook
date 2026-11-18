@@ -6,6 +6,7 @@
 /.tools/
 **/artifacts/
 /IronLanguage.Web/wwwroot/media/
+**/.course-theory-media/
 /.run-*/
 
 IronLanguage.Tests/

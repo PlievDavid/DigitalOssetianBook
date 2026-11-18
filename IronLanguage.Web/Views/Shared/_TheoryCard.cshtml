@@ -1,0 +1,7 @@
+@model IronLanguage.Web.Models.CurriculumCard
+<article class="theory-card theory-card--@Model.Template">
+    <p class="eyebrow">@(Model.Template switch { "rule" => "Правило", "example" => "Пример", "comparison" => "Сравнение", _ => "Теория" })</p>
+    <h2>@Model.Title</h2>
+    <div class="theory-content"><div class="theory-copy">@Model.Body</div>
+    @if ((Model.Template == "example" || Model.Template == "comparison") && !string.IsNullOrWhiteSpace(Model.Secondary)) { <div class="theory-secondary theory-copy">@Model.Secondary</div> }</div>
+</article>

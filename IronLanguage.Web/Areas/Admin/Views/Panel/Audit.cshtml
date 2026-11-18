@@ -1,0 +1,6 @@
+@model AuditPage
+@{ ViewData["Title"] = "Журнал действий"; }
+<section class="panel"><div class="section-bar"><h2>Изменения доступа</h2><span class="muted">Всего: @Model.Total</span></div><p class="muted">Записи доступны только для чтения. Время указано в UTC.</p>
+@if (Model.Rows.Count == 0) { <p class="empty">Административных действий ещё нет.</p> }
+else { <div class="table-wrap"><table class="audit-table"><thead><tr><th>Когда / кто</th><th>Действие / пользователь</th><th>Причина и результат</th></tr></thead><tbody>@foreach (var row in Model.Rows) { <tr><td>@row.CreatedAt.UtcDateTime.ToString("dd.MM.yyyy HH:mm:ss")<small>@if (row.ActorId is Guid actor) { <a href="/admin/users/@actor">@actor</a> } else { <span>Серверная команда</span> }</small></td><td><strong>@AdminLabels.Action(row.Action)</strong><small><a href="/admin/users/@row.TargetId">@row.TargetId</a></small></td><td>@row.Reason<details><summary>Изменение</summary><p>До: @row.Before</p><p>После: @row.After</p></details></td></tr> }</tbody></table></div> }
+<nav class="pagination" aria-label="Страницы журнала">@if (Model.Page > 1) { <a href="?page=@(Model.Page - 1)">Назад</a> }<span>Страница @Model.Page из @Model.Pages</span>@if (Model.Page < Model.Pages) { <a href="?page=@(Model.Page + 1)">Далее</a> }</nav></section>

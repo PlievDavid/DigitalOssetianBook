@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Задания";
+
+    var groups = new (string Id, string Number, string Name, string Caption, (string Path, string Icon, string Title, string Description)[] Exercises)[]
+    {
+        ("listen", "01", "Понимание на слух", "От звука к смыслу", [
+            ("/audio-puzzles", "audio", "Аудиопазлы", "Соберите услышанную фразу из слов."),
+            ("/listening", "listening", "Аудирование", "Послушайте запись и выберите ответ."),
+            ("/dialogs", "dialogs", "Диалоги", "Подберите реплику собеседнику.")
+        ]),
+        ("phrases", "02", "Построение фраз", "От слов к предложению", [
+            ("/translate", "translate", "Собери фразу", "Соберите осетинский перевод из слов."),
+            ("/grammar", "grammar", "Форма слова", "Выберите форму, которая подходит к предложению.")
+        ]),
+        ("words", "03", "Словарный запас", "От образа к слову", [
+            ("/matching", "matching", "Соотнесение", "Найдите пары для слов и выражений."),
+            ("/picture", "picture", "Картинка и слово", "Подберите слово к картинке."),
+            ("/grouping", "grouping", "Разбить слова на группы", "Разложите слова по общим признакам.")
+        ])
+    };
+}
+
+<div class="exercises-shell">
+    <header class="exercises-heading">
+        <div class="exercises-heading-copy">
+            <span class="exercises-kicker">Практика осетинского</span>
+            <h1>Задания</h1>
+            <p>Прислушайтесь к языку, соберите фразу или найдите новое слово.</p>
+        </div>
+        <svg class="exercises-motif" viewBox="0 0 432 200" aria-hidden="true" focusable="false">
+            <path d="M12 131h408M12 91h408M12 51h408M12 171h408" stroke="#cbc8ba" stroke-opacity=".65" stroke-dasharray="2 6" />
+            <path d="M44 142c39 0 53-64 113-64s68 63 116 63 55-64 112-64" fill="none" stroke="#8f9c8d" stroke-width="1.5" stroke-dasharray="4 6" />
+            <g transform="translate(38 62) rotate(-10 50 50)">
+                <rect width="110" height="100" rx="25" fill="#dfeaf8" stroke="#c3d8ee" />
+                <path d="M23 50h10l7-15 10 33 10-52 10 48 7-22 6 8h7" stroke="#295782" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            </g>
+            <g transform="translate(164 31) rotate(8 55 50)">
+                <rect width="110" height="100" rx="25" fill="#faeaca" stroke="#e9d3a4" />
+                <rect x="24" y="33" width="28" height="14" rx="5" fill="#fdf4dd" stroke="#9d6b35" stroke-width="1.5" />
+                <rect x="58" y="33" width="27" height="14" rx="5" fill="#eac38a" />
+                <rect x="24" y="54" width="61" height="14" rx="5" fill="#eac38a" />
+            </g>
+            <g transform="translate(292 69) rotate(-8 53 50)">
+                <rect width="110" height="100" rx="25" fill="#e4eccf" stroke="#cddab0" />
+                <text x="55" y="67" text-anchor="middle" fill="#365346" font-size="50" font-weight="700">Ӕ</text>
+            </g>
+        </svg>
+    </header>
+
+    <div class="exercise-tracks">
+        @foreach (var group in groups)
+        {
+            <section class="exercise-category exercise-category--@group.Id" aria-labelledby="category-@group.Id">
+                <header class="exercise-category-heading">
+                    <span class="exercise-category-number" aria-hidden="true">@group.Number</span>
+                    <h2 id="category-@group.Id">@group.Name</h2>
+                    <p>@group.Caption</p>
+                </header>
+                <div class="exercise-catalog-grid">
+                    @foreach (var exercise in group.Exercises)
+                    {
+                        <a class="exercise-catalog-card" href="@exercise.Path">
+                            <span class="exercise-catalog-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", exercise.Icon)</span>
+                            <div>
+                                <h3>@exercise.Title</h3>
+                                <p>@exercise.Description</p>
+                            </div>
+                            <span class="exercise-catalog-arrow" aria-hidden="true">→</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+</div>
+
+@section Styles { <link rel="stylesheet" href="~/css/exercise-catalog.css" asp-append-version="true" /> }

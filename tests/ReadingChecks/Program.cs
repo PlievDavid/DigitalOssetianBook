@@ -163,7 +163,7 @@ if (args.Contains("--database"))
         "Сиды не применены к переводам глав.");
     var positions = await db.ReadingPositions.AsNoTracking().ToListAsync();
     var revisionCount = await db.ContentRevisions.CountAsync();
-    var editorId = await db.Users.Where(user => user.IsEditor).Select(user => user.Id).FirstAsync();
+    var editorId = await db.Users.Where(user => db.UserRoles.Any(ur => ur.UserId == user.Id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == "Editor" || r.Name == "Admin")))).Select(user => user.Id).FirstAsync();
     var result = await new EfReadingLibraryRepository(db).ReplaceLibrary(drafts.Select(ReadingSeedService.Build).ToArray(), editorId, CancellationToken.None);
     Check(result is { Added: 0, Archived: 0 }, "Повторный импорт изменил библиотеку.");
     Check(await db.ContentRevisions.CountAsync() == revisionCount, "Повторный импорт изменил историю.");

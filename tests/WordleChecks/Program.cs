@@ -96,6 +96,11 @@ if (args.Contains("--database"))
     // Credentials are generated in memory, never printed or saved to files.
     var password = Guid.NewGuid().ToString("N") + "aA!7";
     accounts[0].PasswordHash = new PasswordHasher<UserAccount>().HashPassword(accounts[0], password);
+    foreach (var account in accounts)
+    {
+        account.UserName = account.Email;
+        account.NormalizedUserName = account.NormalizedEmail = account.Email!.ToUpperInvariant();
+    }
     var ids = accounts.Select(x => x.Id).ToArray();
     var today = DateOnly.FromDateTime(DateTime.UtcNow);
     Guid? createdDictionaryWord = null;
@@ -147,7 +152,7 @@ if (args.Contains("--database"))
             using var client = new HttpClient(new HttpClientHandler { CookieContainer = cookies, AllowAutoRedirect = false }) { BaseAddress = new Uri(baseUrl) };
             string Token(string html) => WebUtility.HtmlDecode(Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value);
             var login = await client.GetStringAsync("/account/login");
-            var loginResponse = await client.PostAsync("/account/login", new FormUrlEncodedContent(new Dictionary<string, string> { ["Email"] = accounts[0].Email, ["Password"] = password, ["__RequestVerificationToken"] = Token(login) }));
+            var loginResponse = await client.PostAsync("/account/login", new FormUrlEncodedContent(new Dictionary<string, string> { ["Email"] = accounts[0].Email!, ["Password"] = password, ["__RequestVerificationToken"] = Token(login) }));
             Check(loginResponse.StatusCode == HttpStatusCode.Redirect, "HTTP login");
             var html = await client.GetStringAsync("/games/wordle");
             var csrf = Token(html);

@@ -3,17 +3,43 @@
   const filter = document.getElementById('editor-kind-filter');
   if (tabs.length && filter) {
     let active = 'drafts';
+    const search = document.getElementById('editor-search');
+    const sort = document.getElementById('editor-sort');
+    const panels = ['drafts', 'published', 'archived'].map(group => document.getElementById(`editor-${group}`));
+    panels.forEach(panel => panel.querySelectorAll('.editor-item').forEach((item, index) => { item.dataset.originalOrder = index; }));
     const refresh = () => {
-      tabs.forEach(tab => { const selected = tab.dataset.editorTab === active; tab.classList.toggle('is-active', selected); tab.setAttribute('aria-selected', String(selected)); });
-      for (const group of ['drafts', 'published', 'archived']) {
-        const panel = document.getElementById(`editor-${group}`); panel.hidden = group !== active;
+      const query = search.value.trim().toLocaleLowerCase('ru');
+      tabs.forEach(tab => { const selected = tab.dataset.editorTab === active; tab.classList.toggle('is-active', selected); tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1; });
+      panels.forEach(panel => {
+        panel.hidden = panel.id !== `editor-${active}`;
+        const items = Array.from(panel.querySelectorAll('.editor-item'));
+        items.sort((a, b) => {
+          const titleA = a.querySelector('h3').textContent.trim(), titleB = b.querySelector('h3').textContent.trim();
+          if (sort.value === 'title-asc') return titleA.localeCompare(titleB, 'ru');
+          if (sort.value === 'title-desc') return titleB.localeCompare(titleA, 'ru');
+          if (sort.value === 'kind') return a.querySelector('.editor-item-type').textContent.localeCompare(b.querySelector('.editor-item-type').textContent, 'ru') || titleA.localeCompare(titleB, 'ru');
+          return Number(a.dataset.originalOrder) - Number(b.dataset.originalOrder);
+        });
         let visible = 0;
-        panel.querySelectorAll('.editor-item').forEach(item => { item.hidden = filter.value !== 'all' && item.dataset.kind !== filter.value; if (!item.hidden) visible++; });
+        items.forEach(item => {
+          item.hidden = (filter.value !== 'all' && item.dataset.kind !== filter.value) || !item.querySelector('h3').textContent.toLocaleLowerCase('ru').includes(query);
+          if (!item.hidden) visible++;
+          panel.insertBefore(item, panel.querySelector('.editor-empty'));
+        });
         panel.querySelector('.editor-empty').hidden = visible > 0;
-      }
+      });
     };
     tabs.forEach(tab => tab.addEventListener('click', () => { active = tab.dataset.editorTab; refresh(); }));
-    filter.addEventListener('change', refresh); refresh();
+    tabs.forEach((tab, index) => tab.addEventListener('keydown', event => {
+      let next = index;
+      if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+      else if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = tabs.length - 1;
+      else return;
+      event.preventDefault(); active = tabs[next].dataset.editorTab; refresh(); tabs[next].focus();
+    }));
+    filter.addEventListener('change', refresh); search.addEventListener('input', refresh); sort.addEventListener('change', refresh); refresh();
     document.querySelectorAll('form[data-confirm]').forEach(form => form.addEventListener('submit', event => {
       if (!window.confirm(form.dataset.confirm)) event.preventDefault();
     }));

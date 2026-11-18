@@ -22,7 +22,7 @@ public sealed class EfReadingLibraryRepository(AdamDbContext db) : IReadingLibra
             || items.Any(item => !item.Material.TranslationReviewed || item.Material.Chapters.Length != 1
                 || string.IsNullOrWhiteSpace(item.Material.Chapters[0].Translation) || item.Material.Chapters[0].Translation.Contains('⚠')))
             throw new ArgumentException("Нужны три произведения с проверенным переводом.");
-        if (!await db.Users.AnyAsync(user => user.Id == editorId && user.IsEditor, ct))
+        if (!await db.Users.AnyAsync(user => user.Id == editorId && db.UserRoles.Any(ur => ur.UserId == user.Id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == "Editor" || r.Name == "Admin"))), ct))
             throw new InvalidOperationException("Сиды должен публиковать редактор.");
         await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(1938238190)", ct);
@@ -102,7 +102,7 @@ public sealed class EfReadingLibraryRepository(AdamDbContext db) : IReadingLibra
     {
         if (items.Length != 8 || items.Select(item => item.Id).Distinct().Count() != 8)
             throw new ArgumentException("Для замены библиотеки нужны восемь разных произведений.");
-        if (!await db.Users.AnyAsync(user => user.Id == editorId && user.IsEditor, ct))
+        if (!await db.Users.AnyAsync(user => user.Id == editorId && db.UserRoles.Any(ur => ur.UserId == user.Id && db.Roles.Any(r => r.Id == ur.RoleId && (r.Name == "Editor" || r.Name == "Admin"))), ct))
             throw new InvalidOperationException("Импорт должен быть связан с редактором.");
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(1938238190)", ct);

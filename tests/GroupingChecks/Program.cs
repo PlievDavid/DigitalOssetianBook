@@ -308,7 +308,7 @@ sealed class MemoryCatalog : ICatalogRepository
     public Task<List<Exercise>> DraftExercises(CancellationToken ct = default) => Task.FromResult(ExercisesList.Where(x => !x.Published).ToList());
     public Task<List<Book>> DraftBooks(CancellationToken ct = default) => Task.FromResult(new List<Book>());
     public Task<List<WordEntry>> DraftWords(CancellationToken ct = default) => Task.FromResult(WordsList.Where(x => !x.Published).ToList());
-    public Task AddExercise(Exercise exercise, CancellationToken ct = default) { ExercisesList.Add(exercise); return Task.CompletedTask; }
+    public Task AddExercise(Exercise exercise, CancellationToken ct = default, Guid? owner = null) { ExercisesList.Add(exercise); return Task.CompletedTask; }
     public Task AddBook(Book book, CancellationToken ct = default) => Task.CompletedTask;
     public Task<bool> AddChapter(BookChapter chapter, CancellationToken ct = default) => Task.FromResult(false);
     public Task AddWord(WordEntry word, CancellationToken ct = default) { WordsList.Add(word); return Task.CompletedTask; }

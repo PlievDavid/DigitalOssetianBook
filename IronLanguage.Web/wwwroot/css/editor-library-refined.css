@@ -1,0 +1,14 @@
+/* Original green constructor with the current search and filters. */
+.editor-home > .back-link { display:inline-block; margin-bottom:20px; }
+.green-theme.editor-page .editor-home .editor-page-heading { background:linear-gradient(90deg,var(--theme-sage) 50%,#eff2e870),var(--theme-sage) url('../images/green/mountains.png') right bottom / auto 150px no-repeat; }
+.editor-page .editor-home .editor-library-header { gap:16px; }
+.editor-page .editor-home .editor-library-controls { display:grid; grid-template-columns:minmax(200px,2fr) repeat(2,minmax(150px,1fr)); align-items:end; gap:12px; padding:16px; }
+.editor-home .editor-filter { display:grid; gap:6px; min-width:0; }
+.editor-page .editor-home .editor-filter span { display:block; position:static; width:auto; height:auto; clip-path:none; overflow:visible; font-size:13px; font-weight:600; color:var(--theme-ink); }
+.editor-home .editor-filter input,.editor-home .editor-filter select { box-sizing:border-box; width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--theme-border); border-radius:10px; background:var(--theme-surface); color:var(--theme-ink); font:inherit; }
+.editor-page .editor-choices a[href$="/listening"] { --choice-bg:#edf4fc; --choice-border:#d8e5f4; --choice-icon-bg:#cfe2f7; --choice-ink:#28598d; }
+.editor-page .editor-choices a[href$="/grammar"] { --choice-bg:#f3eef9; --choice-border:#e3d9ef; --choice-icon-bg:#e4d7f2; --choice-ink:#68508a; }
+.editor-page .editor-choices svg { width:28px; height:28px; }
+.editor-home .editor-item[hidden],.editor-home .editor-items[hidden],.editor-home .editor-empty[hidden] { display:none; }
+@media(max-width:760px) { .editor-page .editor-home .editor-library-controls { grid-template-columns:1fr 1fr; } .editor-home .editor-filter:first-child { grid-column:1/-1; } }
+@media(max-width:480px) { .editor-page .editor-home .editor-library-controls { grid-template-columns:1fr; } }

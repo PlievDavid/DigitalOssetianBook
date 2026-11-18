@@ -1,0 +1,13 @@
+@model (string Name, string Label, string Value, int Rows)
+<div class="curriculum-field markdown-field" data-markdown-field>
+    <label for="markdown-@Model.Name">@Model.Label</label>
+    <div class="markdown-input">
+        <div class="markdown-tools" role="group" aria-label="Форматирование: @Model.Label" hidden>
+            <button type="button" data-format="bold" aria-label="Жирный" title="Жирный"><strong>Ж</strong></button>
+            <button type="button" data-format="italic" aria-label="Курсив" title="Курсив"><em>К</em></button>
+            <button type="button" data-format="heading" aria-label="Заголовок" title="Заголовок">Аа</button>
+            <button type="button" data-format="list" aria-label="Маркированный список" title="Маркированный список">• ≡</button>
+        </div>
+        <textarea id="markdown-@Model.Name" name="@Model.Name" maxlength="2000" rows="@Model.Rows">@Model.Value</textarea>
+    </div>
+</div>

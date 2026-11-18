@@ -20,7 +20,7 @@
     padding-inline: 0;
 }
 .green-theme #main-content .home-content { padding-inline: 0; }
-.green-theme .home-content { display: grid; gap: 32px; padding-top: 32px; }
+.green-theme .home-content { display: grid; gap: 32px; padding-top: 32px; padding-bottom: clamp(32px, 5vw, 48px); }
 .green-theme .home-content > section { margin-block: 0; }
 .green-theme .home-content > section > h2 { margin-block: 0 16px; }
 @media (max-width: 599px) {

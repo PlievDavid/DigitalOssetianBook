@@ -1,13 +1,16 @@
+@using IronLanguage.Db
 @model IronLanguage.Web.Models.EditorPreviewModel
 @{
     var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", "grouping" => "Разбить слова на группы", _ => "Произведение" };
     ViewData["Title"] = $"Предпросмотр: {title}";
     ViewData["PageClass"] = "editor-page";
+    var courseReturn = ViewData["CourseReturnUrl"] as string;
+    var returnQuery = ViewData["CourseReturnQuery"] as string;
     var publishAction = Model.RevisionId is Guid revisionId && !Model.Published ? $"/editor/revisions/{revisionId}/publish" : $"/editor/publish/{Model.Kind}/{Model.ContentId}";
 }
 <section class="feature-shell editor-preview-shell">
     <header class="editor-page-heading editor-preview-heading">
-        <a class="back-link" href="/editor">← К материалам</a>
+        <a class="back-link" href="@(courseReturn ?? "/editor")">← @(courseReturn is null ? "К материалам" : "В конструктор курса")</a>
         <h1>Предпросмотр</h1>
         <span class="editor-status">@title · версия @Model.Version · @(Model.Published ? "опубликовано" : "черновик")</span>
     </header>
@@ -198,14 +201,28 @@
         <div class="editor-preview-actions">
             @if (!Model.Published)
             {
-                <a class="button secondary" href="@(Model.RevisionId is Guid draftRevision ? $"/editor/revisions/{draftRevision}/edit" : $"/editor/draft/{Model.Kind}/{Model.ContentId}")">Изменить</a>
-                <form method="post" action="@publishAction" class="editor-publish-form">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirmReviewed" value="true" required /> Я проверил текст, перевод и права на публикацию</label><button class="button primary" type="submit">Опубликовать</button></form>
+                <a class="button secondary" href="@((Model.RevisionId is Guid draftRevision ? $"/editor/revisions/{draftRevision}/edit" : $"/editor/draft/{Model.Kind}/{Model.ContentId}") + returnQuery)">Изменить</a>
+                <form method="post" action="@(publishAction + returnQuery)" class="editor-publish-form">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirmReviewed" value="true" required /> Я проверил текст, перевод и права на публикацию</label><button class="button primary" type="submit">Опубликовать</button></form>
             }
             else
             {
-                <form method="post" action="/editor/published/@Model.Kind/@Model.ContentId/revise">@Html.AntiForgeryToken()<button class="button primary" type="submit">Создать новую версию</button></form>
+                @if (courseReturn is not null) { <a class="button primary" href="@(courseReturn + "&materialKind=" + Model.Kind)">Вернуться к выбору задания</a> }
+                <form method="post" action="@($"/editor/published/{Model.Kind}/{Model.ContentId}/revise" + returnQuery)">@Html.AntiForgeryToken()<button class="button primary" type="submit">Создать новую версию</button></form>
             }
         </div>
+    }
+    @if (Model.Published && !Model.Historical && ViewData["MaterialAccess"] is CourseMaterialAccess access)
+    {
+        <section>
+            <h2>Доступ к упражнению</h2>
+            <form method="post" action="@($"/editor/published/{Model.Kind}/{Model.ContentId}/access" + returnQuery)">
+                @Html.AntiForgeryToken()
+                <label><input type="checkbox" name="inCatalog" value="true" checked="@access.InCatalog" /> Показывать в общем разделе упражнений</label>
+                <label><input type="checkbox" name="shared" value="true" checked="@access.Shared" /> Разрешить другим преподавателям добавлять в свои курсы</label>
+                <p>При отзыве разрешения ранее опубликованные включения сохраняются.</p>
+                <button class="button primary" type="submit">Сохранить доступ</button>
+            </form>
+        </section>
     }
     @if (Model.History.Count > 0)
     {

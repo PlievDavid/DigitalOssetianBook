@@ -99,7 +99,7 @@ public sealed class GrammarService(ICatalogRepository catalog, GuestLearningStor
             state.Attempts, await Words(state.WordIds, ct),
             Sentence(state, state.Answered ? state.CorrectForm : null), []);
 
-    private static bool CheckChoice(GrammarState state, int? optionIndex)
+    internal static bool CheckChoice(GrammarState state, int? optionIndex)
     {
         if (optionIndex is not int index || index < 0 || index >= state.Options.Length)
             throw new ArgumentException("Выберите вариант ответа.");
