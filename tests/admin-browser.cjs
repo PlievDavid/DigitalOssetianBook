@@ -71,28 +71,51 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         }
         await page.getByRole('link', { name: 'Вернуться в профиль', exact: true }).click();
         check(new URL(page.url()).pathname === '/profile', 'Admin navigation must return to the profile');
-        const cold = await browser.newContext({ storageState: await context.storageState() });
+        const cold = await browser.newContext({ storageState: await context.storageState(), viewport: { width: 774, height: 667 } });
         let releaseFonts;
         const fontGate = new Promise(resolve => { releaseFonts = resolve; });
         try {
-            await cold.route('**/*.ttf', async route => { await fontGate; await route.continue(); });
+            await cold.route('**/*.woff2', async route => { await fontGate; await route.continue(); });
             const coldPage = await cold.newPage();
+            async function checkFont(selector, expected) {
+                await coldPage.locator(selector).waitFor();
+                const inspector = await cold.newCDPSession(coldPage);
+                try {
+                    await inspector.send('DOM.enable');
+                    await inspector.send('CSS.enable');
+                    const { root } = await inspector.send('DOM.getDocument');
+                    const { nodeId } = await inspector.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+                    const { fonts } = await inspector.send('CSS.getPlatformFontsForNode', { nodeId });
+                    check(fonts.length === 1 && fonts[0].isCustomFont && fonts[0].familyName.replace(/\s/g, '') === expected,
+                        `${coldPage.url()} ${selector} should render in ${expected}, got ${JSON.stringify(fonts)}`);
+                } finally {
+                    await inspector.detach();
+                }
+            }
             await coldPage.goto(base + '/admin', { waitUntil: 'domcontentloaded' });
             const preloads = coldPage.locator('link[rel="preload"][as="font"][crossorigin]');
-            check(await preloads.count() === 2, 'Preload both admin fonts.');
-            const textWidths = () => coldPage.locator('.admin-brand strong, .admin-brand small, h1').evaluateAll(elements => elements.map(element => {
-                const text = document.createRange();
-                text.selectNodeContents(element);
-                return text.getBoundingClientRect().width;
-            }));
+            const fontUrls = () => preloads.evaluateAll(links => links.map(link => link.href));
+            const adminFonts = await fontUrls();
+            check(adminFonts.length === 2 && adminFonts.every(src => src.endsWith('.woff2')), 'Preload both web fonts.');
             await coldPage.waitForFunction(() => {
                 const paint = performance.getEntriesByName('first-contentful-paint')[0];
                 return paint && performance.now() - paint.startTime > 250;
             });
-            const firstWidths = await textWidths();
             releaseFonts();
+            await coldPage.waitForLoadState('load');
             await coldPage.evaluate(() => document.fonts.ready);
-            check(JSON.stringify(await textWidths()) === JSON.stringify(firstWidths), 'Late fonts must not shift the admin sidebar or heading.');
+            await checkFont('h1', 'Onest');
+            await checkFont('#admin-navigation a[aria-current="page"]', 'GolosText');
+            await Promise.all([coldPage.waitForURL('**/admin/users'), coldPage.getByRole('link', { name: 'Пользователи', exact: true }).click()]);
+            await coldPage.evaluate(() => document.fonts.ready);
+            await checkFont('h1', 'Onest');
+            await checkFont('#admin-navigation a[aria-current="page"]', 'GolosText');
+            await checkFont('label[for=q]', 'GolosText');
+            await Promise.all([coldPage.waitForURL('**/profile'), coldPage.getByRole('link', { name: 'Вернуться в профиль', exact: true }).click()]);
+            await coldPage.evaluate(() => document.fonts.ready);
+            check(JSON.stringify(await fontUrls()) === JSON.stringify(adminFonts), 'The site and admin preload the same files.');
+            await checkFont('h1', 'Onest');
+            await checkFont('.profile-results-heading a', 'GolosText');
         } finally {
             releaseFonts();
             await cold.close();

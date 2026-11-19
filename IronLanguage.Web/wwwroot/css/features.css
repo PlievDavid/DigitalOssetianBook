@@ -156,8 +156,6 @@
 .catalog { padding-top: 30px; }
 .section-heading h2 { margin-top: 0; }
 .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0; }
-:root { --site-font: Arial, Helvetica, sans-serif; font-family: var(--site-font); }
-body, button, input, textarea, select, summary { font-family: var(--site-font); }
 .feature-shell { padding-top: 46px; }
 .feature-shell h1 { margin: 0 0 10px; font-size: clamp(30px, 3vw, 38px); line-height: 1.2; letter-spacing: -.025em; font-weight: 700; }
 .feature-shell > p { margin: 0 0 30px; font-size: 16px; line-height: 1.5; }

@@ -1,19 +1,6 @@
-/* Keep the first visible font for this navigation if a cold load misses the paint. */
-@font-face {
-    font-family: 'Admin Onest';
-    src: url('../fonts/onest/Onest-Variable.ttf') format('truetype');
-    font-weight: 100 900;
-    font-display: optional;
-}
-@font-face {
-    font-family: 'Admin Golos Text';
-    src: url('../fonts/golos-text/GolosText-Variable.ttf') format('truetype');
-    font-weight: 400 900;
-    font-display: optional;
-}
 *{box-sizing:border-box}
 html{color-scheme:light;scrollbar-color:#8f9d93 #eceee9;scrollbar-gutter:stable}
-body{--theme-font:'Admin Golos Text',Arial,Helvetica,sans-serif;--theme-heading-font:'Admin Onest',var(--theme-font);--admin-bg:#f9faf7;--admin-line:#dce4d9;--admin-selected:#e1ebdd;--admin-surface:#edf2e9;--admin-ink:#17261f;--admin-muted:#526257;margin:0;background:var(--admin-bg);color:var(--admin-ink);font:14px/1.5 var(--theme-font)}
+body{--admin-bg:#f9faf7;--admin-line:#dce4d9;--admin-selected:#e1ebdd;--admin-surface:#edf2e9;--admin-ink:#17261f;--admin-muted:#526257;margin:0;background:var(--admin-bg);color:var(--admin-ink);font-size:14px;line-height:1.5}
 a{color:var(--theme-green);text-underline-offset:4px}
 button,input,select,textarea{font:inherit}
 button,a,summary,select{cursor:pointer}

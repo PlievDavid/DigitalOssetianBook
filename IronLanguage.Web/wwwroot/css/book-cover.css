@@ -10,11 +10,11 @@
 .book-cover[data-pattern-area="bottom"]::after { bottom: 0; right: 0; width: 100%; height: 50%; transform: none; opacity: .24; }
 .book-cover[data-pattern-area="full"]::after { inset: 0; width: 100%; height: 100%; transform: none; opacity: .14; }
 .book-cover[data-pattern="arches"]::after { border: 3px solid var(--cover-accent); border-bottom: 0; border-radius: 50% 50% 0 0; box-shadow: 0 0 0 14px var(--cover-background), 0 0 0 17px var(--cover-accent), 0 0 0 31px var(--cover-background), 0 0 0 34px var(--cover-accent); transform: rotate(-16deg); }
-.book-cover .book-cover-author { display: block; margin: 0; color: inherit; font-family: "Golos Text", sans-serif; font-size: clamp(12px, 1.2vw, 15px); line-height: 1.45; overflow-wrap: anywhere; }
+.book-cover .book-cover-author { display: block; margin: 0; color: inherit; font-family: var(--theme-font); font-size: clamp(12px, 1.2vw, 15px); line-height: 1.45; overflow-wrap: anywhere; }
 .book-cover { container-type: inline-size; }
-.book-cover .book-cover-title { display: block; margin: auto 0; padding-block: 20px; color: inherit; font-family: var(--cover-font, Onest, sans-serif); font-size: clamp(17px, 12cqw, 32px); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.book-cover .book-cover-title { display: block; margin: auto 0; padding-block: 20px; color: inherit; font-family: var(--cover-font, var(--theme-heading-font)); font-size: clamp(17px, 12cqw, 32px); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .book-cover.book-cover-long-title .book-cover-title { font-size: clamp(15px, 10cqw, 25px); }
-.book-cover .book-cover-mark { display: block; margin: 0; color: inherit; font-family: "Golos Text", sans-serif; font-size: 12px; letter-spacing: .08em; }
+.book-cover .book-cover-mark { display: block; margin: 0; color: inherit; font-family: var(--theme-font); font-size: 12px; letter-spacing: .08em; }
 .cover-builder { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 24px 32px; min-width: 0; padding: 28px; border: 1px solid #dce5d7; border-radius: 16px; background: #f6f8f3; }
 .cover-builder-heading { grid-column: 1 / -1; }
 .cover-builder h2 { margin: 0 0 8px; font-size: 22px; }
