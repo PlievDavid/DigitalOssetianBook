@@ -28,6 +28,7 @@
 }
 
 .green-theme .home-games h2 a { text-decoration: underline; text-underline-offset: .16em; text-decoration-thickness: .06em; }
+.home-shell .format-card p { padding-inline-end: 0; }
 
 @keyframes home-arrive {
     from { opacity: .72; transform: translateY(8px); }

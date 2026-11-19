@@ -1,6 +1,5 @@
 /* Compact phone sections; tablet and desktop retain their existing layouts. */
-.mobile-page-intro, .word-mode-icon, .word-mode-description, .mobile-profile-title,
-.mobile-profile-results, .green-theme .profile-links .mobile-profile-results-link { display: none; }
+.mobile-page-intro, .word-mode-icon, .word-mode-description { display: none; }
 .green-theme #games:focus-visible { outline: 3px solid #286aab; outline-offset: 4px; }
 @media (max-width: 599px) {
     .green-theme #main-content > .auth-scene { padding-block: 24px 32px; background: none; border-radius: 0; }
@@ -82,26 +81,4 @@
     .green-theme .book-card-authors { font-size: 13px; }
     .green-theme .book-card .book-difficulty { padding: 0; background: none; font-size: 11px; font-weight: 500; color: #526273; }
     .green-theme .book-card-description, .green-theme .book-card-open { display: none; }
-    .green-theme .mobile-profile-layout { display: block; padding-top: 24px; }
-    .green-theme .mobile-profile-layout > .account-navigation { display: none; }
-    .green-theme .mobile-profile-layout .profile-shell { padding-top: 0; }
-    .green-theme .profile-shell h1 { font-size: 30px; margin: 0 0 24px; }
-    .green-theme .desktop-profile-title { display: none; }
-    .green-theme .mobile-profile-title { display: inline; }
-    .green-theme .profile-identity { padding: 0 0 24px; margin-bottom: 24px; gap: 16px; }
-    .green-theme .profile-identity strong { overflow-wrap: anywhere; font-size: 20px; }
-    .green-theme .profile-identity > div { min-width: 0; }
-    .green-theme .profile-avatar-large { flex: none; width: 80px; height: 80px; }
-    .green-theme .mobile-profile-results { display: block; margin-bottom: 24px; }
-    .green-theme .mobile-profile-results h2 { font-size: 21px; margin: 0 0 12px; }
-    .green-theme #progress-status { font-size: 13px; color: #526273; }
-    .green-theme .profile-result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .green-theme .profile-result-grid > div { display: grid; gap: 4px; background: #eff2e8; padding: 16px; border-radius: 12px; color: #173f31; }
-    .green-theme .profile-result-grid strong { font-size: 30px; line-height: 1.2; }
-    .green-theme .profile-result-grid span { font-size: 13px; }
-    .green-theme .profile-links { gap: 0; }
-    .green-theme .profile-links a { display: grid; gap: 4px; padding: 18px 0; border: 0; border-bottom: 1px solid #dfe5da; border-radius: 0; }
-    .green-theme .profile-links span { font-size: 13px; }
-    .green-theme .profile-links .mobile-profile-results-link { display: grid; }
-    .green-theme .profile-logout { margin-top: 24px; }
 }

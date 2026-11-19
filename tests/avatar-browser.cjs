@@ -59,7 +59,7 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     check(await p.locator('input[name*="Pants"],input[name*="Shoes"]').count() === 0, "Lower clothes remain fixed.");
     await Promise.all([p.waitForURL(base + "/"), p.getByRole("button", { name: "Сохранить и продолжить", exact: true }).click()]);
     await p.goto(base + "/profile");
-    check((await p.locator(".profile-identity img").getAttribute("src")).includes("Hair=bob"), "Avatar persists in profile.");
+    check((await p.locator(".profile-portrait img").getAttribute("src")).includes("Hair=bob"), "Avatar persists in profile.");
     check((await p.locator(".header-actions .profile-avatar img").getAttribute("src")).includes("Top=hoodie"), "Header uses saved clothing.");
     await p.goto(base + "/profile/avatar");
     check(await p.locator("#avatar-Hair-bob").isChecked(), "Reload restores choices from database.");
@@ -122,7 +122,7 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     check(await plain.locator("#avatar-panel-clothes").isVisible(), "All categories remain available without JavaScript.");
     await plain.locator('label[for="avatar-Hair-short"]').click();
     await Promise.all([plain.waitForURL("**/profile"), plain.getByRole("button", { name: "Сохранить аватар", exact: true }).click()]);
-    check((await plain.locator(".profile-identity img").getAttribute("src")).includes("Hair=short"), "Plain HTML form saves without JavaScript.");
+    check((await plain.locator(".profile-portrait img").getAttribute("src")).includes("Hair=short"), "Plain HTML form saves without JavaScript.");
     await plainContext.close();
     check(failures.length === 0, "No JavaScript exceptions.");
     console.log("Avatar browser checks passed: " + checks);

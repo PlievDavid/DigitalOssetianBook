@@ -56,6 +56,13 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         response = await registrationPage.request.get(base + '/editor', { maxRedirects: 0 }); check(response.status() === 302 && response.headers().location.includes('access-denied'), 'Registration granted Editor');
         await registrationContext.close();
         const adminPage = await login(context, fixture.admin); await adminPage.close();
+        await page.goto(base + '/profile');
+        for (const width of [390, 600, 759, 760, 1440]) {
+            await page.setViewportSize({ width, height: 900 });
+            const adminLink = page.getByRole('link', { name: 'Панель администратора', exact: true });
+            check(await adminLink.count() === 1 && await adminLink.getAttribute('href') === '/admin',
+                'Admin panel link missing or duplicated at ' + width);
+        }
         response = await page.request.post(base + '/admin/users/' + fixture.learnerId, { form: { Action: 'grant-admin', Reason: 'Без CSRF' }, maxRedirects: 0 });
         check(response.status() === 400, 'Missing CSRF accepted');
         for (const route of ['/admin', '/admin?days=7', '/admin?days=90', '/admin/users', '/admin/courses', '/admin/materials', '/admin/audit']) {

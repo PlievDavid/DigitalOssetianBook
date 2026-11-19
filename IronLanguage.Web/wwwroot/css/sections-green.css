@@ -130,12 +130,6 @@
 .account-navigation svg { width: 22px; height: 22px; flex: none; }
 .account-navigation a:hover, .account-navigation a[aria-current="page"] { color: var(--theme-green); background: var(--theme-sage); }
 .green-theme .account-layout .feature-shell { padding: 0; margin: 0; width: 100%; }
-.green-theme .profile-identity { border-color: var(--theme-border); }
-.green-theme .profile-avatar-large { width: 88px; height: 88px; }
-.green-theme .profile-links a { padding: 20px; border-color: var(--theme-border); border-radius: 12px; }
-.green-theme .profile-links a:hover { border-color: #a6bda9; background: var(--theme-sage); }
-.green-theme .profile-links span, .green-theme .profile-caption { color: var(--theme-muted); }
-.green-theme .profile-logout button { min-height: 44px; padding: 10px 18px; color: var(--theme-muted); border: 1px solid var(--theme-border); border-radius: 10px; }
 .green-theme .home-reading-card { background-image: none; background-color: var(--theme-blue); }
 .art-credit-link { margin-left: auto; color: var(--theme-muted); text-decoration: underline; font-size: 12px; }
 .illustration-credits { border-top: 1px solid var(--theme-border); padding-top: 24px; margin-top: 32px; line-height: 1.7; }
@@ -190,9 +184,6 @@
   .auth-scene { padding: 24px 18px 40px; }
   .green-theme .feature-shell.narrow.auth-shell { padding: 28px 22px; }
   .account-layout { display: block; padding: 20px 18px 40px; }
-  .account-navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); border-right: 0; border-bottom: 1px solid var(--theme-border); padding: 0 0 16px; margin-bottom: 24px; }
-  .account-navigation a { padding: 12px 8px; font-size: 13px; }
-  .account-navigation svg { width: 18px; height: 18px; }
   .green-theme .guest-notice { margin-inline: 18px; padding: 12px 16px; }
 }
 @media (prefers-reduced-motion: reduce) {

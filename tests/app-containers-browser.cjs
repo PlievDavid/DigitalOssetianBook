@@ -22,12 +22,13 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       await page.setViewportSize({ width, height: 800 });
       await page.goto(base);
       const commonBounds = await bounds('.home-content');
-      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/matching', '/vocabulary', '/word-practice', '/game', '/games', '/games/crosswords', '/games/wordle', '/books', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
-        await page.goto(base + route, { waitUntil: 'networkidle' });
+      for (const route of ['/', '/audio-puzzles', '/translate', '/dialogs', '/matching', '/vocabulary', '/word-practice', '/game', '/games', '/games/crosswords', '/games/wordle', '/reading', '/account/login', '/account/register', '/account/access-denied', '/home/privacy', '/home/illustrations']) {
+        await page.goto(base + route);
+        await page.evaluate(() => document.fonts.ready.then(() => undefined));
         const expected = route === '/games/wordle' && width < 600 ? [commonBounds[0], width - commonBounds[0]] : commonBounds;
         assert.deepEqual(await bounds('#main-content'), expected, `${route} main at ${width}`); checks++;
         if (width >= 600) { assert.deepEqual(await bounds('.header-inner'), expected, `${route} header at ${width}`); checks++; }
-        const selector = route === '/' ? '.home-content' : route === '/books' ? '.books-catalog' : route.startsWith('/account/') && route !== '/account/access-denied' ? '.auth-scene' : '#main-content > .feature-shell';
+        const selector = route === '/' ? '.home-content' : route.startsWith('/account/') && route !== '/account/access-denied' ? '.auth-scene' : '#main-content > .feature-shell';
         assert.deepEqual(await bounds(selector), expected, `${route} shell at ${width}`); checks++;
         if (route === '/account/login' || route === '/account/register') {
           const card = await page.locator('.auth-shell').boundingBox();
@@ -39,18 +40,19 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
           const play = page.locator(playSelector);
           const wasHidden = await play.evaluate(el => { const hidden = el.hidden; el.hidden = false; return hidden; });
           const box = await play.boundingBox();
-          const maxWidth = route === '/games/crosswords' ? Infinity : route === '/games/wordle' ? 720 : 760;
+          const maxWidth = route === '/games/crosswords' ? Infinity : route === '/games/wordle' ? 840 : 760;
           assert(Math.abs(box.width - Math.min(maxWidth, expected[1] - expected[0])) < 1, route + ' lesson width at ' + width); checks++;
           assert(Math.abs(box.x + box.width / 2 - (expected[0] + expected[1]) / 2) < 1, route + ' lesson center at ' + width); checks++;
           await play.evaluate((el, hidden) => { el.hidden = hidden; }, wasHidden);
         }
-        if (route === '/books') {
-          // Inspect all three book shells, including states normally opened via API data.
-          for (const id of ['book-detail', 'book-reader']) {
-            await page.locator('#' + id).evaluate(el => { el.hidden = false; });
-            assert.deepEqual(await bounds('#' + id), expected, `${id} at ${width}`); checks++;
-            await page.locator('#' + id).evaluate(el => { el.hidden = true; });
-          }
+        if (route === '/reading') {
+          assert.deepEqual(await bounds('#reading-library'), expected, `Reading library at ${width}`); checks++;
+          const story = page.locator('#reading-story');
+          await story.evaluate(el => { el.hidden = false; });
+          const [left, right] = await bounds('#reading-story');
+          assert(Math.abs(right - left - Math.min(980, expected[1] - expected[0])) < 1, `Reading width at ${width}`); checks++;
+          assert(Math.abs((left + right) / 2 - (expected[0] + expected[1]) / 2) < 1, `Reading center at ${width}`); checks++;
+          await story.evaluate(el => { el.hidden = true; });
         }
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${route} overflow at ${width}`); checks++;
         const before = await bounds('#main-content');
@@ -60,10 +62,19 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       }
       // Protected shells use real styles with structural fixtures, without creating an account.
       await page.goto(base);
-      for (const shell of ['<section class="feature-shell editor-form-shell"></section>', '<section class="feature-shell editor-preview-shell"></section>', '<section class="feature-shell avatar-shell"></section>', '<div class="account-layout"><nav class="account-navigation"></nav><section class="feature-shell profile-shell"></section></div>']) {
+      await page.addStyleTag({ url: base + '/css/profile-public-name.css' });
+      for (const shell of [
+        '<section class="feature-shell editor-form-shell"></section>',
+        '<section class="feature-shell editor-preview-shell"></section>',
+        '<section class="feature-shell avatar-shell"></section>',
+        '<div class="account-layout profile-page"><nav class="account-navigation"><a href="/profile">Учётная запись</a></nav><section class="profile-content"><h1>Профиль</h1><div class="profile-summary"><span class="profile-portrait"></span><div class="profile-person"><p class="profile-person-name">ОченьДлинноеИмяПользователяБезПробеловДляПроверкиПереноса</p></div></div></section></div>'
+      ]) {
         await page.evaluate(html => { document.body.classList.add('editor-page'); document.querySelector('main').innerHTML = html; }, shell);
         assert.deepEqual(await bounds('#main-content > :first-child'), commonBounds, `Protected shell fixture at ${width}`); checks++;
       }
+      const profileBounds = await bounds('.profile-content');
+      assert(profileBounds[0] >= commonBounds[0] && profileBounds[1] === commonBounds[1], `Profile content at ${width}`); checks++;
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Profile overflow at ${width}`); checks++;
     }
     await page.goto(base + '/dialogs');
     await page.keyboard.press('Tab');

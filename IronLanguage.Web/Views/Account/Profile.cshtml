@@ -49,6 +49,13 @@
                         <span><strong>Преподавание</strong><small>Курсы и учебные материалы</small></span>
                     </a>
                 }
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="profile-row profile-admin-mobile" href="/admin">
+                        @await Html.PartialAsync("_NavIcon", "admin")
+                        <span><strong>Панель администратора</strong></span>
+                    </a>
+                }
             </div>
             <form action="/profile/name" method="post" class="profile-public-name" id="profile-name-form" novalidate>
                 @Html.AntiForgeryToken()

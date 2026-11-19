@@ -159,6 +159,7 @@
 .profile-row:first-child,
 .profile-row[hidden] + .profile-row { border-start-start-radius: 19px; border-start-end-radius: 19px; border-top: 0; }
 .profile-row:last-child { border-end-start-radius: 19px; border-end-end-radius: 19px; }
+.profile-row.profile-admin-mobile { display: none; }
 .profile-row:hover { background: #f2f6ef; }
 .profile-row:active { background: var(--profile-soft); }
 .profile-row svg { width: 22px; height: 22px; flex: none; color: var(--theme-green); }
@@ -235,6 +236,7 @@
 @media (max-width: 759px) {
     .green-theme .profile-page { display: block; }
     .profile-page .account-navigation { display: none; }
+    .profile-row.profile-admin-mobile { display: flex; }
     .profile-content h1 { margin-bottom: 20px; font-size: 32px; }
     .profile-content h2 { font-size: 21px; }
     .profile-summary { gap: 14px; padding-bottom: 20px; }
@@ -256,6 +258,10 @@
         text-underline-offset: 3px;
     }
     .progress-awards { margin-top: 23px; }
+}
+
+@media (min-width: 760px) {
+    .profile-row:has(+ .profile-admin-mobile) { border-end-start-radius: 19px; border-end-end-radius: 19px; }
 }
 
 @media (max-width: 340px) {
