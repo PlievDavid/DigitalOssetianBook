@@ -10,19 +10,34 @@
 <body>
 <a class="skip-link" href="#admin-main">К содержимому</a>
 <aside class="admin-sidebar">
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="admin-navigation">Разделы панели</button>
+    <div class="admin-side-heading">
+        <a class="admin-brand" href="/admin"><img src="~/images/adam-mark.svg" width="39" height="34" alt="" /><span><strong>Адам</strong><small>Администрирование</small></span></a>
+        <button class="nav-toggle" type="button" aria-label="Разделы панели" aria-expanded="false" aria-controls="admin-navigation">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="/images/material-icons/admin-rounded.svg#menu"></use></svg>
+        </button>
+    </div>
     <nav id="admin-navigation" aria-label="Администрирование">
     @{ var path = Context.Request.Path.Value ?? ""; }
-    @foreach (var item in new[] { ("/admin", "Обзор"), ("/admin/users", "Пользователи"), ("/admin/courses", "Курсы"), ("/admin/materials", "Материалы"), ("/admin/audit", "Журнал действий") })
+    @foreach (var (url, label, icon) in new[] {
+        ("/admin", "Обзор", "dashboard"), ("/admin/users", "Пользователи", "people"), ("/admin/courses", "Курсы", "courses"),
+        ("/admin/materials", "Материалы", "materials"), ("/admin/audit", "Журнал действий", "audit") })
     {
-        var active = item.Item1 == "/admin" ? path == "/admin" || path == "/admin/" : path.StartsWith(item.Item1);
-        <a href="@item.Item1" aria-current="@(active ? "page" : null)">@item.Item2</a>
+        var active = url == "/admin" ? path.TrimEnd('/') == url :
+            path == url || path.StartsWith(url + "/") || url == "/admin/materials" && path.StartsWith("/admin/course-materials");
+        <a href="@url" aria-current="@(active ? "page" : null)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/images/material-icons/admin-rounded.svg#@icon"></use></svg>@label</a>
     }
-    <a href="/" class="return-site">Вернуться на сайт</a>
+    <div class="return-site"><a href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/images/material-icons/admin-rounded.svg#home"></use></svg>Вернуться на сайт</a></div>
     </nav>
 </aside>
 <main id="admin-main" class="admin-main" tabindex="-1">
-    <header class="admin-heading"><h1>@ViewData["Title"]</h1></header>
+    @if (IsSectionDefined("AdminHeading"))
+    {
+        @await RenderSectionAsync("AdminHeading")
+    }
+    else
+    {
+        <header class="admin-heading"><h1>@ViewData["Title"]</h1></header>
+    }
     @if (TempData["AdminSuccess"] is string message) { <p class="notice" role="status">@message</p> }
     @RenderBody()
 </main>

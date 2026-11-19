@@ -58,7 +58,7 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         const adminPage = await login(context, fixture.admin); await adminPage.close();
         response = await page.request.post(base + '/admin/users/' + fixture.learnerId, { form: { Action: 'grant-admin', Reason: 'Без CSRF' }, maxRedirects: 0 });
         check(response.status() === 400, 'Missing CSRF accepted');
-        for (const route of ['/admin', '/admin?days=7', '/admin?days=90', '/admin/users', '/admin/materials', '/admin/audit']) {
+        for (const route of ['/admin', '/admin?days=7', '/admin?days=90', '/admin/users', '/admin/courses', '/admin/materials', '/admin/audit']) {
             response = await page.goto(base + route); check(response.ok(), 'Admin route failed: ' + route);
             check((await page.locator('h1').textContent()).length > 0, 'Missing page heading');
         }
@@ -91,6 +91,11 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         await change('revoke-editor');
         response = await editorLearner.request.get(base + '/editor', { maxRedirects: 0 }); check(response.status() === 302 && response.headers().location.includes('login'), 'Revoke did not invalidate session');
         await change('block');
+        await page.goto(base + '/admin/users');
+        await page.getByRole('radio', { name: 'Заблокированные' }).check();
+        await page.getByRole('button', { name: 'Найти', exact: true }).click();
+        check(await page.getByRole('radio', { name: 'Заблокированные' }).isChecked() &&
+            (await page.locator('tbody').innerText()).includes(fixture.learner), 'Status filter lost the selected value or excluded a blocked user');
         const blocked = await learnerContext.newPage(); await blocked.goto(base + '/account/login'); await blocked.locator('#Email').fill(fixture.learner); await blocked.locator('#Password').fill(fixture.password); await blocked.locator('form button[type=submit]').click();
         check(new URL(blocked.url()).pathname === '/account/login', 'Blocked login accepted');
         await change('unblock'); const restored = await login(learnerContext, fixture.learner); await restored.close();
@@ -112,6 +117,15 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         await page.goto(base + '/admin/users/' + fixture.learnerId);
         check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile user details overflow');
         await page.goto(base + '/admin'); await page.screenshot({ path: path.join(out, 'overview-mobile.png'), fullPage: true });
+        const menu = page.getByRole('button', { name: 'Разделы панели' });
+        await menu.click();
+        await page.keyboard.press('Escape');
+        check(await menu.getAttribute('aria-expanded') === 'false' && await menu.evaluate(el => el === document.activeElement), 'Escape did not close mobile navigation or restore focus');
+        await page.setViewportSize({ width: 320, height: 720 });
+        for (const route of ['/admin?days=90', '/admin/users', '/admin/courses', '/admin/materials', '/admin/audit']) {
+            await page.goto(base + route);
+            check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile overflow: ' + route);
+        }
         await page.keyboard.press('Tab'); check(await page.evaluate(() => document.activeElement !== document.body), 'Keyboard focus');
         await page.emulateMedia({ reducedMotion: 'reduce' });
         check(errors.length === 0, 'Browser runtime errors');
