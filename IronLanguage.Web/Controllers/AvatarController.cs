@@ -30,11 +30,12 @@ public sealed class AvatarController(IAccountRepository accounts, AvatarService 
 
     // Only catalog keys are accepted; no user IDs, uploaded SVG or arbitrary CSS enter the renderer.
     [HttpGet("/avatars/render"), ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
-    public IActionResult Render([FromQuery] AvatarOptions options, AvatarEmotion emotion = AvatarEmotion.Neutral, bool portrait = false)
+    public IActionResult Render([FromQuery] AvatarOptions options, AvatarEmotion emotion = AvatarEmotion.Neutral, bool portrait = false, bool sceneOnly = false)
     {
         if (!ModelState.IsValid || !Enum.IsDefined(emotion)) return BadRequest();
         Response.Headers.XContentTypeOptions = "nosniff";
         Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
-        return Content(AvatarRenderer.Svg(options, emotion, portrait), "image/svg+xml; charset=utf-8");
+        var svg = sceneOnly ? AvatarRenderer.SceneSvg(options.Background) : AvatarRenderer.Svg(options, emotion, portrait);
+        return Content(svg, "image/svg+xml; charset=utf-8");
     }
 }

@@ -85,6 +85,20 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
       portraits.map(({ hair, markup }) => '<figure style="margin:0;padding:8px;background:white;border-radius:12px"><img style="width:100%;height:auto" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup) + '"/><figcaption style="text-align:center">' + hairLabels[hair] + '</figcaption></figure>').join("") + '</main></body></html>');
     await page.locator("img").evaluateAll(async images => { await Promise.all(images.map(image => image.decode())); });
     await page.screenshot({ path: path.resolve(".run-avatar/avatar-hair-seams-fixed.png"), fullPage: true });
+    for (const background of ["mountains", "lake", "forest", "sunset", "snow", "sage", "sky", "sand", "plain"]) {
+      const corners = await page.evaluate(async background => {
+        const scene = new Image();
+        scene.src = "/avatars/render?" + new URLSearchParams({ Background: background, sceneOnly: true });
+        await scene.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = 500;
+        canvas.height = 330;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(scene, 0, 0, canvas.width, canvas.height);
+        return [[0, 0], [499, 0], [0, 329], [499, 329]].map(([x, y]) => ctx.getImageData(x, y, 1, 1).data[3]);
+      }, background);
+      check(corners.every(alpha => alpha === (background === "plain" ? 0 : 255)), "Scene fills all four corners: " + background);
+    }
     console.log("Avatar artwork checks passed: " + checks);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.message); process.exitCode = 1; });

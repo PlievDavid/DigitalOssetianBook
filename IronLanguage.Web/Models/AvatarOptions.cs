@@ -83,6 +83,13 @@ public record AvatarSection(string Id, string Label, AvatarGroup[] Groups);
 
 public static class AvatarCatalog
 {
+    public static readonly AvatarGroup Backgrounds = new(nameof(AvatarOptions.Background), "Фон аватара",
+    [
+        new("mountains", "Осетинские горы"), new("lake", "Горное озеро"), new("forest", "Хвойный лес"),
+        new("sunset", "Закат в долине"), new("snow", "Снежные вершины"), new("sage", "Шалфей", "#eff2e8"),
+        new("sky", "Небо", "#ecf4fc"), new("sand", "Песок", "#fcf5e9"), new("plain", "Без фона")
+    ]);
+
     public static readonly AvatarSection[] Sections =
     [
         new("face", "Лицо",
@@ -106,10 +113,7 @@ public static class AvatarCatalog
         [
             new(nameof(AvatarOptions.Accessory), "Детали образа", [new("none", "Без аксессуаров"), new("glasses", "Очки"), new("roundglasses", "Круглые очки"), new("earrings", "Серьги"), new("scarf", "Шарф")])
         ]),
-        new("background", "Фон",
-        [
-            new(nameof(AvatarOptions.Background), "Фон аватара", [new("mountains", "Осетинские горы"), new("sage", "Шалфей", "#eff2e8"), new("sky", "Небо", "#ecf4fc"), new("sand", "Песок", "#fcf5e9"), new("plain", "Без фона", "#ffffff")])
-        ])
+        new("background", "Фон", [Backgrounds])
     ];
 
     public static IEnumerable<AvatarGroup> Groups => Sections.SelectMany(x => x.Groups);

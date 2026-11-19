@@ -1,6 +1,19 @@
+/* Keep the first visible font for this navigation if a cold load misses the paint. */
+@font-face {
+    font-family: 'Admin Onest';
+    src: url('../fonts/onest/Onest-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-display: optional;
+}
+@font-face {
+    font-family: 'Admin Golos Text';
+    src: url('../fonts/golos-text/GolosText-Variable.ttf') format('truetype');
+    font-weight: 400 900;
+    font-display: optional;
+}
 *{box-sizing:border-box}
 html{color-scheme:light;scrollbar-color:#8f9d93 #eceee9;scrollbar-gutter:stable}
-body{--admin-bg:#f9faf7;--admin-line:#dce4d9;--admin-selected:#e1ebdd;--admin-surface:#edf2e9;--admin-ink:#17261f;--admin-muted:#526257;margin:0;background:var(--admin-bg);color:var(--admin-ink);font:14px/1.5 'Golos Text',Arial,sans-serif}
+body{--theme-font:'Admin Golos Text',Arial,Helvetica,sans-serif;--theme-heading-font:'Admin Onest',var(--theme-font);--admin-bg:#f9faf7;--admin-line:#dce4d9;--admin-selected:#e1ebdd;--admin-surface:#edf2e9;--admin-ink:#17261f;--admin-muted:#526257;margin:0;background:var(--admin-bg);color:var(--admin-ink);font:14px/1.5 var(--theme-font)}
 a{color:var(--theme-green);text-underline-offset:4px}
 button,input,select,textarea{font:inherit}
 button,a,summary,select{cursor:pointer}
@@ -30,8 +43,8 @@ p:last-child{margin-bottom:0}
 .admin-sidebar nav a:hover{background:#e7eee3}
 .admin-sidebar nav a[aria-current=page]{background:var(--admin-selected);color:var(--theme-green);font-weight:650}
 .admin-sidebar nav a[aria-current=page] svg{color:var(--theme-green)}
-.admin-sidebar nav .return-site{margin:22px 9px 0;padding-top:11px;border-top:1px solid #d6e0d3}
-.admin-sidebar nav .return-site a{padding-inline:4px;font-size:13px;color:var(--admin-muted)}
+.admin-sidebar nav .return-profile{margin:22px 9px 0;padding-top:11px;border-top:1px solid #d6e0d3}
+.admin-sidebar nav .return-profile a{padding-inline:4px;font-size:13px;color:var(--admin-muted)}
 .admin-main{margin-left:232px;padding:30px clamp(24px,3.5vw,54px) 60px;max-width:1480px;min-width:0}
 .admin-heading{margin:7px 0 23px}
 .admin-overview-heading{display:flex;align-items:end;justify-content:space-between;gap:22px;margin-top:0;margin-bottom:16px;padding:24px 26px;border:1px solid var(--admin-line);border-radius:24px;background:linear-gradient(112deg,#f9faf6 25%,#edf3ea 100%)}
@@ -165,7 +178,7 @@ dialog::backdrop{background:#10231c88}
 .nav-toggle{display:grid;place-items:center;width:44px;padding:0;border-radius:16px;background:#ffffff8c;border-color:#c9d6cb}
 .admin-sidebar nav{display:none;margin-top:10px}
 .admin-sidebar nav.is-open{display:flex}
-.admin-sidebar nav .return-site{margin-top:8px}
+.admin-sidebar nav .return-profile{margin-top:8px}
 .admin-main{margin-left:0;padding:16px 16px 40px}
 .admin-heading{margin-bottom:24px}
 .admin-overview-heading{gap:14px;padding:17px;margin-bottom:12px;border-radius:20px}

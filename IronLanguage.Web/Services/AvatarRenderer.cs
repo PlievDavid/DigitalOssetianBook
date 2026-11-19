@@ -6,7 +6,13 @@ namespace IronLanguage.Web.Services;
 /// <summary>Shared, versioned SVG renderer. Expressions and poses do not modify saved appearance.</summary>
 public static class AvatarRenderer
 {
-    public const string Version = "4";
+    public const string Version = "6";
+    public static string SceneUrl(string background) =>
+        $"/avatars/render?v={Version}&Background={Uri.EscapeDataString(background)}&sceneOnly=true";
+
+    public static string SceneSvg(string background) =>
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 320 520\" preserveAspectRatio=\"none\" fill=\"none\">"
+        + Scene(background) + "</svg>";
     public static string Url(AvatarOptions options, AvatarEmotion emotion = AvatarEmotion.Neutral, bool portrait = false) =>
         "/avatars/render?v=" + Version + "&" + string.Join("&", AvatarCatalog.Groups.Select(g => $"{g.Property}={Uri.EscapeDataString(options.Get(g.Property))}"))
         + $"&emotion={emotion}&portrait={portrait.ToString().ToLowerInvariant()}";
@@ -32,25 +38,7 @@ public static class AvatarRenderer
           <pattern id="knit" width="6" height="6" patternUnits="userSpaceOnUse"><path d="m0 0 3 3 3-3" stroke="#fff" opacity=".055"/></pattern>
         </defs>
         """);
-        var bg = o.Background switch { "sky" => "#ecf4fc", "sand" => "#fcf5e9", "plain" => "none", _ => "#eff2e8" };
-        Add($"<rect width=\"320\" height=\"520\" rx=\"20\" fill=\"{bg}\"/>");
-        if (o.Background == "mountains")
-            Add("""
-            <g opacity=".68">
-              <!-- Simplified ridge of the selected Tsey glacier photograph: low left ridge and steep right face. -->
-              <path d="M0 245 19 240 27 244 41 237 56 244 73 243 82 231 92 226 100 238 115 233 122 241 137 231 150 234 166 218 181 213 191 201 204 209 213 190 227 182 244 174 255 161 266 169 280 151 291 162 303 139 313 145 320 133V455H0Z" fill="#aebfc4"/>
-              <path d="M0 245 19 240 27 244 41 237 56 244 73 243 82 231 92 226 87 247 79 256 56 260 35 254 0 267Zm137 231 150 234 166 218 181 213 173 231 157 244Zm213 190 227 182 244 174 255 161 246 195 233 205 223 211Zm53 297Q126 266 181 252L213 233 239 222 320 194V294Q233 270 171 297T53 333Z" fill="#f5f7f4" opacity=".88"/>
-              <path d="m0 336 58-64 56 24 91-40 115 85v134H0Z" fill="#b6c8b8"/>
-              <path d="m0 421 70-57 86 41 56-43 108 28v130H0Z" fill="#dce1c7"/>
-              <path d="m242 351 6-102 31-3 6 105Z" fill="#b4ab92"/>
-              <path d="m248 249 17-6 14 3-14 6v98l-23 1Z" fill="#d2c8ae"/>
-              <path d="m265 252 14-6 6 105-20-1Z" fill="#9e9987"/>
-              <g stroke="#8c897b" stroke-width="1" opacity=".5"><path d="m247 273 17-3m-18 24 18-3m-19 24 19-3m-21 25 22-3m4-58 9 3m-9 19 10 4m-9 19 10 4"/></g>
-              <path d="M255 268h3v8h-3Zm-1 26h3v8h-3Zm-1 28h4v12h-4Zm18-43h3v8h-3Zm1 25h3v8h-3Z" fill="#5b6258"/>
-              <path d="m228 355 19-11 25 4 22-3 15 21Z" fill="#b6b7a2"/>
-              <g stroke="#9baa87" stroke-width="2"><path d="m28 455 2-38m0 21-12-10m12 2 13-15m245 56 3-38m-2 21-11-9m12 0 12-13"/></g>
-            </g>
-            """);
+        Add(Scene(o.Background, rounded: true));
         Add("<ellipse cx=\"160\" cy=\"495\" rx=\"76\" ry=\"9\" fill=\"#536347\" opacity=\".14\"/>");
         // A continuous scalp joins every fringe to the temples, independently of face shape.
         Add("<path data-avatar-layer=\"scalp\" d=\"M106 139C99 125 96 102 103 82C111 59 130 47 160 47C191 47 210 61 217 83C225 104 221 126 214 139L205 120L115 120Z\" fill=\"url(#hair)\"/>");
@@ -153,6 +141,77 @@ public static class AvatarRenderer
         Add(Hands(o, emotion, afterFace: true));
         Add("</svg>");
         return s.ToString();
+    }
+
+    private static string Scene(string background, bool rounded = false)
+    {
+        var choice = AvatarCatalog.Backgrounds.Choices.Single(x => x.Id == background);
+        var fill = choice.Color ?? (background == "plain" ? "none" : "#eff2e8");
+        var radius = rounded ? " rx=\"20\"" : "";
+        var ground = $"<rect width=\"320\" height=\"520\"{radius} fill=\"{fill}\"/>";
+        return ground + (background switch
+        {
+            "mountains" => """
+            <g opacity=".68">
+              <!-- Simplified ridge of the selected Tsey glacier photograph: low left ridge and steep right face. -->
+              <path d="M0 245 19 240 27 244 41 237 56 244 73 243 82 231 92 226 100 238 115 233 122 241 137 231 150 234 166 218 181 213 191 201 204 209 213 190 227 182 244 174 255 161 266 169 280 151 291 162 303 139 313 145 320 133V455H0Z" fill="#aebfc4"/>
+              <path d="M0 245 19 240 27 244 41 237 56 244 73 243 82 231 92 226 87 247 79 256 56 260 35 254 0 267Zm137 231 150 234 166 218 181 213 173 231 157 244Zm213 190 227 182 244 174 255 161 246 195 233 205 223 211Zm53 297Q126 266 181 252L213 233 239 222 320 194V294Q233 270 171 297T53 333Z" fill="#f5f7f4" opacity=".88"/>
+              <path d="m0 336 58-64 56 24 91-40 115 85v134H0Z" fill="#b6c8b8"/>
+              <path d="m0 421 70-57 86 41 56-43 108 28v130H0Z" fill="#dce1c7"/>
+              <path d="m242 351 6-102 31-3 6 105Z" fill="#b4ab92"/>
+              <path d="m248 249 17-6 14 3-14 6v98l-23 1Z" fill="#d2c8ae"/>
+              <path d="m265 252 14-6 6 105-20-1Z" fill="#9e9987"/>
+              <g stroke="#8c897b" stroke-width="1" opacity=".5"><path d="m247 273 17-3m-18 24 18-3m-19 24 19-3m-21 25 22-3m4-58 9 3m-9 19 10 4m-9 19 10 4"/></g>
+              <path d="M255 268h3v8h-3Zm-1 26h3v8h-3Zm-1 28h4v12h-4Zm18-43h3v8h-3Zm1 25h3v8h-3Z" fill="#5b6258"/>
+              <path d="m228 355 19-11 25 4 22-3 15 21Z" fill="#b6b7a2"/>
+              <g stroke="#9baa87" stroke-width="2"><path d="m28 455 2-38m0 21-12-10m12 2 13-15m245 56 3-38m-2 21-11-9m12 0 12-13"/></g>
+            </g>
+            """,
+            "lake" => """
+            <defs><linearGradient id="lake-sky" x2="0" y2="1"><stop stop-color="#b7d7de"/><stop offset="1" stop-color="#f0f3e7"/></linearGradient></defs>
+            <rect width="320" height="520" fill="url(#lake-sky)"/>
+            <circle cx="254" cy="119" r="25" fill="#fcf5da"/>
+            <path d="M0 279 49 201l37 33 41-64 59 78 55-61 79 87v67H0Z" fill="#9aafb8"/>
+            <path d="m89 233 38-63 38 51-31-13-11 12-13-13Zm131-22 21-24 25 27-21-6-11 8Z" fill="#e7eef0"/>
+            <path d="M0 279q51 19 104 16t102 4q48 9 114-23v175H0Z" fill="#91bcb9"/>
+            <path d="M35 336h59m125 21h61m-104 32h45M16 388h49m177 31h68" stroke="#e5f2ea" stroke-width="3" stroke-linecap="round" opacity=".75"/>
+            <path d="M0 431q59-24 133 7t187 6v76H0Z" fill="#d9dfc2"/>
+            """,
+            "forest" => """
+            <defs>
+              <linearGradient id="forest-sky" x2="0" y2="1"><stop stop-color="#bbd4bc"/><stop offset="1" stop-color="#f5f1d3"/></linearGradient>
+              <path id="fir" d="M0 0 17 36H9l16 26H13l17 27H3v14h-6V89h-27l17-27h-12l16-26h-8Z"/>
+            </defs>
+            <rect width="320" height="520" fill="url(#forest-sky)"/>
+            <circle cx="77" cy="129" r="38" fill="#f6efc7" opacity=".86"/>
+            <path d="M0 302q70-67 136-37t184-16v190H0Z" fill="#a6bd9c"/>
+            <path d="M0 372q91-62 154-18t166-17v183H0Z" fill="#b4c8a0"/>
+            <g fill="#7f9c80"><use href="#fir" transform="translate(86 250) scale(.83)"/><use href="#fir" transform="translate(251 246)"/></g>
+            <g fill="#63856e"><use href="#fir" transform="translate(24 233) scale(1.55)"/><use href="#fir" transform="translate(293 226) scale(1.64)"/></g>
+            <path d="M0 438q79-16 139 2t181-6v86H0Z" fill="#d6dcb7"/>
+            """,
+            "sunset" => """
+            <defs><linearGradient id="sunset-sky" x2="0" y2="1"><stop stop-color="#d4c6df"/><stop offset=".63" stop-color="#f8d4b0"/><stop offset="1" stop-color="#f4ebcc"/></linearGradient></defs>
+            <rect width="320" height="520" fill="url(#sunset-sky)"/>
+            <circle cx="250" cy="170" r="42" fill="#fff0c0"/>
+            <path d="M0 277q34-12 58-44 34-37 75 7l36 39q81-90 151-34v163H0Z" fill="#b0a2b4"/>
+            <path d="M0 334q54-39 108-27t104-20q53-29 108 13v150H0Z" fill="#b5a9a3"/>
+            <path d="M0 417q50-28 128-24t192-43v170H0Z" fill="#c6bd9d"/>
+            <path d="M0 468q68-17 117-7t203-26v85H0Z" fill="#e2d0aa"/>
+            <path d="M12 142h60m204-25h27m-267 68h27" stroke="#fff0d7" stroke-width="3" stroke-linecap="round" opacity=".72"/>
+            """,
+            "snow" => """
+            <defs><linearGradient id="snow-sky" x2="0" y2="1"><stop stop-color="#b4c9e1"/><stop offset="1" stop-color="#f0f4f5"/></linearGradient></defs>
+            <rect width="320" height="520" fill="url(#snow-sky)"/>
+            <circle cx="62" cy="129" r="27" fill="#f7f7ee"/>
+            <path d="M0 299 62 205l34 20 54-87 36 73 45 32 36-79 53 89v176H0Z" fill="#9aaec1"/>
+            <path d="m0 299 62-94 34 20-34 4-18 29-12 3Zm96-74 54-87 36 73-29-24-10 15-15-10Zm135 18 36-79 53 89-39-40-12 17-12-10Z" fill="#f0f4f3"/>
+            <path d="M0 346q67 0 124-38t196 12v200H0Z" fill="#d3e0e7"/>
+            <path d="M0 444q87-27 156-14t164-21v111H0Z" fill="#edf3f3"/>
+            <path d="M19 467q29-9 56-9m164 21q29-7 57-19" stroke="#cbdce4" stroke-width="3" stroke-linecap="round"/>
+            """,
+            _ => ""
+        });
     }
 
     private record ArmPaths(string Full, string Forearm, string ShortSleeve);

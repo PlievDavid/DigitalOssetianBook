@@ -56,13 +56,26 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     await p.getByRole("button", { name: "Одежда", exact: true }).click();
     await p.locator('label[for="avatar-Top-hoodie"]').click();
     check((await p.locator("#avatar-preview-image").getAttribute("src")).includes("Hair=bob"), "Live preview uses chosen details.");
+    await p.getByRole("button", { name: "Фон", exact: true }).click();
+    const scene = p.locator(".avatar-preview-scene");
+    const figure = p.locator("#avatar-preview-image");
+    const figureUrl = await figure.getAttribute("src");
+    const newScenes = ["lake", "forest", "sunset", "snow"];
+    for (const background of newScenes) {
+      await p.locator(`label[for="avatar-Background-${background}"]`).click();
+      check((await scene.getAttribute("src")).includes("Background=" + background), "Live scene uses " + background);
+      check(await scene.getAttribute("src") === await p.locator(`label[for="avatar-Background-${background}"] img`).getAttribute("src"), "Scene and tile share the same illustration.");
+    }
+    check(await figure.getAttribute("src") === figureUrl, "Changing a background doesn't reload the character.");
     check(await p.locator('input[name*="Pants"],input[name*="Shoes"]').count() === 0, "Lower clothes remain fixed.");
     await Promise.all([p.waitForURL(base + "/"), p.getByRole("button", { name: "Сохранить и продолжить", exact: true }).click()]);
     await p.goto(base + "/profile");
     check((await p.locator(".profile-portrait img").getAttribute("src")).includes("Hair=bob"), "Avatar persists in profile.");
+    check((await p.locator(".profile-portrait img").getAttribute("src")).includes("Background=snow"), "Profile uses the selected background.");
     check((await p.locator(".header-actions .profile-avatar img").getAttribute("src")).includes("Top=hoodie"), "Header uses saved clothing.");
     await p.goto(base + "/profile/avatar");
     check(await p.locator("#avatar-Hair-bob").isChecked(), "Reload restores choices from database.");
+    check(await p.locator("#avatar-Background-snow").isChecked(), "Reload restores the background.");
     const token = await p.locator('#avatar-form input[name="__RequestVerificationToken"]').inputValue();
     const noCsrf = await p.request.post(base + "/profile/avatar", { form: { "Options.Hair": "long" }, maxRedirects: 0 });
     check(noCsrf.status() === 400, "Saving requires CSRF token.");
@@ -83,12 +96,17 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     await other.goto(base + "/profile/avatar");
     check(await other.locator("#avatar-Hair-waves").isChecked(), "Skipping leaves default avatar; accounts are isolated.");
     await second.close();
-    await p.getByRole("button", { name: "Волосы", exact: true }).click();
+    await p.getByRole("button", { name: "Фон", exact: true }).click();
     await p.screenshot({ path: path.join(out, "avatar-desktop.png"), fullPage: true });
     for (const width of [360, 600, 768, 1024, 1280, 1920]) {
       await p.setViewportSize({ width, height: 1000 });
       check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "No horizontal overflow at " + width);
       check(await p.getByRole("button", { name: "Сохранить аватар", exact: true }).isVisible(), "Save remains available at " + width);
+      check(await scene.evaluate(img => {
+        const frame = img.parentElement.getBoundingClientRect();
+        const layer = img.getBoundingClientRect();
+        return layer.x === frame.x && layer.y === frame.y && layer.width === frame.width && layer.height === frame.height;
+      }), "Background covers the preview at " + width);
     }
     await p.setViewportSize({ width: 360, height: 900 });
     await p.screenshot({ path: path.join(out, "avatar-mobile.png"), fullPage: true });
@@ -121,8 +139,11 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     await plain.goto(base + "/profile/avatar");
     check(await plain.locator("#avatar-panel-clothes").isVisible(), "All categories remain available without JavaScript.");
     await plain.locator('label[for="avatar-Hair-short"]').click();
+    await plain.locator('label[for="avatar-Background-forest"]').click();
     await Promise.all([plain.waitForURL("**/profile"), plain.getByRole("button", { name: "Сохранить аватар", exact: true }).click()]);
     check((await plain.locator(".profile-portrait img").getAttribute("src")).includes("Hair=short"), "Plain HTML form saves without JavaScript.");
+    await plain.goto(base + "/profile/avatar");
+    check((await plain.locator(".avatar-preview-scene").getAttribute("src")).includes("Background=forest"), "Server renders the saved scene without JavaScript.");
     await plainContext.close();
     check(failures.length === 0, "No JavaScript exceptions.");
     console.log("Avatar browser checks passed: " + checks);

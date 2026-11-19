@@ -69,6 +69,34 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
             response = await page.goto(base + route); check(response.ok(), 'Admin route failed: ' + route);
             check((await page.locator('h1').textContent()).length > 0, 'Missing page heading');
         }
+        await page.getByRole('link', { name: 'Вернуться в профиль', exact: true }).click();
+        check(new URL(page.url()).pathname === '/profile', 'Admin navigation must return to the profile');
+        const cold = await browser.newContext({ storageState: await context.storageState() });
+        let releaseFonts;
+        const fontGate = new Promise(resolve => { releaseFonts = resolve; });
+        try {
+            await cold.route('**/*.ttf', async route => { await fontGate; await route.continue(); });
+            const coldPage = await cold.newPage();
+            await coldPage.goto(base + '/admin', { waitUntil: 'domcontentloaded' });
+            const preloads = coldPage.locator('link[rel="preload"][as="font"][crossorigin]');
+            check(await preloads.count() === 2, 'Preload both admin fonts.');
+            const textWidths = () => coldPage.locator('.admin-brand strong, .admin-brand small, h1').evaluateAll(elements => elements.map(element => {
+                const text = document.createRange();
+                text.selectNodeContents(element);
+                return text.getBoundingClientRect().width;
+            }));
+            await coldPage.waitForFunction(() => {
+                const paint = performance.getEntriesByName('first-contentful-paint')[0];
+                return paint && performance.now() - paint.startTime > 250;
+            });
+            const firstWidths = await textWidths();
+            releaseFonts();
+            await coldPage.evaluate(() => document.fonts.ready);
+            check(JSON.stringify(await textWidths()) === JSON.stringify(firstWidths), 'Late fonts must not shift the admin sidebar or heading.');
+        } finally {
+            releaseFonts();
+            await cold.close();
+        }
         response = await page.goto(base + '/editor'); check(response.ok(), 'Admin cannot edit');
         await page.goto(base + '/admin'); await page.screenshot({ path: path.join(out, 'overview-wide.png'), fullPage: true });
         await page.goto(base + '/admin/users');

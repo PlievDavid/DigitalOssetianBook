@@ -4,6 +4,8 @@
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] · Управление Адам</title>
     <link rel="icon" type="image/svg+xml" href="~/images/adam-mark.svg" />
+    <link rel="preload" href="~/fonts/onest/Onest-Variable.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="~/fonts/golos-text/GolosText-Variable.ttf" as="font" type="font/ttf" crossorigin />
     <link rel="stylesheet" href="~/css/theme-green.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
 </head>
@@ -26,7 +28,7 @@
             path == url || path.StartsWith(url + "/") || url == "/admin/materials" && path.StartsWith("/admin/course-materials");
         <a href="@url" aria-current="@(active ? "page" : null)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/images/material-icons/admin-rounded.svg#@icon"></use></svg>@label</a>
     }
-    <div class="return-site"><a href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/images/material-icons/admin-rounded.svg#home"></use></svg>Вернуться на сайт</a></div>
+    <div class="return-profile"><a href="/profile"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/images/material-icons/navigation-rounded.svg#account_circle"></use></svg>Вернуться в профиль</a></div>
     </nav>
 </aside>
 <main id="admin-main" class="admin-main" tabindex="-1">

@@ -3,4 +3,4 @@
 Лицензия: Apache 2.0 (LICENSE.txt).
 
 Контуры сохранены без правок; невидимые элементы удалены, SVG объединены в один набор.
-admin-rounded.svg — Dashboard, Group, School, Library Books, History, Home и Menu из того же набора.
+admin-rounded.svg — Dashboard, Group, School, Library Books, History и Menu из того же набора.
