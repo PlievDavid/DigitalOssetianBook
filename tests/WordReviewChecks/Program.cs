@@ -45,6 +45,19 @@ var memory = new ReviewMemoryRepository();
 var memoryOwner = Guid.NewGuid();
 var memoryClock = new TestClock(now);
 var memoryService = new WordReviewService(memory, memoryClock);
+var duplicateMemory = new ReviewMemoryRepository();
+var duplicateOwner = Guid.NewGuid();
+foreach (var (ossetian, russian) in new[] { ("ФÆЛǼ", "но"), ("фӕлӕ", "однако") })
+{
+    var word = new WordEntry { Ossetian = ossetian, Russian = russian, Published = true };
+    duplicateMemory.Words.Add(new(new SavedWord { UserId = duplicateOwner, WordId = word.Id, Word = word }, null, null));
+}
+var duplicateService = new WordReviewService(duplicateMemory, memoryClock);
+var duplicateSession = await duplicateService.Start(duplicateOwner, "new", default);
+var duplicateCards = JsonSerializer.Deserialize<ReviewCardSnapshot[]>(duplicateMemory.Sessions[duplicateOwner].ItemsJson,
+    new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+Check(duplicateSession.Total == 1 && duplicateCards[0].Answers.Length == 2,
+    "A session introduces one spelling once and accepts its confirmed translations");
 var topicService = new VocabularyTopicService(new VocabularyTopicCatalog(new TestEnvironment()), memory, memoryClock);
 var controller = new WordReviewController(memory, memoryService, memoryClock, topicService) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
 await controller.Available("  ФÆЛǼ   ", 1, default);

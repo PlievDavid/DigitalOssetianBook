@@ -175,10 +175,22 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
             .GroupBy(x => WordReviewRules.Normalize(x.Russian)).ToDictionary(x => x.Key, x => x.Select(w => w.Ossetian).Distinct().ToArray());
         var forwardOptions = forwardAnswers.Values.SelectMany(x => x).DistinctBy(WordReviewRules.Normalize).ToArray();
         var backwardOptions = backwardAnswers.Values.SelectMany(x => x).DistinctBy(WordReviewRules.Normalize).ToArray();
-        foreach(var source in sources.OrderBy(x=>x.Forward?.DueAt??x.Backward?.DueAt??DateTimeOffset.MaxValue).ThenBy(x=>x.Saved.AddedAt))
+        static bool Fresh(ReviewSource source) => (source.Forward is null || source.Forward.Stage < 0 && source.Forward.DueAt is null) &&
+            (source.Backward is null || source.Backward.Stage < 0 && source.Backward.DueAt is null);
+        // Different dictionary senses can have the same spelling. Select at most one
+        // eligible sense per spelling for this session, while retaining all confirmed
+        // translations in the answer pool above.
+        var eligibleSources = sources.Where(source =>
+                !string.IsNullOrWhiteSpace(source.Saved.Word.Ossetian) && !string.IsNullOrWhiteSpace(source.Saved.Word.Russian) &&
+                (mode != "new" || Fresh(source)) && (mode != "due" || !Fresh(source)) &&
+                (Fresh(source) || source.Forward?.DueAt is null || source.Forward.DueAt <= now ||
+                    source.Backward?.DueAt is null || source.Backward.DueAt <= now))
+            .OrderBy(x => x.Forward?.DueAt ?? x.Backward?.DueAt ?? DateTimeOffset.MaxValue)
+            .ThenBy(x => x.Saved.AddedAt).ThenBy(x => x.Saved.WordId)
+            .DistinctBy(x => WordReviewRules.Normalize(x.Saved.Word.Ossetian));
+        foreach(var source in eligibleSources)
         {
-            var word=source.Saved.Word;var fresh=(source.Forward is null||source.Forward.Stage<0&&source.Forward.DueAt is null) && (source.Backward is null||source.Backward.Stage<0&&source.Backward.DueAt is null);
-            if(mode=="new"&&!fresh || mode=="due"&&fresh)continue;
+            var word=source.Saved.Word;var fresh=Fresh(source);
             ReviewCardSnapshot Practice(bool reverse,WordReviewState? state)
             {
                 var answers=(reverse ? backwardAnswers : forwardAnswers)[WordReviewRules.Normalize(reverse ? word.Russian : word.Ossetian)];
