@@ -30,7 +30,11 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
       };
       const before = await render(markup);
       layers.forEach(layer => doc.querySelectorAll('[data-avatar-layer="' + layer + '"]').forEach(el => el.remove()));
-      if (alternateBackground) doc.querySelector('rect[width="320"][height="520"]').setAttribute("fill", alternateBackground);
+      if (alternateBackground) {
+        const background = doc.querySelector('[data-avatar-background="true"]');
+        if (!background) throw new Error("Avatar background not found");
+        background.setAttribute("fill", alternateBackground);
+      }
       const after = await render(new XMLSerializer().serializeToString(doc));
       return JSON.stringify(before) === JSON.stringify(after);
     }, { markup, layers, points, alternateBackground });
@@ -48,6 +52,8 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
         check(await occlusion(markup, ["arms-back"], [[118, 242], [202, 242]]), "Torso covers shoulder joins: " + top + "/" + emotion);
       }
     }
+    const backgroundControl = await svg({ Background: "sky" });
+    check(!await occlusion(backgroundControl, [], [[160, 10]], "#fcf5e9"), "Background replacement changes exposed pixels");
     for (const hair of ["short", "waves", "curls", "long", "bob", "ponytail"]) {
       for (const face of ["oval", "round", "angular"]) {
         const markup = await svg({ Hair: hair, Face: face, HairColor: "copper", Background: "sky" });

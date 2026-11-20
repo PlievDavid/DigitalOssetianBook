@@ -148,7 +148,7 @@ public static class AvatarRenderer
         var choice = AvatarCatalog.Backgrounds.Choices.Single(x => x.Id == background);
         var fill = choice.Color ?? (background == "plain" ? "none" : "#eff2e8");
         var radius = rounded ? " rx=\"20\"" : "";
-        var ground = $"<rect width=\"320\" height=\"520\"{radius} fill=\"{fill}\"/>";
+        var ground = $"<rect data-avatar-background=\"true\" width=\"320\" height=\"520\"{radius} fill=\"{fill}\"/>";
         var scene = ground + (background switch
         {
             "mountains" => """
