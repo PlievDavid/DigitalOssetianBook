@@ -68,6 +68,27 @@ public static class WordReviewRules
         }
         return result.ToArray();
     }
+
+    public static string[] PairOptions(IReadOnlyList<string> answers)
+    {
+        if (answers.Count < 2) throw new ArgumentException("Для подбора пар нужны как минимум два слова.");
+        var permutations = new List<int[]>();
+        var indices = new int[answers.Count];
+        var used = new bool[answers.Count];
+        void Build(int position)
+        {
+            if (position == indices.Length) { permutations.Add((int[])indices.Clone()); return; }
+            for (var index = 0; index < indices.Length; index++)
+            {
+                if (used[index] || index == position) continue;
+                used[index] = true; indices[position] = index;
+                Build(position + 1);
+                used[index] = false;
+            }
+        }
+        Build(0);
+        return permutations[Random.Shared.Next(permutations.Count)].Select(index => answers[index]).ToArray();
+    }
 }
 
 public sealed class WordReviewService(IWordReviewRepository repository, TimeProvider clock)
@@ -158,7 +179,7 @@ public sealed class WordReviewService(IWordReviewRepository repository, TimeProv
             }
             if(group.Count>=2 && rounds++%2==0)
             {
-                output.Add(cards[i] with {Kind="pairs",Prompt="Соедините слова и переводы",Options=group.Select(x=>x.Answers[0]).OrderBy(_=>Random.Shared.Next()).ToArray(),Pairs=group.ToArray()});i+=group.Count;
+                output.Add(cards[i] with {Kind="pairs",Prompt="Соедините слова и переводы",Options=WordReviewRules.PairOptions(group.Select(x=>x.Answers[0]).ToArray()),Pairs=group.ToArray()});i+=group.Count;
             }
             else output.Add(cards[i++]);
         }

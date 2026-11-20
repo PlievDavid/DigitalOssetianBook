@@ -33,6 +33,16 @@ WordReviewRules.Apply(choice, false, true, now.AddDays(3)); Check(choice.ChoiceD
 Check(WordReviewRules.Normalize("  ФÆЛǼ   ") == WordReviewRules.Normalize("фӕлӕ"), "Unicode, stress, case and whitespace");
 Check(WordReviewRules.Normalize("тӕмǽн") == WordReviewRules.Normalize("тӕмӕн"), "Precomposed acute ligature is normalized");
 Check(WordReviewRules.Normalize("Ё Й") == "ё й", "Stress removal preserves diaeresis and breve");
+foreach (var count in new[] { 2, 3, 4 })
+{
+    var answers = Enumerable.Range(0, count).Select(i => $"answer-{i}").ToArray();
+    for (var attempt = 0; attempt < 100; attempt++)
+    {
+        var shuffled = WordReviewRules.PairOptions(answers);
+        Check(shuffled.Order().SequenceEqual(answers.Order()) && shuffled.Where((answer, i) => answer == answers[i]).Count() == 0,
+            $"Matching options have no aligned answers for {count} pairs");
+    }
+}
 ReviewCardSnapshot Card(Guid id, bool reverse, bool fresh) => new(id, reverse, "", [""], "cards", [], -1, null, fresh);
 var ids = Enumerable.Range(0, 8).Select(_ => Guid.NewGuid()).ToArray();
 var ordered = WordReviewRules.Order(ids.SelectMany(id => new[] { Card(id, false, true), Card(id, true, true) }), "new");
@@ -147,6 +157,7 @@ var mapping=round.Card!.Pairs!.Select(pair=>{
     var expected=round.Card.Direction.StartsWith("Русский")?word.Ossetian:word.Russian;
     return Array.FindIndex(round.Card.Options,x=>WordReviewRules.Normalize(x)==WordReviewRules.Normalize(expected));
 }).ToArray();
+Check(mapping.Where((target, index) => target == index).Count() == 0, "Matching round never aligns a correct answer with its prompt");
 var staleId = round.Card.Pairs![^1].WordId;
 var staleDirection = round.Card.Direction.StartsWith("Русский");
 var staleState = matchingMemory.States[(memoryOwner,staleId,staleDirection)];
