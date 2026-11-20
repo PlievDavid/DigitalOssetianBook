@@ -86,6 +86,20 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
     await page.locator("img").evaluateAll(async images => { await Promise.all(images.map(image => image.decode())); });
     await page.screenshot({ path: path.resolve(".run-avatar/avatar-hair-seams-fixed.png"), fullPage: true });
     for (const background of ["mountains", "lake", "forest", "sunset", "snow", "sage", "sky", "sand", "plain"]) {
+      const avatar = await svg({ Background: background });
+      const avatarPixels = await page.evaluate(async markup => {
+        const image = new Image();
+        image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = 320; canvas.height = 520;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0);
+        return [[0, 0], [319, 0], [0, 519], [319, 519], [160, 10]]
+          .map(([x, y]) => ctx.getImageData(x, y, 1, 1).data[3]);
+      }, avatar);
+      check(avatarPixels.slice(0, 4).every(alpha => alpha === 0), "Avatar has rounded corners: " + background);
+      if (background !== "plain") check(avatarPixels[4] === 255, "Avatar background remains opaque: " + background);
       const corners = await page.evaluate(async background => {
         const scene = new Image();
         scene.src = "/avatars/render?" + new URLSearchParams({ Background: background, sceneOnly: true });

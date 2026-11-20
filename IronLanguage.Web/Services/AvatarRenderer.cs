@@ -6,7 +6,7 @@ namespace IronLanguage.Web.Services;
 /// <summary>Shared, versioned SVG renderer. Expressions and poses do not modify saved appearance.</summary>
 public static class AvatarRenderer
 {
-    public const string Version = "6";
+    public const string Version = "7";
     public static string SceneUrl(string background) =>
         $"/avatars/render?v={Version}&Background={Uri.EscapeDataString(background)}&sceneOnly=true";
 
@@ -149,7 +149,7 @@ public static class AvatarRenderer
         var fill = choice.Color ?? (background == "plain" ? "none" : "#eff2e8");
         var radius = rounded ? " rx=\"20\"" : "";
         var ground = $"<rect width=\"320\" height=\"520\"{radius} fill=\"{fill}\"/>";
-        return ground + (background switch
+        var scene = ground + (background switch
         {
             "mountains" => """
             <g opacity=".68">
@@ -212,6 +212,9 @@ public static class AvatarRenderer
             """,
             _ => ""
         });
+        return rounded
+            ? "<defs><clipPath id=\"scene-clip\"><rect width=\"320\" height=\"520\" rx=\"20\"/></clipPath></defs><g clip-path=\"url(#scene-clip)\">" + scene + "</g>"
+            : scene;
     }
 
     private record ArmPaths(string Full, string Forearm, string ShortSleeve);
