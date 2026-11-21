@@ -1,42 +1,87 @@
 @model AvatarOptions
 @{
     ViewData["Title"] = "Профиль";
+    var publicName = ViewData["PublicName"] as string;
+    var email = User.Identity?.Name;
+    var hasPublicName = !string.IsNullOrWhiteSpace(publicName);
     var nameError = TempData["PublicNameError"] as string;
+    var attemptedName = TempData["PublicNameAttempt"] as string;
 }
-<div class="account-layout mobile-profile-layout">
+<div class="account-layout profile-page">
     @await Html.PartialAsync("_AccountNavigation")
-<section class="feature-shell profile-shell">
-    <h1><span class="desktop-profile-title">Учётная запись</span><span class="mobile-profile-title">Профиль</span></h1>
-    @if (TempData["AvatarSaved"] is true) { <p class="avatar-saved-message" role="status">Аватар сохранён.</p> }
-    <div class="profile-identity">
-        <span class="profile-avatar profile-avatar-large" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel(Model, true))</span>
-        <div><span class="profile-caption">@(User.IsInRole("Editor") ? "Редактор материалов" : "Учётная запись")</span><strong>@User.Identity?.Name</strong></div>
-    </div>
-    <form action="/profile/name" method="post" class="profile-public-name" novalidate>
-        @Html.AntiForgeryToken()
-        <label for="public-name">Публичное имя</label>
-        <div class="profile-name-controls">
-            <input id="public-name" name="publicName" required maxlength="100" autocomplete="nickname" value="@ViewData["PublicName"]"
-                   aria-invalid="@(nameError is null ? null : "true")" aria-describedby="@(nameError is null ? null : "public-name-error")" />
-            <button class="button primary" type="submit">Сохранить имя</button>
+    <section class="profile-content" aria-labelledby="profile-title">
+        <h1 id="profile-title">Профиль</h1>
+        <div class="profile-summary">
+            <span class="profile-portrait" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel(Model, true))</span>
+            <div class="profile-person">
+                <p class="profile-person-name">@(hasPublicName ? publicName : email)</p>
+                @if (hasPublicName) { <p>@email</p> }
+                @if (User.IsInRole("Editor")) { <p class="profile-role">Редактор материалов</p> }
+            </div>
         </div>
-        @if (TempData["PublicNameSaved"] is true) { <p role="status">Имя сохранено.</p> }
-        @if (nameError is not null) { <p id="public-name-error" role="alert">@nameError</p> }
-    </form>
-    <section class="mobile-profile-results" id="progress-app" aria-labelledby="profile-results-title">
-        <h2 id="profile-results-title">Мои результаты</h2>
-        <p id="progress-status" role="status">Загрузка…</p>
-        <div class="profile-result-grid">
-            <div><strong id="progress-points">—</strong><span>Очки</span></div>
-            <div><strong id="progress-streak">—</strong><span>Дней подряд</span></div>
-        </div>
+        @if (TempData["AvatarSaved"] is true) { <p class="profile-notice" role="status">Аватар сохранён.</p> }
+        @if (TempData["PublicNameSaved"] is true) { <p class="profile-notice" role="status">Имя сохранено.</p> }
+
+        <section class="profile-results" id="progress-app" aria-labelledby="profile-results-title">
+            <div class="profile-results-heading">
+                <h2 id="profile-results-title">Мои результаты</h2>
+                <a href="/progress">Все результаты</a>
+            </div>
+            <p id="progress-status" role="status">Загрузка…</p>
+            @await Html.PartialAsync("_ProgressStats")
+        </section>
+
+        <section class="profile-settings" aria-labelledby="profile-settings-title">
+            <h2 id="profile-settings-title">Настройки</h2>
+            <div class="profile-settings-list">
+                <button class="profile-row" id="profile-name-trigger" type="button" hidden aria-haspopup="dialog" aria-controls="profile-name-dialog">
+                    @await Html.PartialAsync("_NavIcon", "edit")
+                    <span><strong>Публичное имя</strong><small>Имя, которое увидят другие</small></span>
+                </button>
+                <a class="profile-row" href="/profile/avatar">
+                    @await Html.PartialAsync("_NavIcon", "profile")
+                    <span><strong>Мой аватар</strong><small>Внешность персонажа</small></span>
+                </a>
+                @if (User.IsInRole("Editor"))
+                {
+                    <a class="profile-row" href="/author/courses">
+                        @await Html.PartialAsync("_NavIcon", "materials")
+                        <span><strong>Преподавание</strong><small>Курсы и учебные материалы</small></span>
+                    </a>
+                }
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="profile-row profile-admin-mobile" href="/admin">
+                        @await Html.PartialAsync("_NavIcon", "admin")
+                        <span><strong>Панель администратора</strong></span>
+                    </a>
+                }
+            </div>
+            <form action="/profile/name" method="post" class="profile-public-name" id="profile-name-form" novalidate>
+                @Html.AntiForgeryToken()
+                <h2 id="profile-name-title">Публичное имя</h2>
+                <div class="profile-name-field">
+                    <label for="public-name">Имя</label>
+                    <input id="public-name" name="publicName" required maxlength="100" autocomplete="nickname"
+                           value="@(attemptedName ?? publicName)" aria-invalid="@(nameError is null ? null : "true")"
+                           aria-describedby="@(nameError is null ? null : "public-name-error")" />
+                    @if (nameError is not null) { <p id="public-name-error" role="alert">@nameError</p> }
+                </div>
+                <div class="profile-dialog-actions">
+                    <button type="button" id="profile-name-cancel" hidden>Отмена</button>
+                    <button type="submit" class="profile-name-save">Сохранить</button>
+                </div>
+            </form>
+            <dialog class="profile-name-dialog" id="profile-name-dialog" aria-labelledby="profile-name-title"></dialog>
+            <form action="/account/logout" method="post" class="profile-sign-out">
+                @Html.AntiForgeryToken()
+                <button type="submit">Выйти из аккаунта</button>
+            </form>
+        </section>
     </section>
-    <div class="profile-links">
-        <a href="/profile/avatar"><strong>Мой аватар</strong><span>Внешность, причёска и одежда персонажа</span></a>
-        @if (User.IsInRole("Editor")) { <a class="mobile-profile-results-link" href="/author/courses"><strong>Преподавание</strong><span>Курсы, уроки и учебные материалы</span></a> }
-    </div>
-    <form action="/account/logout" method="post" class="profile-logout">@Html.AntiForgeryToken()<button type="submit">Выйти из аккаунта</button></form>
-</section>
 </div>
 @section Styles { <link rel="stylesheet" href="~/css/profile-public-name.css" asp-append-version="true" /> }
-@section Scripts { <script src="~/js/progress.js" asp-append-version="true" defer></script> }
+@section Scripts {
+    <script src="~/js/progress.js" asp-append-version="true" defer></script>
+    <script src="~/js/profile.js" asp-append-version="true" defer></script>
+}

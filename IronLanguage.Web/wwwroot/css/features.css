@@ -135,20 +135,6 @@
 .profile-avatar { display: inline-grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 50%; background: #7658c8; color: #fff; font-size: 17px; font-weight: 600; }
 .profile-action .profile-avatar { position: relative; }
 .profile-role-mark { position: absolute; right: -5px; bottom: -4px; display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid white; border-radius: 50%; background: #203b83; color: white; font-size: 10px; font-weight: 700; }
-.profile-shell { max-width: 760px; }
-.profile-identity { display: flex; align-items: center; gap: 18px; padding: 22px 0 28px; border-bottom: 1px solid #e4e8ef; }
-.profile-avatar-large { width: 58px; height: 58px; font-size: 25px; }
-.profile-identity div { display: grid; gap: 5px; min-width: 0; }
-.profile-caption { color: #69778c; font-size: 14px; }
-.profile-identity strong { overflow-wrap: anywhere; font-size: 18px; font-weight: 600; }
-.profile-links { display: grid; gap: 12px; margin-top: 26px; }
-.profile-links a { display: grid; gap: 5px; padding: 18px 20px; border: 1px solid #e2e7ef; border-radius: 10px; }
-.profile-links a:hover { border-color: #8fa3dd; background: #f8faff; }
-.profile-links strong { font-size: 17px; font-weight: 600; }
-.profile-links span { color: #69778c; font-size: 14px; }
-.profile-logout { margin-top: 28px; }
-.profile-logout button { border: 0; padding: 0; background: transparent; color: #5c6a7f; font-size: 15px; }
-.profile-logout button:hover { color: #405dca; }
 .main-nav { border-top: 1px solid #e7eaf0; box-shadow: 0 3px 9px #17233c0d; }
 .nav-inner { height: 62px; gap: 10px; overflow: visible; scrollbar-width: none; }
 .nav-inner::-webkit-scrollbar { display: none; }
@@ -170,8 +156,6 @@
 .catalog { padding-top: 30px; }
 .section-heading h2 { margin-top: 0; }
 .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0; }
-:root { --site-font: Arial, Helvetica, sans-serif; font-family: var(--site-font); }
-body, button, input, textarea, select, summary { font-family: var(--site-font); }
 .feature-shell { padding-top: 46px; }
 .feature-shell h1 { margin: 0 0 10px; font-size: clamp(30px, 3vw, 38px); line-height: 1.2; letter-spacing: -.025em; font-weight: 700; }
 .feature-shell > p { margin: 0 0 30px; font-size: 16px; line-height: 1.5; }

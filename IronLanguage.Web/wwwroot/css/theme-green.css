@@ -1,16 +1,16 @@
 @font-face {
     font-family: 'Onest';
-    src: url('../fonts/onest/Onest-Variable.ttf') format('truetype');
+    src: url('../fonts/onest/Onest-Variable.woff2') format('woff2');
     font-style: normal;
     font-weight: 100 900;
-    font-display: swap;
+    font-display: block;
 }
 @font-face {
     font-family: 'Golos Text';
-    src: url('../fonts/golos-text/GolosText-Variable.ttf') format('truetype');
+    src: url('../fonts/golos-text/GolosText-Variable.woff2') format('woff2');
     font-style: normal;
     font-weight: 400 900;
-    font-display: swap;
+    font-display: block;
 }
 /* Current design and usage: /DESIGN.md. Loaded after legacy styles. */
 html { scrollbar-gutter: stable; }
@@ -34,7 +34,9 @@ html { scrollbar-gutter: stable; }
     --theme-error: #a33535;
     --theme-success: #216344;
     --theme-font: 'Golos Text', Arial, Helvetica, sans-serif;
-    --theme-heading-font: 'Onest', 'Golos Text', Arial, sans-serif;
+    --theme-heading-font: 'Onest', var(--theme-font);
+    font-family: var(--theme-font);
+    font-synthesis: none;
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -56,8 +58,8 @@ html { scrollbar-gutter: stable; }
     --theme-touch-size: 44px;
     --theme-bottom-height: 64px;
 }
-.green-theme { background: var(--theme-bg); color: var(--theme-ink); font-family: var(--theme-font); padding: var(--space-5) var(--space-6); }
-.green-theme button,.green-theme input,.green-theme select,.green-theme textarea { font-family: var(--theme-font); }
+:where(button, input, select, textarea, summary) { font-family: inherit; }
+.green-theme { background: var(--theme-bg); color: var(--theme-ink); padding: var(--space-5) var(--space-6); }
 .green-theme [hidden] { display: none !important; }
 .site-frame { display: flex; flex-direction: column; max-width: var(--theme-frame-width); margin: auto; background: var(--theme-surface); border-radius: var(--theme-radius-shell); box-shadow: var(--theme-shadow); min-height: calc(100dvh - 40px); }
 .site-frame > main { flex: 1 0 auto; min-width: 0; }

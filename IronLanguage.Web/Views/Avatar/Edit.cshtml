@@ -20,7 +20,8 @@
         <div class="avatar-editor-grid">
             <div class="avatar-preview-column">
                 <div class="avatar-preview" aria-label="Предпросмотр вашего персонажа">
-                    <img id="avatar-preview-image" class="adam-avatar" src="@AvatarRenderer.Url(Model.Options)" width="320" height="520" alt="Ваш персонаж во весь рост" />
+                    <img class="avatar-preview-scene" src="@AvatarRenderer.SceneUrl(Model.Options.Background)" alt="" />
+                    <img id="avatar-preview-image" class="adam-avatar" src="@AvatarRenderer.Url(Model.Options with { Background = "plain" })" width="320" height="520" alt="Ваш персонаж во весь рост" />
                 </div>
                 <button class="avatar-random theme-button theme-button-secondary" type="button" id="avatar-random" hidden>⚄ Случайный образ</button>
                 <p id="avatar-preview-status" class="avatar-note" role="status">Образ сохранится после нажатия кнопки.</p>
@@ -45,14 +46,19 @@
                                         var id = $"avatar-{group.Property}-{choice.Id}";
                                         <label class="avatar-choice @(group.IsColor ? "avatar-swatch" : "")" for="@id">
                                             <input type="radio" id="@id" name="Options.@group.Property" value="@choice.Id" checked="@(Model.Options.Get(group.Property) == choice.Id)" data-avatar-property="@group.Property" />
-                                            @if (group.IsColor)
+                                            @if (group.Property == nameof(AvatarOptions.Background))
+                                            {
+                                                <img class="avatar-scene-thumbnail @(choice.Id == "plain" ? "avatar-scene-transparent" : "")" src="@AvatarRenderer.SceneUrl(choice.Id)" alt="" width="160" height="100" loading="lazy" />
+                                                <span>@choice.Label</span>
+                                            }
+                                            else if (group.IsColor)
                                             {
                                                 <span class="avatar-color" style="--swatch:@choice.Color" aria-hidden="true"></span>
                                                 <span class="avatar-color-label">@choice.Label</span>
                                             }
                                             else
                                             {
-                                                <img src="@AvatarRenderer.Url(Model.Options.With(group.Property, choice.Id), portrait: group.Property is not ("Top" or "Background"))" alt="" width="120" height="120" loading="lazy" data-avatar-thumbnail="@group.Property" data-avatar-choice="@choice.Id" />
+                                                <img src="@AvatarRenderer.Url(Model.Options.With(group.Property, choice.Id), portrait: group.Property != nameof(AvatarOptions.Top))" alt="" width="120" height="120" loading="lazy" data-avatar-thumbnail="@group.Property" data-avatar-choice="@choice.Id" />
                                                 <span>@choice.Label</span>
                                             }
                                         </label>

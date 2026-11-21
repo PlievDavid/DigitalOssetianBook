@@ -30,7 +30,11 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
       };
       const before = await render(markup);
       layers.forEach(layer => doc.querySelectorAll('[data-avatar-layer="' + layer + '"]').forEach(el => el.remove()));
-      if (alternateBackground) doc.querySelector('rect[width="320"][height="520"]').setAttribute("fill", alternateBackground);
+      if (alternateBackground) {
+        const background = doc.querySelector('[data-avatar-background="true"]');
+        if (!background) throw new Error("Avatar background not found");
+        background.setAttribute("fill", alternateBackground);
+      }
       const after = await render(new XMLSerializer().serializeToString(doc));
       return JSON.stringify(before) === JSON.stringify(after);
     }, { markup, layers, points, alternateBackground });
@@ -48,6 +52,8 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
         check(await occlusion(markup, ["arms-back"], [[118, 242], [202, 242]]), "Torso covers shoulder joins: " + top + "/" + emotion);
       }
     }
+    const backgroundControl = await svg({ Background: "sky" });
+    check(!await occlusion(backgroundControl, [], [[160, 10]], "#fcf5e9"), "Background replacement changes exposed pixels");
     for (const hair of ["short", "waves", "curls", "long", "bob", "ponytail"]) {
       for (const face of ["oval", "round", "angular"]) {
         const markup = await svg({ Hair: hair, Face: face, HairColor: "copper", Background: "sky" });
@@ -85,6 +91,34 @@ assert(base && ["127.0.0.1", "localhost"].includes(new URL(base).hostname), "Set
       portraits.map(({ hair, markup }) => '<figure style="margin:0;padding:8px;background:white;border-radius:12px"><img style="width:100%;height:auto" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup) + '"/><figcaption style="text-align:center">' + hairLabels[hair] + '</figcaption></figure>').join("") + '</main></body></html>');
     await page.locator("img").evaluateAll(async images => { await Promise.all(images.map(image => image.decode())); });
     await page.screenshot({ path: path.resolve(".run-avatar/avatar-hair-seams-fixed.png"), fullPage: true });
+    for (const background of ["mountains", "lake", "forest", "sunset", "snow", "sage", "sky", "sand", "plain"]) {
+      const avatar = await svg({ Background: background });
+      const avatarPixels = await page.evaluate(async markup => {
+        const image = new Image();
+        image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = 320; canvas.height = 520;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0);
+        return [[0, 0], [319, 0], [0, 519], [319, 519], [160, 10]]
+          .map(([x, y]) => ctx.getImageData(x, y, 1, 1).data[3]);
+      }, avatar);
+      check(avatarPixels.slice(0, 4).every(alpha => alpha === 0), "Avatar has rounded corners: " + background);
+      if (background !== "plain") check(avatarPixels[4] === 255, "Avatar background remains opaque: " + background);
+      const corners = await page.evaluate(async background => {
+        const scene = new Image();
+        scene.src = "/avatars/render?" + new URLSearchParams({ Background: background, sceneOnly: true });
+        await scene.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = 500;
+        canvas.height = 330;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(scene, 0, 0, canvas.width, canvas.height);
+        return [[0, 0], [499, 0], [0, 329], [499, 329]].map(([x, y]) => ctx.getImageData(x, y, 1, 1).data[3]);
+      }, background);
+      check(corners.every(alpha => alpha === (background === "plain" ? 0 : 255)), "Scene fills all four corners: " + background);
+    }
     console.log("Avatar artwork checks passed: " + checks);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error.message); process.exitCode = 1; });

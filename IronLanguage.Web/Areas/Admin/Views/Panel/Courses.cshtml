@@ -6,29 +6,35 @@
     var query = ViewData["Query"] as string;
     var status = ViewData["Status"] as string;
 }
-<section class="panel">
-    <form method="get">
-        <label>Название или автор <input name="q" type="search" value="@query" /></label>
-        <label>Статус <select name="status">
+    <form method="get" class="panel filters course-filters">
+        <div class="search-field"><label for="course-query">Название или автор</label><input id="course-query" name="q" type="search" value="@query" /></div>
+        <div><label for="course-status">Статус</label><select id="course-status" name="status">
             @foreach (var item in new[] { ("", "Все"), ("published", "Опубликованные"), ("draft", "Черновики"), ("archived", "В архиве"), ("blocked", "Заблокированные") })
             {
                 <option value="@item.Item1" selected="@(status == item.Item1)">@item.Item2</option>
             }
-        </select></label>
-        <button type="submit">Найти</button>
+        </select></div>
+        <button type="submit" class="primary">Найти</button>
     </form>
+<section class="panel admin-table-panel">
+    <div class="section-bar"><h2>Список курсов</h2></div>
     @if (Model.Length == 0) { <p>Курсы не найдены.</p> }
-    <div class="table-wrap"><table>
-        <thead><tr><th>Курс</th><th>Автор</th><th>Статус</th></tr></thead>
-        <tbody>
+    <div class="table-wrap"><table class="admin-stack-table" role="table">
+        <thead><tr><th scope="col">Курс</th><th scope="col">Автор</th><th scope="col">Статус</th></tr></thead>
+        <tbody role="rowgroup">
         @foreach (var row in Model)
         {
             var course = row.Item.Course;
-            <tr><th><a href="/admin/courses/@course.Id">@row.Draft.Title</a></th><td>@row.Item.Author</td>
-                <td>@(course.BlockReason != null ? "Заблокирован" : course.Archived ? "В архиве" : course.PublishedVersionId != null ? "Опубликован" : "Черновик")</td></tr>
+            <tr role="row"><th scope="row" role="rowheader"><a class="user-link" href="/admin/courses/@course.Id">@row.Draft.Title</a></th><td role="cell">@row.Item.Author</td>
+                <td role="cell"><span class="badge @(course.BlockReason is not null ? "blocked-badge" : null)">@(course.BlockReason != null ? "Заблокирован" : course.Archived ? "В архиве" : course.PublishedVersionId != null ? "Опубликован" : "Черновик")</span></td></tr>
         }
         </tbody>
     </table></div>
-    @if (page > 1) { <a asp-action="Courses" asp-route-page="@(page - 1)" asp-route-q="@query" asp-route-status="@status">Назад</a> }
-    @if (ViewData["More"] is true) { <a asp-action="Courses" asp-route-page="@(page + 1)" asp-route-q="@query" asp-route-status="@status">Дальше</a> }
+    @if (page > 1 || ViewData["More"] is true)
+    {
+        <nav class="pagination" aria-label="Страницы курсов">
+            @if (page > 1) { <a asp-action="Courses" asp-route-page="@(page - 1)" asp-route-q="@query" asp-route-status="@status">Назад</a> }
+            @if (ViewData["More"] is true) { <a asp-action="Courses" asp-route-page="@(page + 1)" asp-route-q="@query" asp-route-status="@status">Дальше</a> }
+        </nav>
+    }
 </section>

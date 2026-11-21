@@ -3,6 +3,7 @@
   if (!root) return;
   const form = document.getElementById("avatar-form");
   const preview = document.getElementById("avatar-preview-image");
+  const scene = root.querySelector(".avatar-preview-scene");
   const status = document.getElementById("avatar-preview-status");
   const fields = [...form.querySelectorAll("[data-avatar-property]")];
   const categories = root.querySelector(".avatar-categories");
@@ -12,10 +13,13 @@
   const url = (state, emotion = "Neutral", portrait = false) => "/avatars/render?" + new URLSearchParams({ v: root.dataset.avatarRendererVersion, ...state, emotion, portrait });
   function update() {
     const state = values();
-    preview.src = url(state);
+    const figureUrl = url({ ...state, Background: "plain" });
+    const sceneUrl = "/avatars/render?" + new URLSearchParams({ v: root.dataset.avatarRendererVersion, Background: state.Background, sceneOnly: true });
+    if (preview.getAttribute("src") !== figureUrl) preview.src = figureUrl;
+    if (scene.getAttribute("src") !== sceneUrl) scene.src = sceneUrl;
     root.querySelectorAll("[data-avatar-thumbnail]").forEach(img => {
       const property = img.dataset.avatarThumbnail;
-      img.src = url({ ...state, [property]: img.dataset.avatarChoice }, "Neutral", !["Top", "Background"].includes(property));
+      img.src = url({ ...state, [property]: img.dataset.avatarChoice }, "Neutral", property !== "Top");
     });
     root.querySelectorAll("[data-avatar-preview-emotion]").forEach(img => {
       img.src = url({ ...state, Background: "plain" }, img.dataset.avatarPreviewEmotion);
@@ -32,6 +36,7 @@
   buttons.forEach(button => button.addEventListener("click", () => showSection(button.dataset.avatarSection)));
   fields.forEach(input => input.addEventListener("change", update));
   preview.addEventListener("error", () => { status.textContent = "Предпросмотр не загрузился. Попробуйте выбрать деталь ещё раз."; });
+  scene.addEventListener("error", () => { status.textContent = "Фон не загрузился. Попробуйте выбрать другой фон."; });
   random.addEventListener("click", () => {
     const properties = [...new Set(fields.map(x => x.dataset.avatarProperty))];
     properties.forEach(property => {

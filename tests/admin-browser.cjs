@@ -56,11 +56,69 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         response = await registrationPage.request.get(base + '/editor', { maxRedirects: 0 }); check(response.status() === 302 && response.headers().location.includes('access-denied'), 'Registration granted Editor');
         await registrationContext.close();
         const adminPage = await login(context, fixture.admin); await adminPage.close();
+        await page.goto(base + '/profile');
+        for (const width of [390, 600, 759, 760, 1440]) {
+            await page.setViewportSize({ width, height: 900 });
+            const adminLink = page.getByRole('link', { name: 'Панель администратора', exact: true });
+            check(await adminLink.count() === 1 && await adminLink.getAttribute('href') === '/admin',
+                'Admin panel link missing or duplicated at ' + width);
+        }
         response = await page.request.post(base + '/admin/users/' + fixture.learnerId, { form: { Action: 'grant-admin', Reason: 'Без CSRF' }, maxRedirects: 0 });
         check(response.status() === 400, 'Missing CSRF accepted');
-        for (const route of ['/admin', '/admin?days=7', '/admin?days=90', '/admin/users', '/admin/materials', '/admin/audit']) {
+        for (const route of ['/admin', '/admin?days=7', '/admin?days=90', '/admin/users', '/admin/courses', '/admin/materials', '/admin/audit']) {
             response = await page.goto(base + route); check(response.ok(), 'Admin route failed: ' + route);
             check((await page.locator('h1').textContent()).length > 0, 'Missing page heading');
+        }
+        await page.getByRole('link', { name: 'Вернуться в профиль', exact: true }).click();
+        check(new URL(page.url()).pathname === '/profile', 'Admin navigation must return to the profile');
+        const cold = await browser.newContext({ storageState: await context.storageState(), viewport: { width: 774, height: 667 } });
+        let releaseFonts;
+        const fontGate = new Promise(resolve => { releaseFonts = resolve; });
+        try {
+            await cold.route('**/*.woff2', async route => { await fontGate; await route.continue(); });
+            const coldPage = await cold.newPage();
+            async function checkFont(selector, expected) {
+                await coldPage.locator(selector).waitFor();
+                const inspector = await cold.newCDPSession(coldPage);
+                try {
+                    await inspector.send('DOM.enable');
+                    await inspector.send('CSS.enable');
+                    const { root } = await inspector.send('DOM.getDocument');
+                    const { nodeId } = await inspector.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+                    const { fonts } = await inspector.send('CSS.getPlatformFontsForNode', { nodeId });
+                    check(fonts.length === 1 && fonts[0].isCustomFont && fonts[0].familyName.replace(/\s/g, '') === expected,
+                        `${coldPage.url()} ${selector} should render in ${expected}, got ${JSON.stringify(fonts)}`);
+                } finally {
+                    await inspector.detach();
+                }
+            }
+            await coldPage.goto(base + '/admin', { waitUntil: 'domcontentloaded' });
+            const preloads = coldPage.locator('link[rel="preload"][as="font"][crossorigin]');
+            const fontUrls = () => preloads.evaluateAll(links => links.map(link => link.href));
+            const adminFonts = await fontUrls();
+            check(adminFonts.length === 2 && adminFonts.every(src => src.endsWith('.woff2')), 'Preload both web fonts.');
+            await coldPage.waitForFunction(() => {
+                const paint = performance.getEntriesByName('first-contentful-paint')[0];
+                return paint && performance.now() - paint.startTime > 250;
+            });
+            releaseFonts();
+            await coldPage.waitForLoadState('load');
+            await coldPage.evaluate(() => document.fonts.ready);
+            await checkFont('h1', 'Onest');
+            await checkFont('#admin-navigation a[aria-current="page"]', 'GolosText');
+            await Promise.all([coldPage.waitForURL('**/admin/users'), coldPage.getByRole('link', { name: 'Пользователи', exact: true }).click()]);
+            await coldPage.evaluate(() => document.fonts.ready);
+            await checkFont('h1', 'Onest');
+            await checkFont('#admin-navigation a[aria-current="page"]', 'GolosText');
+            await checkFont('label[for=q]', 'GolosText');
+            await Promise.all([coldPage.waitForURL('**/profile'), coldPage.getByRole('link', { name: 'Вернуться в профиль', exact: true }).click()]);
+            await coldPage.evaluate(() => document.fonts.ready);
+            check(JSON.stringify(await fontUrls()) === JSON.stringify(adminFonts), 'The site and admin preload the same files.');
+            await checkFont('h1', 'Onest');
+            await checkFont('.profile-results-heading a', 'GolosText');
+        } finally {
+            releaseFonts();
+            await cold.close();
         }
         response = await page.goto(base + '/editor'); check(response.ok(), 'Admin cannot edit');
         await page.goto(base + '/admin'); await page.screenshot({ path: path.join(out, 'overview-wide.png'), fullPage: true });
@@ -91,6 +149,11 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         await change('revoke-editor');
         response = await editorLearner.request.get(base + '/editor', { maxRedirects: 0 }); check(response.status() === 302 && response.headers().location.includes('login'), 'Revoke did not invalidate session');
         await change('block');
+        await page.goto(base + '/admin/users');
+        await page.getByRole('radio', { name: 'Заблокированные' }).check();
+        await page.getByRole('button', { name: 'Найти', exact: true }).click();
+        check(await page.getByRole('radio', { name: 'Заблокированные' }).isChecked() &&
+            (await page.locator('tbody').innerText()).includes(fixture.learner), 'Status filter lost the selected value or excluded a blocked user');
         const blocked = await learnerContext.newPage(); await blocked.goto(base + '/account/login'); await blocked.locator('#Email').fill(fixture.learner); await blocked.locator('#Password').fill(fixture.password); await blocked.locator('form button[type=submit]').click();
         check(new URL(blocked.url()).pathname === '/account/login', 'Blocked login accepted');
         await change('unblock'); const restored = await login(learnerContext, fixture.learner); await restored.close();
@@ -112,6 +175,15 @@ const fixture = JSON.parse(process.env.ADAM_ADMIN_FIXTURE);
         await page.goto(base + '/admin/users/' + fixture.learnerId);
         check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile user details overflow');
         await page.goto(base + '/admin'); await page.screenshot({ path: path.join(out, 'overview-mobile.png'), fullPage: true });
+        const menu = page.getByRole('button', { name: 'Разделы панели' });
+        await menu.click();
+        await page.keyboard.press('Escape');
+        check(await menu.getAttribute('aria-expanded') === 'false' && await menu.evaluate(el => el === document.activeElement), 'Escape did not close mobile navigation or restore focus');
+        await page.setViewportSize({ width: 320, height: 720 });
+        for (const route of ['/admin?days=90', '/admin/users', '/admin/courses', '/admin/materials', '/admin/audit']) {
+            await page.goto(base + route);
+            check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile overflow: ' + route);
+        }
         await page.keyboard.press('Tab'); check(await page.evaluate(() => document.activeElement !== document.body), 'Keyboard focus');
         await page.emulateMedia({ reducedMotion: 'reduce' });
         check(errors.length === 0, 'Browser runtime errors');

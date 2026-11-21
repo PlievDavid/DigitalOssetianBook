@@ -1,9 +1,15 @@
 (() => {
     const toggle = document.querySelector('.nav-toggle');
-    toggle?.addEventListener('click', () => {
-        const open = toggle.getAttribute('aria-expanded') !== 'true';
+    const navigation = document.querySelector('#admin-navigation');
+    function setMenu(open) {
         toggle.setAttribute('aria-expanded', String(open));
-        document.querySelector('#admin-navigation').classList.toggle('is-open', open);
+        navigation.classList.toggle('is-open', open);
+    }
+    toggle?.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !navigation?.classList.contains('is-open') || !toggle?.offsetWidth) return;
+        setMenu(false);
+        toggle.focus();
     });
     const search = document.querySelector('#q');
     const clear = document.querySelector('.clear-search');

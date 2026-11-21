@@ -1,14 +1,28 @@
 @{ ViewData["Title"] = "Мои результаты"; }
-<div class="account-layout">
+<div class="account-layout profile-page">
     @await Html.PartialAsync("_AccountNavigation")
-    <section class="feature-shell" id="progress-app">
-        <h1>Мои результаты</h1>
-        <p id="progress-status" role="status">Загрузка…</p>
-        <div class="feature-grid">
-            <div class="feature-card progress-stat">@await Html.PartialAsync("_NavIcon", "progress")<h2>Очки</h2><strong id="progress-points">0</strong></div>
-            <div class="feature-card progress-stat">@await Html.PartialAsync("_NavIcon", "home")<h2>Дней подряд</h2><strong id="progress-streak">0</strong></div>
-        </div>
-        <h2>Награды</h2><ul id="progress-achievements"></ul>
+    <section class="profile-content" id="progress-app" aria-labelledby="results-title">
+        <a class="progress-back" href="/profile">К профилю</a>
+        <h1 id="results-title" tabindex="-1">Мои результаты</h1>
+        <section class="progress-summary" aria-label="Очки и серия занятий">
+            @await Html.PartialAsync("_ProgressStats")
+            <div class="progress-feedback">
+                <p id="progress-status" role="status">Загружаем результаты…</p>
+                <button id="progress-retry" type="button" hidden>Повторить</button>
+            </div>
+        </section>
+        <section class="progress-awards" id="progress-awards" aria-labelledby="progress-awards-title" hidden>
+            <h2 id="progress-awards-title">Награды</h2>
+            <ul id="progress-achievements" class="progress-award-list" hidden></ul>
+            <p class="progress-empty" id="progress-empty" hidden>Пока нет наград. Первая появится после завершения занятия.</p>
+            <template id="progress-award-template">
+                <li class="progress-award">
+                    <span class="progress-award-icon">@await Html.PartialAsync("_NavIcon", "progress")</span>
+                    <div><strong></strong><span>Получена</span></div>
+                </li>
+            </template>
+        </section>
     </section>
 </div>
+@section Styles { <link rel="stylesheet" href="~/css/profile-public-name.css" asp-append-version="true" /> }
 @section Scripts { <script src="~/js/progress.js" asp-append-version="true" defer></script> }

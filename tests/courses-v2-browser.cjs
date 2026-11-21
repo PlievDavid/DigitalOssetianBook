@@ -640,17 +640,43 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const adminPage = await admin.newPage();
     await login(adminPage, fixture.admin);
     await adminPage.goto(base + '/profile');
+    const accountLinks = adminPage.getByRole('navigation', { name: 'Учётная запись' }).getByRole('link');
+    check((await accountLinks.allTextContents()).map(text => text.trim()).join('|') ===
+        'Учётная запись|Мои результаты|Панель администратора', 'Неверный порядок пунктов меню аккаунта');
     const nameForm = adminPage.locator('.profile-public-name');
-    const publicName = nameForm.getByLabel('Публичное имя');
-    const existingName = await publicName.inputValue();
+    const publicName = nameForm.getByLabel('Имя', { exact: true });
+    const existingName = await adminPage.locator('.profile-person-name').innerText();
+    const nameTrigger = adminPage.getByRole('button', { name: /Публичное имя/ });
+    await nameTrigger.click();
     check(await adminPage.getByRole('link', { name: 'Панель администратора', exact: true }).locator('svg').isVisible(), 'В профиле нет иконки админки');
     check(await publicName.getAttribute('required') !== null, 'Публичное имя не отмечено обязательным');
     await publicName.fill('   ');
-    await nameForm.getByRole('button', { name: 'Сохранить имя' }).click();
+    await nameForm.getByRole('button', { name: 'Сохранить', exact: true }).click();
     await nameForm.getByRole('alert').filter({ hasText: 'Введите имя.' }).waitFor();
-    check(await publicName.inputValue() === existingName && await publicName.getAttribute('aria-invalid') === 'true', 'Пустое имя стёрло сохранённое или не показало ошибку');
+    check(await publicName.inputValue() === '   ' &&
+        await adminPage.locator('.profile-person-name').innerText() === existingName &&
+        await publicName.getAttribute('aria-invalid') === 'true', 'Ошибка имени потеряла введённое или сохранённое значение');
     await adminPage.setViewportSize({ width: 390, height: 800 });
     check(await adminPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Форма профиля переполняет мобильный экран');
+    await publicName.press('Escape');
+    await adminPage.waitForFunction(() => document.activeElement?.id === 'profile-name-trigger');
+    check(await nameForm.isHidden(), 'Диалог имени не закрылся клавишей Escape');
+    await adminPage.getByRole('link', { name: 'Все результаты' }).waitFor();
+    await adminPage.waitForFunction(() => document.getElementById('progress-points')?.textContent !== '—');
+    const profileLayouts = [];
+    for (const width of [320, 390, 538, 1280]) {
+        await adminPage.setViewportSize({ width, height: 800 });
+        profileLayouts.push(await adminPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    }
+    check(profileLayouts.every(Boolean), 'Профиль переполняет экран');
+    await adminPage.emulateMedia({ reducedMotion: 'reduce' });
+    check(await adminPage.locator('.profile-summary').evaluate(node => getComputedStyle(node).animationName === 'none'),
+        'Профиль игнорирует настройку уменьшения движения');
+    await nameTrigger.click();
+    await publicName.fill('Имя Ӕ ӕ');
+    await nameForm.getByRole('button', { name: 'Сохранить', exact: true }).click();
+    await adminPage.getByRole('status').filter({ hasText: 'Имя сохранено.' }).waitFor();
+    check(await adminPage.locator('.profile-person-name').innerText() === 'Имя Ӕ ӕ', 'Новое имя не отобразилось в профиле');
 
     await page.goto(base + mediaAuthorUrl);
     const publishButton = page.getByRole('button', { name: 'Опубликовать', exact: true });

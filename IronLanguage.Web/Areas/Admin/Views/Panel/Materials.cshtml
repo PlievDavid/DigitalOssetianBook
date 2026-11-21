@@ -1,6 +1,6 @@
 @model List<MaterialCount>
 @{ ViewData["Title"] = "Учебные материалы"; }
-<p><a href="/admin/course-materials">Владельцы и доступ к упражнениям</a></p>
-<section class="panel"><div class="section-bar"><div><h2>Состояние библиотеки</h2><p class="muted">Материал может иметь публикацию и черновик новой версии одновременно.</p></div><a class="button primary" href="/editor">Открыть редактор</a></div>
-<div class="table-wrap"><table><thead><tr><th>Тип</th><th>Опубликовано</th><th>Черновики</th><th>В архиве</th></tr></thead><tbody>@foreach (var row in Model) { <tr><th>@AdminLabels.Section(row.Kind)</th><td>@row.Published</td><td>@row.Draft</td><td>@row.Archived</td></tr> }</tbody></table></div>
+<p><a class="admin-section-link" href="/admin/course-materials">Владельцы и доступ к упражнениям</a></p>
+<section class="panel admin-table-panel"><div class="section-bar"><div><h2>Состояние библиотеки</h2><p class="muted">У опубликованного материала может быть черновик новой версии.</p></div><a class="button tonal" href="/editor">Открыть редактор</a></div>
+<div class="table-wrap"><table class="admin-stack-table materials-table" role="table"><thead><tr><th scope="col">Тип</th><th scope="col">Опубликовано</th><th scope="col">Черновики</th><th scope="col">В архиве</th></tr></thead><tbody role="rowgroup">@foreach (var row in Model) { <tr role="row"><th scope="row" role="rowheader">@AdminLabels.Section(row.Kind)</th><td role="cell" data-label="Опубликовано">@row.Published</td><td role="cell" data-label="Черновики">@row.Draft</td><td role="cell" data-label="В архиве">@row.Archived</td></tr> }</tbody></table></div>
 </section>
