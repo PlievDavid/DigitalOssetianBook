@@ -1229,6 +1229,137 @@ namespace IronLanguage.Db.Migrations
                     b.ToTable("Words");
                 });
 
+            modelBuilder.Entity("IronLanguage.Db.WordReviewMastery", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.HasKey("UserId", "WordId");
+
+                    b.HasIndex("UserId", "Day");
+
+                    b.ToTable("WordReviewMasteries");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewReward", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("WordId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserId", "Day", "WordId");
+
+                    b.ToTable("WordReviewRewards");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewSession", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Correct")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Errors")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResultJson")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Revealed")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Skipped")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.ToTable("WordReviewSessions");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewSettings", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("DirectInput")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("WordReviewSettings");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewState", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Reverse")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ChoiceDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("DueAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Errors")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("LastChoiceDay")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("Mastered")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Stage")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "WordId", "Reverse");
+
+                    b.HasIndex("UserId", "DueAt");
+
+                    b.ToTable("WordReviewStates");
+                });
+
             modelBuilder.Entity("IronLanguage.Db.WordleGame", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -1538,6 +1669,51 @@ namespace IronLanguage.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Word");
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewMastery", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewReward", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewSession", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewSettings", b =>
+                {
+                    b.HasOne("IronLanguage.Db.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IronLanguage.Db.WordReviewState", b =>
+                {
+                    b.HasOne("IronLanguage.Db.SavedWord", null)
+                        .WithMany()
+                        .HasForeignKey("UserId", "WordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IronLanguage.Db.WordleGame", b =>

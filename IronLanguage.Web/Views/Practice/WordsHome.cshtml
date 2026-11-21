@@ -1,0 +1,49 @@
+@model IronLanguage.Db.MasteryDay[]
+@using System.Globalization
+@{
+    ViewData["Title"] = "Слова";
+    var total = Model.Sum(day => day.Count);
+    var peak = Math.Max(1, Model.Max(day => day.Count));
+    var culture = CultureInfo.GetCultureInfo("ru-RU");
+}
+@section Styles { <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
+<section class="feature-shell words-page words-home">
+    <header class="words-home-hero">
+        <div>
+            <h1>Слова</h1>
+            <p>Открывай новые слова и закрепляй знакомые.</p>
+            <a class="button primary" href="/word-practice">К занятию <span aria-hidden="true">→</span></a>
+        </div>
+        <img src="~/images/word-cards.svg" width="240" height="180" alt="" />
+    </header>
+    <div class="words-home-lower">
+        <nav class="words-home-links" aria-label="Разделы словаря">
+            <a class="words-home-tile words-home-discover" href="/vocabulary/available">
+                <span class="words-home-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 22-3-1a2 2 0 0 1-1-2.4L8 7a2 2 0 0 1 2.5-1.2L14 7"/><rect x="11" y="9" width="15" height="17" rx="3"/><path d="M18.5 14v7m-3.5-3.5h7"/></svg></span>
+                <strong>Новые слова</strong>
+                <span class="words-home-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="words-home-tile words-home-saved" href="/vocabulary/all">
+                <span class="words-home-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="20" height="20" rx="4"/><path d="M15 12h6m-6 4h6m-6 4h6M11 12h.1m-.1 4h.1m-.1 4h.1"/></svg></span>
+                <strong>Мои слова</strong>
+                <span class="words-home-arrow" aria-hidden="true">→</span>
+            </a>
+        </nav>
+        <section class="words-week" aria-labelledby="words-week-title">
+            <header><h2 id="words-week-title">Выучено за неделю</h2><strong class="words-week-total">@total</strong></header>
+            <ol class="words-week-chart" aria-label="Выученные слова за последние семь дней">
+                @for (var index = 0; index < Model.Length; index++)
+                {
+                    var day = Model[index];
+                    var today = index == Model.Length - 1;
+                    <li class="@(today ? "words-week-today" : null) @(day.Count == 0 ? "words-week-empty" : null)" style="--day-delay: @(index * 35)ms">
+                        <span class="words-sr">@day.Day.ToString("dd MMMM", culture)@(today ? ", сегодня" : ""): @day.Count</span>
+                        <div class="words-week-track" aria-hidden="true"><span style="--bar-height: @(day.Count * 100L / peak)%"></span></div>
+                        <span class="words-week-day" aria-hidden="true">@day.Day.ToString("ddd", culture)</span>
+                    </li>
+                }
+            </ol>
+            @if (total == 0) { <p>Здесь появятся слова, которые ты выучишь.</p> }
+        </section>
+    </div>
+</section>

@@ -1,12 +1,66 @@
-@inject IronLanguage.Web.Services.AvatarService Avatars
-@{ ViewData["Title"] = "Практика слов"; }
-<section class="feature-shell word-practice-shell" id="word-practice-app">
-    <a class="back-link" href="/vocabulary">← К словарю</a>
-    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Практика слов", User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова и проверяйте перевод." : "Повторяйте опубликованные слова и проверяйте перевод.", "words"))
-    <div id="practice-status" role="status"></div>
-    <section class="practice-card" id="review-panel" hidden>
-        <div class="practice-avatar" id="practice-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel((await Avatars.Current(User)).With("Background", "plain"), Emotion: AvatarEmotion.Thinking))</div>
-        <span class="vocabulary-kicker">Переведите на русский</span><h2 id="review-word"></h2><form id="review-form" class="vocabulary-review-form"><label for="review-answer">Ваш ответ</label><input id="review-answer" autocomplete="off" required /><button class="button primary">Проверить</button></form><p id="review-result" role="status"></p>
+@{ ViewData["Title"] = "Изучение слов"; }
+@section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
+<section class="feature-shell review-page" id="spaced-review">
+    <a class="back-link" href="/vocabulary">← Слова</a>
+    <header class="words-heading"><h1>Изучение слов</h1><div class="review-header-actions"><button type="button" class="button secondary" id="review-settings-open">Настройки</button></div></header>
+    <p id="review-status" class="words-notice" role="status" aria-live="polite"></p>
+    <section id="review-start" class="review-setup" hidden>
+        <fieldset class="review-modes"><legend>Выбери занятие</legend>
+            <label><input type="radio" name="mode" value="due" /><strong>Повторение</strong><span id="review-count-due"></span></label>
+            <label><input type="radio" name="mode" value="new" /><strong>Первое знакомство</strong><span id="review-count-new"></span></label>
+            <label><input type="radio" name="mode" value="mixed" checked /><strong>Всё вместе</strong><span id="review-count-mixed"></span></label>
+        </fieldset>
+        <div class="review-start-actions"><button type="button" class="button primary" id="review-begin">Начать занятие</button><button type="button" class="button secondary" id="review-resume" hidden>Продолжить занятие</button><a class="button secondary" id="review-add-words" href="/vocabulary/available" hidden>Новые слова</a></div>
+        <p id="review-start-note" class="review-muted" hidden></p>
     </section>
+    <section id="review-study" hidden aria-label="Занятие">
+        <div class="review-progress"><span id="review-step"></span><progress id="review-progress-bar" value="0" max="1" aria-label="Проверено карточек"></progress><button type="button" class="review-link" id="review-exit">Закончить</button></div>
+        <div class="review-stage">
+            <div id="review-flashcard" class="review-flashcard" hidden>
+                <button type="button" class="review-flip" id="review-flip" aria-label="Перевернуть карточку" aria-expanded="false">
+                    <span class="review-flip-inner"><span class="review-face review-front"><span id="review-direction"></span><strong id="review-prompt"></strong><span class="review-flip-hint">Вспомните перевод</span></span><span class="review-face review-back" aria-hidden="true"><span>Перевод</span><strong id="review-translation"></strong><span id="review-original"></span></span></span>
+                </button>
+                <div class="review-card-controls"><button class="button primary" type="button" id="review-reveal">Показать перевод</button><div id="review-rating" class="review-rating" hidden><button type="button" class="button secondary" id="review-unknown">Не знаю</button><button type="button" class="button primary" id="review-known">Знаю</button></div></div>
+            </div>
+            <form id="review-check-form" class="review-check" hidden>
+                <div class="review-question">
+                    <p id="review-test-direction" class="review-direction"></p>
+                    <h2 id="review-test-prompt"></h2>
+                    <p id="review-choice-days" class="review-muted"></p>
+                </div>
+                <fieldset id="review-options" class="review-options" hidden><legend class="visually-hidden">Выберите перевод</legend></fieldset>
+                <div id="review-input-wrap" hidden>
+                    <label for="review-input">Ваш ответ</label>
+                    <div class="review-input-row">
+                        <span class="review-input-field"><input id="review-input" maxlength="1000" autocomplete="off" aria-describedby="review-input-answer" /><span id="review-input-mark" class="review-input-mark" aria-hidden="true"></span></span>
+                        <button type="button" class="button secondary" id="review-letter" aria-label="Вставить осетинскую букву ӕ">ӕ</button>
+                    </div>
+                    <p class="review-input-answer" id="review-input-answer"></p>
+                </div>
+            </form>
+            <section class="review-pairs game-shell" id="review-pairs" hidden><h2>Подберите пары</h2><p id="review-pairs-instructions" class="review-muted">Соедините слова линиями или нажмите на них по очереди.</p><div id="review-pairs-board" class="game-board"></div><p id="review-pairs-status" role="status"></p></section>
+            <p id="review-feedback" class="visually-hidden" role="status"></p>
+            <div class="review-step-actions">
+                <button type="submit" form="review-check-form" class="button primary" id="review-check" hidden>Проверить</button>
+                <button type="button" class="button primary" id="review-pairs-check" disabled hidden>Проверить пары</button>
+                <button type="button" class="button primary" id="review-next" hidden>Далее</button>
+                <button type="button" class="review-link" id="review-skip" title="Слово вернётся в следующем занятии">Пропустить</button>
+            </div>
+        </div>
+    </section>
+    <section id="review-finish" class="review-finish" aria-labelledby="review-finish-title" hidden>
+        <span class="review-finish-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 4 4 8-8"/></svg></span>
+        <h1 tabindex="-1" id="review-finish-title">Занятие завершено</h1>
+        <dl id="review-totals">
+            <div><dt>Верных</dt><dd id="review-total-correct"></dd></div>
+            <div><dt>Ошибок</dt><dd id="review-total-errors"></dd></div>
+            <div><dt>Пропусков</dt><dd id="review-total-skipped"></dd></div>
+        </dl>
+        <div class="review-finish-actions">
+            <a class="button primary" href="/vocabulary">К словам</a>
+            <button type="button" class="button secondary" id="review-again">Ещё занятие</button>
+        </div>
+    </section>
+    <dialog id="review-settings" class="review-settings"><form id="review-settings-form"><h2>Настройки занятия</h2><p class="review-muted">Сначала — знакомство с новым словом. Незнакомые слова закрепляем заданиями.</p><label class="review-direct"><input type="checkbox" name="directInput" /> Сразу вводить перевод</label><p class="review-muted">Для незнакомых слов пропускать выбор вариантов и подбор пар. Изменения начнут действовать со следующего занятия.</p><p id="review-settings-error" role="status"></p><div class="review-settings-actions"><button class="button primary" type="submit">Сохранить</button><button type="button" class="button secondary" id="review-settings-close">Отмена</button></div></form></dialog>
 </section>
-@section Scripts { <script src="~/js/word-practice.js" asp-append-version="true" defer></script> }
+@section Scripts { <script src="~/js/word-display.js" asp-append-version="true" defer></script><script src="~/js/review-pairs.js" asp-append-version="true" defer></script><script src="~/js/word-practice.js" asp-append-version="true" defer></script> }

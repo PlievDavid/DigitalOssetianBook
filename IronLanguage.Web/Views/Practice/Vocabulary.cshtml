@@ -1,12 +1,22 @@
-@{ var signedIn = User.Identity?.IsAuthenticated == true; ViewData["Title"] = signedIn ? "Мои слова" : "Словарь"; }
-<section class="feature-shell vocabulary-shell" id="vocabulary-app">
-    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel(signedIn ? "Мои слова" : "Словарь", signedIn ? "Собирайте слова из книг и заданий и возвращайтесь к ним в тренировке." : "Опубликованные слова, переводы и примеры.", "words"))
-    <div class="vocabulary-page-header"><nav class="vocabulary-actions" aria-label="Занятия со словами"><a class="button primary" href="/word-practice"><span class="word-mode-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "translate")</span><strong>Тренировка слов <span aria-hidden="true">↗</span></strong><small class="word-mode-description">Введите перевод</small></a><a class="button secondary" href="/game"><span class="word-mode-icon" aria-hidden="true"><svg viewBox="0 0 48 32" fill="none"><circle cx="6" cy="24" r="5" fill="currentColor"/><circle cx="42" cy="8" r="5" fill="currentColor"/><path d="M11 24C30 24 18 8 37 8" stroke="currentColor" stroke-width="2"/></svg></span><strong>Подбор пар <span aria-hidden="true">↗</span></strong><small class="word-mode-description">Соедините слова</small></a></nav></div>
-    <div id="vocabulary-status" class="vocabulary-status" role="status"></div>
-    @if (signedIn)
-    {
-        <section class="vocabulary-section"><h2>Сохранено</h2><div id="saved-words" class="vocabulary-list"></div></section>
-    }
-    <section class="vocabulary-section"><h2>Доступные слова</h2><p>Открывайте перевод при чтении или тренируйтесь со словами из этого списка.</p><div id="available-words" class="vocabulary-list"></div></section>
+@{ ViewData["Title"] = "Мои слова"; }
+@section Styles { <link rel="stylesheet" href="~/css/word-review.css" asp-append-version="true" /> }
+<section class="feature-shell words-page" id="my-words-list" data-kind="saved">
+    <a class="back-link" href="/vocabulary">← Слова</a>
+    <header class="words-heading">
+        <h1>Мои слова</h1>
+    </header>
+    <nav class="words-tabs" id="words-counts" aria-label="Состояние слов"></nav>
+    <form id="words-search" class="words-tools" role="search">
+        <label class="words-search-field"><span class="words-sr">Найти слово или перевод</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input type="search" name="search" maxlength="100" placeholder="Найти слово или перевод" /></label>
+        <input type="hidden" name="status" value="all" />
+        <input type="hidden" name="sort" value="due" />
+        <details class="words-sort-control" id="words-sort-menu"><summary class="words-sort-trigger" aria-haspopup="menu"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h11M4 18h6"/></svg><span id="words-sort-label">Пора повторить</span><svg class="words-sort-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m7 10 5 5 5-5"/></svg></summary><div class="words-sort-options" role="menu" aria-label="Сортировка"><button type="button" role="menuitemradio" aria-checked="true" data-sort="due">Пора повторить</button><button type="button" role="menuitemradio" aria-checked="false" data-sort="recent">Недавно добавленные</button><button type="button" role="menuitemradio" aria-checked="false" data-sort="alphabet">По алфавиту</button><button type="button" role="menuitemradio" aria-checked="false" data-sort="errors">Сначала трудные</button></div></details>
+        <button class="button secondary words-search-submit" type="submit">Найти</button>
+    </form>
+    <p id="words-status" class="words-notice" role="status"></p>
+    <div class="words-table-head" aria-hidden="true"><span>Слово</span><span>Перевод</span><span>Статус</span><span></span></div>
+    <div id="words-results" class="words-rows" aria-live="polite"></div>
+    <nav id="words-pagination" class="words-pagination" aria-label="Страницы словаря"></nav>
+    <dialog id="words-remove-dialog" class="words-dialog"><form method="dialog"><h2>Удалить слово?</h2><p id="words-remove-copy"></p><p class="words-secondary">Прогресс повторения этого слова будет сброшен.</p><div class="words-dialog-actions"><button class="button secondary" value="cancel">Оставить</button><button class="button primary" id="words-remove-confirm" value="confirm">Удалить</button></div></form></dialog>
 </section>
-@section Scripts { <script src="~/js/vocabulary.js" asp-append-version="true" defer></script> }
+@section Scripts { <script src="~/js/word-display.js" asp-append-version="true" defer></script><script src="~/js/my-words.js" asp-append-version="true" defer></script> }

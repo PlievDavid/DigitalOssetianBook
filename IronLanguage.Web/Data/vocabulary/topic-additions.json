@@ -1,0 +1,122 @@
+{
+  "1": [
+    {"answer": "хо", "clue": "сестра", "sourceRow": 3337, "sourceColumn": 4},
+    {"answer": "чызг", "clue": "дочь", "sourceRow": 892, "sourceColumn": 4},
+    {"answer": "баба", "clue": "дедушка", "sourceRow": 791, "sourceColumn": 4},
+    {"answer": "нана", "clue": "бабушка", "sourceRow": 65, "sourceColumn": 4},
+    {"answer": "бинонтӕ", "clue": "семья", "sourceRow": 3321, "sourceColumn": 4},
+    {"answer": "сывӕллон", "clue": "ребёнок", "sourceRow": 3151, "sourceColumn": 4},
+    {"answer": "хъӕбулы хъӕбул", "clue": "внук", "sourceRow": 388, "sourceColumn": 4},
+    {"answer": "фыды хо", "clue": "тётя (по отцу)", "sourceRow": 3739, "sourceColumn": 4},
+    {"answer": "фыдыфсымӕр", "clue": "дядя (по отцу)", "sourceRow": 919, "sourceColumn": 4},
+    {"answer": "хион", "clue": "родственник", "sourceRow": 3183, "sourceColumn": 4}
+  ],
+  "2": [
+    {"answer": "рудзынг", "clue": "окно", "sourceRow": 2143, "sourceColumn": 4},
+    {"answer": "къул", "clue": "стена", "sourceRow": 3614, "sourceColumn": 4},
+    {"answer": "уат", "clue": "комната", "sourceRow": 1417, "sourceColumn": 4},
+    {"answer": "фынг", "clue": "стол", "sourceRow": 3624, "sourceColumn": 4},
+    {"answer": "кӕрт", "clue": "двор", "sourceRow": 783, "sourceColumn": 4},
+    {"answer": "дӕгъӕл", "clue": "ключ", "sourceRow": 1376, "sourceColumn": 4},
+    {"answer": "скъапп", "clue": "шкаф", "sourceRow": 4123, "sourceColumn": 4},
+    {"answer": "баз", "clue": "подушка", "sourceRow": 2563, "sourceColumn": 4},
+    {"answer": "хъӕццул", "clue": "одеяло", "sourceRow": 2123, "sourceColumn": 4},
+    {"answer": "гауыз", "clue": "ковёр", "sourceRow": 1386, "sourceColumn": 4}
+  ],
+  "3": [
+    {"answer": "хъӕд", "clue": "лес", "sourceRow": 1575, "sourceColumn": 4},
+    {"answer": "быдыр", "clue": "поле", "sourceRow": 2623, "sourceColumn": 4},
+    {"answer": "бӕлас", "clue": "дерево", "sourceRow": 814, "sourceColumn": 4},
+    {"answer": "кӕрдӕг", "clue": "трава", "sourceRow": 3770, "sourceColumn": 4},
+    {"answer": "дидинӕг", "clue": "цветок", "sourceRow": 4022, "sourceColumn": 4},
+    {"answer": "сыф", "clue": "лист", "sourceRow": 1597, "sourceColumn": 4},
+    {"answer": "суадон", "clue": "родник", "sourceRow": 3180, "sourceColumn": 4},
+    {"answer": "змис", "clue": "песок", "sourceRow": 2403, "sourceColumn": 4},
+    {"answer": "дӕлвӕз", "clue": "долина", "sourceRow": 868, "sourceColumn": 4},
+    {"answer": "ӕхсӕрдзӕн", "clue": "водопад", "sourceRow": 398, "sourceColumn": 4}
+  ],
+  "4": [
+    {"answer": "хур", "clue": "солнце", "sourceRow": 3498, "sourceColumn": 4},
+    {"answer": "арв", "clue": "небо", "sourceRow": 1919, "sourceColumn": 4},
+    {"answer": "къӕвда", "clue": "дождь", "sourceRow": 862, "sourceColumn": 4},
+    {"answer": "арвнӕрд", "clue": "гром", "sourceRow": 723, "sourceColumn": 4},
+    {"answer": "арвӕрттывд", "clue": "молния", "sourceRow": 1751, "sourceColumn": 4},
+    {"answer": "арвӕрдын", "clue": "радуга", "sourceRow": 3045, "sourceColumn": 4},
+    {"answer": "их", "clue": "лёд", "sourceRow": 1591, "sourceColumn": 4},
+    {"answer": "ӕртӕх", "clue": "роса", "sourceRow": 3191, "sourceColumn": 4},
+    {"answer": "боныхъӕд", "clue": "погода", "sourceRow": 2516, "sourceColumn": 4},
+    {"answer": "халас", "clue": "иней", "sourceRow": 1241, "sourceColumn": 4}
+  ],
+  "5": [
+    {"answer": "цай", "clue": "чай", "sourceRow": 4037, "sourceColumn": 4},
+    {"answer": "цыхт", "clue": "сыр", "sourceRow": 3690, "sourceColumn": 4},
+    {"answer": "айк", "clue": "яйцо", "sourceRow": 4188, "sourceColumn": 4},
+    {"answer": "сӕкӕр", "clue": "сахар", "sourceRow": 3253, "sourceColumn": 4},
+    {"answer": "мыд", "clue": "мёд", "sourceRow": 1711, "sourceColumn": 4},
+    {"answer": "чъири", "clue": "пирог", "sourceRow": 2427, "sourceColumn": 4},
+    {"answer": "уидыг", "clue": "ложка", "sourceRow": 1608, "sourceColumn": 4},
+    {"answer": "вилкӕ", "clue": "вилка", "sourceRow": 348, "sourceColumn": 4},
+    {"answer": "тӕбӕгъ", "clue": "тарелка", "sourceRow": 3705, "sourceColumn": 4},
+    {"answer": "агуывзӕ", "clue": "стакан", "sourceRow": 3596, "sourceColumn": 4}
+  ],
+  "6": [
+    {"answer": "сӕнӕфсир", "clue": "виноград", "sourceRow": 352, "sourceColumn": 4},
+    {"answer": "мӕнӕргъы", "clue": "малина", "sourceRow": 1649, "sourceColumn": 4},
+    {"answer": "ӕрыскъӕф", "clue": "клубника", "sourceRow": 1375, "sourceColumn": 4},
+    {"answer": "ӕнгуз", "clue": "орех (грецкий)", "sourceRow": 2186, "sourceColumn": 4},
+    {"answer": "джитъри", "clue": "огурец", "sourceRow": 2121, "sourceColumn": 4},
+    {"answer": "уырыдзы", "clue": "морковь", "sourceRow": 1761, "sourceColumn": 4},
+    {"answer": "къабуска", "clue": "капуста", "sourceRow": 1328, "sourceColumn": 4},
+    {"answer": "картоф", "clue": "картофель", "sourceRow": 1335, "sourceColumn": 4},
+    {"answer": "нас", "clue": "тыква", "sourceRow": 3808, "sourceColumn": 4},
+    {"answer": "пъамидор", "clue": "помидор", "sourceRow": 2664, "sourceColumn": 4}
+  ],
+  "7": [
+    {"answer": "куыдз", "clue": "собака", "sourceRow": 3452, "sourceColumn": 4},
+    {"answer": "карк", "clue": "курица", "sourceRow": 1533, "sourceColumn": 4},
+    {"answer": "уасӕг", "clue": "петух", "sourceRow": 2405, "sourceColumn": 4},
+    {"answer": "бабыз", "clue": "утка", "sourceRow": 3932, "sourceColumn": 4},
+    {"answer": "гогыз", "clue": "индюк", "sourceRow": 1240, "sourceColumn": 4},
+    {"answer": "хӕрӕг", "clue": "осёл", "sourceRow": 2201, "sourceColumn": 4},
+    {"answer": "род", "clue": "телёнок", "sourceRow": 3719, "sourceColumn": 4},
+    {"answer": "уӕрыкк", "clue": "ягнёнок", "sourceRow": 4181, "sourceColumn": 4},
+    {"answer": "сӕныкк", "clue": "козлёнок", "sourceRow": 1401, "sourceColumn": 4},
+    {"answer": "байраг", "clue": "жеребёнок", "sourceRow": 980, "sourceColumn": 4}
+  ],
+  "8": [
+    {"answer": "ӕхсӕрӕг", "clue": "белка", "sourceRow": 109, "sourceColumn": 4},
+    {"answer": "уызын", "clue": "ёж", "sourceRow": 948, "sourceColumn": 4},
+    {"answer": "зыгъарӕг", "clue": "барсук", "sourceRow": 78, "sourceColumn": 4},
+    {"answer": "стай", "clue": "рысь", "sourceRow": 3224, "sourceColumn": 4},
+    {"answer": "цӕргӕс", "clue": "орёл", "sourceRow": 2187, "sourceColumn": 4},
+    {"answer": "уыг", "clue": "сова", "sourceRow": 3461, "sourceColumn": 4},
+    {"answer": "халон", "clue": "ворона", "sourceRow": 452, "sourceColumn": 4},
+    {"answer": "калм", "clue": "змея", "sourceRow": 1167, "sourceColumn": 4},
+    {"answer": "хӕфс", "clue": "лягушка", "sourceRow": 1640, "sourceColumn": 4},
+    {"answer": "зӕрватыкк", "clue": "ласточка", "sourceRow": 1551, "sourceColumn": 4}
+  ],
+  "9": [
+    {"answer": "фындз", "clue": "нос", "sourceRow": 2024, "sourceColumn": 4},
+    {"answer": "дзых", "clue": "рот", "sourceRow": 3197, "sourceColumn": 4},
+    {"answer": "был", "clue": "губа", "sourceRow": 745, "sourceColumn": 4},
+    {"answer": "ӕнгуылдз", "clue": "палец", "sourceRow": 2336, "sourceColumn": 4},
+    {"answer": "уӕхск", "clue": "плечо", "sourceRow": 2453, "sourceColumn": 4},
+    {"answer": "рагъ", "clue": "спина", "sourceRow": 3552, "sourceColumn": 4},
+    {"answer": "гуыбын", "clue": "живот", "sourceRow": 991, "sourceColumn": 4},
+    {"answer": "уӕраг", "clue": "колено", "sourceRow": 1402, "sourceColumn": 4},
+    {"answer": "къубал", "clue": "шея", "sourceRow": 4113, "sourceColumn": 4},
+    {"answer": "ӕрфыг", "clue": "бровь", "sourceRow": 216, "sourceColumn": 4}
+  ],
+  "10": [
+    {"answer": "хъуырбӕттӕн", "clue": "шарф", "sourceRow": 4105, "sourceColumn": 4},
+    {"answer": "хӕлаф", "clue": "брюки", "sourceRow": 222, "sourceColumn": 4},
+    {"answer": "дӕллаггуыр", "clue": "юбка", "sourceRow": 4169, "sourceColumn": 4},
+    {"answer": "ӕрмкъух", "clue": "перчатка", "sourceRow": 2401, "sourceColumn": 4},
+    {"answer": "цӕппӕр", "clue": "пуговица", "sourceRow": 3006, "sourceColumn": 4},
+    {"answer": "ӕрмкъухтӕ", "clue": "варежки", "sourceRow": 253, "sourceColumn": 4},
+    {"answer": "хъуымац", "clue": "ткань", "sourceRow": 3743, "sourceColumn": 4},
+    {"answer": "къуымбил", "clue": "шерсть", "sourceRow": 4109, "sourceColumn": 4},
+    {"answer": "ӕндах", "clue": "нитка", "sourceRow": 2007, "sourceColumn": 4},
+    {"answer": "дзыпп", "clue": "карман", "sourceRow": 1332, "sourceColumn": 4}
+  ]
+}

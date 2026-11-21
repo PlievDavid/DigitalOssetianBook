@@ -13,6 +13,11 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
     public DbSet<Book> Books => Set<Book>();
     public DbSet<BookChapter> Chapters => Set<BookChapter>();
     public DbSet<SavedWord> SavedWords => Set<SavedWord>();
+    public DbSet<WordReviewState> WordReviewStates => Set<WordReviewState>();
+    public DbSet<WordReviewSettings> WordReviewSettings => Set<WordReviewSettings>();
+    public DbSet<WordReviewSession> WordReviewSessions => Set<WordReviewSession>();
+    public DbSet<WordReviewReward> WordReviewRewards => Set<WordReviewReward>();
+    public DbSet<WordReviewMastery> WordReviewMasteries => Set<WordReviewMastery>();
     public DbSet<ExerciseAttempt> Attempts => Set<ExerciseAttempt>();
     public DbSet<ReadingPosition> ReadingPositions => Set<ReadingPosition>();
     public DbSet<DailyActivity> DailyActivities => Set<DailyActivity>();
@@ -46,6 +51,19 @@ public sealed class AdamDbContext(DbContextOptions<AdamDbContext> options) : Ide
     protected override void OnModelCreating(ModelBuilder model)
     {
         base.OnModelCreating(model);
+        model.Entity<WordReviewState>().HasKey(x => new { x.UserId, x.WordId, x.Reverse });
+        model.Entity<WordReviewState>().HasOne<SavedWord>().WithMany().HasForeignKey(x => new { x.UserId, x.WordId }).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewState>().HasIndex(x => new { x.UserId, x.DueAt });
+        model.Entity<WordReviewSettings>().HasKey(x => x.UserId);
+        model.Entity<WordReviewSettings>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewSession>().HasKey(x => x.UserId);
+        model.Entity<WordReviewSession>().HasIndex(x => x.Id).IsUnique();
+        model.Entity<WordReviewSession>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewReward>().HasKey(x => new { x.UserId, x.Day, x.WordId });
+        model.Entity<WordReviewReward>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<WordReviewMastery>().HasKey(x => new { x.UserId, x.WordId });
+        model.Entity<WordReviewMastery>().HasIndex(x => new { x.UserId, x.Day });
+        model.Entity<WordReviewMastery>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<CourseMaterialAccess>().HasKey(x => new { x.Kind, x.MaterialId });
         model.Entity<CoursePracticeRun>().HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         model.Entity<CoursePracticeRun>().HasOne<CourseLessonSession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);

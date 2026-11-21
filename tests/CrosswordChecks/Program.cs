@@ -20,13 +20,40 @@ parser.SetDelimiters(","); parser.HasFieldsEnclosedInQuotes = true;
 var rows = new List<string[]>();
 while (!parser.EndOfData) rows.Add(parser.ReadFields()!);
 using var source = JsonDocument.Parse(File.ReadAllText(Path.Combine(environment.ContentRootPath, "Data/crosswords/levels.json")));
+var crosswordSources = new HashSet<(int Row, int Column)>();
 foreach (var level in source.RootElement.EnumerateArray()) foreach (var word in level.GetProperty("words").EnumerateArray())
 {
-    var row = rows[word.GetProperty("sourceRow").GetInt32() - 1];
-    Require(DictionaryService.Key(row[word.GetProperty("sourceColumn").GetInt32()]) == word.GetProperty("answer").GetString(), "Dictionary provenance");
+    var sourceRow = word.GetProperty("sourceRow").GetInt32();
+    var column = word.GetProperty("sourceColumn").GetInt32();
+    crosswordSources.Add((sourceRow, column));
+    var row = rows[sourceRow - 1];
+    Require(DictionaryService.Key(row[column]) == word.GetProperty("answer").GetString(), "Dictionary provenance");
     Require(DictionaryService.Key(row[0].Split(',')[0]) == word.GetProperty("clue").GetString()!.ToLowerInvariant().Replace(" (грецкий)", ""), "Clue provenance");
 }
 Require(catalog.Current.Count() == 10, "Ten levels");
+var vocabulary = new VocabularyTopicCatalog(environment);
+Require(vocabulary.Topics.Length == catalog.Current.Count(), "Vocabulary keeps the existing topics");
+var originalTopics = source.RootElement.Deserialize<VocabularyTopicSource[]>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+var addedKeys = new HashSet<Guid>();
+foreach (var topic in vocabulary.Topics)
+{
+    var level = originalTopics.Where(x => x.Id == topic.Id).MaxBy(x => x.Version)!;
+    var original = level.Words.DistinctBy(word => word.Key).ToArray();
+    Require(topic.Words.Take(original.Length).SequenceEqual(original), "Original vocabulary cards and their order are preserved");
+    var additions = topic.Words.Skip(original.Length).ToArray();
+    Require(additions.Length >= 10, "Every existing topic gets extra cards");
+    foreach (var word in additions)
+    {
+        Require(!crosswordSources.Contains((word.SourceRow, word.SourceColumn)) && addedKeys.Add(word.Key), "New vocabulary card has a unique source");
+        var row = rows[word.SourceRow - 1];
+        Require(word.SourceColumn == 4 && WordReviewRules.Normalize(row[word.SourceColumn]) == word.Answer, "Vocabulary uses the exact Iron form");
+        var heading = WordReviewRules.Normalize(row[0].Split(',')[0].Trim('\uFEFF'));
+        var qualifier = word.Clue[heading.Length..];
+        Require(word.Clue.StartsWith(heading, StringComparison.Ordinal) &&
+            (qualifier.Length == 0 || qualifier.StartsWith(" (") && qualifier.EndsWith(')') &&
+                WordReviewRules.Normalize(row[1] + " " + row[3]).Contains(qualifier.Trim(), StringComparison.Ordinal)), "Vocabulary translation and qualifier match the source");
+    }
+}
 var fixtureRoot = Path.Combine(Path.GetTempPath(), $"adam-crossword-catalog-{Guid.NewGuid():N}");
 var fixtureData = Path.Combine(fixtureRoot, "Data", "crosswords");
 Directory.CreateDirectory(fixtureData);
@@ -108,7 +135,7 @@ Require(await service.Open(userA, first.Id, 999, default) is null, "Unknown vers
 Require(await service.Check(null, 999, 1, [], default) is null, "Unknown level");
 try { await service.Check(null, 1, 1, new() { ["0,0"] = "слишком длинно" }, default); throw new Exception("Missing validation"); }
 catch (ArgumentException) { }
-Console.WriteLine("Crossword checks passed: dictionary sources, all 10 grids, normalization, stars, guest checks, resume, retries, user isolation and versions.");
+Console.WriteLine($"Crossword checks passed: all 10 grids, {addedKeys.Count} extra vocabulary cards and their sources, normalization, stars, guest checks, resume, retries, user isolation and versions.");
 
 if (args.Contains("--database"))
 {
