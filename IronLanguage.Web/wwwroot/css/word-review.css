@@ -92,13 +92,12 @@
 .topic-complete p { margin:0; }
 
 .words-home-hero {
-    display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,240px);gap:16px;align-items:center;
-    min-height:200px;padding:clamp(20px,4vw,38px);border:1px solid var(--theme-border);border-radius:26px;background:var(--theme-surface);
+    display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px 24px;
+    padding:clamp(20px,3vw,32px);border:1px solid var(--theme-border);border-radius:26px;background:var(--theme-surface);
 }
 .words-home-hero h1 { margin:0;font:700 clamp(36px,5vw,54px)/1.08 var(--theme-heading-font);letter-spacing:-.035em; }
-.words-home-hero p { margin:10px 0 18px;color:var(--theme-muted);line-height:1.5; }
+.words-home-hero p { margin:10px 0 0;color:var(--theme-muted);line-height:1.5; }
 .words-home-hero .button { min-height:48px;gap:10px; }
-.words-home-hero img { width:100%;height:auto;max-height:180px;object-fit:contain; }
 .words-home-lower { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);gap:16px;margin-top:16px; }
 .words-home-links {
     display:grid;grid-template-rows:1fr 1fr;border:1px solid var(--theme-border);
@@ -121,8 +120,7 @@
 .words-week-chart { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:14px 0 0;padding:0;list-style:none; }
 .words-week-chart li { display:grid;gap:5px;justify-items:center;align-items:end;font-size:13px;color:var(--theme-muted); }
 .words-week-track { display:flex;align-items:flex-end;justify-content:center;width:min(100%,28px);height:58px; }
-.words-week-track span { width:100%;height:var(--bar-height);border-radius:8px;background:var(--theme-subtle); }
-.words-week-chart li.words-week-today .words-week-track span { background:var(--theme-muted); }
+.words-week-track span { width:100%;height:var(--bar-height);border-radius:8px;background:linear-gradient(180deg,#2678ef,#7135da); }
 .words-week-chart li.words-week-empty .words-week-track span { width:7px;height:7px;border-radius:50%;background:var(--theme-subtle); }
 @media (prefers-reduced-motion:no-preference) {
     .words-week-track span { animation:words-week-rise .54s cubic-bezier(.25,.72,.25,1) var(--day-delay) both; }
@@ -136,7 +134,7 @@
 
 @media (max-width: 660px) {
     .words-home-lower { grid-template-columns:1fr;gap:12px;margin-top:12px; }
-    .words-home-hero { grid-template-columns:minmax(0,1fr) minmax(74px,29%);min-height:0;padding:18px 16px;gap:6px; }
+    .words-home-hero { padding:18px 16px;gap:14px; }
     .words-home-hero .button { padding-inline:12px; }
     .words-home-tile strong { font-size:17px; }
     .words-topic-grid { gap:10px; }
