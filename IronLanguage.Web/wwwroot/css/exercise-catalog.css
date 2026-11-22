@@ -47,7 +47,6 @@
 }
 .exercise-category-heading { padding: 8px 7px 17px; }
 .exercise-category h2 { margin: 0 0 3px; font-size: clamp(19px, 2vw, 25px); line-height: 1.14; }
-.exercise-category-heading p { margin: 0; font-size: 13px; color: var(--theme-muted); }
 .exercise-catalog-grid { display: grid; gap: 7px; }
 .exercise-catalog-card {
     display: grid;

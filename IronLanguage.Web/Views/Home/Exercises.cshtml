@@ -1,18 +1,18 @@
 @{
     ViewData["Title"] = "Задания";
 
-    var groups = new (string Id, string Name, string Caption, (string Path, string Icon, string Title, string Description)[] Exercises)[]
+    var groups = new (string Id, string Name, (string Path, string Icon, string Title, string Description)[] Exercises)[]
     {
-        ("listen", "Понимание на слух", "От звука к смыслу", [
+        ("listen", "Понимание на слух", [
             ("/audio-puzzles", "audio", "Аудиопазлы", "Соберите услышанную фразу из слов."),
             ("/listening", "listening", "Аудирование", "Послушайте запись и выберите ответ."),
             ("/dialogs", "dialogs", "Диалоги", "Подберите реплику собеседнику.")
         ]),
-        ("phrases", "Построение фраз", "От слов к предложению", [
+        ("phrases", "Построение фраз", [
             ("/translate", "translate", "Собери фразу", "Соберите осетинский перевод из слов."),
             ("/grammar", "grammar", "Форма слова", "Выберите форму, которая подходит к предложению.")
         ]),
-        ("words", "Словарный запас", "От образа к слову", [
+        ("words", "Словарный запас", [
             ("/matching", "matching", "Соотнесение", "Найдите пары для слов и выражений."),
             ("/picture", "picture", "Картинка и слово", "Подберите слово к картинке."),
             ("/grouping", "grouping", "Разбить слова на группы", "Разложите слова по общим признакам.")
@@ -53,7 +53,6 @@
             <section class="exercise-category" aria-labelledby="category-@group.Id">
                 <header class="exercise-category-heading">
                     <h2 id="category-@group.Id">@group.Name</h2>
-                    <p>@group.Caption</p>
                 </header>
                 <div class="exercise-catalog-grid">
                     @foreach (var exercise in group.Exercises)
