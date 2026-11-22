@@ -15,8 +15,14 @@
     <article class="reading-story" id="reading-story" hidden aria-labelledby="reading-title">
         <button class="reading-back" id="reading-back" type="button">← К чтению</button>
         <header class="reading-story-heading">
-            <h1 id="reading-title" tabindex="-1"></h1>
-            <p id="reading-authors"></p>
+            <div>
+                <h1 id="reading-title" tabindex="-1"></h1>
+                <p id="reading-authors"></p>
+            </div>
+            <div class="reading-text-size" role="group" aria-label="Размер текста">
+                <button type="button" id="reading-smaller" aria-label="Уменьшить текст">А−</button>
+                <button type="button" id="reading-larger" aria-label="Увеличить текст">А+</button>
+            </div>
         </header>
         <nav id="reading-chapters" class="reading-chapters" aria-label="Части произведения" hidden></nav>
         <div class="reading-toolbar">
@@ -24,10 +30,6 @@
                 <button type="button" data-reading-language="both">Оригинал и перевод</button>
                 <button type="button" data-reading-language="os">Осетинский</button>
                 <button type="button" data-reading-language="ru">Перевод</button>
-            </div>
-            <div class="reading-text-size" role="group" aria-label="Размер текста">
-                <button type="button" id="reading-smaller" aria-label="Уменьшить текст">А−</button>
-                <button type="button" id="reading-larger" aria-label="Увеличить текст">А+</button>
             </div>
         </div>
         <p class="reading-draft-notice" id="reading-draft-notice" hidden>Черновой перевод · виден только редактору до проверки.</p>

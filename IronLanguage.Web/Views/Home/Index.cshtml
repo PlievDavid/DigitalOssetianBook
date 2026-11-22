@@ -61,7 +61,7 @@
                 </article>
                 <aside class="home-words-card" aria-labelledby="words-title">
                     <span class="reading-step"><span class="reading-step-icon">@await Html.PartialAsync("_NavIcon", "words")</span> Закрепляйте</span><h3 id="words-title">Проверьте, что запомнили</h3>
-                    <p>@(User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова в короткой тренировке: посмотрите слово и вспомните перевод." : "Повторяйте свои слова после входа. Или попробуйте тренировку без аккаунта.")</p>
+                    <p>@(User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова в короткой тренировке: посмотрите слово и вспомните перевод." : "Войдите, чтобы повторять сохранённые слова.")</p>
                     <a class="theme-button theme-button-primary" href="/word-practice"><span class="words-action-label">Тренировать слова</span></a>
                 </aside>
             </div>

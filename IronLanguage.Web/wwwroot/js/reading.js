@@ -58,11 +58,15 @@
       definition.append(entry);
     };
     const word = words.find(item => item.id === token.wordId) || words.find(item => key(item.ossetian) === key(token.text));
-    if (word) appendMeaning(`${word.ossetian} — ${word.russian}`, word.example, `/vocabulary/${word.id}`, word.audioPath);
+    if (word) appendMeaning(key(word.ossetian) === key(token.text) ? word.russian : `${word.ossetian} — ${word.russian}`,
+      word.example, `/vocabulary/${word.id}`, word.audioPath);
     for (const match of token.matches || []) {
       const meaning = meanings.get(match.senseId);
-      if (meaning) appendMeaning(`${match.approximate ? 'Возможно: ' : ''}${meaning.ossetian} — ${meaning.russianHeadword}`,
-        meaning.note, `/vocabulary/dictionary/${meaning.id}`);
+      if (!meaning) continue;
+      const heading = !match.approximate && key(meaning.ossetian) === key(token.text)
+        ? meaning.russianHeadword
+        : `${match.approximate ? 'Возможно: ' : ''}${meaning.ossetian} — ${meaning.russianHeadword}`;
+      appendMeaning(heading, meaning.note, `/vocabulary/dictionary/${meaning.id}`);
     }
     if (!definition.childElementCount) definition.textContent = 'Перевод пока не найден в словаре.';
     else if (definition.childElementCount > 1) {

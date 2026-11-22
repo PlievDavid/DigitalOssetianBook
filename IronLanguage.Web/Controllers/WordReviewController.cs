@@ -15,7 +15,7 @@ public sealed class WordReviewController(IWordReviewRepository repository, WordR
 {
     private Guid Owner => User.UserId()!.Value;
 
-    [AllowAnonymous, HttpGet("topics")]
+    [HttpGet("topics")]
     public async Task<IActionResult> Topics(CancellationToken ct) => Ok(await topics.Topics(User.UserId(), ct));
 
     [HttpPost("topics/{id:int}/words")]
@@ -55,7 +55,7 @@ public sealed class WordReviewController(IWordReviewRepository repository, WordR
         return Ok(new { settings.DirectInput });
     }
 
-    [AllowAnonymous, HttpGet("available")]
+    [HttpGet("available")]
     public async Task<IActionResult> Available(string search = "", int page = 1, CancellationToken ct = default)
     {
         if (search.Length > 100) return BadRequest();

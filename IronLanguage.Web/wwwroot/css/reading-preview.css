@@ -14,6 +14,12 @@
 .reading-preview .reading-card > span:not(.book-cover) { margin-top: 6px; color: #526273; font-size: 14px; }
 .reading-preview :is(button, a, summary, .reading-word):focus-visible { outline: 3px solid #286aab; outline-offset: 4px; }
 .reading-story { width: min(100%, 980px); margin: 0 auto; }
+#reading-app .reading-story { width: 100%; }
+#reading-app .reading-story-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+#reading-app .reading-story-heading > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+#reading-app .reading-text-size { flex: none; }
+#reading-app .reading-toolbar { justify-content: flex-start; }
+@media (min-width: 701px) { #reading-app .reading-toolbar { display: none; } }
 .reading-preview .reading-back { display: inline-block; min-height: 44px; border: 0; background: none; padding: 12px 0; color: #173f31; font: inherit; cursor: pointer; }
 .reading-story-heading { margin: 26px 0; }
 .reading-story-heading h1 { margin: 0 0 8px; font-size: clamp(30px, 4vw, 44px); line-height: 1.2; }
@@ -56,6 +62,8 @@
 .reading-chapters button[aria-current="true"] { background: #173f31; color: #fff; }
 .reading-word-meanings { display: grid !important; gap: 18px; margin-top: 16px; }
 .reading-word-meanings section { min-width: 0; }
+#reading-app .reading-word-meanings { margin-top: 4px; }
+#reading-app .reading-word-meanings .button { display: flex; width: fit-content; min-height: 44px; }
 .reading-meaning { min-width: 0; }
 .reading-meaning summary { cursor: pointer; line-height: 1.4; }
 .reading-meaning + .reading-meaning { padding-top: 10px; border-top: 1px solid #e2e9de; }
