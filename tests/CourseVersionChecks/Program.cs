@@ -443,6 +443,9 @@ try
         var adminRole = await db.Roles.FirstAsync(x => x.Name == "Admin");
         db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = browserAdmin.Id, RoleId = adminRole.Id });
         await db.SaveChangesAsync();
+        var previewMatching = await materialEditor.Create("matching", JsonSerializer.Serialize(
+            new MatchingMaterial("Дом", [new("Дом", "хӕдзар"), new("Кровать", "хуыссӕн")], ["дуар"], []),
+            CourseAuthoringService.JsonOptions), ct, owner.Id);
         var browserPracticeCourse = await practiceAuthor.Create(owner.Id, draft with
         {
             Title = "Проверка общих проигрывателей",
@@ -490,7 +493,7 @@ try
         var browser = new ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         browser.ArgumentList.Add("tests/courses-v2-browser.cjs"); browser.Environment["ADAM_TEST_URL"] = url;
         browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer,
-            practiceCourseId = browserPracticeCourse.Id, practiceLessonId = practiceLesson.Id,
+            practiceCourseId = browserPracticeCourse.Id, practiceLessonId = practiceLesson.Id, previewMatchingId = previewMatching,
             admin = browserAdmin.Email, phraseTitle = phrase.RussianPrompt, missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
         using var process = Process.Start(browser)!;
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();

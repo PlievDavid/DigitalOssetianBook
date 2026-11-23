@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace IronLanguage.Web.Controllers;
 
 [Authorize(Roles = "Editor"), Route("editor")]
-public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment, ICurriculumRepository curriculum, ICourseMaterialRepository materials) : Controller
+public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogRepository catalog, DictionaryService dictionary, IWebHostEnvironment environment, ICurriculumRepository curriculum, ICourseMaterialRepository materials, GuestLearningStore previews) : Controller
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly string[] Kinds = ["word", "audio", "translation", "listening", "grammar", "book", "dialogue", "matching", "picture", "grouping"];
@@ -168,6 +168,51 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
         var revision = await editor.Revision(id, ct);
         return revision is null ? NotFound() : View("Preview", await PreviewModel(revision.Kind, revision.ContentId, id, revision.Version, revision.Published, revision.Published, revision.PayloadJson, ct));
     }
+
+    [HttpPost("/api/v1/editor/preview/{kind}/{id:guid}/sessions"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> StartMatchingPreview(string kind, Guid id, CancellationToken ct)
+    {
+        if (kind != "matching" || await editor.Material(kind, id, ct) is not { } material) return NotFound();
+        return MatchingPreviewBoard(id, material.Version, material.PayloadJson);
+    }
+
+    [HttpPost("/api/v1/editor/preview/revisions/{id:guid}/sessions"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> StartMatchingRevisionPreview(Guid id, CancellationToken ct)
+    {
+        if (await editor.Revision(id, ct) is not { Kind: "matching" } revision) return NotFound();
+        return MatchingPreviewBoard(revision.ContentId, revision.Version, revision.PayloadJson);
+    }
+
+    [HttpPost("/api/v1/editor/preview/matching/sessions/{sessionId:guid}/check"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> CheckMatchingPreview(Guid sessionId, [FromBody] MatchingCheckInput? input, CancellationToken ct)
+    {
+        if (input is null || !ModelState.IsValid) return BadRequest();
+        if (User.UserId() is not Guid owner) return Forbid();
+        var entry = previews.Find<MatchingPreviewAttempt>(owner, sessionId);
+        if (entry is null) return NotFound(new { error = "Предпросмотр истёк. Начните заново." });
+        await entry.Gate.WaitAsync(ct);
+        try
+        {
+            return Ok(MatchingService.CheckState(entry.Value.State, input.LeftIndex, input.RightIndex));
+        }
+        catch (ArgumentException error) { return BadRequest(new { error = error.Message }); }
+        finally { entry.Gate.Release(); }
+    }
+
+    private IActionResult MatchingPreviewBoard(Guid id, int version, string payload)
+    {
+        if (User.UserId() is not Guid owner) return Forbid();
+        var matching = JsonSerializer.Deserialize<MatchingMaterial>(payload, JsonOptions);
+        if (matching is null) return UnprocessableEntity(new { error = "Не удалось открыть материал." });
+        var sessionId = Guid.NewGuid();
+        var state = MatchingService.CreateState(id, version, matching);
+        try { previews.Add(owner, sessionId, new MatchingPreviewAttempt(state)); }
+        catch (GuestCapacityException)
+        { return StatusCode(503, new { error = "Не удалось начать предпросмотр. Попробуйте позже." }); }
+        return Ok(MatchingService.Board(sessionId, state, []));
+    }
+
+    private sealed record MatchingPreviewAttempt(MatchingService.MatchingState State);
 
     [HttpGet("history/{kind}/{id:guid}/{version:int}")]
     public async Task<IActionResult> History(string kind, Guid id, int version, CancellationToken ct)

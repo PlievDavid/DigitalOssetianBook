@@ -118,7 +118,10 @@
       list.hidden = true; play.hidden = false;
       render();
       status.textContent = "";
-    } catch (error) { status.textContent = error.message; }
+    } catch (error) {
+      if (embedded?.preview) window.AdamExerciseUx.catalog(status, error.message, () => start());
+      else status.textContent = error.message;
+    }
   }
 
   function render() {
@@ -202,7 +205,10 @@
     } catch (error) {
       if (gen !== generation || !session || session.sessionId !== sid) return;
       result.textContent = error.message;
-      if (error.status === 404) {
+      if (error.status === 404 && embedded?.preview) {
+        summaryBox.hidden = false;
+        summaryBox.replaceChildren(button("Начать заново", () => start()));
+      } else if (error.status === 404) {
         sessionStorage.removeItem("adam.matching.session");
         back();
       }
@@ -251,7 +257,14 @@
     summaryBox.replaceChildren();
     const text = document.createElement("p");
     text.textContent = `Все пары найдены: ${session.total} из ${session.total}.`;
-    if (embedded) { summaryBox.append(text); return; }
+    if (embedded) {
+      summaryBox.append(text);
+      if (embedded.preview) summaryBox.append(button("Пройти заново", async () => {
+        await start();
+        leftColumn.querySelector("button:enabled")?.focus({ preventScroll: true });
+      }));
+      return;
+    }
     summaryBox.append(text,
       button("Пройти заново", () => start(session.materialId), "button primary"),
       button("К списку", back, "button secondary"));
@@ -297,5 +310,21 @@
 };
 (() => {
   const root = document.getElementById("matching-app");
-  if (root) window.AdamExercisePlayers.matching(root);
+  if (!root) return;
+  const previewStart = root.dataset.previewStart;
+  let previewSession;
+  window.AdamExercisePlayers.matching(root, previewStart ? {
+    preview: true,
+    async load() {
+      const board = await AdamApi(previewStart, { method: "POST" });
+      previewSession = board.sessionId;
+      return board;
+    },
+    answer({ left, right }) {
+      return AdamApi(`/editor/preview/matching/sessions/${previewSession}/check`, {
+        method: "POST",
+        body: JSON.stringify({ leftIndex: left, rightIndex: right })
+      });
+    }
+  } : undefined);
 })();

@@ -4,7 +4,7 @@
     var signedIn = User.Identity?.IsAuthenticated == true;
     var groups = new (string Title, string Icon, (string Label, string Url)[] Links)[] {
         ("Курсы", "school", signedIn ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses")] : [("Каталог курсов", "/courses")]),
-        ("Задания", "assignment", [("Все задания", "/exercises"), ("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar"), ("Разбить слова на группы", "/grouping")]),
+        ("Задания", "assignment", [("Все задания", "/exercises"), ("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar"), ("Группировка слов", "/grouping")]),
         ("Слова", "library_books", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
         ("Игры", "sports_esports", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
         ("Чтение", "menu_book", [("Произведения", "/reading")])

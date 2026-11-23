@@ -29,7 +29,66 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
   try {
     const guestPage = await guest.newPage(); await guestPage.goto(base + '/courses');
     await guestPage.getByLabel('Поиск по названию', { exact: true }).waitFor(); check(true, 'Гостевой каталог');
-    await login(page, fixture.owner); await page.goto(base + '/author/courses');
+    await login(page, fixture.owner);
+    {
+      const preview = '/editor/matching/' + fixture.previewMatchingId + '/preview';
+      const startPreview = '/editor/preview/matching/' + fixture.previewMatchingId + '/sessions';
+      const denied = await api(guestPage, startPreview, 'POST');
+      check([401, 403, 404].includes(denied.status), 'Гость получил черновик редактора');
+      await page.goto(base + preview);
+      const play = page.locator('#matching-play');
+      const review = page.getByRole('checkbox', { name: /Я проверил текст/ });
+      const island = page.locator('.editor-publish-form');
+      const left = play.getByRole('group', { name: 'Слова слева' });
+      const right = play.getByRole('group', { name: 'Пары' });
+      await left.getByRole('button', { name: 'Дом', exact: true }).waitFor();
+      check(!(await review.isChecked()) && await island.getByRole('link', { name: 'Изменить' }).isVisible(), 'Подтверждение и редактирование в нижней панели');
+      check((await page.evaluate(path => fetch('/api/v1' + path, { method: 'POST' }).then(r => r.status), startPreview)) === 400, 'Начало предпросмотра без CSRF');
+      for (const width of [320, 1440]) {
+        await page.setViewportSize({ width, height: 800 });
+        for (const container of [play, island]) {
+          check(await container.evaluate(node => {
+            const rect = node.getBoundingClientRect();
+            return rect.left >= 0 && rect.right <= innerWidth && node.scrollWidth <= node.clientWidth;
+          }), 'Предпросмотр выходит за экран при ширине ' + width);
+        }
+      }
+      await left.getByRole('button', { name: 'Дом', exact: true }).press('Enter');
+      await right.getByRole('button', { name: 'дуар', exact: true }).press('Enter');
+      await play.getByText('Не подходит. Попробуйте другую пару.').waitFor();
+      await left.getByRole('button', { name: 'Дом', exact: true }).press('Enter');
+      await right.getByRole('button', { name: 'хӕдзар', exact: true }).press('Enter');
+      await play.getByText('Найдено: 1 из 2').waitFor();
+      await left.getByRole('button', { name: 'Кровать', exact: true }).press('Enter');
+      await right.getByRole('button', { name: 'хуыссӕн', exact: true }).press('Enter');
+      await play.getByText('Все пары найдены: 2 из 2.').waitFor();
+      check(await play.locator('svg path').count() === 2, 'После проверки пары соединены нитками');
+      await play.getByRole('button', { name: 'Пройти заново' }).click();
+      await play.getByText('Найдено: 0 из 2').waitFor();
+      const ownerBoard = (await api(page, startPreview, 'POST')).data;
+      const attemptPath = '/editor/preview/matching/sessions/' + ownerBoard.sessionId + '/check';
+      const otherEditor = await browser.newPage();
+      await login(otherEditor, fixture.other);
+      check((await api(otherEditor, startPreview, 'POST')).status === 404, 'Другой редактор получил черновик');
+      check((await api(otherEditor, attemptPath, 'POST', { leftIndex: 0, rightIndex: 0 })).status === 404, 'Другой редактор получил попытку предпросмотра');
+      await otherEditor.close();
+      check((await api(page, '/matching/sessions/' + ownerBoard.sessionId)).status === 404, 'Предпросмотр доступен через учебный API');
+      await review.check();
+      await page.reload();
+      check(!(await review.isChecked()), 'Галочка восстановилась после обновления');
+      await island.getByRole('button', { name: 'Опубликовать' }).click();
+      check(await review.evaluate(input => input.validity.valueMissing), 'Форма допускает публикацию без галочки');
+      await review.check();
+      await island.getByRole('button', { name: 'Опубликовать' }).click();
+      await page.getByRole('button', { name: 'Создать новую версию' }).click();
+      await page.waitForURL(/\/editor\/revisions\/.+\/edit/);
+      await page.locator('form').getByRole('button', { name: /сохранить/i }).click();
+      await page.waitForURL(/\/editor\/revisions\/.+\/preview/);
+      await left.getByRole('button', { name: 'Дом', exact: true }).waitFor();
+      check(!(await review.isChecked()), 'У новой версии нет ручного подтверждения');
+      check(true, 'Предпросмотр черновика и новой версии соотнесения');
+    }
+    await page.goto(base + '/author/courses');
     const create = page.getByRole('button', { name: 'Создать курс', exact: true });
     const courseCount = (await api(page, '/author/courses')).data.length;
     await create.click();

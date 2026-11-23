@@ -2,7 +2,7 @@
 @inject IronLanguage.Db.ICatalogRepository Catalog
 @using System.Text.Json
 @{
-    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", "grouping" => "Разбить слова на группы", _ => "Произведение" };
+    var title = Model.Kind switch { "word" => "Слово", "audio" => "Аудиопазл", "translation" => "Собери фразу", "listening" => "Аудирование", "dialogue" => "Диалог", "matching" => "Соотнесение", "picture" => "Картинка и слово", "grammar" => "Форма слова", "grouping" => "Группировка слов", _ => "Произведение" };
     ViewData["Title"] = Model.ContentId is null ? $"Добавить: {title}" : $"Изменить: {title}";
     ViewData["PageClass"] = "editor-page";
     var action = Model.RevisionId is Guid revisionId ? $"/editor/revisions/{revisionId}/edit"
@@ -14,7 +14,7 @@
 <section class="feature-shell editor-form-shell" id="editor-form-app" data-kind="@Model.Kind">
     <header class="editor-page-heading">
         <a class="back-link" href="@(courseReturn ?? "/editor")">← @(courseReturn is null ? "К материалам" : "В конструктор курса")</a>
-        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "произведение", "picture" => "задание «Картинка и слово»", "translation" => "задание «Собери фразу»", "grammar" => "задание «Форма слова»", "grouping" => "задание «Разбить слова на группы»", _ => title.ToLowerInvariant() })</h1>
+        <h1>@(Model.ContentId is null ? "Добавить" : "Изменить") @(Model.Kind switch { "book" => "произведение", "picture" => "задание «Картинка и слово»", "translation" => "задание «Собери фразу»", "grammar" => "задание «Форма слова»", "grouping" => "задание «Группировка слов»", _ => title.ToLowerInvariant() })</h1>
         <p>Сохраните заполненный материал как черновик. Перед публикацией вы сможете проверить его в предпросмотре.</p>
     </header>
     <form method="post" action="@action" enctype="multipart/form-data" class="editor-form">
