@@ -98,7 +98,13 @@
 .words-home-hero h1 { margin:0;font:700 clamp(36px,5vw,54px)/1.08 var(--theme-heading-font);letter-spacing:-.035em; }
 .words-home-hero p { margin:10px 0 0;color:var(--theme-muted);line-height:1.5; }
 .words-home-hero .button { min-height:48px;gap:10px; }
-.words-home-lower { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);gap:16px;margin-top:16px; }
+.words-home-lower {
+    --words-primary-container:#dce8ff;
+    --words-on-primary-container:#16396e;
+    --words-secondary-container:#ece2ff;
+    --words-on-secondary-container:#472779;
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);gap:16px;margin-top:16px;
+}
 .words-home-links {
     display:grid;grid-template-rows:1fr 1fr;border:1px solid var(--theme-border);
     border-radius:20px;background:var(--theme-surface);
@@ -111,12 +117,13 @@
 .words-home-tile:last-child { border-radius:0 0 19px 19px;border-top:1px solid var(--theme-border); }
 .words-home-tile:hover { background:var(--theme-bg); }
 .words-home-tile strong { font:650 19px/1.25 var(--theme-heading-font); }
-.words-home-icon { display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--theme-bg);color:var(--theme-muted); }
-.words-home-icon svg { width:28px;height:28px; }
+.words-home-icon { display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--words-primary-container);color:var(--words-on-primary-container); }
+.words-home-tile:last-child .words-home-icon { background:var(--words-secondary-container);color:var(--words-on-secondary-container); }
+.words-home-icon svg { width:24px;height:24px; }
 .words-week { min-width:0;padding:16px 20px;border:1px solid var(--theme-border);border-radius:20px;background:var(--theme-surface); }
 .words-week header { display:flex;justify-content:space-between;align-items:center;gap:12px; }
 .words-week h2 { margin:0;font:650 20px/1.25 var(--theme-heading-font); }
-.words-week-total { font:700 28px/1 var(--theme-heading-font);color:var(--theme-ink); }
+.words-week-total { font:700 28px/1 var(--theme-heading-font);color:var(--words-on-primary-container); }
 .words-week-chart { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:14px 0 0;padding:0;list-style:none; }
 .words-week-chart li { display:grid;gap:5px;justify-items:center;align-items:end;font-size:13px;color:var(--theme-muted); }
 .words-week-track { display:flex;align-items:flex-end;justify-content:center;width:min(100%,28px);height:58px; }

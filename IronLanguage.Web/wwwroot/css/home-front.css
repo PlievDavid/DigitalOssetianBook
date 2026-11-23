@@ -60,7 +60,7 @@
         justify-self: start;
         align-items: center;
         gap: 6px;
-        color: var(--theme-green);
+        color: #000;
         font-size: 13px;
         font-weight: 750;
     }
