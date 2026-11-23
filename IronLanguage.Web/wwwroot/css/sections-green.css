@@ -26,18 +26,14 @@
 .green-theme .guest-notice { max-width: 1120px; margin: 12px auto 0; padding: 14px 24px; border-radius: 10px; background: #f5f4ef; color: var(--theme-muted); }
 .green-theme .guest-notice a { color: var(--theme-green); }
 .green-theme .exercise-list { display: grid; gap: 16px; max-width: none; }
-.green-theme .exercise-entry { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 24px; align-items: center; padding: 24px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); background: white; box-shadow: none; max-width: none; }
-.exercise-entry-icon { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; color: #28598d; background: var(--theme-blue); }
-.exercise-entry-icon svg { width: 32px; height: 32px; }
-.translate-page .exercise-entry-icon { color: #704110; background: var(--theme-sand); }
+.green-theme .exercise-entry { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; padding: 24px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); background: white; box-shadow: none; max-width: none; }
 .green-theme .exercise-entry-copy { padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 24px; align-items: center; }
 .green-theme .exercise-entry-copy { min-width: 0; justify-items: stretch; }
-.green-theme .exercise-entry-copy:only-child { grid-column: 1 / -1; }
 .green-theme .exercise-entry-copy .eyebrow { color: var(--theme-muted); font-size: 11px; }
 .green-theme .exercise-entry-copy h2 { font-size: 22px; margin: 0; }
 .green-theme .exercise-entry-copy p { margin: 0; font-size: 14px; color: var(--theme-muted); line-height: 1.6; }
 .green-theme .exercise-entry-copy > :not(.button) { grid-column: 1; }
-.green-theme .exercise-entry-copy .button { grid-column: 2; grid-row: 1 / 4; margin: 0; }
+.green-theme .exercise-entry-copy .button { grid-column: 2; grid-row: 1 / 4; min-inline-size: 135px; margin: 0; }
 .green-theme #exercise-play { max-width: none; padding: 28px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); background: #fff; }
 .green-theme .exercise-play-body { min-width: 0; }
 .green-theme #exercise-prompt { padding: 22px; background: var(--theme-blue); border-radius: 12px; font-size: 26px; line-height: 1.4; }
@@ -51,6 +47,7 @@
 .green-theme .exercise-feedback { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; border-radius: 12px; padding: 20px; line-height: 1.6; }
 .green-theme .exercise-feedback.is-correct { color: var(--theme-success); background: var(--theme-sage); }
 .green-theme .exercise-feedback.is-incorrect { color: var(--theme-error); background: #fbe7e2; }
+.green-theme #exercise-result.exercise-inline-result { margin: 0 0 16px; }
 .green-theme #exercise-result button { margin: 0; }
 .green-theme .vocabulary-page-header { margin-bottom: 28px; }
 .green-theme .vocabulary-section { max-width: none; padding: 24px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); }
@@ -148,9 +145,7 @@
   .section-symbol svg { width: 26px; height: 26px; }
   .section-heading-banner h1 { font-size: 26px; overflow-wrap: anywhere; }
   .section-heading-banner p { font-size: 14px; }
-  .green-theme .exercise-entry { grid-template-columns: 48px minmax(0, 1fr); padding: 18px; gap: 16px; }
-  .exercise-entry-icon { width: 48px; height: 48px; }
-  .exercise-entry-icon svg { width: 26px; height: 26px; }
+  .green-theme .exercise-entry { padding: 18px; }
   .green-theme .exercise-entry-copy h2 { font-size: 20px; }
   .green-theme #exercise-play, .green-theme #dialog-play { padding: 18px; }
   .green-theme #exercise-prompt { padding: 16px; font-size: 22px; }

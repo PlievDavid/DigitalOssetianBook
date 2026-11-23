@@ -32,17 +32,11 @@
       for (const item of items) {
         const card = document.createElement("article"); card.className = "exercise-entry";
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const eyebrow = document.createElement("span"); eyebrow.className = "eyebrow";
-        eyebrow.textContent = "ГРУППЫ СЛОВ";
         const title = document.createElement("h2"); title.textContent = item.title;
         const description = document.createElement("p");
         description.textContent = "Разложите слова по группам. Порядок слов перемешивается.";
-        copy.append(eyebrow, title, description, button("Начать →", () => start(item.id), "button primary"));
-        const art = document.createElement("span"); art.className = "exercise-entry-icon";
-        art.setAttribute("aria-hidden", "true");
-        const icon = root.querySelector(".section-symbol svg");
-        if (icon) art.append(icon.cloneNode(true));
-        card.append(art, copy); list.append(card);
+        copy.append(title, description, button("Начать", () => start(item.id), "button primary"));
+        card.append(copy); list.append(card);
       }
       status.textContent = items.length ? "Выберите задание." : "Пока нет опубликованных заданий.";
     } catch (error) { status.textContent = error.message; }

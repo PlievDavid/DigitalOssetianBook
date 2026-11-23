@@ -9,6 +9,7 @@
   const play = $("exercise-play");
   const picked = $("exercise-picked");
   const tiles = $("exercise-tiles");
+  const tileBank = $("exercise-tile-bank");
   const tilesBlock = $("exercise-tiles-block");
   const stepsBlock = $("exercise-steps");
   const slots = $("exercise-step-slots");
@@ -18,6 +19,7 @@
   const eyebrow = $("exercise-eyebrow");
   const result = $("exercise-result");
   const audio = $("exercise-audio");
+  const actionsBar = $("exercise-actions");
   const submit = $("exercise-submit");
   const clear = $("exercise-clear");
   let card, attemptId, indices = [], submitted = false, checking = false, pendingDraft = Promise.resolve();
@@ -35,18 +37,13 @@
       list.replaceChildren();
       for (const item of exercises) {
         const cardEl = document.createElement("article"); cardEl.className = "exercise-entry";
-        const icon = document.createElement("span"); icon.className = "exercise-entry-icon"; icon.setAttribute("aria-hidden", "true");
-        icon.innerHTML = root.querySelector(".section-symbol").innerHTML;
-        cardEl.append(icon);
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const eyebrowEl = document.createElement("span"); eyebrowEl.className = "eyebrow";
-        eyebrowEl.textContent = kind === "audio" ? "АУДИРОВАНИЕ" : "ПЕРЕВОД";
         const title = document.createElement("h2"); title.textContent = item.russianPrompt;
         const description = document.createElement("p");
         description.textContent = kind === "audio"
           ? "Прослушайте запись и выберите слово из трёх вариантов на каждом шаге."
           : "Соберите фразу из предложенных слов.";
-        copy.append(eyebrowEl, title, description, button("Начать упражнение →", () => start(item.id), "button primary"));
+        copy.append(title, description, button("Начать", () => start(item.id), "button primary"));
         cardEl.append(copy); list.append(cardEl);
       }
       status.textContent = exercises.length ? "Выберите задание." : "Пока нет проверенных материалов для этого раздела.";
@@ -59,7 +56,8 @@
       AdamAvatar.setEmotion($("exercise-avatar"), "Thinking");
       const draft = data.draftIndices || [];
       indices = audioFlow ? (draft.every((value, position) => value === position) ? [...draft] : []) : [...draft];
-      list.hidden = true; play.hidden = false; result.textContent = ""; result.className = ""; status.textContent = ""; clear.hidden = false;
+      list.hidden = true; play.hidden = false; result.textContent = ""; result.classList.remove("exercise-feedback", "is-correct", "is-incorrect"); status.textContent = ""; clear.hidden = false;
+      actionsBar.hidden = false;
       eyebrow.hidden = !audioFlow; if (audioFlow) eyebrow.textContent = "ПЕРЕВОД";
       $("exercise-prompt").textContent = card.russianPrompt;
       tilesBlock.hidden = audioFlow; stepsBlock.hidden = !audioFlow;
@@ -77,6 +75,7 @@
     picked.replaceChildren(); tiles.replaceChildren();
     indices.forEach((index, position) => picked.append(button(card.tokens[index], () => { if (!submitted && !checking) { indices.splice(position, 1); renderTiles(); saveDraft(); } }, "word-tile selected")));
     card.tokens.forEach((word, index) => { if (!indices.includes(index)) tiles.append(button(word, () => { if (!submitted && !checking) { indices.push(index); renderTiles(); saveDraft(); } }, "word-tile")); });
+    tileBank.hidden = submitted;
     submit.disabled = indices.length < (embedded ? 1 : 2) || submitted || checking;
     clear.disabled = !indices.length || submitted || checking;
   }
@@ -144,8 +143,13 @@
       await pendingDraft;
       const answer = embedded ? await embedded.answer(indices) : await AdamApi(`/attempts/${attemptId}/answer`, { method: "POST", body: JSON.stringify({ tokenIndices: indices }) });
       showAnswer(answer);
+      if (!audioFlow) {
+        if (matchMedia("(prefers-reduced-motion: no-preference)").matches)
+          result.animate([{ opacity: 0.55 }, { opacity: 1 }], { duration: 160, easing: "ease-out" });
+        result.focus();
+      }
     } catch (error) {
-      result.className = "";
+      result.classList.remove("exercise-feedback", "is-correct", "is-incorrect");
       result.textContent = error.message;
       if (audioFlow && indices.length === card.tokens.length) {
         submit.hidden = false; submit.disabled = false; submit.textContent = "Отправить ответ";
@@ -158,13 +162,14 @@
   function showAnswer(answer) {
       submitted = true;
       AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
-      submit.hidden = audioFlow; submit.textContent = "Проверить ответ"; submit.disabled = true;
+      submit.hidden = true; submit.disabled = true;
+      actionsBar.hidden = true;
       hint.hidden = true; clear.hidden = true;
       render();
-      result.className = answer.correct ? "exercise-feedback is-correct" : "exercise-feedback is-incorrect";
-      result.textContent = audioFlow
-        ? (answer.correct ? `Верно! ${answer.explanation || ""}`.trim() : `Пока неверно. Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`)
-        : `${answer.correct ? "Верно!" : "Пока неверно."} Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`;
+      result.classList.add("exercise-feedback", answer.correct ? "is-correct" : "is-incorrect");
+      result.textContent = answer.correct
+        ? `Верно! ${answer.explanation || ""}`.trim()
+        : `Пока неверно. Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`.trim();
       if (answer.correct && embedded?.replay) {
         const actions = document.createElement("div");
         actions.className = "exercise-actions";

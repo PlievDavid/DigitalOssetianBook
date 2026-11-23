@@ -2,7 +2,6 @@
 .section-tone-plum { background: #f4eef8; }
 .section-tone-plum .section-symbol { background: #e5d8f2; color: #5b3f8c; }
 .green-theme #grouping-status { color: var(--theme-muted); line-height: 1.6; margin: 18px 0; }
-.green-theme #grouping-app .exercise-entry-icon { background: #e5d8f2; color: #5b3f8c; }
 .green-theme #grouping-app .game-play-area {
     width: 100%;
     max-width: 960px;

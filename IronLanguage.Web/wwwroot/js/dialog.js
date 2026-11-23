@@ -93,7 +93,7 @@
         const title = document.createElement("h2"); title.textContent = item.title;
         const description = document.createElement("p");
         description.textContent = "Отвечайте на реплики собеседника: выбирайте готовый ответ или пишите своим текстом.";
-        copy.append(eyebrow, title, description, button("Начать диалог →", () => start(item.id), "button primary"));
+        copy.append(eyebrow, title, description, button("Начать", () => start(item.id), "button primary"));
         card.append(copy); list.append(card);
       }
       renderHistory(history);

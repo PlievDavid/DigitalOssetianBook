@@ -385,6 +385,9 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     for (const word of fixture.expected.split(/\s+/)) await student.locator('#exercise-tiles').getByRole('button', { name: word, exact: true }).first().click();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
     await student.locator('#exercise-result.is-correct').waitFor();
+    check(await student.locator('#exercise-picked + #exercise-result.is-correct').isVisible() &&
+      !(await student.locator('#exercise-result').innerText()).includes('Правильный ответ:') &&
+      !await student.locator('#exercise-submit').isVisible(), 'Верный ответ в уроке показывается отдельно от собранной фразы');
     const phraseUrl = `/course-sessions/${sessionId}?block=${lesson.blocks[1].id}`;
     const completedPhrase = (await api(student, phraseUrl)).data;
     const replay = student.getByRole('button', { name: 'Собрать заново', exact: true });

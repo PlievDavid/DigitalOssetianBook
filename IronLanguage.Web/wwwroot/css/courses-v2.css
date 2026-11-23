@@ -433,8 +433,7 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 .cm-stat dt { grid-area:label; color:#3f594b; font-size:13px; overflow-wrap:anywhere; }
 .cm-stat dd { grid-area:value; margin:0; font:650 25px/1 var(--theme-heading-font); font-variant-numeric:tabular-nums; color:var(--cm-forest); }
 .cm-stat-icon,.cm-empty-icon { display:grid; place-items:center; border-radius:13px; width:36px; height:36px; background:#e0ebd9; color:#254f3d; }
-.cm-stat-icon { grid-area:icon; }
-.cm-stat-icon.is-active { background:#dce9ee; color:#235a72; }
+.cm-stat-icon { grid-area:icon; background:var(--theme-bg); color:var(--theme-muted); }
 .cm-library { --cm-library-gutter:clamp(16px,2.4vw,28px); margin-top:clamp(19px,2.6vw,32px); border:1px solid #dce5d7; border-radius:28px; background:var(--theme-surface); }
 .cm-library-heading { display:grid; gap:12px; padding:20px var(--cm-library-gutter) 13px; border-bottom:1px solid #dce5d7; border-radius:27px 27px 0 0; background:linear-gradient(110deg,#f0f5ea,#f8faf6); }
 .green-theme .cm-library-heading h2 { font:650 clamp(23px,2.5vw,29px)/1.15 var(--theme-heading-font); letter-spacing:-.025em; margin:0; }

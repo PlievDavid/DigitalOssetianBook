@@ -2,7 +2,6 @@
 .section-tone-teal { background: #edf6f4; }
 .section-tone-teal .section-symbol { background: #cfe8e2; color: #23675f; }
 .green-theme #matching-status { color: var(--theme-muted); line-height: 1.6; margin: 18px 0; }
-.green-theme #matching-app .exercise-entry-icon { background: #cfe8e2; color: #23675f; }
 .green-theme #matching-app .matching-tile { text-align: center; }
 .green-theme #matching-app .matching-tile.is-wrong:not(.matched) { background: #fbe7e2; border-color: #b42318; color: #8a2f24; }
 .green-theme #matching-app .matching-tile.is-wrong:not(.matched)::after { border-color: #b42318; }

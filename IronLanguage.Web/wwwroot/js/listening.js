@@ -29,10 +29,9 @@
       for (const item of exercises) {
         const entry = document.createElement("article"); entry.className = "exercise-entry listening-entry";
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const eyebrow = document.createElement("span"); eyebrow.className = "eyebrow"; eyebrow.textContent = "АУДИРОВАНИЕ";
         const title = document.createElement("h2"); title.textContent = item.question;
         const description = document.createElement("p"); description.textContent = "Прослушайте текст и ответьте на вопрос.";
-        copy.append(eyebrow, title, description, button("Начать задание →", () => start(item.id), "button primary"));
+        copy.append(title, description, button("Начать", () => start(item.id), "button primary"));
         entry.append(copy); list.append(entry);
       }
       status.textContent = exercises.length ? "Выберите задание." : "Пока нет опубликованных заданий на аудирование.";

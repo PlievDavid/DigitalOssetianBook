@@ -28,11 +28,14 @@
         <div id="exercise-tiles-block">
             <span class="exercise-tiles-label">Ваш ответ</span>
             <div id="exercise-picked" class="word-tiles" aria-label="Собранная фраза"></div>
-            <span class="exercise-tiles-label">Выберите слова</span>
-            <div id="exercise-tiles" class="word-tiles" aria-label="Доступные слова"></div>
+            @if (!isAudio) { <div id="exercise-result" class="exercise-inline-result" role="status" tabindex="-1"></div> }
+            <div id="exercise-tile-bank">
+                <span class="exercise-tiles-label">Выберите слова</span>
+                <div id="exercise-tiles" class="word-tiles" aria-label="Доступные слова"></div>
+            </div>
         </div>
-        <div class="exercise-actions"><button id="exercise-submit" class="button primary" disabled>Проверить ответ</button><button id="exercise-clear" class="button secondary" type="button">Сбросить</button></div>
-        <div id="exercise-result" role="status"></div>
+        <div class="exercise-actions" id="exercise-actions"><button id="exercise-submit" class="button primary" disabled>Проверить ответ</button><button id="exercise-clear" class="button secondary" type="button">Сбросить</button></div>
+        @if (isAudio) { <div id="exercise-result" role="status"></div> }
         <div id="exercise-words" class="feature-grid"></div>
         </div>
     </div>

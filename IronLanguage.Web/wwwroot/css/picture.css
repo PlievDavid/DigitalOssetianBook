@@ -2,7 +2,6 @@
 .section-tone-amber { background: #fdf6e9; }
 .section-tone-amber .section-symbol { background: #f3e2b9; color: #8a6d1f; }
 .green-theme #picture-status { color: var(--theme-muted); line-height: 1.6; margin: 18px 0; }
-.green-theme #picture-app .exercise-entry-icon { background: #f3e2b9; color: #8a6d1f; }
 
 .green-theme #picture-play {
     width: 100%;
