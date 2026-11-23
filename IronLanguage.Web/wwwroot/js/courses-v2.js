@@ -2,7 +2,7 @@
   'use strict';
   const root = document.querySelector('#courses-workspace');
   if (!root) return;
-  const api = window.AdamApi, path = location.pathname, editor = root.dataset.editor === 'true';
+  const api = window.AdamApi, path = location.pathname;
   let dirty = false;
   const node = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
   const append = (parent, ...children) => { parent.append(...children.filter(Boolean)); return parent; };
@@ -78,30 +78,20 @@
     done: 'm8 12 3 3 5-6m5 3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
     arrow: 'M4 12h15m-6-6 6 6-6 6'
   };
-  function coursePhoneMenu() {
+  function coursePhoneNavigation() {
     if (!window.AdamAuthenticated) return null;
-    const menu = node('details', null, 'cm-phone-menu');
-    const summary = append(node('summary', 'Курсы'), icon('m6 9 6 6 6-6'));
-    const links = node('nav', null, 'cm-phone-links');
-    links.setAttribute('aria-label', 'Навигация по курсам');
-    const destinations = [['Каталог курсов', '/courses'], ['Мои курсы', '/my-courses']];
-    if (editor) destinations.push(['Преподавание', '/courses/teaching']);
-    for (const [label, href] of destinations) {
+    const nav = node('nav', null, 'cm-phone-navigation');
+    nav.setAttribute('aria-label', 'Навигация по курсам');
+    for (const [label, href] of [['Каталог', '/courses'], ['Мои курсы', '/my-courses']]) {
       const item = link(label, href, '');
       if (path === href) item.setAttribute('aria-current', 'page');
-      links.append(item);
+      nav.append(item);
     }
-    menu.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && menu.open) { menu.open = false; summary.focus(); }
-    });
-    menu.addEventListener('focusout', event => {
-      if (event.relatedTarget && !menu.contains(event.relatedTarget)) menu.open = false;
-    });
-    return append(menu, summary, links);
+    return nav;
   }
   function courseIntro(title, description, discovery = false) {
     const copy = append(node('div', null, 'cm-intro-copy'), node('h1', title), node('p', description));
-    return append(node('header', null, discovery ? 'cm-intro cm-discover' : 'cm-intro'), copy, coursePhoneMenu());
+    return append(node('header', null, discovery ? 'cm-intro cm-discover' : 'cm-intro'), copy, coursePhoneNavigation());
   }
   function myCourseState(course) {
     if (course.totalBlocks > 0 && course.completedBlocks >= course.totalBlocks) return 'done';
@@ -205,7 +195,7 @@
     if (!authored) root.classList.add('cv-material-catalog');
     if (authored) {
       root.classList.add('cv-teaching');
-      root.replaceChildren(message, link('← Каталог курсов', '/courses', 'back-link'));
+      root.replaceChildren(message, link('← Профиль', '/profile', 'back-link'));
     } else shell();
     if (mine) {
       root.classList.add('cm-home');

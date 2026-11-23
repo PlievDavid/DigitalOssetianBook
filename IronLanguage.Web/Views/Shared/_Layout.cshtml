@@ -28,7 +28,8 @@
         var isExerciseSection = isExercisesPage || new[] { "/dialogs", "/audio-puzzles", "/translate", "/listening", "/matching", "/picture", "/grammar", "/grouping" }
             .Any(path => currentPath.StartsWithSegments(path));
         var normalizedPath = currentPath.Value?.ToLowerInvariant() ?? "/";
-        var isCourseSection = currentPath.StartsWithSegments("/courses") || currentPath.StartsWithSegments("/author") || currentPath.StartsWithSegments("/my-courses");
+        var isTeachingSection = currentPath.StartsWithSegments("/courses/teaching") || currentPath.StartsWithSegments("/author/courses");
+        var isCourseSection = !isTeachingSection && (currentPath.StartsWithSegments("/courses") || currentPath.StartsWithSegments("/my-courses"));
         var isReadingSection = currentPath.StartsWithSegments("/reading") || currentPath.StartsWithSegments("/books");
         var isHomeSection = normalizedPath == "/" || isExerciseSection || isReadingSection || currentPath.StartsWithSegments("/games");
     }
@@ -44,7 +45,6 @@
                 <div id="courses-menu" class="nav-menu-panel">
                     <a class="nav-menu-item" href="/courses" aria-current="@(normalizedPath == "/courses" ? "page" : null)">Каталог курсов</a>
                     @if (User.Identity?.IsAuthenticated == true) { <a class="nav-menu-item" href="/my-courses" aria-current="@(normalizedPath == "/my-courses" ? "page" : null)">Мои курсы</a> }
-                    @if (User.IsInRole("Editor")) { <a class="nav-menu-item" href="/courses/teaching" aria-current="@(normalizedPath == "/courses/teaching" ? "page" : null)">Преподавание</a> }
                 </div>
             </div>
             <div class="nav-menu nav-menu-section">
@@ -111,7 +111,7 @@
         <a class="@(isHomeSection ? "is-current" : "")" aria-current="@(normalizedPath == "/" ? "page" : null)" href="/">@await Html.PartialAsync("_MaterialNavigationIcon", "home")<span>Главная</span></a>
         <a class="@(isCourseSection ? "is-current" : "")" aria-current="@(normalizedPath == "/courses" ? "page" : null)" href="/courses">@await Html.PartialAsync("_MaterialNavigationIcon", "school")<span>Курсы</span></a>
         <a class="@(normalizedPath.StartsWith("/vocabulary") || normalizedPath.StartsWith("/word-practice") || normalizedPath == "/game" ? "is-current" : "")" aria-current="@(normalizedPath == "/vocabulary" ? "page" : null)" href="/vocabulary">@await Html.PartialAsync("_MaterialNavigationIcon", "library_books")<span>Слова</span></a>
-        <a class="@(normalizedPath.StartsWith("/profile") || normalizedPath.StartsWith("/account") || normalizedPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(normalizedPath == "/profile" ? "page" : null)" href="/profile">@await Html.PartialAsync("_MaterialNavigationIcon", "account_circle")<span>Профиль</span></a>
+        <a class="@(isTeachingSection || normalizedPath.StartsWith("/profile") || normalizedPath.StartsWith("/account") || normalizedPath.StartsWith("/progress") ? "is-current" : "")" aria-current="@(normalizedPath == "/profile" ? "page" : null)" href="/profile">@await Html.PartialAsync("_MaterialNavigationIcon", "account_circle")<span>Профиль</span></a>
     </nav>
     </div>
     <script src="~/js/nav.js" asp-append-version="true" defer></script>
