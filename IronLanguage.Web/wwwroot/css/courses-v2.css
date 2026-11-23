@@ -594,6 +594,9 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
     display:block; padding:0; margin:0; background:transparent;
 }
 .green-theme .cv-course-exercise #exercise-result.exercise-inline-result:empty { display:none; }
+.green-theme .cv-course-exercise .translate-page #exercise-result.exercise-inline-result {
+    display:block; min-height:1.6em; line-height:1.6;
+}
 @media(max-width:599px) {
     .green-theme .cv-course-exercise #exercise-play { grid-template-columns:minmax(0,1fr); }
     .green-theme .cv-course-exercise #exercise-play .exercise-avatar { display:none; }

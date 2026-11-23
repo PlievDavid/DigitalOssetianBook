@@ -436,25 +436,37 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check(await student.locator('#exercise-picked button').textContent() === selectedWord, 'Выбранное слово не восстановилось');
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
     await student.locator('#exercise-result.is-incorrect').waitFor();
+    check(await student.locator('#exercise-picked.is-correct').count() === 0, 'Неверная фраза подсвечена зелёным');
     const repeated = await api(student, `/course-sessions/${sessionId}/answers`, 'POST', { blockId: lesson.blocks[1].id, tokenIndices: [0] });
     check(repeated.status === 200 && repeated.data.alreadySubmitted, 'Повтор ответа создал новый результат');
     check((await api(student, `/course-sessions/${sessionId}/next`, 'POST', { blockId: lesson.blocks[1].id })).status === 409, 'Неверный ответ завершил блок');
     await student.getByRole('button', { name: 'Попробовать снова', exact: true }).click();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();
     for (const word of fixture.expected.split(/\s+/)) await student.locator('#exercise-tiles').getByRole('button', { name: word, exact: true }).first().click();
+    const phraseResult = student.locator('#exercise-result');
+    check(await student.locator('#exercise-picked.is-correct').count() === 0, 'Фраза подсвечена до проверки');
+    const feedbackOffset = () => phraseResult.evaluate(el =>
+      el.getBoundingClientRect().top - el.closest('.cv-exercise-block').getBoundingClientRect().top);
+    const beforeFeedback = await feedbackOffset();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
     await student.locator('#exercise-result.is-correct').waitFor();
-    check(await student.locator('#exercise-picked + #exercise-result.is-correct').isVisible() &&
+    check(await student.locator('#exercise-picked.is-correct + #exercise-result.is-correct').isVisible() &&
+      (await phraseResult.innerText()).includes('Отлично! Фраза собрана верно.') &&
       !(await student.locator('#exercise-result').innerText()).includes('Правильный ответ:') &&
       !await student.locator('#exercise-submit').isVisible(), 'Верный ответ в уроке показывается отдельно от собранной фразы');
+    check(Math.abs((await feedbackOffset()) - beforeFeedback) < 1, 'Результат меняет положение после проверки');
     const phraseUrl = `/course-sessions/${sessionId}?block=${lesson.blocks[1].id}`;
     const completedPhrase = (await api(student, phraseUrl)).data;
     const exerciseFooter = student.locator('.cv-exercise-block > .cv-exercise-actions');
     const replay = exerciseFooter.getByRole('button', { name: 'Собрать заново', exact: true });
     check(await replay.isVisible() && await exerciseFooter.getByRole('button', { name: 'Продолжить', exact: true }).isVisible() &&
-      await student.locator('#exercise-result button').count() === 0 &&
-      await student.locator('#exercise-result').evaluate(el => el.getAnimations().length === 0),
-      'Результат урока содержит действия или анимацию вместо короткого подтверждения');
+      await student.locator('#exercise-result button').count() === 0,
+      'Действия после ответа должны остаться в нижней панели');
+    await student.reload();
+    await student.locator('#exercise-result.is-correct').waitFor();
+    check(await phraseResult.evaluate(el => el.getAnimations().length === 0 &&
+      !el.previousElementSibling.classList.contains('show-correct-transition')),
+      'Восстановленный результат проигрывает анимацию снова');
     await replay.press('Enter');
     await student.locator('#exercise-result.is-correct').waitFor({ state: 'hidden' });
     const replayedPhrase = (await api(student, phraseUrl)).data;
@@ -841,9 +853,11 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const match = (side, name) => shared.locator('#matching-' + side).getByRole('button', { name, exact: true });
     await match('left', 'А').click();
     await match('right', 'Б').click();
-    await shared.locator('#matching-threads .game-thread-matched').waitFor();
+    const matchedThread = shared.locator('#matching-threads .game-thread-matched');
+    // A horizontal SVG path has a zero-height bounding box, even with a visible stroke.
+    await matchedThread.waitFor({ state: 'attached' });
     await shared.reload();
-    await shared.locator('#matching-threads .game-thread-matched').waitFor();
+    await matchedThread.waitFor({ state: 'attached' });
     check(await match('left', 'А').isDisabled(), 'Сохранённая пара потерялась после перезагрузки');
     await match('left', 'В').click();
     await match('right', 'Г').click();

@@ -44,6 +44,32 @@
 .green-theme .word-tile, .green-theme .dialog-option { min-height: 48px; border-color: #d5dfd0; background: var(--theme-sage); color: var(--theme-ink); border-radius: 10px; }
 .green-theme .word-tile:hover:not(:disabled), .green-theme .dialog-option:hover:not(:disabled) { border-color: var(--theme-green); background: #e3ecdc; }
 .green-theme .word-tile.selected { border-color: var(--theme-green); color: var(--theme-green); background: #e0eadc; }
+.green-theme .translate-page #exercise-picked {
+    background: var(--theme-bg);
+    border-color: var(--theme-border);
+}
+.green-theme .translate-page #exercise-picked .word-tile.selected {
+    color: var(--theme-ink);
+    background: var(--theme-surface);
+    border-color: var(--theme-border);
+}
+.green-theme .translate-page #exercise-picked .word-tile.selected:hover:not(:disabled) {
+    background: var(--theme-bg);
+    border-color: var(--theme-muted);
+}
+.green-theme .translate-page #exercise-picked.is-correct {
+    background: #f0f7f1;
+    border-color: #a5c4ad;
+}
+.green-theme .translate-page #exercise-picked.is-correct .word-tile.selected {
+    background: #dcefe1;
+    border-color: #a5c4ad;
+    color: var(--theme-success);
+    opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .green-theme .translate-page #exercise-picked.show-correct-transition { transition: background-color 180ms ease-out, border-color 180ms ease-out; }
+}
 .green-theme .word-tile.is-wrong { border-color: var(--theme-error); background: #fbe7e2; color: var(--theme-error); opacity: 1; }
 .green-theme .exercise-feedback { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; border-radius: 12px; padding: 20px; line-height: 1.6; }
 .green-theme .exercise-feedback.is-correct { color: var(--theme-success); background: var(--theme-sage); }

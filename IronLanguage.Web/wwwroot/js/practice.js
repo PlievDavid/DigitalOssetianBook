@@ -60,6 +60,7 @@
       const draft = data.draftIndices || [];
       indices = audioFlow ? (draft.every((value, position) => value === position) ? [...draft] : []) : [...draft];
       list.hidden = true; play.hidden = false; result.textContent = ""; result.classList.remove("exercise-feedback", "is-correct", "is-incorrect"); status.textContent = ""; clear.hidden = false;
+      picked.classList.remove("is-correct", "show-correct-transition");
       actionsBar.hidden = false;
       play.removeAttribute("aria-busy");
       eyebrow.hidden = !audioFlow; if (audioFlow) eyebrow.textContent = "ПЕРЕВОД";
@@ -191,8 +192,9 @@
       if (!current()) return;
       const answer = embedded ? await embedded.answer(selection) : await AdamApi(`/attempts/${id}/answer`, { method: "POST", body: JSON.stringify({ tokenIndices: selection }) });
       if (!current()) return;
-      showAnswer(answer);
-      if (!inLesson) ux.reveal(result);
+      showAnswer(answer, true);
+      if (!audioFlow && answer.correct) ux.reveal(result, 180, 0);
+      else if (!inLesson) ux.reveal(result);
       result.focus({ preventScroll: inLesson });
     } catch (error) {
       if (!current()) return;
@@ -212,16 +214,20 @@
       }
     }
   }
-  function showAnswer(answer) {
+  function showAnswer(answer, justSubmitted = false) {
       submitted = true;
-      AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
+      if (audioFlow || !answer.correct) AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
+      if (!audioFlow && answer.correct) {
+        picked.classList.toggle("show-correct-transition", justSubmitted);
+        picked.classList.add("is-correct");
+      }
       submit.hidden = true; submit.disabled = true;
       actionsBar.hidden = true;
       hint.hidden = true; clear.hidden = true;
       render();
       result.classList.add("exercise-feedback", answer.correct ? "is-correct" : "is-incorrect");
       result.textContent = answer.correct
-        ? `Верно! ${answer.explanation || ""}`.trim()
+        ? `${audioFlow ? "Верно!" : "Отлично! Фраза собрана верно."} ${answer.explanation || ""}`.trim()
         : `Пока неверно. Правильный ответ: ${answer.expectedAnswer}. ${answer.explanation || ""}`.trim();
       if (!inLesson) result.append(button(audioFlow ? "К аудиопазлам" : "К заданиям «Собери фразу»", back));
       const words = $("exercise-words"); words.replaceChildren();
