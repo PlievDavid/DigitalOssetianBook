@@ -390,7 +390,12 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
       !await student.locator('#exercise-submit').isVisible(), 'Верный ответ в уроке показывается отдельно от собранной фразы');
     const phraseUrl = `/course-sessions/${sessionId}?block=${lesson.blocks[1].id}`;
     const completedPhrase = (await api(student, phraseUrl)).data;
-    const replay = student.getByRole('button', { name: 'Собрать заново', exact: true });
+    const exerciseFooter = student.locator('.cv-exercise-block > .cv-exercise-actions');
+    const replay = exerciseFooter.getByRole('button', { name: 'Собрать заново', exact: true });
+    check(await replay.isVisible() && await exerciseFooter.getByRole('button', { name: 'Продолжить', exact: true }).isVisible() &&
+      await student.locator('#exercise-result button').count() === 0 &&
+      await student.locator('#exercise-result').evaluate(el => el.getAnimations().length === 0),
+      'Результат урока содержит действия или анимацию вместо короткого подтверждения');
     await replay.press('Enter');
     await student.locator('#exercise-result.is-correct').waitFor({ state: 'hidden' });
     const replayedPhrase = (await api(student, phraseUrl)).data;

@@ -27,5 +27,13 @@
     status.append(actions);
   }
 
-  window.AdamExerciseUx = { reveal, catalog };
+  function cardMeta(item, index) {
+    const meta = document.createElement("p");
+    meta.className = "exercise-card-meta";
+    const author = item.author?.trim();
+    meta.textContent = `№ ${index + 1} · ${author ? `Автор: ${author}` : "Автор не указан"}`;
+    return meta;
+  }
+
+  window.AdamExerciseUx = { reveal, catalog, cardMeta };
 })();

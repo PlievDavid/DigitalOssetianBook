@@ -20,7 +20,11 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
           failCatalog = false;
           return route.fulfill({ status: 503, json: { error: 'Тестовый сбой' } });
         }
-        return route.fulfill({ json: { exercises: [{ id: 'fixture', kind: 'translation', russianPrompt: 'Я говорю' }] } });
+        return route.fulfill({ json: { exercises: [
+          { id: 'audio-fixture', kind: 'audio', russianPrompt: 'Я говорю' },
+          { id: 'fixture', kind: 'translation', russianPrompt: 'Я говорю', author: 'Тестовый автор' },
+          { id: 'legacy-fixture', kind: 'translation', russianPrompt: 'Я говорю' }
+        ] } });
       }
       if (path === '/api/v1/exercises/fixture/attempts') {
         return route.fulfill({ json: { attemptId: 'fixture', card: { russianPrompt: 'Я говорю', tokens: ['ӕз', 'дзурын'], words: [] } } });
@@ -49,7 +53,11 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(base + '/translate');
     await page.getByRole('button', { name: 'Повторить загрузку' }).click();
-    await page.getByRole('button', { name: 'Начать', exact: true }).press('Enter');
+    const cards = page.locator('#exercise-list .exercise-entry');
+    await cards.nth(1).waitFor();
+    assert.deepEqual(await cards.locator('.exercise-card-meta').allTextContents(),
+      ['№ 1 · Автор: Тестовый автор', '№ 2 · Автор не указан']);
+    await cards.first().getByRole('button', { name: 'Начать', exact: true }).press('Enter');
     const tiles = page.locator('#exercise-tiles button');
     await tiles.first().press('Enter');
     assert.equal(await page.locator(':focus').textContent(), 'дзурын');

@@ -32,6 +32,7 @@
 .green-theme .exercise-entry-copy .eyebrow { color: var(--theme-muted); font-size: 11px; }
 .green-theme .exercise-entry-copy h2 { font-size: 22px; margin: 0; }
 .green-theme .exercise-entry-copy p { margin: 0; font-size: 14px; color: var(--theme-muted); line-height: 1.6; }
+.green-theme .exercise-entry-copy .exercise-card-meta { overflow-wrap: anywhere; }
 .green-theme .exercise-entry-copy > :not(.button) { grid-column: 1; }
 .green-theme .exercise-entry-copy .button { grid-column: 2; grid-row: 1 / 4; min-inline-size: 135px; margin: 0; }
 .green-theme #exercise-play { max-width: none; padding: 28px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); background: #fff; }

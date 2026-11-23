@@ -10,8 +10,12 @@ public sealed record PictureCheckInput(int? OptionIndex, string? Answer);
 public sealed class PictureApiController(ICatalogRepository catalog, PictureService pictures, GuestLearningStore guests) : ControllerBase
 {
     [HttpGet("pictures")]
-    public async Task<IActionResult> List(CancellationToken ct) =>
-        Ok((await catalog.Pictures(ct)).Select(x => new { x.Id, x.Title, x.Version }));
+    public async Task<IActionResult> List(CancellationToken ct)
+    {
+        var items = await catalog.Pictures(ct);
+        var authors = await catalog.ExerciseAuthors(items.Select(x => x.Id).ToArray(), ct);
+        return Ok(items.Select(x => new { x.Id, x.Title, x.Version, Author = authors.GetValueOrDefault(("picture", x.Id)) }));
+    }
 
     [HttpPost("pictures/{id:guid}/sessions")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)

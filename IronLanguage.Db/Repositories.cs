@@ -41,6 +41,7 @@ public sealed class EfAccountRepository(AdamDbContext db) : IAccountRepository
 
 public interface ICatalogRepository
 {
+    Task<Dictionary<(string Kind, Guid Id), string>> ExerciseAuthors(Guid[] ids, CancellationToken ct = default);
     Task<List<Exercise>> Exercises(string? kind = null, CancellationToken ct = default);
     Task<Exercise?> Exercise(Guid id, bool includeDraft = false, CancellationToken ct = default);
     Task<List<WordEntry>> Words(CancellationToken ct = default);
@@ -72,8 +73,19 @@ public interface ICatalogRepository
 
 public sealed class EfCatalogRepository(AdamDbContext db) : ICatalogRepository
 {
+    public async Task<Dictionary<(string Kind, Guid Id), string>> ExerciseAuthors(Guid[] ids, CancellationToken ct = default)
+    {
+        if (ids.Length == 0) return [];
+        var names = await (from access in db.CourseMaterialAccesses.AsNoTracking()
+                           join author in db.Users.AsNoTracking() on access.OwnerId equals (Guid?)author.Id
+                           where ids.Contains(access.MaterialId) && author.PublicName != null
+                           select new { access.Kind, access.MaterialId, author.PublicName }).ToListAsync(ct);
+        return names.Where(x => !string.IsNullOrWhiteSpace(x.PublicName))
+            .ToDictionary(x => (x.Kind, x.MaterialId), x => x.PublicName!.Trim());
+    }
+
     public Task<List<Exercise>> Exercises(string? kind = null, CancellationToken ct = default) =>
-        db.Exercises.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == x.Kind && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)) && (kind == null || x.Kind == kind)).OrderBy(x => x.RussianPrompt).ToListAsync(ct);
+        db.Exercises.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == x.Kind && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)) && (kind == null || x.Kind == kind)).OrderBy(x => x.RussianPrompt).ThenBy(x => x.Id).ToListAsync(ct);
     public Task<Exercise?> Exercise(Guid id, bool includeDraft = false, CancellationToken ct = default) =>
         db.Exercises.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && (includeDraft || (x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == x.Kind && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)))), ct);
     public Task<List<WordEntry>> Words(CancellationToken ct = default) =>
@@ -98,23 +110,23 @@ public sealed class EfCatalogRepository(AdamDbContext db) : ICatalogRepository
     public Task<Book?> Book(Guid id, CancellationToken ct = default) =>
         db.Books.AsNoTracking().Include(x => x.Chapters).SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
     public Task<List<Dialogue>> Dialogues(CancellationToken ct = default) =>
-        db.Dialogues.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "dialogue" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
+        db.Dialogues.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "dialogue" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ThenBy(x => x.Id).ToListAsync(ct);
     public Task<Dialogue?> Dialogue(Guid id, CancellationToken ct = default) =>
         db.Dialogues.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "dialogue" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<Matching>> Matchings(CancellationToken ct = default) =>
-        db.Matchings.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "matching" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
+        db.Matchings.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "matching" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ThenBy(x => x.Id).ToListAsync(ct);
     public Task<Matching?> Matching(Guid id, CancellationToken ct = default) =>
         db.Matchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "matching" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<PictureMatching>> Pictures(CancellationToken ct = default) =>
-        db.PictureMatchings.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "picture" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
+        db.PictureMatchings.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "picture" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ThenBy(x => x.Id).ToListAsync(ct);
     public Task<PictureMatching?> Picture(Guid id, CancellationToken ct = default) =>
         db.PictureMatchings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "picture" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<Grammar>> Grammars(CancellationToken ct = default) =>
-        db.Grammars.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "grammar" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ToListAsync(ct);
+        db.Grammars.AsNoTracking().Where(x => x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "grammar" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked))).OrderBy(x => x.Title).ThenBy(x => x.Id).ToListAsync(ct);
     public Task<Grammar?> Grammar(Guid id, CancellationToken ct = default) =>
         db.Grammars.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived && !db.CourseMaterialAccesses.Any(a => a.Kind == "grammar" && a.MaterialId == x.Id && (!a.InCatalog || a.Blocked)), ct);
     public Task<List<Grouping>> Groupings(CancellationToken ct = default) =>
-        db.Groupings.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ToListAsync(ct);
+        db.Groupings.AsNoTracking().Where(x => x.Published && !x.Archived).OrderBy(x => x.Title).ThenBy(x => x.Id).ToListAsync(ct);
     public Task<Grouping?> Grouping(Guid id, CancellationToken ct = default) =>
         db.Groupings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Published && !x.Archived, ct);
     public Task<List<Exercise>> DraftExercises(CancellationToken ct = default) => db.Exercises.AsNoTracking().Where(x => !x.Published).ToListAsync(ct);

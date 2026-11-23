@@ -278,6 +278,8 @@ static class GroupingChecks
 
 sealed class MemoryCatalog : ICatalogRepository
 {
+    public Task<Dictionary<(string Kind, Guid Id), string>> ExerciseAuthors(Guid[] ids, CancellationToken ct = default) =>
+        Task.FromResult(new Dictionary<(string Kind, Guid Id), string>());
     public List<Exercise> ExercisesList = [];
     public List<Grouping> GroupingsList = [];
     public List<WordEntry> WordsList = [];

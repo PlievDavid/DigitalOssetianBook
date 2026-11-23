@@ -10,8 +10,12 @@ public sealed record MatchingCheckInput(int LeftIndex, int RightIndex);
 public sealed class MatchingApiController(ICatalogRepository catalog, MatchingService matching, GuestLearningStore guests) : ControllerBase
 {
     [HttpGet("matching")]
-    public async Task<IActionResult> List(CancellationToken ct) =>
-        Ok((await catalog.Matchings(ct)).Select(x => new { x.Id, x.Title, x.Version }));
+    public async Task<IActionResult> List(CancellationToken ct)
+    {
+        var items = await catalog.Matchings(ct);
+        var authors = await catalog.ExerciseAuthors(items.Select(x => x.Id).ToArray(), ct);
+        return Ok(items.Select(x => new { x.Id, x.Title, x.Version, Author = authors.GetValueOrDefault(("matching", x.Id)) }));
+    }
 
     [HttpPost("matching/{id:guid}/sessions")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)

@@ -563,10 +563,38 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
   .cm-catalog-grid .cm-catalog-card { transition:none; }
 }
 
-/* Embedded exercises use the same surfaces as the standalone players. */
-.cv-lesson-page .cv-player-card.cv-exercise-block { width:100%; max-width:var(--lesson-width); margin-inline:auto; border:0; background:transparent; padding:0; }
+/* The lesson owns the outer surface and footer; the player owns the task. */
+.cv-lesson-page .cv-player-card.cv-exercise-block {
+    width:100%; max-width:var(--lesson-width); min-height:0; margin-inline:auto;
+}
 .cv-course-exercise .feature-shell { width:100%; max-width:none; margin:0; padding:0; }
-.cv-course-exercise .cv-exercise-retry { margin-top:12px; }
-@media(max-width:700px) {
-  .cv-exercise-block > h2 { padding-inline-start:20px; }
+.cv-lesson-page .cv-exercise-block > .cv-exercise-actions {
+    margin-top:0; padding-top:16px; border-top:1px solid var(--cv-line);
+}
+.cv-exercise-actions:not(:has(> :not([hidden]))) { display:none; }
+.cv-lesson-page .cv-exercise-actions > .button.secondary { border-radius:24px; padding-inline:20px; }
+.green-theme .cv-course-exercise #exercise-play {
+    display:grid; grid-template-columns:minmax(0,36rem) minmax(0,7rem);
+    gap:clamp(12px,3vw,28px); align-items:start; padding:0; margin:0;
+    border:0; background:transparent; overflow:visible;
+}
+.green-theme .cv-course-exercise #exercise-play .exercise-play-body { grid-area:1 / 1; }
+.green-theme .cv-course-exercise #exercise-play .exercise-avatar { grid-area:1 / 2; float:none; width:100%; margin:0; }
+.green-theme .cv-course-exercise #exercise-play #exercise-prompt {
+    margin-top:0; padding:14px 16px; background:var(--theme-bg);
+}
+.green-theme .cv-course-exercise #exercise-play :is(#exercise-picked, #exercise-step-slots) {
+    min-height:60px; padding:9px; margin-block:8px 12px;
+}
+.green-theme .cv-course-exercise #exercise-play:has(#exercise-result:is(.is-correct,.is-incorrect)) #exercise-picked .word-tile:disabled {
+    opacity:1;
+}
+.cv-course-exercise #exercise-words:empty { display:none; }
+.green-theme .cv-course-exercise #exercise-result.exercise-inline-result {
+    display:block; padding:0; margin:0; background:transparent;
+}
+.green-theme .cv-course-exercise #exercise-result.exercise-inline-result:empty { display:none; }
+@media(max-width:599px) {
+    .green-theme .cv-course-exercise #exercise-play { grid-template-columns:minmax(0,1fr); }
+    .green-theme .cv-course-exercise #exercise-play .exercise-avatar { display:none; }
 }

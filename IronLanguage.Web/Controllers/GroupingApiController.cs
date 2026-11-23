@@ -10,8 +10,12 @@ public sealed record GroupingCheckInput(int WordIndex, int GroupIndex);
 public sealed class GroupingApiController(ICatalogRepository catalog, GroupingService grouping, GuestLearningStore guests) : ControllerBase
 {
     [HttpGet("groupings")]
-    public async Task<IActionResult> List(CancellationToken ct) =>
-        Ok((await catalog.Groupings(ct)).Select(x => new { x.Id, x.Title, x.Version }));
+    public async Task<IActionResult> List(CancellationToken ct)
+    {
+        var items = await catalog.Groupings(ct);
+        var authors = await catalog.ExerciseAuthors(items.Select(x => x.Id).ToArray(), ct);
+        return Ok(items.Select(x => new { x.Id, x.Title, x.Version, Author = authors.GetValueOrDefault(("grouping", x.Id)) }));
+    }
 
     [HttpPost("groupings/{id:guid}/sessions")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)

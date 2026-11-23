@@ -27,11 +27,11 @@
       const exercises = await AdamApi("/listening");
       list.replaceChildren();
       list.hidden = exercises.length === 0;
-      for (const item of exercises) {
+      for (const [index, item] of exercises.entries()) {
         const entry = document.createElement("article"); entry.className = "exercise-entry listening-entry";
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
         const title = document.createElement("h2"); title.textContent = item.question;
-        copy.append(title, button("Начать", () => start(item.id), "button primary"));
+        copy.append(title, window.AdamExerciseUx.cardMeta(item, index), button("Начать", () => start(item.id), "button primary"));
         entry.append(copy); list.append(entry);
       }
       window.AdamExerciseUx.catalog(status, exercises.length ? "" : "Пока нет опубликованных заданий на аудирование.");

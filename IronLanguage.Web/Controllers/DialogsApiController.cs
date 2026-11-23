@@ -10,8 +10,12 @@ namespace IronLanguage.Web.Controllers;
 public sealed class DialogsApiController(ICatalogRepository catalog, DialogueService dialogs, DictionaryService dictionary, GuestLearningStore guests) : ControllerBase
 {
     [HttpGet("dialogs")]
-    public async Task<IActionResult> Dialogs(CancellationToken ct) =>
-        Ok((await catalog.Dialogues(ct)).Select(x => new { x.Id, x.Title, x.Dialect, x.Level, x.Version }));
+    public async Task<IActionResult> Dialogs(CancellationToken ct)
+    {
+        var items = await catalog.Dialogues(ct);
+        var authors = await catalog.ExerciseAuthors(items.Select(x => x.Id).ToArray(), ct);
+        return Ok(items.Select(x => new { x.Id, x.Title, x.Dialect, x.Level, x.Version, Author = authors.GetValueOrDefault(("dialogue", x.Id)) }));
+    }
 
     [HttpGet("dialogs/{id:guid}")]
     public async Task<IActionResult> Conditions(Guid id, CancellationToken ct) =>

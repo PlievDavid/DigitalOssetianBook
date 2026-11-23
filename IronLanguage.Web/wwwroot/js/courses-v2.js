@@ -636,7 +636,7 @@
         post(`/course-sessions/${id}/view`, { blockId: state.block.id }).catch(() => {});
       } finally { refreshing = false; }
     }
-    function mountExercise(host, block, next) {
+    function mountExercise(host, block, next, replay) {
       const template = document.getElementById('course-exercise-' + block.kind);
       const player = window.AdamExercisePlayers?.[block.kind];
       if (!template || !player) throw new Error('Не удалось загрузить задание.');
@@ -658,13 +658,12 @@
           step.setAttribute('aria-label', step.getAttribute('aria-label') + ', пройден');
           step.title += ' — пройден';
         }
-        const justUnlocked = next.hidden;
         next.disabled = next.hidden = false;
-        if (justUnlocked) window.AdamExerciseUx.reveal(next, 180);
       }
       function offerRetry(action) {
-        if (!host.isConnected || host.querySelector('.cv-exercise-retry')) return;
-        host.append(button('Попробовать снова', event => run(event.currentTarget, action), 'button primary cv-exercise-retry'));
+        const footer = next.parentElement;
+        if (!host.isConnected || footer.querySelector('.cv-exercise-retry')) return;
+        footer.prepend(button('Попробовать снова', event => run(event.currentTarget, action), 'button primary cv-exercise-retry'));
       }
       const reload = () => refresh(block.id);
       if (block.result && !block.result.correct) offerRetry(retryAttempt);
@@ -672,13 +671,14 @@
         await post(sessionPath + '/retry', { blockId: block.id, attemptId: block.attemptId });
         await reload();
       }
+      if (replay) {
+        replay.hidden = !block.result?.correct;
+        replay.addEventListener('click', event => run(event.currentTarget, async () => {
+          await retryAttempt();
+          area.querySelector('#exercise-tiles button')?.focus({ preventScroll: true });
+        }));
+      }
       const embedded = {
-        replay: block.kind === 'translation' ? async event => {
-          await run(event.currentTarget, async () => {
-            await retryAttempt();
-            area.querySelector('#exercise-tiles button')?.focus();
-          });
-        } : null,
         load: () => block.practice ? practiceData(block.practice) : {
           card: block.card, attemptId: block.attemptId, draftIndices: block.draftIndices,
           completed: Boolean(block.result), result: block.result
@@ -702,8 +702,10 @@
               result = latest.block?.result;
               if (!result) throw new Error('Не удалось обновить результат аудирования.');
             }
-            if (result.correct) allowNext();
-            else offerRetry(retryAttempt);
+            if (result.correct) {
+              allowNext();
+              if (replay && host.isConnected) replay.hidden = false;
+            } else offerRetry(retryAttempt);
             return result;
           }
           let input;
@@ -814,7 +816,6 @@
         if (heading) {
           heading.tabIndex = -1;
           heading.focus();
-          window.AdamExerciseUx.reveal(heading, 180);
         }
       }), 'button primary');
       if (b.unavailable) {
@@ -830,9 +831,13 @@
         const host = node('div', null, 'cv-course-exercise');
         card.classList.add('cv-exercise-block');
         next.disabled = next.hidden = !state.steps[state.viewStep].completed;
-        card.append(host, actions(next));
+        const replay = b.kind === 'translation' ? node('button', 'Собрать заново', 'button secondary') : null;
+        if (replay) { replay.type = 'button'; replay.hidden = true; }
+        const footer = actions(next, replay);
+        footer.classList.add('cv-exercise-actions');
+        card.append(host, footer);
         area.append(card);
-        mountExercise(host, b, next);
+        mountExercise(host, b, next, replay);
         return;
       }
       card.append(actions(next)); area.append(card);
