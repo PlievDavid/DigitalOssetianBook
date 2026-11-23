@@ -128,10 +128,9 @@
   }
   function myCourseAction(course, featured) {
     const state = myCourseState(course);
-    const title = { new: 'Начать курс', active: 'Продолжить', done: 'Повторить курс' }[state];
+    const title = { new: 'Начать курс', active: 'Продолжить', done: featured ? 'Продолжить' : 'Повторить курс' }[state];
     const control = button(title, e => run(e.currentTarget, () => continueCourse(course.id, null, state === 'active' ? null : 'first')), featured ? 'cm-cta' : 'cm-row-action');
     control.setAttribute('aria-label', title + ': ' + course.title);
-    control.append(icon(myCourseIcons.arrow));
     return control;
   }
   function myCourseOverview(rows) {
@@ -258,7 +257,7 @@
     const grid = node('div', null, mine ? 'cm-list' : authored ? 'cv-author-list' : 'cm-catalog-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
     let status = mine && ['active', 'done'].includes(params.get('status')) ? params.get('status') : '';
-    if (authored || !courseLevels.includes(level)) level = '';
+    if (mine || authored || !courseLevels.includes(level)) level = '';
     let searchTimer, displayed, resultMotion;
     const input = node('input');
     input.type = 'search';
@@ -293,7 +292,7 @@
     }
     searchField.append(searchLabel, append(node('div', null, 'cv-search-control'), input, clear));
     const tools = append(node('div', null, 'cv-tools'), searchField);
-    const levels = authored ? null : levelFilter(level, value => { level = value; draw(); });
+    const levels = mine || authored ? null : levelFilter(level, value => { level = value; draw(); });
     const resultsStatus = node('div', null, 'cv-results-status');
     resultsStatus.setAttribute('role', 'status');
     const catalogPanel = authored
@@ -319,7 +318,7 @@
       title.id = 'cm-library-title';
       library.setAttribute('aria-labelledby', title.id);
       append(library, append(node('header', null, 'cm-library-heading'), title,
-        append(node('div', null, 'cm-library-toolbar'), filters, tools, levels)), resultsStatus, grid);
+        append(node('div', null, 'cm-library-toolbar'), filters, tools)), resultsStatus, grid);
       root.append(library);
     } else {
       const title = node('h2', 'Все курсы');

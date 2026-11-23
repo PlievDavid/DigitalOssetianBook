@@ -448,7 +448,10 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await student.goto(base + '/profile');
     await student.getByRole('heading', { name: 'Профиль', exact: true }).waitFor();
     check(await student.getByRole('link', { name: /Преподавание/ }).count() === 0, 'У ученика виден преподавательский раздел');
-    await student.goto(base + '/my-courses');
+    await student.goto(base + '/my-courses?level=' + encodeURIComponent('Продвинутый'));
+    await myCourse.waitFor();
+    check(await student.getByRole('radiogroup', { name: 'Уровень курса' }).count() === 0 &&
+      !new URL(student.url()).searchParams.has('level'), 'Личные курсы всё ещё фильтруются по уровню');
     const phoneCourseNav = student.getByRole('navigation', { name: 'Навигация по курсам' });
     check(await phoneCourseNav.getByRole('link', { name: 'Мои курсы', exact: true }).getAttribute('aria-current') === 'page', 'Личные курсы не отмечены в мобильной навигации');
     await phoneCourseNav.getByRole('link', { name: 'Каталог', exact: true }).press('Enter');
