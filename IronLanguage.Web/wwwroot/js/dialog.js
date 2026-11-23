@@ -91,14 +91,15 @@
         const eyebrow = document.createElement("span"); eyebrow.className = "eyebrow";
         eyebrow.textContent = `ДИАЛОГ · ${dialectLabel(item.dialect).toUpperCase()} · УРОВЕНЬ ${item.level}`;
         const title = document.createElement("h2"); title.textContent = item.title;
-        const description = document.createElement("p");
-        description.textContent = "Отвечайте на реплики собеседника: выбирайте готовый ответ или пишите своим текстом.";
-        copy.append(eyebrow, title, description, button("Начать", () => start(item.id), "button primary"));
+        copy.append(eyebrow, title, button("Начать", () => start(item.id), "button primary"));
         card.append(copy); list.append(card);
       }
       renderHistory(history);
-      status.textContent = dialogs.length ? "Выберите диалог." : "Пока нет опубликованных диалогов.";
-    } catch (error) { status.textContent = error.message; }
+      window.AdamExerciseUx.catalog(status, dialogs.length ? "" : "Пока нет опубликованных диалогов.");
+    } catch (error) {
+      console.error(error);
+      window.AdamExerciseUx.catalog(status, "Не удалось загрузить задания.", load);
+    }
   }
 
   function renderHistory(history) {
@@ -231,10 +232,13 @@
     const items = lines || [];
     const answerIndex = items.findIndex(line => line.side === "student");
     const markedIndex = answerIndex >= 0 ? answerIndex : items.length - 1;
+    const follow = all || feed.scrollHeight - feed.scrollTop - feed.clientHeight < 48;
     items.forEach((line, index) => {
-      feed.append(lineElement(line, all ? null : index === markedIndex ? correct : null));
+      const row = lineElement(line, all ? null : index === markedIndex ? correct : null);
+      feed.append(row);
+      if (!all) window.AdamExerciseUx.reveal(row, 200);
     });
-    feed.scrollTop = feed.scrollHeight;
+    if (follow) feed.scrollTop = feed.scrollHeight;
   }
 
   function updateCounters() {
@@ -345,7 +349,7 @@
     const current = new AbortController();
     controller = current;
     setBusy(true);
-    result.textContent = "";
+    result.textContent = "Проверяем…";
     try {
       const payload = { turnId: captured.turnId, value, skip };
       const response = embedded ? await embedded.answer(payload) : await AdamApi(`/dialogs/sessions/${captured.sessionId}/answer`, {
@@ -354,6 +358,7 @@
         body: JSON.stringify(payload)
       });
       if (isStale(token)) return;
+      result.textContent = "";
       lastValue = skip ? "" : (value || "").trim();
       session.lines = session.lines.concat(response.lines);
       session.turn = response.turn;

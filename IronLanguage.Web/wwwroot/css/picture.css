@@ -19,7 +19,8 @@
 .green-theme #picture-app .picture-figure {
     display: block;
     margin: 8px auto 4px;
-    max-width: 360px;
+    width: min(100%, 360px);
+    min-height: 128px;
     padding: 12px;
     border: 1px solid #e8d9b0;
     border-radius: 16px;
@@ -29,8 +30,8 @@
 }
 .green-theme #picture-app .picture-figure img {
     display: block;
-    width: auto;
-    max-width: 100%;
+    width: 100%;
+    aspect-ratio: 4 / 3;
     max-height: 320px;
     margin: 0 auto;
     border-radius: 10px;

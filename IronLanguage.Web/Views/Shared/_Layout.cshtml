@@ -118,6 +118,7 @@
     <script src="~/js/api.js" asp-append-version="true"></script>
     <script src="~/js/avatar.js" asp-append-version="true"></script>
     @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/streak.js" asp-append-version="true" defer></script> }
+    <script src="~/js/exercise-ux.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -52,13 +52,14 @@
         const card = document.createElement("article"); card.className = "exercise-entry";
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
         const title = document.createElement("h2"); title.textContent = item.title;
-        const description = document.createElement("p");
-        description.textContent = "Посмотрите на картинку и ответьте на один вопрос.";
-        copy.append(title, description, button("Начать", () => start(item.id), "button primary"));
+        copy.append(title, button("Начать", () => start(item.id), "button primary"));
         card.append(copy); list.append(card);
       }
-      status.textContent = items.length ? "Выберите задание." : "Пока нет опубликованных заданий.";
-    } catch (error) { status.textContent = error.message; }
+      window.AdamExerciseUx.catalog(status, items.length ? "" : "Пока нет опубликованных заданий.");
+    } catch (error) {
+      console.error(error);
+      window.AdamExerciseUx.catalog(status, "Не удалось загрузить задания.", load);
+    }
   }
 
   async function start(id) {
@@ -151,6 +152,7 @@
       session.correctWord = response.correctWord;
       session.words = response.words || session.words || [];
       showResult(response.correct, response.correctWord, selectedIndex);
+      window.AdamExerciseUx.reveal(result);
     } catch (error) {
       if (gen !== generation || !session || session.sessionId !== sid) return;
       result.hidden = false;
@@ -179,8 +181,8 @@
     if (typeof selectedIndex === "number" && selectedIndex >= 0 && selectedIndex < nodes.length
       && norm(session.options[selectedIndex]) !== correctKey) {
       const wrong = nodes[selectedIndex];
-      wrong.classList.add("is-wrong", "shake");
-      wrong.addEventListener("animationend", () => wrong.classList.remove("shake"), { once: true });
+      wrong.classList.add("is-wrong");
+      window.AdamExerciseUx.reveal(wrong, 120, 0);
     }
   }
 

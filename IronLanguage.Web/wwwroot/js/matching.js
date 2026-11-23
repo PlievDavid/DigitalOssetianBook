@@ -38,7 +38,9 @@
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       line.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + bend} ${start.y}, ${end.x - bend} ${end.y}, ${end.x} ${end.y}`);
       line.style.setProperty('--thread-color', threadColor(left));
-      line.setAttribute('class', 'game-thread ' + kind); svg.append(line);
+      line.setAttribute('class', 'game-thread ' + kind);
+      line.dataset.leftIndex = left;
+      svg.append(line);
     }
     for (const [left, right] of connections) connect(left, point(rightColumn, right, 'left'), 'game-thread-matched');
     if (drag?.moved) connect(drag.index, { x: drag.x - bounds.left, y: drag.y - bounds.top }, 'game-thread-active');
@@ -93,15 +95,13 @@
         const card = document.createElement("article"); card.className = "exercise-entry";
         const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
         const title = document.createElement("h2"); title.textContent = item.title;
-        const description = document.createElement("p");
-        description.textContent = "Соотнесите слова с их парами. Порядок вариантов перемешивается.";
-        copy.append(title, description, button("Начать", () => start(item.id), "button primary"));
+        copy.append(title, button("Начать", () => start(item.id), "button primary"));
         card.append(copy); list.append(card);
       }
-      status.textContent = items.length ? "Выберите задание." : "Пока нет опубликованных заданий.";
+      window.AdamExerciseUx.catalog(status, items.length ? "" : "Пока нет опубликованных заданий.");
     } catch (error) {
-      console.error("Не удалось загрузить задания на соотнесение.", error);
-      status.textContent = "Не удалось загрузить задания. Обновите страницу и попробуйте снова.";
+      console.error(error);
+      window.AdamExerciseUx.catalog(status, "Не удалось загрузить задания.", load);
     }
   }
 
@@ -169,6 +169,8 @@
   async function check(leftIndex, rightIndex) {
     if (busy || !session || session.finished) return;
     busy = true; renderBoard();
+    result.textContent = "Проверяем…";
+    let outcome;
     const gen = generation;
     const sid = session.sessionId;
     try {
@@ -180,6 +182,7 @@
       if (gen !== generation || !session || session.sessionId !== sid) return;
       const leftTile = session.left.find(t => t.index === leftIndex);
       const rightTile = session.right.find(t => t.index === rightIndex);
+      outcome = response.correct ? "correct" : "wrong";
       if (response.correct) {
         leftTile.matched = true; rightTile.matched = true;
         connections.set(leftIndex, rightIndex);
@@ -190,13 +193,6 @@
         leftColumn.querySelectorAll(".is-selected").forEach(node => node.classList.remove("is-selected"));
       } else {
         result.textContent = "Не подходит. Попробуйте другую пару.";
-        leftColumn.querySelectorAll(".is-selected").forEach(node => node.classList.remove("is-wrong"));
-        rightColumn.querySelectorAll(`[data-index="${rightIndex}"]`).forEach(node => node.classList.add("is-wrong"));
-        setTimeout(() => {
-          if (gen !== generation) return;
-          leftColumn.querySelectorAll(".is-wrong").forEach(node => node.classList.remove("is-wrong"));
-          rightColumn.querySelectorAll(".is-wrong").forEach(node => node.classList.remove("is-wrong"));
-        }, 600);
         selectedLeft = null;
         leftColumn.querySelectorAll(".is-selected").forEach(node => node.classList.remove("is-selected"));
       }
@@ -214,6 +210,19 @@
       // Завершение старого запроса не должно снимать блокировку новой сессии.
       if (gen === generation) {
         busy = false; renderBoard();
+        if (outcome === "correct" && matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+          const line = svg.querySelector(`[data-left-index="${leftIndex}"]`);
+          const length = line?.getTotalLength();
+          if (length) line.animate(
+            [{ strokeDasharray: `${length} ${length}`, strokeDashoffset: length },
+             { strokeDasharray: `${length} ${length}`, strokeDashoffset: 0 }],
+            { duration: 190, easing: "ease-out" }
+          );
+        } else if (outcome === "wrong") {
+          const pair = [leftColumn.querySelector(`[data-index="${leftIndex}"]`), rightColumn.querySelector(`[data-index="${rightIndex}"]`)];
+          pair.forEach(tile => tile?.classList.add("is-wrong"));
+          setTimeout(() => pair.forEach(tile => tile?.classList.remove("is-wrong")), 650);
+        }
         const focus = selectedLeft === null ? leftColumn.querySelector("button:enabled") : leftColumn.querySelector('[data-index="' + selectedLeft + '"]');
         (focus || summaryBox.querySelector("button") || $("matching-back-link")).focus({ preventScroll: true });
       }

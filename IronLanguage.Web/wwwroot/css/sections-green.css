@@ -271,3 +271,14 @@
 .green-theme .home-learning-grid > :is(.home-reading-card, .home-words-card) { display: flex; flex-direction: column; padding: 24px; border: 1px solid var(--theme-border); }
 .green-theme .home-learning-grid :is(.home-reading-card, .home-words-card) .theme-button { width: fit-content; align-self: flex-start; min-height: 48px; margin-top: auto; padding: 12px 16px; border: 1px solid transparent; border-radius: 10px; background: var(--theme-green); color: white; font-size: 15px; font-weight: 600; }
 .green-theme .home-learning-grid :is(.home-reading-card, .home-words-card) .theme-button:hover { background: var(--theme-green-hover); }
+
+.exercise-catalog-actions { margin-block-start: 10px; }
+.green-theme #exercise-tiles:not(:empty), .green-theme #exercise-options:not(:empty) { min-height: 48px; }
+.green-theme .listening-option.is-pending { border-color: var(--theme-green); background: var(--theme-sage); }
+.green-theme #grouping-app .grouping-group.is-target { border-color: var(--theme-green); }
+.green-theme .cv-course-exercise :is(#exercise-play, #listening-play, #dialog-play, #matching-play, #picture-play, #grammar-play) {
+    border-color: transparent;
+    box-shadow: none;
+    background: var(--theme-surface);
+}
+@media (min-width: 701px) { .green-theme #exercise-play .exercise-avatar { width: clamp(96px, 11vw, 132px); margin-inline-end: 0; } }

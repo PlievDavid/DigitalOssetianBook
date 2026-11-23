@@ -658,7 +658,9 @@
           step.setAttribute('aria-label', step.getAttribute('aria-label') + ', пройден');
           step.title += ' — пройден';
         }
+        const justUnlocked = next.hidden;
         next.disabled = next.hidden = false;
+        if (justUnlocked) window.AdamExerciseUx.reveal(next, 180);
       }
       function offerRetry(action) {
         if (!host.isConnected || host.querySelector('.cv-exercise-retry')) return;
@@ -808,6 +810,12 @@
         const nextBlock = state.steps[state.viewStep + 1]?.id ?? null;
         if (!state.steps[state.viewStep].completed) await post(`/course-sessions/${id}/next`, { blockId: b.id });
         await refresh(nextBlock, !nextBlock);
+        const heading = area.querySelector('h2');
+        if (heading) {
+          heading.tabIndex = -1;
+          heading.focus();
+          window.AdamExerciseUx.reveal(heading, 180);
+        }
       }), 'button primary');
       if (b.unavailable) {
         card.append(node('p', 'Материал недоступен. Вы можете открыть другой блок урока.', 'cv-notice'));
