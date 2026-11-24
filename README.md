@@ -187,7 +187,7 @@ dotnet run --project IronLanguage.Web -- admin-grant --email <email-сущест
 
 ## Развёртывание через Docker
 
-Сайт и PostgreSQL поднимаются из `docker-compose.yml`: образ собирается из `Dockerfile`, база хранится в томе `pgdata`, ключи входа и загруженные файлы — в томах `keys` и `media`. Секреты задаются в `.env` на сервере по шаблону `.env.example`; админы засеваются файлом `admin-seed.json` вне репозитория. Перед запуском и при обновлении применяйте миграции командой `docker compose run --rm web dotnet IronLanguage.Web.dll migrate`. Полный порядок описан в [инструкции разработки](docs/DEVELOPMENT.md).
+Сайт и PostgreSQL поднимаются из `docker-compose.yml`: образ собирается из `Dockerfile`, база хранится в томе `pgdata`, ключи входа и загруженные файлы — в томах `keys` и `media`. Секреты задаются в `.env` на сервере по шаблону `.env.example`; админы засеваются файлом `admin-seed.json` вне репозитория. Перед запуском и при обновлении применяйте миграции командой `docker compose run --rm web migrate`. Полный порядок описан в [инструкции разработки](docs/DEVELOPMENT.md).
 
 ## Главная — текущий интерфейс
 

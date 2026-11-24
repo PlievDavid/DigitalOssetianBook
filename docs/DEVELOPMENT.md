@@ -25,15 +25,15 @@ dotnet run --project IronLanguage.Web/IronLanguage.Web.csproj
 
 ```bash
 docker compose up -d db
-docker compose run --rm web dotnet IronLanguage.Web.dll migrate
-docker compose run --rm web dotnet IronLanguage.Web.dll dictionary-import
-docker compose run --rm -v /srv/adam/admin-seed.json:/app/admin-seed.json:ro web dotnet IronLanguage.Web.dll admin-seed --file /app/admin-seed.json
+docker compose run --rm web migrate
+docker compose run --rm web dictionary-import
+docker compose run --rm -v /srv/adam/admin-seed.json:/app/admin-seed.json:ro web admin-seed --file /app/admin-seed.json
 docker compose up -d web
 ```
 
 `migrate` применяет ожидающие миграции без изменения данных, `dictionary-import` дополнительно добавляет книгу «Азар!» и словарь. Файл сида админов хранится вне репозитория и содержит массив объектов `{"email": "...", "password": "..."}` с паролями не короче 8 символов. Команда `admin-seed` создаёт отсутствующие аккаунты и подтверждает роль Admin; у существующих аккаунтов пароль не меняется, повторный запуск безопасен. Пароли в логи не выводятся.
 
-При обновлении на сервере выполните `git pull --ff-only origin dev`, затем `docker compose run --rm web dotnet IronLanguage.Web.dll migrate` и `docker compose up -d --build web`. TLS завершайте на прокси перед контейнером: внутри поднимается только HTTP.
+При обновлении на сервере выполните `git pull --ff-only origin dev`, затем `docker compose run --rm web migrate` и `docker compose up -d web`. Если образ собирается на сервере и NuGet доступен, добавьте `--build`. TLS завершайте на прокси перед контейнером: внутри поднимается только HTTP.
 
 ### Запуск из Visual Studio
 
