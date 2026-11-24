@@ -129,6 +129,54 @@ if (args.FirstOrDefault() == "admin-grant")
     return;
 }
 
+if (args.FirstOrDefault() == "migrate")
+{
+    if (args.Length != 1) throw new ArgumentException("Использование: migrate");
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<AdamDbContext>().Database.MigrateAsync();
+    Console.WriteLine("Миграции применены.");
+    return;
+}
+
+if (args.FirstOrDefault() == "admin-seed")
+{
+    if (args.Length != 3 || args[1] != "--file") throw new ArgumentException("Использование: admin-seed --file <путь-к-json>");
+    var json = await File.ReadAllTextAsync(args[2]);
+    var entries = JsonSerializer.Deserialize<List<AdminSeedEntry>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+        ?? throw new InvalidOperationException("Файл сида админов пуст.");
+    if (entries.Count == 0) throw new InvalidOperationException("В файле сида админов нет записей.");
+    if (entries.Any(entry => string.IsNullOrWhiteSpace(entry.Email) || string.IsNullOrEmpty(entry.Password) || entry.Password.Length < 8))
+        throw new InvalidOperationException("У каждой записи нужен email и пароль не короче 8 символов.");
+    var emails = entries.Select(entry => entry.Email.Trim().ToLowerInvariant()).ToList();
+    if (emails.Count != emails.Distinct(StringComparer.Ordinal).Count())
+        throw new InvalidOperationException("В файле сида админов повторяются email.");
+
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<AdamDbContext>().Database.MigrateAsync();
+    var users = scope.ServiceProvider.GetRequiredService<UserManager<UserAccount>>();
+    var admins = scope.ServiceProvider.GetRequiredService<AdminService>();
+    foreach (var (entry, email) in entries.Zip(emails))
+    {
+        var user = await users.FindByEmailAsync(email);
+        if (user is null)
+        {
+            user = new UserAccount { Email = email, UserName = email, PublicName = email.Split('@')[0] };
+            var created = await users.CreateAsync(user, entry.Password);
+            if (!created.Succeeded)
+                throw new InvalidOperationException($"Не удалось создать аккаунт {email}: {string.Join(", ", created.Errors.Select(error => error.Description))}");
+            Console.WriteLine($"Создан аккаунт {email}.");
+        }
+        else
+        {
+            if (user.IsBlocked) throw new InvalidOperationException($"Аккаунт {email} заблокирован; сид не меняет блокировку.");
+            Console.WriteLine($"Аккаунт {email} уже существует, пароль не изменён.");
+        }
+        await admins.Change(null, user.Id, "grant-admin", "Сид администратора при развёртывании", "", CancellationToken.None, bootstrap: true);
+        Console.WriteLine($"Роль Admin подтверждена: {email}.");
+    }
+    return;
+}
+
 if (args.Contains("reading-seed", StringComparer.OrdinalIgnoreCase))
 {
     using var scope = app.Services.CreateScope();
@@ -283,3 +331,5 @@ app.MapControllerRoute(
 
 
 app.Run();
+
+internal sealed record AdminSeedEntry(string Email, string Password);

@@ -1,0 +1,8 @@
+.git/
+**/bin/
+**/obj/
+**/node_modules/
+**/.data-protection-keys/
+**/.course-theory-media/
+**/.run-*/
+IronLanguage.Web/wwwroot/media/

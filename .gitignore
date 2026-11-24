@@ -13,3 +13,9 @@ IronLanguage.Tests/
 **/*.user
 
 /node_modules/
+
+# Локальные секреты развёртывания: копируются только на сервер.
+.env
+.env.*
+!.env.example
+admin-seed.json
