@@ -223,6 +223,7 @@ window.AdamCourseStudio = async function (ui) {
         clearTimeout(timer); timer = setTimeout(load, 300);
       });
       const input = search.querySelector('input');
+      input.placeholder = 'Название или номер задания';
       function changeScope(value) { own = value; page = 1; clearTimeout(timer); load(); }
       const clear = action('Очистить поиск', () => { input.value = ''; query = ''; page = 1; clearTimeout(timer); load(); input.focus(); });
       const create = action('Создать упражнение', e => run(e.currentTarget, async () => {
@@ -248,7 +249,10 @@ window.AdamCourseStudio = async function (ui) {
         try {
           const result = await api('/author/course-materials?' + new URLSearchParams({ kind, own, q: query, page }));
           if (!dialog.open || request !== currentRequest) return;
-          feedback.textContent = result.items.length ? `Страница ${page}` : 'Нет подходящих опубликованных упражнений.';
+          const byNumber = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(query.trim());
+          feedback.textContent = result.items.length
+            ? (byNumber ? 'Найдено по номеру в ваших и доступных материалах.' : `Страница ${page}`)
+            : 'Нет подходящих опубликованных упражнений.';
           result.items.forEach(item => {
             const entry = append(node('article', null, 'cs-material-item'), node('strong', item.title), node('p', `${exerciseTypes[item.kind]} · ${item.author}`, 'cs-help'));
             const preview = node('details');

@@ -48,12 +48,8 @@
     try {
       const items = await AdamApi("/pictures");
       list.replaceChildren();
-      for (const [index, item] of items.entries()) {
-        const card = document.createElement("article"); card.className = "exercise-entry";
-        const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const title = document.createElement("h2"); title.textContent = item.title;
-        copy.append(title, window.AdamExerciseUx.cardMeta(item, index), button("Начать", () => start(item.id), "button primary"));
-        card.append(copy); list.append(card);
+      for (const item of items) {
+        list.append(window.AdamExerciseUx.card(item, item.title, () => start(item.id)));
       }
       window.AdamExerciseUx.catalog(status, items.length ? "" : "Пока нет опубликованных заданий.");
     } catch (error) {

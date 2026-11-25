@@ -64,7 +64,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     });
     const start = async () => {
       await page.goto(base + '/grammar');
-      await page.getByRole('button', { name: 'Начать', exact: true }).click();
+      await page.locator('#grammar-list .exercise-card-open').click();
       await page.locator('#grammar-sentence').waitFor();
     };
     // Ждёт, пока фикстура удержит запрос /check (ответ отдаётся позже).
@@ -142,7 +142,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await waitForHeld();
       // Возврат к списку и новое занятие — без перезагрузки страницы, чтобы запрос остался висеть.
       await page.locator('#grammar-back-link').click();
-      await page.getByRole('button', { name: 'Начать', exact: true }).click();
+      await page.locator('#grammar-list .exercise-card-open').click();
       await page.locator('#grammar-sentence').waitFor();
       loseNext = true;
       await page.getByRole('button', { name: 'амбару', exact: true }).click();

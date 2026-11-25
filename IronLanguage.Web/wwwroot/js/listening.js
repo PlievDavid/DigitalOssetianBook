@@ -15,11 +15,6 @@
   const explanation = $("listening-explanation");
   let attemptId, card, chosenIndex = null, answer = null, checking = false, submitted = false, audioReady = false, generation = 0;
 
-  const button = (label, action, className = "button secondary") => {
-    const b = document.createElement("button"); b.type = "button"; b.className = className; b.textContent = label;
-    b.addEventListener("click", action); return b;
-  };
-
   async function load() {
     status.textContent = "Загрузка…";
     list.replaceChildren();
@@ -27,12 +22,8 @@
       const exercises = await AdamApi("/listening");
       list.replaceChildren();
       list.hidden = exercises.length === 0;
-      for (const [index, item] of exercises.entries()) {
-        const entry = document.createElement("article"); entry.className = "exercise-entry listening-entry";
-        const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const title = document.createElement("h2"); title.textContent = item.question;
-        copy.append(title, window.AdamExerciseUx.cardMeta(item, index), button("Начать", () => start(item.id), "button primary"));
-        entry.append(copy); list.append(entry);
+      for (const item of exercises) {
+        list.append(window.AdamExerciseUx.card(item, item.question, () => start(item.id)));
       }
       window.AdamExerciseUx.catalog(status, exercises.length ? "" : "Пока нет опубликованных заданий на аудирование.");
     } catch (error) {

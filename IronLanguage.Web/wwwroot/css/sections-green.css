@@ -35,6 +35,48 @@
 .green-theme .exercise-entry-copy .exercise-card-meta { overflow-wrap: anywhere; }
 .green-theme .exercise-entry-copy > :not(.button) { grid-column: 1; }
 .green-theme .exercise-entry-copy .button { grid-column: 2; grid-row: 1 / 4; min-inline-size: 135px; margin: 0; }
+.green-theme .exercise-choice { position: relative; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.green-theme .exercise-choice .exercise-entry-copy { grid-template-columns: minmax(0, 1fr); }
+.exercise-card-open, .exercise-copy-number {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.exercise-card-open { padding: 0; font: inherit; text-align: start; overflow-wrap: anywhere; }
+.exercise-card-open::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.exercise-choice:has(.exercise-card-open:hover) { border-color: var(--theme-green); }
+.exercise-choice:has(.exercise-card-open:focus-visible) { outline: 2px solid var(--theme-focus); outline-offset: 2px; }
+.exercise-copy-control {
+  position: relative;
+}
+.exercise-copy-number {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  border-radius: 8px;
+  color: var(--theme-green);
+}
+.exercise-copy-number:hover { background: var(--theme-sage); }
+.exercise-copy-number:focus-visible { outline: 2px solid var(--theme-focus); }
+.exercise-copy-number svg { inline-size: 20px; block-size: 20px; fill: currentColor; }
+.exercise-copy-feedback {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--theme-green);
+  color: white;
+  font-size: .8125rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.exercise-copy-feedback:empty { padding: 0; }
 .green-theme #exercise-play { max-width: none; padding: 28px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-card); background: #fff; }
 .green-theme .exercise-play-body { min-width: 0; }
 .green-theme #exercise-prompt { padding: 22px; background: var(--theme-blue); border-radius: 12px; font-size: 26px; line-height: 1.4; }

@@ -212,12 +212,18 @@ try
     Check((await materialAccess.Selected(owner.Id, [audioExercise.Id], ct)).Single().Own, "Сохранённое упражнение владельца не найдено");
     Check((await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Length == 0, "Сведения о личном упражнении доступны другому автору");
     Check((await materialAccess.Search(other.Id, "listening", null, false, 1, ct)).Items.Length == 0, "Другой преподаватель видит личное упражнение");
+    var audioNumber = audioExercise.Id.ToString("D");
+    Check((await materialAccess.Search(owner.Id, "listening", audioNumber, false, 1, ct)).Items.Single().Id == audioExercise.Id &&
+        (await materialAccess.Search(other.Id, "listening", audioNumber, true, 1, ct)).Items.Length == 0,
+        "Поиск по номеру должен находить свой материал и соблюдать права доступа");
     Check(!await materialAccess.Configure(other.Id, "listening", audioExercise.Id, true, true, ct), "Чужой преподаватель поменял права");
     var audioAuthor = new CourseAuthoringService(repo, materialAccess, lessons);
     var audioCourse = await audioAuthor.Create(owner.Id, new CourseDraft("Проверка аудирования", "Описание", [new(Guid.NewGuid(), "Модуль", [audioLesson])]), ct);
     await audioAuthor.Publish(audioCourse.Id, owner.Id, audioCourse.DraftStamp, true, ct);
     var borrowedDraft = CourseLearningService.Read((await lessons.Version(audioCourse.Id, null, ct))!);
     await materialAccess.Configure(owner.Id, "listening", audioExercise.Id, false, true, ct);
+    Check((await materialAccess.Search(other.Id, "listening", audioNumber, true, 1, ct)).Items.Single().Id == audioExercise.Id,
+        "Общий материал должен находиться по номеру из любой вкладки");
     Check(!(await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Single().Own, "Общий материал не показан как чужой");
     var borrowed = await audioAuthor.Create(other.Id, borrowedDraft, ct);
     Check(await audioAuthor.Publish(borrowed.Id, other.Id, 0, true, ct) is not null, "Разрешённое упражнение не опубликовано");

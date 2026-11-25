@@ -72,16 +72,22 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
     public async Task<CourseMaterialPage> Search(Guid owner, string? kind, string? query, bool own, int page, CancellationToken ct)
     {
         const int size = 15;
+        var term = query?.Trim();
+        var byNumber = Guid.TryParseExact(term, "D", out var materialId);
         var source = Inventory();
         var choices = from material in source
                       join access in db.CourseMaterialAccesses on new { material.Kind, MaterialId = material.Id } equals new { access.Kind, access.MaterialId }
                       join author in db.Users on access.OwnerId equals (Guid?)author.Id
                       where !access.Blocked && (kind == null || material.Kind == kind)
-                          && (own ? access.OwnerId == owner : access.OwnerId != owner && access.Shared)
+                          && (byNumber ? access.OwnerId == owner || access.Shared
+                              : own ? access.OwnerId == owner : access.OwnerId != owner && access.Shared)
                       select new { material.Id, material.Kind, material.Title, material.ScriptJson, material.AudioPath, material.Fragment,
                           Author = author.PublicName ?? "Преподаватель", Own = access.OwnerId == owner };
-        var term = query?.Trim();
-        if (!string.IsNullOrEmpty(term))
+        if (byNumber)
+        {
+            choices = choices.Where(x => x.Id == materialId);
+        }
+        else if (!string.IsNullOrEmpty(term))
         {
             var pattern = "%" + term.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
             choices = choices.Where(x => x.Kind == "grammar" || EF.Functions.ILike(x.Title, pattern) ||
@@ -94,7 +100,7 @@ public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMateri
             var preview = ReadPreview(row.Kind, row.ScriptJson);
             if (preview is null) continue;
             var (fragment, image, answers) = preview.Value;
-            if (row.Kind == "grammar" && !string.IsNullOrEmpty(term) &&
+            if (!byNumber && row.Kind == "grammar" && !string.IsNullOrEmpty(term) &&
                 !row.Title.Contains(term, StringComparison.OrdinalIgnoreCase) &&
                 fragment?.Contains(term, StringComparison.OrdinalIgnoreCase) != true) continue;
             if (skip > 0) { skip--; continue; }

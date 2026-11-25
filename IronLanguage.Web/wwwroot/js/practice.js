@@ -36,12 +36,8 @@
       const data = await AdamApi("/catalog");
       const exercises = data.exercises.filter(x => x.kind === kind);
       list.replaceChildren();
-      for (const [index, item] of exercises.entries()) {
-        const cardEl = document.createElement("article"); cardEl.className = "exercise-entry";
-        const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const title = document.createElement("h2"); title.textContent = item.russianPrompt;
-        copy.append(title, window.AdamExerciseUx.cardMeta(item, index), button("Начать", () => start(item.id), "button primary"));
-        cardEl.append(copy); list.append(cardEl);
+      for (const item of exercises) {
+        list.append(window.AdamExerciseUx.card(item, item.russianPrompt, () => start(item.id)));
       }
       window.AdamExerciseUx.catalog(status, exercises.length ? "" : "Пока нет проверенных материалов для этого раздела.");
     } catch (error) {

@@ -85,14 +85,9 @@
     try {
       const [dialogs, history] = await Promise.all([AdamApi("/dialogs"), (AdamAuthenticated ? AdamApi("/dialogs/sessions/history") : Promise.resolve([]))]);
       list.replaceChildren();
-      for (const [index, item] of dialogs.entries()) {
-        const card = document.createElement("article"); card.className = "exercise-entry";
-        const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const eyebrow = document.createElement("span"); eyebrow.className = "eyebrow";
-        eyebrow.textContent = `ДИАЛОГ · ${dialectLabel(item.dialect).toUpperCase()} · УРОВЕНЬ ${item.level}`;
-        const title = document.createElement("h2"); title.textContent = item.title;
-        copy.append(eyebrow, title, window.AdamExerciseUx.cardMeta(item, index), button("Начать", () => start(item.id), "button primary"));
-        card.append(copy); list.append(card);
+      for (const item of dialogs) {
+        const subtitle = `ДИАЛОГ · ${dialectLabel(item.dialect).toUpperCase()} · УРОВЕНЬ ${item.level}`;
+        list.append(window.AdamExerciseUx.card(item, item.title, () => start(item.id), subtitle));
       }
       renderHistory(history);
       window.AdamExerciseUx.catalog(status, dialogs.length ? "" : "Пока нет опубликованных диалогов.");

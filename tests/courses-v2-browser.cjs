@@ -207,6 +207,8 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await materialDialog.getByLabel('Тип упражнения').selectOption('listening');
     await materialDialog.locator('.cs-material-item strong').filter({ hasText: 'Проверка записи' }).waitFor();
     await materialDialog.getByLabel('Тип упражнения').selectOption('translation');
+    await materialDialog.getByPlaceholder('Название или номер задания').fill(fixture.phraseId);
+    await materialDialog.getByText('Найдено по номеру в ваших и доступных материалах.').waitFor();
     const phrase = materialDialog.locator('.cs-material-item').filter({ hasText: fixture.phraseTitle });
     await phrase.getByText('Предпросмотр', { exact: true }).click();
     check(await phrase.getByText('Тип задания: Собери фразу', { exact: true }).isVisible(), 'Предпросмотр не показывает тип');
