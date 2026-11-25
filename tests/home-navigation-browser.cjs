@@ -117,6 +117,66 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await page.screenshot({ path: path.join(output, `courses-${width}.png`), animations: 'disabled' });
       await page.close();
     }
+    for (const width of [1212, 390, 320]) {
+      const page = await browser.newPage({ viewport: { width, height: 678 } });
+      await page.goto(base + '/exercises');
+      const rows = page.locator('.exercise-catalog-link');
+      assert.equal(await rows.count(), 8);
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      const data = await page.evaluate(async () => {
+        const read = async path => {
+          const response = await fetch('/api/v1/' + path);
+          if (!response.ok) throw new Error('Catalog API returned ' + response.status);
+          return response.json();
+        };
+        const [catalog, listening, dialogue, grammar, matching, picture, grouping] =
+          await Promise.all(['catalog', 'listening', 'dialogs', 'grammars', 'matching', 'pictures', 'groupings'].map(read));
+        return [catalog.exercises.filter(x => x.kind === 'audio').length, listening.length, dialogue.length,
+          catalog.exercises.filter(x => x.kind === 'translation').length, grammar.length, matching.length, picture.length, grouping.length];
+      });
+      const labels = await rows.locator('.exercise-catalog-count').allTextContents();
+      assert.deepEqual(labels, data.map(String));
+      assert(await rows.evaluateAll(links => {
+        const firstTitle = links[0].querySelector('.exercise-catalog-title').offsetLeft;
+        return links.every(link => link.querySelector('.exercise-catalog-title').offsetLeft === firstTitle);
+      }));
+      const firstRow = rows.first();
+      await firstRow.focus();
+      for (let index = 1; index < 8; index++) {
+        await page.keyboard.press('Tab');
+        assert(await rows.nth(index).evaluate(el => el === document.activeElement));
+      }
+      await page.keyboard.press('Shift+Tab');
+      assert(await rows.nth(6).evaluate(el => el === document.activeElement));
+      await page.evaluate(() => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        window.scrollTo(0, 0);
+      });
+      assert(await page.locator('.exercises-heading h1').evaluate(el => {
+        const main = document.querySelector('#main-content');
+        const left = main.getBoundingClientRect().left + parseFloat(getComputedStyle(main).paddingLeft);
+        return Math.abs(el.getBoundingClientRect().left - left) <= 1;
+      }));
+      assert.equal(await page.locator('.exercises-heading h1').evaluate(el => getComputedStyle(el).fontSize), width >= 600 ? '30px' : '28px');
+      assert(await rows.evaluateAll(links => links.every(link => link.offsetHeight >= 44)));
+      const animation = page.locator('.exercise-category').last();
+      await animation.evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+      if (width >= 390) {
+        const last = await rows.last().boundingBox();
+        const visibleBottom = width >= 600 ? 678 : (await page.locator('.mobile-bottom-nav').boundingBox()).y;
+        assert(last.y + last.height <= visibleBottom, `Last row clipped at ${width}`);
+        assert.equal(await page.evaluate(() => scrollY), 0);
+      } else {
+        await page.addStyleTag({ content: 'html { font-size: 175%; }' });
+        await rows.nth(6).focus();
+        await page.keyboard.press('Tab');
+        assert(await rows.last().evaluate(el => el === document.activeElement && el.matches(':focus-visible')));
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      }
+      await page.screenshot({ path: path.join(output, `exercise-acceptance-${width}.png`), animations: 'disabled' });
+      await page.close();
+    }
+    console.log('Exercise counts match all eight lists; both target viewports fit and the 320px focused layout reflows.');
     const reduced = await browser.newPage({ reducedMotion: 'reduce' });
     await reduced.goto(base);
     await reduced.locator('.home-reading').scrollIntoViewIfNeeded();

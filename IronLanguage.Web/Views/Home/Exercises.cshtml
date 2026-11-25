@@ -1,26 +1,41 @@
+@model IReadOnlyDictionary<string, int>?
 @{
     ViewData["Title"] = "Задания";
 
-    var groups = new (string Id, string Name, (string Path, string Title)[] Exercises)[]
+    var groups = new (string Id, string Name, (string Kind, string Path, string Title)[] Exercises)[]
     {
         ("listen", "На слух", [
-            ("/audio-puzzles", "Аудиопазлы"),
-            ("/listening", "Аудирование"),
-            ("/dialogs", "Диалоги")
+            ("audio", "/audio-puzzles", "Аудиопазлы"),
+            ("listening", "/listening", "Аудирование"),
+            ("dialogue", "/dialogs", "Диалоги")
         ]),
         ("phrases", "Фразы", [
-            ("/translate", "Собери фразу"),
-            ("/grammar", "Форма слова")
+            ("translation", "/translate", "Собери фразу"),
+            ("grammar", "/grammar", "Форма слова")
         ]),
         ("words", "Слова", [
-            ("/matching", "Соотнесение"),
-            ("/picture", "Картинка и слово"),
-            ("/grouping", "Группировка слов")
+            ("matching", "/matching", "Соотнесение"),
+            ("picture", "/picture", "Картинка и слово"),
+            ("grouping", "/grouping", "Группировка слов")
         ])
     };
+    var countWidth = Math.Max(3, Model?.Values.DefaultIfEmpty().Max().ToString().Length ?? 0);
+}
+@functions {
+    private static string CountDescription(int? count)
+    {
+        if (count is not int value) return "Количество заданий недоступно";
+        var noun = value % 100 is >= 11 and <= 14 ? "заданий" : (value % 10) switch
+        {
+            1 => "задание",
+            >= 2 and <= 4 => "задания",
+            _ => "заданий"
+        };
+        return $"{value} {noun}";
+    }
 }
 
-<div class="exercises-shell">
+<div class="exercises-shell" style="--exercise-count-digits: @countWidth">
     <header class="exercises-heading">
         <h1>Задания</h1>
     </header>
@@ -33,7 +48,14 @@
                 <ul class="exercise-catalog-list">
                     @foreach (var exercise in group.Exercises)
                     {
-                        <li><a class="exercise-catalog-link" href="@exercise.Path">@exercise.Title</a></li>
+                        var count = Model?.GetValueOrDefault(exercise.Kind);
+                        <li>
+                            <a class="exercise-catalog-link" href="@exercise.Path" aria-describedby="exercise-count-@exercise.Kind">
+                                <span class="exercise-catalog-count @(count is null or 0 ? "is-muted" : null)" aria-hidden="true">@(count?.ToString() ?? "—")</span>
+                                <span class="exercise-catalog-title">@exercise.Title</span>
+                            </a>
+                            <span hidden id="exercise-count-@exercise.Kind">@CountDescription(count)</span>
+                        </li>
                     }
                 </ul>
             </section>

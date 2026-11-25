@@ -150,6 +150,26 @@ try
     }
     Check((await Task.WhenAll(PublishAgain(), PublishAgain())).All(id => id == second.Id), "Гонка создала лишнюю публикацию");
     var catalog = new EfCatalogRepository(db);
+    var startingCount = (await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio");
+    var publicExercise = new Exercise { Kind = "audio", RussianPrompt = "Проверка счётчика" };
+    db.Exercises.Add(publicExercise);
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Черновик попал в счётчик");
+    publicExercise.Published = true;
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount + 1, "Публикация не попала в счётчик");
+    var exerciseAccess = new CourseMaterialAccess { Kind = "audio", MaterialId = publicExercise.Id, OwnerId = owner.Id, InCatalog = false };
+    db.CourseMaterialAccesses.Add(exerciseAccess);
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Скрытый материал попал в счётчик");
+    exerciseAccess.InCatalog = true;
+    exerciseAccess.Blocked = true;
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Заблокированный материал попал в счётчик");
+    exerciseAccess.Blocked = false;
+    publicExercise.Archived = true;
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Архивный материал попал в счётчик");
     var progress = new EfProgressRepository(db);
     using var guests = new GuestLearningStore();
     var learning = new LearningService(catalog, progress, guests);
@@ -490,6 +510,17 @@ try
         using var http = new HttpClient(); var ready = false;
         for (var i = 0; i < 80; i++) { if (site.HasExited) throw new Exception("Тестовый сайт остановился"); try { ready = (await http.GetAsync(url + "/account/login")).IsSuccessStatusCode; if (ready) break; } catch (HttpRequestException) { } await Task.Delay(250); }
         Check(ready, "Тестовый сайт не запустился");
+        await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Groupings\" RENAME TO \"Groupings_CountTest\"", ct);
+        try
+        {
+            var fallback = System.Net.WebUtility.HtmlDecode(await http.GetStringAsync(url + "/exercises", ct));
+            Check(fallback.Split("Количество заданий недоступно").Length == 9 && fallback.Contains("href=\"/grouping\""),
+                "Сбой подсчёта скрыл ссылки или показал ложные нули");
+        }
+        finally
+        {
+            await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Groupings_CountTest\" RENAME TO \"Groupings\"", ct);
+        }
         var browser = new ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         browser.ArgumentList.Add("tests/courses-v2-browser.cjs"); browser.Environment["ADAM_TEST_URL"] = url;
         browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer,

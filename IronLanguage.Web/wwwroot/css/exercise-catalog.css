@@ -1,34 +1,57 @@
 .exercises-shell {
-    max-width: var(--lesson-width);
-    margin-inline: auto;
-    padding-block: clamp(14px, 2vw, 24px) clamp(32px, 5vw, 56px);
+    --exercise-count-width: max(44px, calc(var(--exercise-count-digits, 3) * 1ch + 8px));
+    --exercise-row-gap: 12px;
+    padding-block: 18px 32px;
 }
 .green-theme .exercises-heading h1 {
     margin: 0 0 16px;
-    font-size: clamp(32px, 4vw, 48px);
-    line-height: 1.1;
-    letter-spacing: -.04em;
+    font-size: 1.875rem;
+    line-height: 1.15;
+    letter-spacing: -.03em;
 }
 .exercise-tracks { display: grid; gap: 14px; }
-.exercise-category h2 { margin: 0 0 4px; font-size: clamp(18px, 2vw, 22px); line-height: 1.25; }
+.exercise-category { min-width: 0; }
+.exercise-category h2 { margin: 0 0 6px; font-size: 1.125rem; line-height: 1.25; }
 .exercise-catalog-list { margin: 0; padding: 0; list-style: none; }
-.exercise-catalog-list li + li { border-top: 1px solid var(--theme-border); }
+.exercise-catalog-list li { position: relative; }
+.exercise-catalog-list li + li::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto calc(var(--exercise-count-width) + var(--exercise-row-gap));
+    border-top: 1px solid var(--theme-border);
+    pointer-events: none;
+}
 .exercise-catalog-link {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: var(--exercise-count-width) minmax(0, 1fr);
+    align-items: baseline;
+    align-content: center;
+    gap: var(--exercise-row-gap);
     min-height: 44px;
-    padding: 8px 12px;
+    padding-block: 8px;
     border-radius: 8px;
     color: var(--theme-ink);
-    font-size: 16px;
     line-height: 1.4;
     text-decoration: none;
-    overflow-wrap: anywhere;
 }
+.exercise-catalog-title { font-size: 1rem; font-weight: 550; overflow-wrap: anywhere; }
+.exercise-catalog-count {
+    color: #466b57;
+    font-size: .875rem;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+}
+.exercise-catalog-count.is-muted { color: var(--theme-muted); }
 .exercise-catalog-link:hover { background: var(--theme-sage); }
+.exercise-catalog-link:active { background: #dfeade; }
 .exercise-catalog-link:focus-visible {
     outline: 2px solid var(--theme-focus);
     outline-offset: -2px;
+}
+@media (max-width: 599px) {
+    .exercises-shell { padding-top: 12px; }
+    .green-theme .exercises-heading h1 { font-size: 1.75rem; }
+    .exercise-catalog-link { scroll-margin-block-end: calc(var(--theme-bottom-height) + env(safe-area-inset-bottom) + 8px); }
 }
 @media (prefers-reduced-motion: no-preference) {
     .exercises-heading, .exercise-category { animation: var(--catalog-enter); }
