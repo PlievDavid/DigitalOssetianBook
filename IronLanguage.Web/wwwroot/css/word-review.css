@@ -92,7 +92,7 @@
 .topic-complete p { margin:0; }
 
 .words-home-hero {
-    display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px 24px;
+    display:grid;justify-items:start;gap:16px;
     padding:clamp(20px,3vw,32px);border:1px solid var(--theme-border);border-radius:26px;background:var(--theme-surface);
 }
 .words-home-hero h1 { margin:0;font:700 clamp(36px,5vw,54px)/1.08 var(--theme-heading-font);letter-spacing:-.035em; }
