@@ -54,13 +54,19 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       const catalog = page.locator('.exercises-shell');
       assert(await catalog.getByRole('heading', { name: 'Задания', level: 1 }).isVisible());
       assert.deepEqual(await catalog.getByRole('heading', { level: 2 }).allTextContents(),
-        ['Понимание на слух', 'Построение фраз', 'Словарный запас']);
+        ['На слух', 'Фразы', 'Слова']);
       assert.equal(await catalog.locator('.exercises-heading svg').count(), 0);
       assert(await catalog.locator('.exercises-heading, .exercise-category').evaluateAll(groups =>
         groups.every(group => getComputedStyle(group).borderTopWidth === '0px')));
-      assert.deepEqual(await catalog.locator('.exercise-catalog-card').evaluateAll(cards => cards.map(card => card.pathname)), routes);
+      assert.deepEqual(await catalog.locator('.exercise-catalog-link').evaluateAll(cards => cards.map(card => card.pathname)), routes);
+      const groups = catalog.locator('.exercise-category');
+      assert.deepEqual(await groups.evaluateAll(items => items.map(el => getComputedStyle(el).animationDelay)),
+        ['0.055s', '0.105s', '0.155s']);
+      assert.equal(await groups.first().evaluate(el => getComputedStyle(el).animationName), 'catalog-enter');
+      assert(await groups.evaluateAll(items => items.every((el, index) =>
+        index === 0 || items[index - 1].offsetTop < el.offsetTop)));
       await noOverflow();
-      await page.screenshot({ path: path.join(output, `exercises-${width}.png`), fullPage: true });
+      await page.screenshot({ path: path.join(output, `exercises-${width}.png`), animations: 'disabled', fullPage: true });
       await pressLink(catalog.locator('a[href="/picture"]'), '/picture');
       await pressLink(page.getByRole('link', { name: 'К заданиям' }), '/exercises');
       const homeTab = page.locator('.mobile-bottom-nav a[href="/"]');
@@ -106,6 +112,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       console.log(`${width}px @${dpr}x: layout, account forms and keyboard navigation passed`);
       await page.goto(base + '/courses');
       await page.locator('.cm-discover h1').waitFor();
+      assert.equal(await page.locator('.cm-discover').evaluate(el => getComputedStyle(el).animationName), 'catalog-enter');
       await noOverflow();
       await page.screenshot({ path: path.join(output, `courses-${width}.png`), animations: 'disabled' });
       await page.close();
@@ -116,7 +123,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert.equal(await reduced.locator('.hero-actions').evaluate(el => getComputedStyle(el).animationName), 'none');
     assert.equal(await reduced.locator('.home-arrived').count(), 0);
     await reduced.goto(base + '/exercises');
-    assert.equal(await reduced.locator('.exercise-catalog-card').first().evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+    assert.equal(await reduced.locator('.exercise-catalog-link').first().evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+    assert.equal(await reduced.locator('.exercise-category').first().evaluate(el => getComputedStyle(el).animationName), 'none');
     await reduced.close();
     console.log('Reduced motion passed');
   } finally { await browser.close(); }

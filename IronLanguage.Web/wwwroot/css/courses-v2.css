@@ -470,10 +470,9 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 .cm-welcome { display:grid; justify-items:center; gap:12px; text-align:center; background:var(--cm-paper); padding:clamp(25px,6vw,68px) 16px; }
 .cm-welcome h2 { margin:0; }
 .cm-empty-icon { width:52px; height:52px; border-radius:18px; margin-bottom:4px; }
-.cm-intro,.cm-feature,.cm-summary,.cm-welcome { animation:cm-enter 390ms var(--cm-ease) both; }
+.cm-intro,.cm-feature,.cm-summary,.cm-welcome { animation:var(--catalog-enter); }
 .cm-feature,.cm-welcome { animation-delay:55ms; }
 .cm-summary { animation-delay:105ms; }
-@keyframes cm-enter { from { opacity:0; transform:translateY(9px); } to { opacity:1; transform:translateY(0); } }
 @keyframes cm-fill { from { transform:scaleX(0); } to { transform:scaleX(var(--cm-progress)); } }
 @media (max-width:900px) {
   .cm-library-toolbar { grid-template-columns:minmax(0,1fr); }

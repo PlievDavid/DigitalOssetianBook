@@ -1,64 +1,39 @@
 .exercises-shell {
-    display: grid;
-    gap: clamp(18px, 2.5vw, 28px);
-    padding-block: clamp(18px, 2.6vw, 34px) clamp(32px, 5vw, 62px);
+    max-width: var(--lesson-width);
+    margin-inline: auto;
+    padding-block: clamp(14px, 2vw, 24px) clamp(32px, 5vw, 56px);
 }
 .green-theme .exercises-heading h1 {
-    margin: 0 0 8px;
+    margin: 0 0 16px;
     font-size: clamp(32px, 4vw, 48px);
     line-height: 1.1;
     letter-spacing: -.04em;
 }
-.exercises-heading p {
-    margin: 0;
-    max-width: 60ch;
-    color: var(--theme-muted);
-    font-size: clamp(15px, 1.45vw, 17px);
-    line-height: 1.5;
-}
-
-.exercise-tracks { display: grid; gap: clamp(20px, 2.4vw, 28px); }
-.exercise-category { min-width: 0; }
-.exercise-category h2 { margin: 0 0 12px; font-size: clamp(19px, 2vw, 24px); line-height: 1.2; }
-.exercise-catalog-grid { display: grid; gap: 8px; }
-.exercise-catalog-card {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 10px;
+.exercise-tracks { display: grid; gap: 14px; }
+.exercise-category h2 { margin: 0 0 4px; font-size: clamp(18px, 2vw, 22px); line-height: 1.25; }
+.exercise-catalog-list { margin: 0; padding: 0; list-style: none; }
+.exercise-catalog-list li + li { border-top: 1px solid var(--theme-border); }
+.exercise-catalog-link {
+    display: flex;
     align-items: center;
-    padding: 12px;
-    min-height: 79px;
-    border: 1px solid var(--theme-border);
-    border-radius: 14px;
-    background: var(--theme-surface);
-    color: inherit;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--theme-ink);
+    font-size: 16px;
+    line-height: 1.4;
     text-decoration: none;
+    overflow-wrap: anywhere;
 }
-.exercise-catalog-card:is(:hover, :focus-visible) {
-    border-color: var(--theme-muted);
-}
-.exercise-catalog-card h3 { margin: 0 0 4px; font-size: 16px; line-height: 1.2; }
-.exercise-catalog-card p { margin: 0; color: var(--theme-muted); font-size: 13px; line-height: 1.35; }
-.exercise-catalog-icon {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 11px;
-    background: var(--theme-sage);
-    color: var(--theme-muted);
-}
-.exercise-catalog-icon svg { width: 21px; height: 21px; }
-
-@media (min-width: 600px) and (max-width: 959px) {
-    .exercise-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (min-width: 960px) {
-    .exercise-tracks { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
-}
-@media (max-width: 599px) {
-    .exercises-shell { padding-top: 10px; gap: 20px; }
+.exercise-catalog-link:hover { background: var(--theme-sage); }
+.exercise-catalog-link:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: -2px;
 }
 @media (prefers-reduced-motion: no-preference) {
-    .exercise-catalog-card { transition: border-color 160ms ease; }
+    .exercises-heading, .exercise-category { animation: var(--catalog-enter); }
+    .exercise-category:nth-child(1) { animation-delay: 55ms; }
+    .exercise-category:nth-child(2) { animation-delay: 105ms; }
+    .exercise-category:nth-child(3) { animation-delay: 155ms; }
+    .exercise-catalog-link { transition: background-color 180ms ease; }
 }

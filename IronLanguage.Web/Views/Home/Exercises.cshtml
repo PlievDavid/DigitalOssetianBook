@@ -1,21 +1,21 @@
 @{
     ViewData["Title"] = "Задания";
 
-    var groups = new (string Id, string Name, (string Path, string Icon, string Title, string Description)[] Exercises)[]
+    var groups = new (string Id, string Name, (string Path, string Title)[] Exercises)[]
     {
-        ("listen", "Понимание на слух", [
-            ("/audio-puzzles", "audio", "Аудиопазлы", "Соберите услышанную фразу из слов."),
-            ("/listening", "listening", "Аудирование", "Послушайте запись и выберите ответ."),
-            ("/dialogs", "dialogs", "Диалоги", "Подберите реплику собеседнику.")
+        ("listen", "На слух", [
+            ("/audio-puzzles", "Аудиопазлы"),
+            ("/listening", "Аудирование"),
+            ("/dialogs", "Диалоги")
         ]),
-        ("phrases", "Построение фраз", [
-            ("/translate", "translate", "Собери фразу", "Соберите осетинский перевод из слов."),
-            ("/grammar", "grammar", "Форма слова", "Выберите форму, которая подходит к предложению.")
+        ("phrases", "Фразы", [
+            ("/translate", "Собери фразу"),
+            ("/grammar", "Форма слова")
         ]),
-        ("words", "Словарный запас", [
-            ("/matching", "matching", "Соотнесение", "Найдите пары для слов и выражений."),
-            ("/picture", "picture", "Картинка и слово", "Подберите слово к картинке."),
-            ("/grouping", "grouping", "Группировка слов", "Разложите слова по общим признакам.")
+        ("words", "Слова", [
+            ("/matching", "Соотнесение"),
+            ("/picture", "Картинка и слово"),
+            ("/grouping", "Группировка слов")
         ])
     };
 }
@@ -23,7 +23,6 @@
 <div class="exercises-shell">
     <header class="exercises-heading">
         <h1>Задания</h1>
-        <p>Прислушайтесь к языку, соберите фразу или найдите новое слово.</p>
     </header>
 
     <div class="exercise-tracks">
@@ -31,18 +30,12 @@
         {
             <section class="exercise-category" aria-labelledby="category-@group.Id">
                 <h2 id="category-@group.Id">@group.Name</h2>
-                <div class="exercise-catalog-grid">
+                <ul class="exercise-catalog-list">
                     @foreach (var exercise in group.Exercises)
                     {
-                        <a class="exercise-catalog-card" href="@exercise.Path">
-                            <span class="exercise-catalog-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", exercise.Icon)</span>
-                            <div>
-                                <h3>@exercise.Title</h3>
-                                <p>@exercise.Description</p>
-                            </div>
-                        </a>
+                        <li><a class="exercise-catalog-link" href="@exercise.Path">@exercise.Title</a></li>
                     }
-                </div>
+                </ul>
             </section>
         }
     </div>

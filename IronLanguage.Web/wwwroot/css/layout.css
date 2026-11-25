@@ -1,5 +1,12 @@
 /* App-wide page geometry. Loaded after page styles so sections cannot resize it. */
-:root { --page-gutter: 40px; }
+:root {
+    --page-gutter: 40px;
+    --catalog-enter: catalog-enter 390ms cubic-bezier(.2,.75,.25,1) both;
+}
+@keyframes catalog-enter {
+    from { opacity: 0; transform: translateY(9px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 @media (max-width: 599px) {
     :root { --page-gutter: 16px; }
     .green-theme .site-header { display: none; }
