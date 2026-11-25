@@ -40,18 +40,18 @@
 .exercise-catalog-list li + li::before {
     content: "";
     position: absolute;
-    inset: 0 0 auto calc(var(--exercise-count-width) + var(--exercise-row-gap));
+    inset: 0 12px auto;
     border-top: 1px solid var(--theme-border);
     pointer-events: none;
 }
 .exercise-catalog-link {
     display: grid;
-    grid-template-columns: var(--exercise-count-width) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) var(--exercise-count-width);
     align-items: baseline;
     align-content: center;
     gap: var(--exercise-row-gap);
     min-height: 44px;
-    padding-block: 8px;
+    padding: 8px 12px;
     border-radius: 8px;
     color: var(--theme-ink);
     line-height: 1.4;

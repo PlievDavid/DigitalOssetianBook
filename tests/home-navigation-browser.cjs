@@ -117,7 +117,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await page.screenshot({ path: path.join(output, `courses-${width}.png`), animations: 'disabled' });
       await page.close();
     }
-    for (const width of [1212, 390, 320]) {
+    for (const width of [1212, 575, 390, 320]) {
       const page = await browser.newPage({ viewport: { width, height: 678 } });
       await page.goto(base + '/exercises');
       const rows = page.locator('.exercise-catalog-link');
@@ -138,7 +138,13 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       assert.deepEqual(labels, data.map(String));
       assert(await rows.evaluateAll(links => {
         const firstTitle = links[0].querySelector('.exercise-catalog-title').offsetLeft;
-        return links.every(link => link.querySelector('.exercise-catalog-title').offsetLeft === firstTitle);
+        return links.every(link => {
+          const title = link.querySelector('.exercise-catalog-title');
+          const quantity = link.querySelector('.exercise-quantity');
+          return title.offsetLeft === firstTitle && title.offsetLeft < quantity.offsetLeft &&
+            Math.abs(quantity.getBoundingClientRect().right - link.getBoundingClientRect().right +
+              parseFloat(getComputedStyle(link).paddingRight)) < 1;
+        });
       }));
       const firstRow = rows.first();
       await firstRow.focus();
@@ -176,7 +182,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await page.screenshot({ path: path.join(output, `exercise-acceptance-${width}.png`), animations: 'disabled' });
       await page.close();
     }
-    console.log('Exercise counts match all eight lists; both target viewports fit and the 320px focused layout reflows.');
+    console.log('Exercise counts match all eight lists and align on the right; target viewports fit and the 320px focused layout reflows.');
     const reduced = await browser.newPage({ reducedMotion: 'reduce' });
     await reduced.goto(base);
     await reduced.locator('.home-reading').scrollIntoViewIfNeeded();

@@ -56,6 +56,7 @@
                         var count = Model?.GetValueOrDefault(exercise.Kind);
                         <li>
                             <a class="exercise-catalog-link" href="@exercise.Path" aria-describedby="exercise-count-@exercise.Kind">
+                                <span class="exercise-catalog-title">@exercise.Title</span>
                                 <span class="exercise-quantity" aria-hidden="true">
                                     <span class="exercise-catalog-count">@(count?.ToString() ?? "—")</span>
                                     @if (count.HasValue)
@@ -63,7 +64,6 @@
                                         <span>@CountNoun(count.Value)</span>
                                     }
                                 </span>
-                                <span class="exercise-catalog-title">@exercise.Title</span>
                             </a>
                             <span hidden id="exercise-count-@exercise.Kind">@CountDescription(count)</span>
                         </li>
