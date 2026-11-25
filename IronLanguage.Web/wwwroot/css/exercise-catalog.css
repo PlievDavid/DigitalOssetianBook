@@ -3,7 +3,11 @@
     --exercise-row-gap: 12px;
     padding-block: 32px;
 }
-.exercises-heading { margin-bottom: clamp(17px, 2.5vw, 27px); }
+.exercises-heading {
+    display: grid;
+    gap: 6px;
+    margin-bottom: clamp(17px, 2.5vw, 27px);
+}
 .exercise-tracks { display: grid; gap: 14px; }
 .exercise-category {
     display: grid;

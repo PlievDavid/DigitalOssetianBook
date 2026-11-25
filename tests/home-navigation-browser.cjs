@@ -53,6 +53,11 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await pressLink(hero.getByRole('link', { name: 'Начать заниматься' }), '/exercises');
       const catalog = page.locator('.exercises-shell');
       assert(await catalog.getByRole('heading', { name: 'Задания', level: 1 }).isVisible());
+      assert(await catalog.getByText('Тренируйте осетинский на коротких заданиях.', { exact: true }).isVisible());
+      assert.deepEqual(await catalog.locator('.exercise-category-heading svg use').evaluateAll(icons =>
+        icons.map(icon => icon.getAttribute('href').split('#')[1])), ['headphones', 'chat', 'menu_book']);
+      await page.waitForFunction(() => [...document.querySelectorAll('.exercise-category-heading svg use')]
+        .every(icon => icon.getBBox().width > 0));
       assert.deepEqual(await catalog.getByRole('heading', { level: 2 }).allTextContents(),
         ['На слух', 'Фразы', 'Слова']);
       assert.equal(await catalog.locator('.exercises-heading svg').count(), 0);

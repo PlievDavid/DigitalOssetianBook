@@ -393,7 +393,7 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 /* Personal learning dashboard */
 .cm-home,.cm-catalog { --cm-forest:#173f32; --cm-paper:#f4f7ef; --cm-ease:cubic-bezier(.2,.75,.25,1); }
 .cm-intro { display:grid; gap:6px; margin-bottom:clamp(17px,2.5vw,27px); }
-.cm-intro p,.cm-welcome p { color:var(--theme-muted); margin:0; }
+.cm-welcome p { color:var(--theme-muted); margin:0; }
 .cm-overview { display:grid; grid-template-columns:minmax(0,2.65fr) minmax(225px,1fr); gap:18px; }
 .cm-feature,.cm-summary,.cm-welcome { border-radius:28px; min-width:0; }
 .cm-feature { display:grid; grid-template-columns:minmax(0,1fr) minmax(120px,32%); gap:clamp(16px,3vw,38px); align-items:center; padding:clamp(22px,3.2vw,40px); border:1px solid var(--theme-border); background:var(--theme-surface); color:var(--theme-ink); }

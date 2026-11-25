@@ -4,12 +4,12 @@
 
     var groups = new (string Id, string Name, string Icon, (string Kind, string Path, string Title)[] Exercises)[]
     {
-        ("listen", "На слух", "audio", [
+        ("listen", "На слух", "headphones", [
             ("audio", "/audio-puzzles", "Аудиопазлы"),
             ("listening", "/listening", "Аудирование"),
             ("dialogue", "/dialogs", "Диалоги")
         ]),
-        ("phrases", "Фразы", "dialogs", [
+        ("phrases", "Фразы", "chat", [
             ("translation", "/translate", "Собери фразу"),
             ("grammar", "/grammar", "Форма слова")
         ]),
@@ -40,6 +40,7 @@
 <div class="exercises-shell" style="--exercise-count-digits: @countWidth">
     <header class="exercises-heading catalog-heading catalog-heading--compact">
         <h1>Задания</h1>
+        <p>Тренируйте осетинский на коротких заданиях.</p>
     </header>
 
     <div class="exercise-tracks">
@@ -47,7 +48,7 @@
         {
             <section class="exercise-category" aria-labelledby="category-@group.Id">
                 <div class="exercise-category-heading">
-                    @await Html.PartialAsync(group.Icon == "menu_book" ? "_MaterialNavigationIcon" : "_NavIcon", group.Icon)
+                    @await Html.PartialAsync("_MaterialNavigationIcon", group.Icon)
                     <h2 id="category-@group.Id">@group.Name</h2>
                 </div>
                 <ul class="exercise-catalog-list">
