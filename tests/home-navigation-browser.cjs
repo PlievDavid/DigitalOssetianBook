@@ -55,7 +55,9 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       assert(await catalog.getByRole('heading', { name: 'Задания', level: 1 }).isVisible());
       assert.deepEqual(await catalog.getByRole('heading', { level: 2 }).allTextContents(),
         ['Понимание на слух', 'Построение фраз', 'Словарный запас']);
-      assert.equal(await catalog.locator('.exercises-motif text').textContent(), 'Ӕ');
+      assert.equal(await catalog.locator('.exercises-heading svg').count(), 0);
+      assert(await catalog.locator('.exercises-heading, .exercise-category').evaluateAll(groups =>
+        groups.every(group => getComputedStyle(group).borderTopWidth === '0px')));
       assert.deepEqual(await catalog.locator('.exercise-catalog-card').evaluateAll(cards => cards.map(card => card.pathname)), routes);
       await noOverflow();
       await page.screenshot({ path: path.join(output, `exercises-${width}.png`), fullPage: true });
@@ -83,7 +85,25 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
         assert.equal(await nav.getAttribute('aria-current'), 'page');
       }
       assert.deepEqual(errors, []);
-      console.log(`${width}px @${dpr}x: ${images[0]}, layout and keyboard navigation passed`);
+      for (const route of ['/account/login', '/account/register']) {
+        await page.goto(base + route);
+        const form = page.locator('.auth-shell');
+        const box = await form.boundingBox();
+        assert(box.width <= 480.5, `Auth form at ${width}`);
+        assert(await form.evaluate(el => {
+          const scene = getComputedStyle(el.parentElement);
+          const shell = getComputedStyle(el);
+          const heading = el.querySelector('h1').getBoundingClientRect();
+          const fields = el.querySelector('form').getBoundingClientRect();
+          return scene.backgroundImage === 'none' && shell.boxShadow === 'none' &&
+            shell.borderTopWidth === '0px' && Math.abs(heading.left - fields.left) < 1;
+        }), `Plain auth layout at ${width}`);
+        await form.locator('input').first().focus();
+        await page.keyboard.press('Tab');
+        assert(await form.locator('input').nth(1).evaluate(el => el === document.activeElement));
+        await noOverflow();
+      }
+      console.log(`${width}px @${dpr}x: layout, account forms and keyboard navigation passed`);
       await page.goto(base + '/courses');
       await page.locator('.cm-discover h1').waitFor();
       await noOverflow();
@@ -96,7 +116,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert.equal(await reduced.locator('.hero-actions').evaluate(el => getComputedStyle(el).animationName), 'none');
     assert.equal(await reduced.locator('.home-arrived').count(), 0);
     await reduced.goto(base + '/exercises');
-    assert.equal(await reduced.locator('.exercises-motif').evaluate(el => getComputedStyle(el).animationName), 'none');
+    assert.equal(await reduced.locator('.exercise-catalog-card').first().evaluate(el => getComputedStyle(el).transitionDuration), '0s');
     await reduced.close();
     console.log('Reduced motion passed');
   } finally { await browser.close(); }

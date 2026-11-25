@@ -22,38 +22,15 @@
 
 <div class="exercises-shell">
     <header class="exercises-heading">
-        <div class="exercises-heading-copy">
-            <span class="exercises-kicker">Практика осетинского</span>
-            <h1>Задания</h1>
-            <p>Прислушайтесь к языку, соберите фразу или найдите новое слово.</p>
-        </div>
-        <svg class="exercises-motif" viewBox="0 0 432 200" aria-hidden="true" focusable="false">
-            <path d="M12 131h408M12 91h408M12 51h408M12 171h408" stroke="var(--theme-border)" stroke-opacity=".65" stroke-dasharray="2 6" />
-            <path d="M44 142c39 0 53-64 113-64s68 63 116 63 55-64 112-64" fill="none" stroke="var(--theme-border)" stroke-width="1.5" stroke-dasharray="4 6" />
-            <g transform="translate(38 62) rotate(-10 50 50)">
-                <rect width="110" height="100" rx="25" fill="var(--theme-sage)" stroke="var(--theme-border)" />
-                <path d="M23 50h10l7-15 10 33 10-52 10 48 7-22 6 8h7" stroke="var(--theme-green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-            </g>
-            <g transform="translate(164 31) rotate(8 55 50)">
-                <rect width="110" height="100" rx="25" fill="var(--theme-sage)" stroke="var(--theme-border)" />
-                <rect x="24" y="33" width="28" height="14" rx="5" fill="var(--theme-sage)" stroke="var(--theme-green)" stroke-width="1.5" />
-                <rect x="58" y="33" width="27" height="14" rx="5" fill="var(--theme-green)" fill-opacity=".3" />
-                <rect x="24" y="54" width="61" height="14" rx="5" fill="var(--theme-green)" fill-opacity=".3" />
-            </g>
-            <g transform="translate(292 69) rotate(-8 53 50)">
-                <rect width="110" height="100" rx="25" fill="var(--theme-sage)" stroke="var(--theme-border)" />
-                <text x="55" y="67" text-anchor="middle" fill="var(--theme-green)" font-size="50" font-weight="700">Ӕ</text>
-            </g>
-        </svg>
+        <h1>Задания</h1>
+        <p>Прислушайтесь к языку, соберите фразу или найдите новое слово.</p>
     </header>
 
     <div class="exercise-tracks">
         @foreach (var group in groups)
         {
             <section class="exercise-category" aria-labelledby="category-@group.Id">
-                <header class="exercise-category-heading">
-                    <h2 id="category-@group.Id">@group.Name</h2>
-                </header>
+                <h2 id="category-@group.Id">@group.Name</h2>
                 <div class="exercise-catalog-grid">
                     @foreach (var exercise in group.Exercises)
                     {

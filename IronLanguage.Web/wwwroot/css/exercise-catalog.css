@@ -3,51 +3,24 @@
     gap: clamp(18px, 2.5vw, 28px);
     padding-block: clamp(18px, 2.6vw, 34px) clamp(32px, 5vw, 62px);
 }
-.exercises-heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 42%);
-    align-items: center;
-    gap: clamp(10px, 2vw, 24px);
-    padding: clamp(20px, 3.5vw, 42px);
-    border: 1px solid var(--theme-border);
-    border-radius: 28px;
-    background: var(--theme-surface);
-}
-.exercises-heading-copy { min-width: 0; }
-.exercises-kicker {
-    color: #4c5e59;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-}
 .green-theme .exercises-heading h1 {
-    font-size: clamp(40px, 6vw, 76px);
-    line-height: 1;
-    letter-spacing: -.055em;
-    margin: 9px 0 12px;
+    margin: 0 0 8px;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1.1;
+    letter-spacing: -.04em;
 }
 .exercises-heading p {
     margin: 0;
-    max-width: 35ch;
+    max-width: 60ch;
     color: var(--theme-muted);
-    font-size: clamp(15px, 1.55vw, 19px);
-    line-height: 1.45;
+    font-size: clamp(15px, 1.45vw, 17px);
+    line-height: 1.5;
 }
-.exercises-motif { display: block; width: 100%; max-height: 178px; }
-.exercises-motif text { font-family: var(--theme-heading-font); }
 
-.exercise-tracks { display: grid; gap: clamp(12px, 1.4vw, 18px); }
-.exercise-category {
-    min-width: 0;
-    padding: 12px;
-    border: 1px solid var(--theme-border);
-    border-radius: 24px;
-    background: var(--theme-surface);
-}
-.exercise-category-heading { padding: 8px 7px 17px; }
-.exercise-category h2 { margin: 0 0 3px; font-size: clamp(19px, 2vw, 25px); line-height: 1.14; }
-.exercise-catalog-grid { display: grid; gap: 7px; }
+.exercise-tracks { display: grid; gap: clamp(20px, 2.4vw, 28px); }
+.exercise-category { min-width: 0; }
+.exercise-category h2 { margin: 0 0 12px; font-size: clamp(19px, 2vw, 24px); line-height: 1.2; }
+.exercise-catalog-grid { display: grid; gap: 8px; }
 .exercise-catalog-card {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -84,9 +57,7 @@
     .exercise-tracks { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
 }
 @media (max-width: 599px) {
-    .exercises-shell { padding-top: 10px; gap: 14px; }
-    .exercises-heading { grid-template-columns: minmax(0, 1fr); gap: 7px; border-radius: 22px; padding: 19px 20px 8px; }
-    .exercises-motif { max-height: 113px; }
+    .exercises-shell { padding-top: 10px; gap: 20px; }
 }
 @media (prefers-reduced-motion: no-preference) {
     .exercise-catalog-card { transition: border-color 160ms ease; }
