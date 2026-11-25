@@ -16,6 +16,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     const groupingTile = { index: 0, text: "Ӕвзаг", solved: false };
     await page.route('**/api/v1/**', async route => {
       const path = new URL(route.request().url()).pathname;
+      if (path === '/api/v1/listening') return route.fulfill({ json: [] });
       if (path === '/api/v1/catalog') {
         if (failCatalog) {
           failCatalog = false;
@@ -97,6 +98,20 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert.equal(await placed.textContent(), 'Ӕвзаг');
     assert.equal(await placed.evaluate(el => el.getAnimations().length), 0);
     assert.equal(await page.locator('.grouping-group.is-target').count(), 0);
+    await page.goto(base + '/listening');
+    await page.locator('.section-heading-banner').getByRole('heading', { name: 'Аудирование' }).waitFor();
+    const empty = page.locator('#listening-status .exercise-empty');
+    await empty.getByText('Пока нет опубликованных заданий на аудирование.').waitFor();
+    await page.waitForFunction(() => [...document.querySelectorAll('.section-symbol use, .exercise-empty-icon use')]
+      .every(icon => icon.getBBox().width > 0));
+    const centered = await empty.evaluate(el => {
+      const bounds = el.getBoundingClientRect();
+      const parent = el.parentElement.getBoundingClientRect();
+      return Math.abs((bounds.left + bounds.right) - (parent.left + parent.right)) <= 2;
+    });
+    assert(centered);
+    await empty.getByRole('link', { name: 'Все задания' }).click();
+    await page.waitForURL(base + '/exercises');
     assert.deepEqual(errors, []);
     console.log('Exercise UX passed: catalog retry, keyboard focus, answer retry, inline result, grouping, reduced motion and 320 px.');
   } finally {

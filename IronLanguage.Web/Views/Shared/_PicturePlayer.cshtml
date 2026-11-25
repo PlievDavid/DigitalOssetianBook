@@ -2,7 +2,7 @@
     @if (ViewData["EmbeddedExercise"] is null)
     {
     <a class="back-link" href="/exercises">← К заданиям</a>
-    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Картинка и слово", "Посмотрите на картинку и ответьте: выберите слово или введите его.", "picture", "amber"))
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Картинка и слово", "Посмотрите на картинку и ответьте: выберите слово или введите его.", "image", Material: true))
     }
     <div id="picture-status" role="status"></div>
     <div id="picture-list" class="exercise-list"></div>

@@ -9,7 +9,7 @@
   }
 
   function catalog(status, message, retry) {
-    status.textContent = message;
+    status.replaceChildren();
     if (!message) return;
     const action = document.createElement(retry ? "button" : "a");
     action.className = "button secondary";
@@ -24,7 +24,30 @@
     const actions = document.createElement("div");
     actions.className = "exercise-catalog-actions";
     actions.append(action);
-    status.append(actions);
+    if (retry) {
+      status.append(message, actions);
+      return;
+    }
+
+    const empty = document.createElement("div");
+    empty.className = "exercise-empty";
+    const illustration = document.createElement("span");
+    illustration.className = "exercise-empty-icon";
+    illustration.append(materialIcon("inbox"));
+    const text = document.createElement("p");
+    text.textContent = message;
+    empty.append(illustration, text, actions);
+    status.append(empty);
+  }
+
+  function materialIcon(name) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    const use = document.createElementNS(svg.namespaceURI, "use");
+    use.setAttribute("href", `/images/material-icons/navigation-rounded.svg#${name}`);
+    svg.append(use);
+    return svg;
   }
 
   function card(item, title, start, subtitle) {
@@ -61,13 +84,7 @@
     copyNumber.type = "button";
     copyNumber.title = "Скопировать номер";
     copyNumber.setAttribute("aria-label", `Скопировать номер задания «${title}»`);
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("aria-hidden", "true");
-    const use = document.createElementNS(svg.namespaceURI, "use");
-    use.setAttribute("href", "/images/material-icons/navigation-rounded.svg#content_copy");
-    svg.append(use);
-    copyNumber.append(svg);
+    copyNumber.append(materialIcon("content_copy"));
     let dismissFeedback;
     copyNumber.addEventListener("click", async () => {
       clearTimeout(dismissFeedback);

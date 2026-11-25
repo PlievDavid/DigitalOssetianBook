@@ -352,6 +352,27 @@
 .green-theme .home-learning-grid :is(.home-reading-card, .home-words-card) .theme-button:hover { background: var(--theme-green-hover); }
 
 .exercise-catalog-actions { margin-block-start: 10px; }
+.exercise-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  max-inline-size: 32rem;
+  margin-inline: auto;
+  padding: clamp(20px, 4vw, 36px) 16px;
+  text-align: center;
+}
+.exercise-empty-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  border-radius: 20px;
+  background: var(--theme-sage);
+  color: var(--theme-green);
+}
+.exercise-empty-icon svg { inline-size: 32px; block-size: 32px; fill: currentColor; }
+.exercise-empty p { margin: 0; font-size: 1.0625rem; font-weight: 600; }
+.exercise-empty .exercise-catalog-actions { margin-block-start: 0; }
 .green-theme #exercise-tiles:not(:empty), .green-theme #exercise-options:not(:empty) { min-height: 48px; }
 .green-theme .listening-option.is-pending { border-color: var(--theme-green); background: var(--theme-sage); }
 .green-theme #grouping-app .grouping-group.is-target { border-color: var(--theme-green); }

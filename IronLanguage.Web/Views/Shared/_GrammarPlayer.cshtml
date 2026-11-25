@@ -2,7 +2,7 @@
     @if (ViewData["EmbeddedExercise"] is null)
     {
     <a class="back-link" href="/exercises">← К заданиям</a>
-    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Форма слова", "В предложении пропущено слово. Выберите правильную форму; после первой ошибки появится подсказка, и можно будет выбрать ещё раз.", "grammar", "lilac"))
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Форма слова", "В предложении пропущено слово. Выберите правильную форму; после первой ошибки появится подсказка, и можно будет выбрать ещё раз.", "spellcheck", Material: true))
     }
     <div id="grammar-status" role="status"></div>
     <div id="grammar-list" class="exercise-list"></div>
