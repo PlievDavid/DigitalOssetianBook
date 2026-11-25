@@ -91,7 +91,8 @@
   }
   function courseIntro(title, description, discovery = false) {
     const copy = append(node('div', null, 'cm-intro-copy'), node('h1', title), node('p', description));
-    return append(node('header', null, discovery ? 'cm-intro cm-discover' : 'cm-intro'), copy, coursePhoneNavigation());
+    const classes = discovery ? 'cm-intro cm-discover catalog-heading catalog-heading--compact' : 'cm-intro catalog-heading';
+    return append(node('header', null, classes), copy, coursePhoneNavigation());
   }
   function myCourseState(course) {
     if (course.totalBlocks > 0 && course.completedBlocks >= course.totalBlocks) return 'done';

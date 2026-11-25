@@ -163,7 +163,11 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
         const left = main.getBoundingClientRect().left + parseFloat(getComputedStyle(main).paddingLeft);
         return Math.abs(el.getBoundingClientRect().left - left) <= 1;
       }));
-      assert.equal(await page.locator('.exercises-heading h1').evaluate(el => getComputedStyle(el).fontSize), width >= 600 ? '30px' : '28px');
+      const headingStyle = el => {
+        const style = getComputedStyle(el);
+        return [style.fontFamily, style.fontSize, style.fontWeight, style.lineHeight, style.letterSpacing];
+      };
+      const exerciseHeadingStyle = await page.locator('.exercises-heading h1').evaluate(headingStyle);
       assert(await rows.evaluateAll(links => links.every(link => link.offsetHeight >= 44)));
       const animation = page.locator('.exercise-category').last();
       await animation.evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
@@ -180,6 +184,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       }
       await page.screenshot({ path: path.join(output, `exercise-acceptance-${width}.png`), animations: 'disabled' });
+      await page.goto(base + '/courses');
+      assert.deepEqual(await page.locator('.cm-discover h1').evaluate(headingStyle), exerciseHeadingStyle);
       await page.close();
     }
     console.log('Exercise counts match all eight lists and align on the right; target viewports fit and the 320px focused layout reflows.');

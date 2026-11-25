@@ -1,14 +1,9 @@
 .exercises-shell {
     --exercise-count-width: calc(var(--exercise-count-digits, 3) * 1ch + 4rem);
     --exercise-row-gap: 12px;
-    padding-block: 18px 32px;
+    padding-block: 32px;
 }
-.green-theme .exercises-heading h1 {
-    margin: 0 0 16px;
-    font-size: 1.875rem;
-    line-height: 1.15;
-    letter-spacing: -.03em;
-}
+.exercises-heading { margin-bottom: clamp(17px, 2.5vw, 27px); }
 .exercise-tracks { display: grid; gap: 14px; }
 .exercise-category {
     display: grid;
@@ -71,13 +66,12 @@
     outline-offset: -2px;
 }
 @media (max-width: 599px) {
-    .exercises-shell { padding-top: 12px; }
+    .exercises-shell { padding-top: 20px; }
     .exercise-category { grid-template-columns: minmax(0, 1fr); gap: 2px; }
     .exercise-category-heading { gap: 9px; padding: 6px 12px; border-radius: 8px; }
     .exercise-category-heading svg { width: 18px; height: 18px; }
     .exercise-category h2 { font-size: 1.05rem; }
     .exercise-tracks { gap: 10px; }
-    .green-theme .exercises-heading h1 { font-size: 1.75rem; }
     .exercise-catalog-link { scroll-margin-block-end: calc(var(--theme-bottom-height) + env(safe-area-inset-bottom) + 8px); }
 }
 @media (prefers-reduced-motion: no-preference) {

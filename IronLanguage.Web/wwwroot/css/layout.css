@@ -36,6 +36,15 @@
 }
 .green-theme #main-content > .guest-notice { width: 100%; max-width: none; margin-inline: 0; }
 
+.green-theme .catalog-heading h1 {
+    margin: 0;
+    font: 700 clamp(34px, 4vw, 52px)/1.04 var(--theme-heading-font);
+    letter-spacing: -.045em;
+}
+@media (max-width: 599px) {
+    .green-theme .catalog-heading--compact h1 { font-size: clamp(27px, 7.5vw, 36px); }
+}
+
 /* Keep the authenticated header still while progress loads or the count changes. */
 .green-theme .header-streak-slot { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 88px; min-height: 36px; }
 .green-theme .header-streak-slot .header-streak { max-width: 100%; }

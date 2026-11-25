@@ -393,7 +393,6 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 /* Personal learning dashboard */
 .cm-home,.cm-catalog { --cm-forest:#173f32; --cm-paper:#f4f7ef; --cm-ease:cubic-bezier(.2,.75,.25,1); }
 .cm-intro { display:grid; gap:6px; margin-bottom:clamp(17px,2.5vw,27px); }
-.green-theme .cm-intro h1 { font:700 clamp(34px,4vw,52px)/1.04 var(--theme-heading-font); letter-spacing:-.045em; margin:0; }
 .cm-intro p,.cm-welcome p { color:var(--theme-muted); margin:0; }
 .cm-overview { display:grid; grid-template-columns:minmax(0,2.65fr) minmax(225px,1fr); gap:18px; }
 .cm-feature,.cm-summary,.cm-welcome { border-radius:28px; min-width:0; }
@@ -545,7 +544,6 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
   .cm-phone-navigation a[aria-current="page"] { border-color:var(--theme-green); color:var(--theme-green); }
   .cm-phone-navigation a:hover { color:var(--theme-green); }
   .cm-phone-navigation a:focus-visible { outline:2px solid var(--theme-focus); outline-offset:-2px; }
-  .green-theme .cm-discover h1 { font-size:clamp(27px,7.5vw,36px); }
   .cm-catalog-library .cm-library-heading { grid-template-columns:minmax(0,1fr); }
   .cm-catalog-grid .cm-catalog-card { grid-template-columns:clamp(62px,18vw,88px) minmax(0,1fr); gap:10px; padding:10px; border-radius:14px; }
   .cm-catalog-card .cm-art { border-radius:9px; }
