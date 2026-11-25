@@ -33,7 +33,7 @@
     empty.className = "exercise-empty";
     const illustration = document.createElement("span");
     illustration.className = "exercise-empty-icon";
-    illustration.append(materialIcon("inbox"));
+    illustration.append(materialIcon("assignment"));
     const text = document.createElement("p");
     text.textContent = message;
     empty.append(illustration, text, actions);

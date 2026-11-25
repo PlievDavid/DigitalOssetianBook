@@ -102,6 +102,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     await page.locator('.section-heading-banner').getByRole('heading', { name: 'Аудирование' }).waitFor();
     const empty = page.locator('#listening-status .exercise-empty');
     await empty.getByText('Пока нет опубликованных заданий на аудирование.').waitFor();
+    assert.match(await empty.locator('.exercise-empty-icon use').getAttribute('href'), /#assignment$/);
     await page.waitForFunction(() => [...document.querySelectorAll('.section-symbol use, .exercise-empty-icon use')]
       .every(icon => icon.getBBox().width > 0));
     const centered = await empty.evaluate(el => {
