@@ -1,5 +1,5 @@
 .exercises-shell {
-    --exercise-count-width: max(44px, calc(var(--exercise-count-digits, 3) * 1ch + 8px));
+    --exercise-count-width: calc(var(--exercise-count-digits, 3) * 1ch + 4rem);
     --exercise-row-gap: 12px;
     padding-block: 18px 32px;
 }
@@ -10,8 +10,31 @@
     letter-spacing: -.03em;
 }
 .exercise-tracks { display: grid; gap: 14px; }
-.exercise-category { min-width: 0; }
-.exercise-category h2 { margin: 0 0 6px; font-size: 1.125rem; line-height: 1.25; }
+.exercise-category {
+    display: grid;
+    grid-template-columns: minmax(12rem, 30%) minmax(0, 1fr);
+    gap: clamp(16px, 3vw, 40px);
+    min-width: 0;
+}
+.exercise-category-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px clamp(16px, 2.4vw, 32px);
+    background: #edf2e9;
+    border-radius: 16px 4px 4px 16px;
+    color: #204c3d;
+}
+.exercise-category-heading svg { width: 26px; height: 26px; flex: none; }
+.exercise-category h2 { margin: 0; font-size: 1.25rem; line-height: 1.25; }
+.exercise-quantity {
+    display: inline-flex;
+    align-items: baseline;
+    gap: .32em;
+    justify-self: end;
+    font-size: .77rem;
+    color: var(--theme-muted);
+}
 .exercise-catalog-list { margin: 0; padding: 0; list-style: none; }
 .exercise-catalog-list li { position: relative; }
 .exercise-catalog-list li + li::before {
@@ -41,7 +64,6 @@
     font-variant-numeric: tabular-nums;
     text-align: end;
 }
-.exercise-catalog-count.is-muted { color: var(--theme-muted); }
 .exercise-catalog-link:hover { background: var(--theme-sage); }
 .exercise-catalog-link:active { background: #dfeade; }
 .exercise-catalog-link:focus-visible {
@@ -50,6 +72,11 @@
 }
 @media (max-width: 599px) {
     .exercises-shell { padding-top: 12px; }
+    .exercise-category { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+    .exercise-category-heading { gap: 9px; padding: 6px 12px; border-radius: 8px; }
+    .exercise-category-heading svg { width: 18px; height: 18px; }
+    .exercise-category h2 { font-size: 1.05rem; }
+    .exercise-tracks { gap: 10px; }
     .green-theme .exercises-heading h1 { font-size: 1.75rem; }
     .exercise-catalog-link { scroll-margin-block-end: calc(var(--theme-bottom-height) + env(safe-area-inset-bottom) + 8px); }
 }

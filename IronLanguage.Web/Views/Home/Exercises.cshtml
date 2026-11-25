@@ -2,18 +2,18 @@
 @{
     ViewData["Title"] = "Задания";
 
-    var groups = new (string Id, string Name, (string Kind, string Path, string Title)[] Exercises)[]
+    var groups = new (string Id, string Name, string Icon, (string Kind, string Path, string Title)[] Exercises)[]
     {
-        ("listen", "На слух", [
+        ("listen", "На слух", "audio", [
             ("audio", "/audio-puzzles", "Аудиопазлы"),
             ("listening", "/listening", "Аудирование"),
             ("dialogue", "/dialogs", "Диалоги")
         ]),
-        ("phrases", "Фразы", [
+        ("phrases", "Фразы", "dialogs", [
             ("translation", "/translate", "Собери фразу"),
             ("grammar", "/grammar", "Форма слова")
         ]),
-        ("words", "Слова", [
+        ("words", "Слова", "menu_book", [
             ("matching", "/matching", "Соотнесение"),
             ("picture", "/picture", "Картинка и слово"),
             ("grouping", "/grouping", "Группировка слов")
@@ -25,14 +25,16 @@
     private static string CountDescription(int? count)
     {
         if (count is not int value) return "Количество заданий недоступно";
-        var noun = value % 100 is >= 11 and <= 14 ? "заданий" : (value % 10) switch
+        return $"{value} {CountNoun(value)}";
+    }
+
+    private static string CountNoun(int value) =>
+        value % 100 is >= 11 and <= 14 ? "заданий" : (value % 10) switch
         {
             1 => "задание",
             >= 2 and <= 4 => "задания",
             _ => "заданий"
         };
-        return $"{value} {noun}";
-    }
 }
 
 <div class="exercises-shell" style="--exercise-count-digits: @countWidth">
@@ -44,14 +46,23 @@
         @foreach (var group in groups)
         {
             <section class="exercise-category" aria-labelledby="category-@group.Id">
-                <h2 id="category-@group.Id">@group.Name</h2>
+                <div class="exercise-category-heading">
+                    @await Html.PartialAsync(group.Icon == "menu_book" ? "_MaterialNavigationIcon" : "_NavIcon", group.Icon)
+                    <h2 id="category-@group.Id">@group.Name</h2>
+                </div>
                 <ul class="exercise-catalog-list">
                     @foreach (var exercise in group.Exercises)
                     {
                         var count = Model?.GetValueOrDefault(exercise.Kind);
                         <li>
                             <a class="exercise-catalog-link" href="@exercise.Path" aria-describedby="exercise-count-@exercise.Kind">
-                                <span class="exercise-catalog-count @(count is null or 0 ? "is-muted" : null)" aria-hidden="true">@(count?.ToString() ?? "—")</span>
+                                <span class="exercise-quantity" aria-hidden="true">
+                                    <span class="exercise-catalog-count">@(count?.ToString() ?? "—")</span>
+                                    @if (count.HasValue)
+                                    {
+                                        <span>@CountNoun(count.Value)</span>
+                                    }
+                                </span>
                                 <span class="exercise-catalog-title">@exercise.Title</span>
                             </a>
                             <span hidden id="exercise-count-@exercise.Kind">@CountDescription(count)</span>
