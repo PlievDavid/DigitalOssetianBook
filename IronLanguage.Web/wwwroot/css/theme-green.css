@@ -24,6 +24,8 @@ html { scrollbar-gutter: stable; }
     --theme-muted: #526273;
     --theme-subtle: #7182a0;
     --theme-border: #dfe5e9;
+    --theme-card-shadow: 0 1px 3px rgb(23 63 50 / 16%), 0 3px 9px rgb(23 63 50 / 8%);
+    --theme-card-shadow-hover: 0 2px 5px rgb(23 63 50 / 17%), 0 5px 14px rgb(23 63 50 / 10%);
     --theme-sage: #eff2e8;
     --theme-blue: #ecf4fc;
     --theme-blue-icon: #cce0f6;

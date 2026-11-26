@@ -49,23 +49,33 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check((await dayWithProgress.getAttribute('title')).endsWith(' — 1') &&
       await page.locator('.words-week-chart li.words-week-empty[title]').count() === 0,
       'Нативная подсказка должна быть только у дней с выученными словами');
-    let finishProfileRequest;
-    const delayedProfile = new Promise(resolve => { finishProfileRequest = resolve; });
-    await page.route('**/api/v1/progress', async route => {
-      await delayedProfile;
-      await route.fulfill({ json: { points: 318, streak: 1, achievements: [] } });
-    });
-    try {
-      await page.goto(base + '/profile');
-      await page.locator('.profile-stats[aria-busy=true]').waitFor();
-      check((await page.locator('#progress-status').textContent()) === '', 'Профиль показывает текст во время загрузки статистики');
-    } finally {
-      finishProfileRequest();
+    for (const path of ['/profile', '/progress']) {
+      let finishProgressRequest;
+      const delayedProgress = new Promise(resolve => { finishProgressRequest = resolve; });
+      await page.route('**/api/v1/progress', async route => {
+        await delayedProgress;
+        await route.fulfill({ json: { points: 318, streak: 1, achievements: ['first'] } });
+      });
+      try {
+        await page.goto(base + path);
+        await page.locator('.profile-stats[aria-busy=true]').waitFor();
+        check((await page.locator('#progress-status').textContent()) === '', path + ' показывает текст во время загрузки статистики');
+      } finally {
+        finishProgressRequest();
+      }
+      await page.waitForFunction(() => document.querySelector('#progress-points')?.textContent === '318');
+      if (path === '/progress') await page.getByText('Первое занятие', { exact: true }).waitFor();
+      check(await page.locator('.profile-stats[aria-busy]').count() === 0, path + ' после загрузки не сбросил aria-busy');
+      await page.unroute('**/api/v1/progress');
     }
-    await page.waitForFunction(() => document.querySelector('#progress-points')?.textContent === '318');
-    check(await page.locator('.profile-stats[aria-busy]').count() === 0, 'После загрузки профиль не сбросил aria-busy');
+    await page.route('**/api/v1/progress', route => route.fulfill({ status: 503 }));
+    await page.reload();
+    await page.getByText('Не удалось загрузить результаты.', { exact: true }).waitFor();
     await page.unroute('**/api/v1/progress');
-    console.log('Archive deletion, native chart tooltip and delayed profile results passed.');
+    await page.getByRole('button', { name: 'Повторить' }).press('Enter');
+    await page.locator('#progress-awards').waitFor();
+    check(await page.locator('#progress-status').textContent() === '', 'Ошибка загрузки осталась после успешного повтора');
+    console.log('Archive deletion, native chart tooltip and delayed results passed.');
     {
       const preview = '/editor/matching/' + fixture.previewMatchingId + '/preview';
       const startPreview = '/editor/preview/matching/' + fixture.previewMatchingId + '/sessions';

@@ -560,12 +560,12 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
   display:grid; grid-template-columns:clamp(90px,10vw,124px) minmax(0,1fr); align-items:center;
   gap:clamp(12px,2vw,22px); min-width:0; padding:14px; border:1px solid transparent; border-radius:18px;
   background:var(--theme-surface); color:var(--theme-ink); text-decoration:none;
-  box-shadow:0 1px 3px rgb(23 63 50 / 16%),0 3px 9px rgb(23 63 50 / 8%);
+  box-shadow:var(--theme-card-shadow);
   transition:background-color 180ms ease,box-shadow 180ms ease;
 }
 .cm-catalog-grid .cm-catalog-card:hover {
   background:color-mix(in srgb,var(--theme-sage) 30%,var(--theme-surface));
-  box-shadow:0 2px 5px rgb(23 63 50 / 17%),0 5px 14px rgb(23 63 50 / 10%);
+  box-shadow:var(--theme-card-shadow-hover);
 }
 @media (forced-colors:active) {
   .cm-catalog-grid .cm-catalog-card { border-color:CanvasText; }

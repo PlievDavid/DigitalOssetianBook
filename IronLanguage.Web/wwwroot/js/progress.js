@@ -32,7 +32,7 @@
         if (retry?.getAttribute("aria-disabled") === "true") return;
         retry?.setAttribute("aria-disabled", "true");
         stats?.setAttribute("aria-busy", "true");
-        if (retry) status.textContent = "Загружаем результаты…";
+        status.textContent = "";
         try {
             const data = await AdamApi("/progress");
             document.getElementById("progress-points").textContent = data.points;
