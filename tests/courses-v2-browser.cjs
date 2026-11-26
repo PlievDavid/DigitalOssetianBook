@@ -56,6 +56,21 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check(await dailyCount.evaluate(el => getComputedStyle(el).opacity === '1' &&
       getComputedStyle(el).transitionDuration === '0s'), 'Счётчик виден с клавиатуры при уменьшенном движении');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
+    let finishProfileRequest;
+    const delayedProfile = new Promise(resolve => { finishProfileRequest = resolve; });
+    await page.route('**/api/v1/progress', async route => {
+      await delayedProfile;
+      await route.fulfill({ json: { points: 318, streak: 1, achievements: [] } });
+    }, { times: 1 });
+    try {
+      await page.goto(base + '/profile');
+      await page.locator('.profile-stats[aria-busy=true]').waitFor();
+      check((await page.locator('#progress-status').textContent()) === '', 'Профиль показывает текст во время загрузки статистики');
+    } finally {
+      finishProfileRequest();
+    }
+    await page.waitForFunction(() => document.querySelector('#progress-points')?.textContent === '318');
+    check(await page.locator('.profile-stats[aria-busy]').count() === 0, 'После загрузки профиль не сбросил aria-busy');
     {
       const preview = '/editor/matching/' + fixture.previewMatchingId + '/preview';
       const startPreview = '/editor/preview/matching/' + fixture.previewMatchingId + '/sessions';

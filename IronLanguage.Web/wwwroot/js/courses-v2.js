@@ -67,7 +67,9 @@
       input.value = value;
       input.checked = value === level;
       input.addEventListener('change', () => { if (input.checked) onChange(value); });
-      group.append(append(node('label', null, 'cv-level-option'), input, node('span', value || 'Все уровни')));
+      const label = node('span', value || 'Все уровни', 'cv-level-chip');
+      label.prepend(icon('m5 12 4 4L19 6'));
+      group.append(append(node('label', null, 'cv-level-option'), input, label));
     }
     return group;
   }
