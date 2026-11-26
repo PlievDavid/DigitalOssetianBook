@@ -44,24 +44,17 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.getByRole('status').getByText('Материал удалён.', { exact: true }).waitFor();
     check(await archivedBook.count() === 0, 'Книга исчезла из архива');
     await page.goto(base + '/vocabulary');
-    const day = page.locator('.words-week-chart li').nth(3);
-    const dailyCount = day.locator('.words-week-count');
-    await day.hover();
-    await page.waitForFunction(el => getComputedStyle(el).opacity === '1', await dailyCount.elementHandle());
-    check((await day.locator('.words-sr').textContent()).endsWith(': ' + await dailyCount.textContent()),
-      'Подсказка должна показывать значение выбранного дня');
-    await page.mouse.move(0, 0);
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await day.focus();
-    check(await dailyCount.evaluate(el => getComputedStyle(el).opacity === '1' &&
-      getComputedStyle(el).transitionDuration === '0s'), 'Счётчик виден с клавиатуры при уменьшенном движении');
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const days = page.locator('.words-week-chart li');
+    const dayWithProgress = days.filter({ has: page.locator('.words-sr', { hasText: /: 1$/ }) });
+    check((await dayWithProgress.getAttribute('title')).endsWith(' — 1') &&
+      await page.locator('.words-week-chart li.words-week-empty[title]').count() === 0,
+      'Нативная подсказка должна быть только у дней с выученными словами');
     let finishProfileRequest;
     const delayedProfile = new Promise(resolve => { finishProfileRequest = resolve; });
     await page.route('**/api/v1/progress', async route => {
       await delayedProfile;
       await route.fulfill({ json: { points: 318, streak: 1, achievements: [] } });
-    }, { times: 1 });
+    });
     try {
       await page.goto(base + '/profile');
       await page.locator('.profile-stats[aria-busy=true]').waitFor();
@@ -71,6 +64,8 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     }
     await page.waitForFunction(() => document.querySelector('#progress-points')?.textContent === '318');
     check(await page.locator('.profile-stats[aria-busy]').count() === 0, 'После загрузки профиль не сбросил aria-busy');
+    await page.unroute('**/api/v1/progress');
+    console.log('Archive deletion, native chart tooltip and delayed profile results passed.');
     {
       const preview = '/editor/matching/' + fixture.previewMatchingId + '/preview';
       const startPreview = '/editor/preview/matching/' + fixture.previewMatchingId + '/sessions';

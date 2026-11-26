@@ -488,6 +488,10 @@ try
         await db.SaveChangesAsync();
         var archiveBrowserBook = new Book { Title = "Книга для проверки кнопки удаления", Published = true, Archived = true };
         db.Books.Add(archiveBrowserBook);
+        db.WordReviewMasteries.Add(new WordReviewMastery
+        {
+            UserId = owner.Id, WordId = Guid.NewGuid(), Day = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-3)
+        });
         await db.SaveChangesAsync(ct);
         var previewMatching = await materialEditor.Create("matching", JsonSerializer.Serialize(
             new MatchingMaterial("Дом", [new("Дом", "хӕдзар"), new("Кровать", "хуыссӕн")], ["дуар"], []),
