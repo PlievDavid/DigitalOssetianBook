@@ -47,9 +47,13 @@
         <p class="editor-empty" hidden>Материалы не найдены. Попробуйте изменить поиск или тип.</p>
     </div>
     <div id="editor-archived" class="editor-items" role="tabpanel" hidden>
+        @if (TempData["ArchiveMessage"] is string archiveMessage)
+        {
+            <p role="status">@archiveMessage</p>
+        }
         @foreach (var item in Model.Items.Where(x => x.Archived))
         {
-            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · в архиве</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/archived/@item.Kind/@item.Id/restore">@Html.AntiForgeryToken()<button type="submit">Вернуть на сайт</button></form></div></article>
+            <article class="editor-item" data-kind="@item.Kind"><div><span class="editor-item-type">@TypeName(item.Kind) · в архиве</span><h3>@item.Title</h3></div><div class="editor-item-actions"><a href="/editor/@item.Kind/@item.Id/preview">Просмотреть</a><form method="post" action="/editor/archived/@item.Kind/@item.Id/restore">@Html.AntiForgeryToken()<button type="submit">Вернуть на сайт</button></form><form method="post" action="/editor/archived/@item.Kind/@item.Id/delete" data-confirm="Удалить «@item.Title» и все его версии без возможности восстановления?">@Html.AntiForgeryToken()<button class="editor-danger" type="submit">Удалить</button></form></div></article>
         }
         <p class="editor-empty" hidden>Материалы не найдены. Попробуйте изменить поиск или тип.</p>
     </div>

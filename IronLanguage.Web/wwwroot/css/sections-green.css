@@ -231,7 +231,6 @@
   .green-theme .exercise-entry-copy h2 { font-size: 20px; }
   .green-theme #exercise-play, .green-theme #dialog-play { padding: 18px; }
   .green-theme #exercise-prompt { padding: 16px; font-size: 22px; }
-  .green-theme .exercise-avatar { float: none; margin: 0 auto 16px; width: 100px; }
   .green-theme .exercise-play-body { display: block; }
   .green-theme .word-tile { padding: 10px 14px; }
   .green-theme .exercise-actions { flex-wrap: wrap; }
@@ -322,7 +321,6 @@
 .green-theme.editor-page .editor-page-heading { background-image: none; }
 .green-theme .exercise-play-body { padding: 0; }
 .green-theme .exercise-play-body > .eyebrow { display: block; margin-top: 8px; color: var(--theme-muted); }
-@media (max-width: 700px) { .green-theme .exercise-avatar { width: 72px; margin-bottom: 12px; } }
 .green-theme .button, .green-theme .theme-button { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
 .green-theme .auth-switch { overflow-wrap: anywhere; }
 /* Size the image to its own painted area so the mask fades its paper boundary. */
@@ -381,4 +379,3 @@
     box-shadow: none;
     background: var(--theme-surface);
 }
-@media (min-width: 701px) { .green-theme #exercise-play .exercise-avatar { width: clamp(96px, 11vw, 132px); margin-inline-end: 0; } }

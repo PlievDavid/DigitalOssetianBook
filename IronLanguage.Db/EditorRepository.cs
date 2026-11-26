@@ -25,6 +25,7 @@ public sealed record GroupingWord(string Text, int Group);
 public sealed record GroupingMaterial(string Title, string[] Groups, GroupingWord[] Words, Guid[] WordIds);
 public sealed record EditorItem(string Kind, Guid Id, string Title, bool Published, int Version, Guid? PendingRevisionId, bool Archived);
 public sealed record EditorMaterial(string Kind, Guid Id, bool Published, int Version, string PayloadJson);
+public enum ArchiveDeletionResult { Deleted, Unavailable, InUse }
 
 public interface IEditorRepository
 {
@@ -39,6 +40,7 @@ public interface IEditorRepository
     Task<bool> UpdateRevision(Guid id, string payloadJson, CancellationToken ct = default);
     Task<bool> PublishRevision(Guid id, CancellationToken ct = default);
     Task<bool> DeleteDraft(string kind, Guid id, CancellationToken ct = default);
+    Task<ArchiveDeletionResult> DeleteArchived(string kind, Guid id, CancellationToken ct = default);
     Task<bool> DeleteRevision(Guid id, CancellationToken ct = default);
     Task<bool> SetArchived(string kind, Guid id, bool archived, CancellationToken ct = default);
 }
@@ -445,6 +447,61 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return true;
+    }
+
+    public async Task<ArchiveDeletionResult> DeleteArchived(string kind, Guid id, CancellationToken ct = default)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await EfCurriculumRepository.LockMaterials(db, ct);
+        if (kind == "word")
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"Words\" WHERE \"Id\" = {id} FOR UPDATE", ct);
+        }
+        if (await HasMaterialReferences(kind, id, ct)) return ArchiveDeletionResult.InUse;
+
+        var deleted = kind switch
+        {
+            "word" => await db.Words.Where(x => x.Id == id && x.Published && x.Archived && x.DictionarySenseId == null).ExecuteDeleteAsync(ct),
+            "book" => await db.Books.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "audio" or "translation" or "listening" => await db.Exercises.Where(x =>
+                x.Id == id && x.Kind == kind && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "dialogue" => await db.Dialogues.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "matching" => await db.Matchings.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "picture" => await db.PictureMatchings.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "grammar" => await db.Grammars.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "grouping" => await db.Groupings.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            _ => 0
+        };
+        if (deleted != 1) return ArchiveDeletionResult.Unavailable;
+        await db.CourseMaterialAccesses.Where(x => x.Kind == kind && x.MaterialId == id).ExecuteDeleteAsync(ct);
+        await db.ContentRevisions.Where(x => x.Kind == kind && x.ContentId == id).ExecuteDeleteAsync(ct);
+        await tx.CommitAsync(ct);
+        return ArchiveDeletionResult.Deleted;
+    }
+
+    private async Task<bool> HasMaterialReferences(string kind, Guid id, CancellationToken ct)
+    {
+        var key = id.ToString("D");
+        if (await db.Courses.AnyAsync(x => x.DraftJson.Contains(key), ct)
+            || await db.CourseVersions.AnyAsync(x => x.SnapshotJson.Contains(key), ct)
+            || await db.LibraryLessons.AnyAsync(x => x.LessonJson.Contains(key), ct)
+            || await db.LessonRuns.AnyAsync(x => x.SnapshotJson.Contains(key), ct)
+            || await db.ContentRevisions.AnyAsync(x => (x.Kind != kind || x.ContentId != id) && x.PayloadJson.Contains(key), ct))
+            return true;
+
+        return kind switch
+        {
+            "book" => await db.ReadingPositions.AnyAsync(x => x.BookId == id, ct),
+            "word" => await db.SavedWords.AnyAsync(x => x.WordId == id, ct)
+                || await db.Chapters.AnyAsync(x => x.TokensJson.Contains(key), ct)
+                || await db.Exercises.AnyAsync(x => x.WordIdsJson.Contains(key), ct)
+                || await db.Dialogues.AnyAsync(x => x.ScriptJson.Contains(key), ct)
+                || await db.Matchings.AnyAsync(x => x.ScriptJson.Contains(key), ct)
+                || await db.PictureMatchings.AnyAsync(x => x.ScriptJson.Contains(key), ct)
+                || await db.Grammars.AnyAsync(x => x.ScriptJson.Contains(key), ct)
+                || await db.Groupings.AnyAsync(x => x.ScriptJson.Contains(key), ct),
+            _ => false
+        };
     }
 
     public async Task<bool> DeleteRevision(Guid id, CancellationToken ct = default)

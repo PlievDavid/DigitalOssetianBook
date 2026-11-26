@@ -33,8 +33,9 @@
                 {
                     var day = Model[index];
                     var today = index == Model.Length - 1;
-                    <li class="@(today ? "words-week-today" : null) @(day.Count == 0 ? "words-week-empty" : null)" style="--day-delay: @(index * 35)ms">
+                    <li class="@(today ? "words-week-today" : null) @(day.Count == 0 ? "words-week-empty" : null)" style="--day-delay: @(index * 35)ms" tabindex="0">
                         <span class="words-sr">@day.Day.ToString("dd MMMM", culture)@(today ? ", сегодня" : ""): @day.Count</span>
+                        <span class="words-week-count" aria-hidden="true">@day.Count</span>
                         <div class="words-week-track" aria-hidden="true"><span style="--bar-height: @(day.Count * 100L / peak)%"></span></div>
                         <span class="words-week-day" aria-hidden="true">@day.Day.ToString("ddd", culture)</span>
                     </li>

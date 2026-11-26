@@ -571,13 +571,9 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 .cv-exercise-actions:not(:has(> :not([hidden]))) { display:none; }
 .cv-lesson-page .cv-exercise-actions > .button.secondary { border-radius:24px; padding-inline:20px; }
 .green-theme .cv-course-exercise #exercise-play {
-    display:grid; grid-template-columns:minmax(0,36rem) minmax(0,7rem);
-    gap:clamp(12px,3vw,28px); align-items:start; padding:0; margin:0;
+    padding:0; margin:0;
     border:0; background:transparent; overflow:visible;
 }
-.green-theme .cv-course-exercise #exercise-play .exercise-play-body { grid-area:1 / 1; }
-.green-theme .cv-course-exercise #exercise-play .exercise-avatar { grid-area:1 / 2; float:none; width:100%; margin:0; }
-.green-theme .cv-course-exercise .audio-page #exercise-play { grid-template-columns:minmax(0,1fr); }
 .green-theme .cv-course-exercise #exercise-play #exercise-prompt {
     margin-top:0; padding:14px 16px; background:var(--theme-bg);
 }
@@ -594,8 +590,4 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 .green-theme .cv-course-exercise #exercise-result.exercise-inline-result:empty { display:none; }
 .green-theme .cv-course-exercise .translate-page #exercise-result.exercise-inline-result {
     display:block; min-height:1.6em; line-height:1.6;
-}
-@media(max-width:599px) {
-    .green-theme .cv-course-exercise #exercise-play { grid-template-columns:minmax(0,1fr); }
-    .green-theme .cv-course-exercise #exercise-play .exercise-avatar { display:none; }
 }

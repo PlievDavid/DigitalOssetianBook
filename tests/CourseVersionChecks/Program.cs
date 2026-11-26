@@ -261,6 +261,23 @@ try
     Check(await runner.Retry(guestAudio.Id, audioBlock.Id, guestAttempt, null, guestOwner, ct), "Гостевая повторная попытка недоступна");
     Check((await runner.Answer(guestAudio.Id, audioBlock.Id, [2], null, guestOwner, ct))!.Correct && await runner.Advance(guestAudio.Id, audioBlock.Id, null, guestOwner, ct), "Гость не завершил повторную попытку");
     var materialEditor = new EfEditorRepository(db);
+    var archivedBook = new Book { Title = "Проверка удаления из архива", Published = true, Archived = true,
+        Chapters = [new BookChapter { Number = 1 }] };
+    var protectedBook = new Book { Title = "Произведение с позицией чтения", Published = true, Archived = true };
+    var activeBook = new Book { Title = "Опубликованное произведение", Published = true };
+    db.Books.AddRange(archivedBook, protectedBook, activeBook);
+    db.ReadingPositions.Add(new ReadingPosition { UserId = learner.Id, BookId = protectedBook.Id, ChapterId = Guid.NewGuid() });
+    db.ContentRevisions.Add(new ContentRevision { Kind = "book", ContentId = archivedBook.Id, Published = true });
+    await db.SaveChangesAsync(ct);
+    Check(await materialEditor.DeleteArchived("book", protectedBook.Id, ct) == ArchiveDeletionResult.InUse &&
+        await db.ReadingPositions.AnyAsync(x => x.BookId == protectedBook.Id, ct), "Удаление должно сохранять книгу с позицией чтения");
+    Check(await materialEditor.DeleteArchived("book", activeBook.Id, ct) == ArchiveDeletionResult.Unavailable,
+        "Удаление из архива не должно удалять опубликованную книгу");
+    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, ct) == ArchiveDeletionResult.Deleted &&
+        !await db.Chapters.AnyAsync(x => x.BookId == archivedBook.Id, ct) &&
+        !await db.ContentRevisions.AnyAsync(x => x.ContentId == archivedBook.Id, ct), "Удаление книги и версий из архива");
+    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, ct) == ArchiveDeletionResult.Unavailable,
+        "Повторная отправка удаления должна быть безопасной");
     var groupingPayload = new GroupingMaterial("Группировка", ["А", "Б"],
         [new("один", 0), new("два", 0), new("три", 1), new("четыре", 1)], []);
     var groupingId = await materialEditor.Create("grouping", JsonSerializer.Serialize(groupingPayload, CourseAuthoringService.JsonOptions), ct, owner.Id);
@@ -469,6 +486,9 @@ try
         var adminRole = await db.Roles.FirstAsync(x => x.Name == "Admin");
         db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = browserAdmin.Id, RoleId = adminRole.Id });
         await db.SaveChangesAsync();
+        var archiveBrowserBook = new Book { Title = "Книга для проверки кнопки удаления", Published = true, Archived = true };
+        db.Books.Add(archiveBrowserBook);
+        await db.SaveChangesAsync(ct);
         var previewMatching = await materialEditor.Create("matching", JsonSerializer.Serialize(
             new MatchingMaterial("Дом", [new("Дом", "хӕдзар"), new("Кровать", "хуыссӕн")], ["дуар"], []),
             CourseAuthoringService.JsonOptions), ct, owner.Id);
@@ -530,7 +550,7 @@ try
         var browser = new ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         browser.ArgumentList.Add("tests/courses-v2-browser.cjs"); browser.Environment["ADAM_TEST_URL"] = url;
         browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer,
-            practiceCourseId = browserPracticeCourse.Id, practiceLessonId = practiceLesson.Id, previewMatchingId = previewMatching,
+            practiceCourseId = browserPracticeCourse.Id, practiceLessonId = practiceLesson.Id, previewMatchingId = previewMatching, archiveBookId = archiveBrowserBook.Id,
             admin = browserAdmin.Email, phraseTitle = phrase.RussianPrompt, missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
         using var process = Process.Start(browser)!;
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();

@@ -30,6 +30,32 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const guestPage = await guest.newPage(); await guestPage.goto(base + '/courses');
     await guestPage.getByLabel('Поиск по названию', { exact: true }).waitFor(); check(true, 'Гостевой каталог');
     await login(page, fixture.owner);
+    await page.goto(base + '/editor#editor-archived');
+    const archivedBook = page.locator('#editor-archived .editor-item').filter({ hasText: 'Книга для проверки кнопки удаления' });
+    const deleteBook = archivedBook.getByRole('button', { name: 'Удалить' });
+    await deleteBook.waitFor();
+    const deletePath = '/editor/archived/book/' + fixture.archiveBookId + '/delete';
+    check((await page.request.post(base + deletePath, { maxRedirects: 0 })).status() === 400, 'Удаление из архива без CSRF');
+    page.once('dialog', dialog => dialog.dismiss());
+    await deleteBook.click();
+    check(await archivedBook.isVisible(), 'Отмена подтверждения должна сохранить книгу');
+    page.once('dialog', dialog => dialog.accept());
+    await deleteBook.click();
+    await page.getByRole('status').getByText('Материал удалён.', { exact: true }).waitFor();
+    check(await archivedBook.count() === 0, 'Книга исчезла из архива');
+    await page.goto(base + '/vocabulary');
+    const day = page.locator('.words-week-chart li').nth(3);
+    const dailyCount = day.locator('.words-week-count');
+    await day.hover();
+    await page.waitForFunction(el => getComputedStyle(el).opacity === '1', await dailyCount.elementHandle());
+    check((await day.locator('.words-sr').textContent()).endsWith(': ' + await dailyCount.textContent()),
+      'Подсказка должна показывать значение выбранного дня');
+    await page.mouse.move(0, 0);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await day.focus();
+    check(await dailyCount.evaluate(el => getComputedStyle(el).opacity === '1' &&
+      getComputedStyle(el).transitionDuration === '0s'), 'Счётчик виден с клавиатуры при уменьшенном движении');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     {
       const preview = '/editor/matching/' + fixture.previewMatchingId + '/preview';
       const startPreview = '/editor/preview/matching/' + fixture.previewMatchingId + '/sessions';

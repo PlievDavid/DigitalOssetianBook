@@ -75,6 +75,8 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     await cards.first().getByText('Скопировано', { exact: true }).waitFor({ state: 'hidden' });
     await cards.first().getByRole('button', { name: 'Я говорю', exact: true }).press('Enter');
     const tiles = page.locator('#exercise-tiles button');
+    await tiles.first().waitFor();
+    assert.equal(await page.locator('#exercise-avatar').count(), 0);
     await tiles.first().press('Enter');
     assert.equal(await page.locator(':focus').textContent(), 'дзурын');
     await page.keyboard.press('Enter');

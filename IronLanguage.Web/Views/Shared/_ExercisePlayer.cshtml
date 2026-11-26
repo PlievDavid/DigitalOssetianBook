@@ -1,5 +1,4 @@
 @model string
-@inject IronLanguage.Web.Services.AvatarService Avatars
 @{ var isAudio = Model == "audio"; if (ViewData["LessonStartUrl"] is null && ViewData["EmbeddedExercise"] is null) { ViewData["Title"] = isAudio ? "Аудиопазлы" : "Собери фразу"; } }
 <section class="feature-shell exercise-page @(isAudio ? "audio-page" : "translate-page")" id="exercise-app" data-kind="@Model" data-start-url="@ViewData["LessonStartUrl"]">
     @if (ViewData["LessonStartUrl"] is null && ViewData["EmbeddedExercise"] is null) {
@@ -9,10 +8,6 @@
     <div id="exercise-status" role="status"></div>
     <div id="exercise-list" class="exercise-list"></div>
     <div id="exercise-play" class="exercise-play" hidden>
-        @if (!isAudio)
-        {
-            <div class="exercise-avatar" id="exercise-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel((await Avatars.Current(User)).With("Background", "plain"), Emotion: AvatarEmotion.Thinking))</div>
-        }
         <div class="exercise-play-body">
         <a id="exercise-back" class="back-link" href="@(isAudio ? "/audio-puzzles" : "/translate")" hidden="@(ViewData["LessonStartUrl"] is not null || ViewData["EmbeddedExercise"] is not null)">← К списку</a>
         <span id="exercise-eyebrow" class="eyebrow" hidden></span>

@@ -119,12 +119,22 @@
 .words-week header { display:flex;justify-content:space-between;align-items:center;gap:12px; }
 .words-week h2 { margin:0;font:650 20px/1.25 var(--theme-heading-font); }
 .words-week-total { font:700 28px/1 var(--theme-heading-font);color:var(--theme-ink); }
-.words-week-chart { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:14px 0 0;padding:0;list-style:none; }
-.words-week-chart li { display:grid;gap:5px;justify-items:center;align-items:end;font-size:13px;color:var(--theme-muted); }
+.words-week-chart { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:28px 0 0;padding:0;list-style:none; }
+.words-week-chart li { position:relative;display:grid;gap:5px;justify-items:center;align-items:end;border-radius:8px;font-size:13px;color:var(--theme-muted); }
+.words-week-count {
+    position:absolute;z-index:1;inset-block-start:0;inset-inline-start:50%;translate:-50% calc(-100% - 4px);
+    padding:3px 8px;border-radius:8px;background:var(--theme-green);color:white;
+    font-weight:650;font-variant-numeric:tabular-nums;opacity:0;pointer-events:none;
+}
+.words-week-chart li:is(:hover,:focus) .words-week-count { opacity:1; }
 .words-week-track { display:flex;align-items:flex-end;justify-content:center;width:min(100%,28px);height:58px; }
 .words-week-track span { width:100%;height:var(--bar-height);border-radius:8px;background:linear-gradient(180deg,#19b58a,#08776d); }
 .words-week-chart li.words-week-empty .words-week-track span { width:7px;height:7px;border-radius:50%;background:var(--theme-subtle); }
 @media (prefers-reduced-motion:no-preference) {
+    .words-week-count { transform:translateY(4px);transition:opacity 150ms ease,transform 150ms ease; }
+    .words-week-track { transition:transform 150ms ease; }
+    .words-week-chart li:is(:hover,:focus) .words-week-count { transform:none; }
+    .words-week-chart li:is(:hover,:focus) .words-week-track { transform:translateY(-3px); }
     .words-week-track span { animation:words-week-rise .54s cubic-bezier(.25,.72,.25,1) var(--day-delay) both; }
     .words-week-empty .words-week-track span { animation:words-week-appear .3s ease-out var(--day-delay) both; }
     .words-week-day { animation:words-week-appear .3s ease-out var(--day-delay) both; }

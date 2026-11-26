@@ -8,7 +8,6 @@
   const status = $("exercise-status");
   const list = $("exercise-list");
   const play = $("exercise-play");
-  const avatar = $("exercise-avatar");
   const picked = $("exercise-picked");
   const tiles = $("exercise-tiles");
   const tileBank = $("exercise-tile-bank");
@@ -58,7 +57,6 @@
       const data = embedded ? await embedded.load() : lessonUrl ? await AdamApi(lessonUrl.replace(/^\/api\/v1/, "")) : await AdamApi(`/exercises/${id}/attempts`, { method: "POST" });
       if (request !== generation || !root.isConnected) return;
       card = data.card; attemptId = data.attemptId; submitted = false;
-      if (avatar) AdamAvatar.setEmotion(avatar, "Thinking");
       const draft = data.draftIndices || [];
       indices = audioFlow ? (draft.every((value, position) => value === position) ? [...draft] : []) : [...draft];
       list.hidden = true; play.hidden = false; result.textContent = ""; result.classList.remove("exercise-feedback", "is-correct", "is-incorrect"); status.textContent = ""; clear.hidden = false;
@@ -218,7 +216,6 @@
   }
   function showAnswer(answer, justSubmitted = false) {
       submitted = true;
-      if (avatar && !answer.correct) AdamAvatar.setEmotion(avatar, "Supportive");
       if (!audioFlow && answer.correct) {
         picked.classList.toggle("show-correct-transition", justSubmitted);
         picked.classList.add("is-correct");

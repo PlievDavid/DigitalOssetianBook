@@ -128,6 +128,19 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     public async Task<IActionResult> Restore(string kind, Guid id, CancellationToken ct) =>
         await editor.SetArchived(kind, id, false, ct) ? Redirect("/editor") : NotFound();
 
+    [HttpPost("archived/{kind}/{id:guid}/delete"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteArchived(string kind, Guid id, CancellationToken ct)
+    {
+        if (!Kinds.Contains(kind)) return NotFound();
+        TempData["ArchiveMessage"] = (await editor.DeleteArchived(kind, id, ct)) switch
+        {
+            ArchiveDeletionResult.Deleted => "Материал удалён.",
+            ArchiveDeletionResult.InUse => "Материал связан с другими материалами, курсом или прогрессом учеников и оставлен в архиве.",
+            _ => "Этот материал уже недоступен для удаления из архива."
+        };
+        return Redirect("/editor#editor-archived");
+    }
+
     [HttpGet("revisions/{id:guid}/edit")]
     public async Task<IActionResult> EditRevision(Guid id, Guid? courseId, Guid? lessonId, CancellationToken ct)
     {
