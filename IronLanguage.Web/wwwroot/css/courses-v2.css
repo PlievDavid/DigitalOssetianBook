@@ -581,7 +581,27 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 .green-theme .cm-catalog-copy h3 { font:650 clamp(17px,2vw,24px)/1.18 var(--theme-heading-font); margin:0; overflow-wrap:anywhere; }
 .cm-catalog-description { min-width:0; max-width:min(100%,60ch); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--theme-muted); font-size:14px; line-height:1.45; margin:0; }
 .cm-catalog-author { color:var(--theme-muted); font-size:12px; overflow-wrap:anywhere; }
-.cm-catalog-grid .cv-empty { margin:0; }
+.cm-catalog-grid .cm-catalog-empty {
+  display:grid; justify-items:center; gap:8px; margin:0; padding:clamp(22px,4vw,36px) 16px;
+}
+.cm-catalog-empty-icon {
+  display:grid; place-items:center; width:48px; height:48px; margin-bottom:4px;
+  border-radius:50%; background:var(--theme-sage); color:var(--theme-green);
+}
+.cm-catalog-empty-icon svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
+.green-theme .cm-catalog-empty h2 { margin:0; font-size:clamp(18px,2vw,22px); }
+.cm-catalog-empty p { margin:0; font-size:14px; }
+.cm-empty-reset {
+  min-height:44px; margin-top:8px; padding:0 20px;
+  border:1px solid transparent; border-radius:999px; background:#dce9d8; color:var(--theme-green);
+  font-size:14px; font-weight:650;
+}
+.cm-empty-reset:hover { background:#d4e4cf; }
+.cm-empty-reset:active { background:#cbdcc6; }
+.cm-empty-reset:focus-visible { outline:2px solid var(--theme-green); outline-offset:3px; }
+@media (forced-colors:active) {
+  .cm-empty-reset { border-color:ButtonText; }
+}
 @media (max-width:840px) {
   .cm-catalog-grid { grid-template-columns:minmax(0,1fr); }
 }

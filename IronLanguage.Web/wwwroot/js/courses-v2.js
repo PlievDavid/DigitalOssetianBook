@@ -401,9 +401,25 @@
         return;
       }
       if (!filtered.length) {
-        grid.append(empty(rows.length ? 'Курсы не найдены' : authored ? 'Здесь появится ваш первый курс' : 'Курсы готовятся',
-          rows.length ? 'Измените запрос или сбросьте фильтры.' : authored ? 'Начните с названия, затем добавьте модули и уроки.' : 'Опубликованные курсы появятся здесь.',
-          rows.length && !authored ? link('Сбросить фильтры', '/courses') : null));
+        if (authored) {
+          grid.append(empty(rows.length ? 'Курсы не найдены' : 'Здесь появится ваш первый курс',
+            rows.length ? 'Измените запрос или сбросьте фильтры.' : 'Начните с названия, затем добавьте модули и уроки.'));
+          return;
+        }
+        const reset = rows.length ? button('Сбросить фильтры', () => {
+          input.value = query = '';
+          level = '';
+          levels.querySelector('input[value=""]').checked = true;
+          syncClear();
+          draw();
+          input.focus();
+        }, 'cm-empty-reset') : null;
+        const panel = empty(rows.length ? 'Курсы не найдены' : 'Курсы готовятся',
+          rows.length ? 'Попробуйте другое название или уровень.' : 'Опубликованные курсы появятся здесь.', reset);
+        panel.classList.add('cm-catalog-empty');
+        panel.prepend(append(node('span', null, 'cm-catalog-empty-icon'),
+          icon('M15.5 15.5 20 20 M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z')));
+        grid.append(panel);
         return;
       }
       filtered.forEach(c => {
