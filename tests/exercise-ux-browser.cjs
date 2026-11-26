@@ -12,21 +12,28 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     let failCatalog = true;
+    let catalogRequests = 0;
     let failAnswer = true;
     const groupingTile = { index: 0, text: "Ӕвзаг", solved: false };
     await page.route('**/api/v1/**', async route => {
       const path = new URL(route.request().url()).pathname;
       if (path === '/api/v1/listening') return route.fulfill({ json: [] });
       if (path === '/api/v1/catalog') {
+        catalogRequests++;
         if (failCatalog) {
           failCatalog = false;
           return route.fulfill({ status: 503, json: { error: 'Тестовый сбой' } });
         }
         return route.fulfill({ json: { exercises: [
           { id: 'audio-fixture', kind: 'audio', russianPrompt: 'Я говорю' },
+          ...Array.from({ length: 10 }, (_, i) =>
+            ({ id: 'audio-' + i, kind: 'audio', russianPrompt: 'Аудиопазл ' + i })),
           { id: 'fixture', kind: 'translation', russianPrompt: 'Я говорю', author: 'Тестовый автор' },
           { id: 'legacy-fixture', kind: 'translation', russianPrompt: 'Я говорю' }
         ] } });
+      }
+      if (path === '/api/v1/exercises/audio-7/attempts') {
+        return route.fulfill({ json: { attemptId: 'audio-7', card: { russianPrompt: 'Аудиопазл 7', tokens: ['ӕз'], words: [] } } });
       }
       if (path === '/api/v1/exercises/fixture/attempts') {
         return route.fulfill({ json: { attemptId: 'fixture', card: { russianPrompt: 'Я говорю', tokens: ['ӕз', 'дзурын'], words: [] } } });
@@ -85,6 +92,24 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert(await submit.isHidden());
     assert.equal(await result.evaluate(el => el.getAnimations().length), 0);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    for (const width of [320, 1230]) {
+      await page.setViewportSize({ width, height: 678 });
+      await page.goto(base + '/audio-puzzles');
+      const selected = page.getByRole('button', { name: 'Аудиопазл 7', exact: true });
+      await selected.scrollIntoViewIfNeeded();
+      const scroll = await page.evaluate(() => scrollY);
+      assert(scroll > 0);
+      const requests = catalogRequests;
+      await selected.press('Enter');
+      await page.locator('#exercise-play').waitFor();
+      assert.equal(await page.locator('#exercise-avatar').count(), 0);
+      await page.locator('#exercise-back').press('Enter');
+      await selected.waitFor();
+      assert(await selected.evaluate(el => el === document.activeElement));
+      assert.equal(await page.evaluate(() => scrollY), scroll);
+      assert.equal(catalogRequests, requests);
+    }
+    await page.setViewportSize({ width: 320, height: 700 });
     await page.goto(base + '/grouping');
     const groupingCard = page.locator('#grouping-list .exercise-choice');
     await groupingCard.waitFor();

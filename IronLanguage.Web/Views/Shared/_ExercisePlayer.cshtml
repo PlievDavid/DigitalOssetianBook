@@ -9,9 +9,12 @@
     <div id="exercise-status" role="status"></div>
     <div id="exercise-list" class="exercise-list"></div>
     <div id="exercise-play" class="exercise-play" hidden>
-        <div class="exercise-avatar" id="exercise-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel((await Avatars.Current(User)).With("Background", "plain"), Emotion: AvatarEmotion.Thinking))</div>
+        @if (!isAudio)
+        {
+            <div class="exercise-avatar" id="exercise-avatar" aria-hidden="true">@await Html.PartialAsync("_Avatar", new AvatarDisplayModel((await Avatars.Current(User)).With("Background", "plain"), Emotion: AvatarEmotion.Thinking))</div>
+        }
         <div class="exercise-play-body">
-        <a id="exercise-back" class="back-link" href="/audio-puzzles" hidden="@(ViewData["LessonStartUrl"] is not null || ViewData["EmbeddedExercise"] is not null)">← К списку</a>
+        <a id="exercise-back" class="back-link" href="@(isAudio ? "/audio-puzzles" : "/translate")" hidden="@(ViewData["LessonStartUrl"] is not null || ViewData["EmbeddedExercise"] is not null)">← К списку</a>
         <span id="exercise-eyebrow" class="eyebrow" hidden></span>
         <h2 id="exercise-prompt"></h2>
         <p id="exercise-instruction">@(isAudio ? "Прослушайте запись и выбирайте слова по одному. Неверный вариант можно заменить другим." : "Соберите осетинскую фразу из слов ниже.")</p>

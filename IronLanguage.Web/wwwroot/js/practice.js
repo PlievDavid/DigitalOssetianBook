@@ -8,6 +8,7 @@
   const status = $("exercise-status");
   const list = $("exercise-list");
   const play = $("exercise-play");
+  const avatar = $("exercise-avatar");
   const picked = $("exercise-picked");
   const tiles = $("exercise-tiles");
   const tileBank = $("exercise-tile-bank");
@@ -24,6 +25,7 @@
   const submit = $("exercise-submit");
   const clear = $("exercise-clear");
   let card, attemptId, indices = [], submitted = false, checking = false, generation = 0, pendingDraft = Promise.resolve();
+  let listScroll = 0, listTrigger;
 
   const button = (label, action, className = "button secondary") => {
     const b = document.createElement("button"); b.type = "button"; b.className = className; b.textContent = label; b.addEventListener("click", action); return b;
@@ -37,7 +39,11 @@
       const exercises = data.exercises.filter(x => x.kind === kind);
       list.replaceChildren();
       for (const item of exercises) {
-        list.append(window.AdamExerciseUx.card(item, item.russianPrompt, () => start(item.id)));
+        list.append(ux.card(item, item.russianPrompt, event => {
+          listTrigger = event.currentTarget;
+          listScroll = window.scrollY;
+          start(item.id);
+        }));
       }
       window.AdamExerciseUx.catalog(status, exercises.length ? "" : "Пока нет проверенных материалов для этого раздела.");
     } catch (error) {
@@ -52,7 +58,7 @@
       const data = embedded ? await embedded.load() : lessonUrl ? await AdamApi(lessonUrl.replace(/^\/api\/v1/, "")) : await AdamApi(`/exercises/${id}/attempts`, { method: "POST" });
       if (request !== generation || !root.isConnected) return;
       card = data.card; attemptId = data.attemptId; submitted = false;
-      AdamAvatar.setEmotion($("exercise-avatar"), "Thinking");
+      if (avatar) AdamAvatar.setEmotion(avatar, "Thinking");
       const draft = data.draftIndices || [];
       indices = audioFlow ? (draft.every((value, position) => value === position) ? [...draft] : []) : [...draft];
       list.hidden = true; play.hidden = false; result.textContent = ""; result.classList.remove("exercise-feedback", "is-correct", "is-incorrect"); status.textContent = ""; clear.hidden = false;
@@ -212,7 +218,7 @@
   }
   function showAnswer(answer, justSubmitted = false) {
       submitted = true;
-      if (audioFlow || !answer.correct) AdamAvatar.setEmotion($("exercise-avatar"), answer.correct ? "Happy" : "Supportive");
+      if (avatar && !answer.correct) AdamAvatar.setEmotion(avatar, "Supportive");
       if (!audioFlow && answer.correct) {
         picked.classList.toggle("show-correct-transition", justSubmitted);
         picked.classList.add("is-correct");
@@ -238,7 +244,16 @@
       }
   }
   submit.addEventListener("click", submitAnswer);
-  function back() { generation++; card = null; audio.pause(); play.hidden = true; list.hidden = false; load(); }
+  function back() {
+    generation++;
+    card = null;
+    audio.pause();
+    status.textContent = "";
+    play.hidden = true;
+    list.hidden = false;
+    listTrigger?.focus({ preventScroll: true });
+    window.scrollTo({ top: listScroll, behavior: "instant" });
+  }
   $("exercise-back").addEventListener("click", event => { event.preventDefault(); back(); });
   clear.addEventListener("click", () => {
     if (submitted || checking) return;

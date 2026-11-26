@@ -577,6 +577,7 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 }
 .green-theme .cv-course-exercise #exercise-play .exercise-play-body { grid-area:1 / 1; }
 .green-theme .cv-course-exercise #exercise-play .exercise-avatar { grid-area:1 / 2; float:none; width:100%; margin:0; }
+.green-theme .cv-course-exercise .audio-page #exercise-play { grid-template-columns:minmax(0,1fr); }
 .green-theme .cv-course-exercise #exercise-play #exercise-prompt {
     margin-top:0; padding:14px 16px; background:var(--theme-bg);
 }
