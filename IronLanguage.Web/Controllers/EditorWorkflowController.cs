@@ -132,7 +132,10 @@ public sealed class EditorWorkflowController(IEditorRepository editor, ICatalogR
     public async Task<IActionResult> DeleteArchived(string kind, Guid id, CancellationToken ct)
     {
         if (!Kinds.Contains(kind)) return NotFound();
-        TempData["ArchiveMessage"] = (await editor.DeleteArchived(kind, id, ct)) switch
+        if (User.UserId() is not Guid editorId) return Forbid();
+        var result = await editor.DeleteArchived(kind, id, editorId, User.IsInRole("Admin"), ct);
+        if (result == ArchiveDeletionResult.Forbidden) return NotFound();
+        TempData["ArchiveMessage"] = result switch
         {
             ArchiveDeletionResult.Deleted => "Материал удалён.",
             ArchiveDeletionResult.InUse => "Материал связан с другими материалами, курсом или прогрессом учеников и оставлен в архиве.",

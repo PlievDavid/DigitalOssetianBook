@@ -42,6 +42,9 @@ public interface ICourseMaterialRepository
 public sealed class EfCourseMaterialRepository(AdamDbContext db) : ICourseMaterialRepository
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    internal static Task LockAccess(AdamDbContext db, string kind, Guid id, CancellationToken ct) =>
+        db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-material:{kind}:{id}"}, 0))", ct);
+
     public static bool Supports(string kind) => kind is "audio" or "translation" or "listening" or "matching" or "picture" or "grammar" or "dialogue";
 
     public Task<CourseMaterialAccess?> Access(string kind, Guid id, CancellationToken ct) =>

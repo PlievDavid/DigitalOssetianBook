@@ -269,15 +269,43 @@ try
     db.ReadingPositions.Add(new ReadingPosition { UserId = learner.Id, BookId = protectedBook.Id, ChapterId = Guid.NewGuid() });
     db.ContentRevisions.Add(new ContentRevision { Kind = "book", ContentId = archivedBook.Id, Published = true });
     await db.SaveChangesAsync(ct);
-    Check(await materialEditor.DeleteArchived("book", protectedBook.Id, ct) == ArchiveDeletionResult.InUse &&
+    Check(await materialEditor.DeleteArchived("book", protectedBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.InUse &&
         await db.ReadingPositions.AnyAsync(x => x.BookId == protectedBook.Id, ct), "Удаление должно сохранять книгу с позицией чтения");
-    Check(await materialEditor.DeleteArchived("book", activeBook.Id, ct) == ArchiveDeletionResult.Unavailable,
+    Check(await materialEditor.DeleteArchived("book", activeBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.Unavailable,
         "Удаление из архива не должно удалять опубликованную книгу");
-    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, ct) == ArchiveDeletionResult.Deleted &&
+    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.Deleted &&
         !await db.Chapters.AnyAsync(x => x.BookId == archivedBook.Id, ct) &&
         !await db.ContentRevisions.AnyAsync(x => x.ContentId == archivedBook.Id, ct), "Удаление книги и версий из архива");
-    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, ct) == ArchiveDeletionResult.Unavailable,
+    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.Unavailable,
         "Повторная отправка удаления должна быть безопасной");
+    var playedExercise = new Exercise { Kind = "audio", Published = true, Archived = true };
+    var rewardedDialogue = new Dialogue { Published = true, Archived = true };
+    var masteredWord = new WordEntry { Published = true, Archived = true };
+    var practicedMatching = new Matching { Published = true, Archived = true };
+    var unusedGrouping = new Grouping { Published = true, Archived = true };
+    db.Exercises.Add(playedExercise);
+    db.Dialogues.Add(rewardedDialogue);
+    db.Words.Add(masteredWord);
+    db.Matchings.Add(practicedMatching);
+    db.Groupings.Add(unusedGrouping);
+    db.Attempts.Add(new ExerciseAttempt { UserId = learner.Id, ExerciseId = playedExercise.Id });
+    db.DialogueRewards.Add(new DialogueReward { UserId = learner.Id, DialogueId = rewardedDialogue.Id });
+    db.WordReviewMasteries.Add(new WordReviewMastery { UserId = learner.Id, WordId = masteredWord.Id });
+    db.CoursePracticeRuns.Add(new CoursePracticeRun
+    {
+        UserId = learner.Id,
+        StateJson = JsonSerializer.Serialize(new { materialId = practicedMatching.Id, title = unusedGrouping.Id.ToString() })
+    });
+    db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = "grouping", MaterialId = unusedGrouping.Id, OwnerId = owner.Id });
+    await db.SaveChangesAsync(ct);
+    foreach (var (kind, id) in new[] { ("audio", playedExercise.Id), ("dialogue", rewardedDialogue.Id),
+        ("word", masteredWord.Id), ("matching", practicedMatching.Id) })
+        Check(await materialEditor.DeleteArchived(kind, id, owner.Id, true, ct) == ArchiveDeletionResult.InUse,
+            $"Материал {kind} используется и должен остаться в архиве");
+    Check(await materialEditor.DeleteArchived("grouping", unusedGrouping.Id, other.Id, false, ct) == ArchiveDeletionResult.Forbidden
+        && await db.Groupings.AnyAsync(x => x.Id == unusedGrouping.Id, ct), "Чужая группировка осталась в архиве");
+    Check(await materialEditor.DeleteArchived("grouping", unusedGrouping.Id, owner.Id, false, ct) == ArchiveDeletionResult.Deleted,
+        "Совпадение идентификатора с текстом заголовка не блокирует удаление владельцем");
     var groupingPayload = new GroupingMaterial("Группировка", ["А", "Б"],
         [new("один", 0), new("два", 0), new("три", 1), new("четыре", 1)], []);
     var groupingId = await materialEditor.Create("grouping", JsonSerializer.Serialize(groupingPayload, CourseAuthoringService.JsonOptions), ct, owner.Id);

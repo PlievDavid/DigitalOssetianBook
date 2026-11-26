@@ -48,6 +48,12 @@
                     <span class="format-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="24" height="24" rx="4"/><path d="M12 4v24M20 4v24M4 12h24M4 20h24"/></svg></span>
                     <h3>Пять букв</h3><p>Осетинское слово дня</p>
                 </a>
+                @if (User.Identity?.IsAuthenticated != true) {
+                    <a class="format-card format-matching" href="/game">
+                        <span class="format-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "matching")</span>
+                        <h3>Подбор пар</h3><p>Соедините слова с переводами</p>
+                    </a>
+                }
             </div>
         </section>
         <section class="home-reading reading-flow home-motion-section" aria-labelledby="reading-title">
@@ -62,7 +68,12 @@
                 <aside class="home-words-card" aria-labelledby="words-title">
                     <span class="reading-step"><span class="reading-step-icon">@await Html.PartialAsync("_NavIcon", "words")</span> Закрепляйте</span><h3 id="words-title">Проверьте, что запомнили</h3>
                     <p>@(User.Identity?.IsAuthenticated == true ? "Повторяйте сохранённые слова в короткой тренировке: посмотрите слово и вспомните перевод." : "Войдите, чтобы повторять сохранённые слова.")</p>
-                    <a class="theme-button theme-button-primary" href="/word-practice"><span class="words-action-label">Тренировать слова</span></a>
+                    @if (User.Identity?.IsAuthenticated == true) {
+                        <a class="theme-button theme-button-primary" href="/word-practice"><span class="words-action-label">Тренировать слова</span></a>
+                    }
+                    else {
+                        <a class="theme-button theme-button-primary" href="/account/login?ReturnUrl=%2Fword-practice"><span class="words-action-label">Войти</span></a>
+                    }
                 </aside>
             </div>
         </section>

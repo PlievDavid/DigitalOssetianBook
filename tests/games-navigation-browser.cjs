@@ -12,7 +12,7 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
     page.on('pageerror', error => errors.push(error.message));
     const output = path.resolve(__dirname, '../.run-local/games-navigation');
     fs.mkdirSync(output, { recursive: true });
-    const routes = ['/games/crosswords', '/games/wordle'];
+    const routes = ['/games/crosswords', '/games/wordle', '/game'];
     const backStyle = locator => locator.evaluate(element => {
       const style = getComputedStyle(element);
       return ['fontSize', 'fontWeight', 'paddingTop', 'paddingBottom', 'minHeight', 'color']
@@ -36,24 +36,19 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
         assert.deepEqual(await backStyle(back), expectedBack, `Shared return link at ${width}/${route}`);
         assert((await back.boundingBox()).y + (await back.boundingBox()).height <= (await page.locator('h1').boundingBox()).y, 'Return link is above the heading');
         if (width < 600) {
-          assert.equal(await page.locator('.mobile-bottom-nav a').count(), 4);
+          assert.equal(await page.locator('.mobile-bottom-nav a').count(), 3);
           assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
         }
         await overflow();
         await page.screenshot({ path: path.join(output, `${route.split('/').at(-1)}-${width}.png`), fullPage: true });
         await back.focus(); await page.keyboard.press('Enter'); await page.waitForURL(base + '/games');
       }
-      await page.goto(base + '/word-practice');
-      assert.equal(await page.locator('#games-menu a[href="/word-practice"]').count(), 0);
-      assert.equal(await page.locator('#words-menu a[href="/word-practice"]').count(), 1);
-      assert(await page.locator('[aria-controls="words-menu"]').evaluate(element => element.classList.contains('is-current')));
-      assert.equal(await page.locator('.tablet-nav-group[aria-label="Игры"] a[href="/word-practice"]').count(), 0);
-      assert.equal(await page.locator('.tablet-nav-group[aria-label="Слова"] a[href="/word-practice"]').count(), 1);
-      assert.equal(await page.locator('#word-practice-app > .back-link').innerText(), '← К словарю');
-      assert.equal(await page.locator('#word-practice-app > .back-link').getAttribute('href'), '/vocabulary');
-      await page.goto(base + '/vocabulary');
-      assert.equal(await page.locator('.vocabulary-actions a[href="/word-practice"]').count(), 1);
-      assert.equal(await page.locator('.vocabulary-actions a[href="/game"]').count(), 1);
+      for (const route of ['/word-practice', '/vocabulary']) {
+        await page.goto(base + route);
+        assert.equal(new URL(page.url()).pathname, '/account/login');
+        assert.equal(new URL(page.url()).searchParams.get('ReturnUrl'), route);
+        assert.equal(await page.locator('#words-menu, .tablet-nav-group[aria-label="Слова"], .guest-notice').count(), 0);
+      }
       await overflow();
       await page.goto(base);
       const gamesHeading = page.getByRole('heading', { name: 'Игры со словами', level: 2 });
@@ -67,13 +62,13 @@ assert(base && ['localhost', '127.0.0.1'].includes(new URL(base).hostname));
       assert.equal(await page.locator('.tablet-nav-group[aria-label="Задания"] a[href="/picture"]').count(), 1);
       assert(await page.locator('[aria-controls="practice-menu"]').evaluate(element => element.classList.contains('is-current')));
       if (width < 600) {
-        assert.equal(await page.locator('.mobile-bottom-nav a').count(), 4);
+        assert.equal(await page.locator('.mobile-bottom-nav a').count(), 3);
         assert.equal(await page.locator('.mobile-bottom-nav .is-current').getAttribute('href'), '/');
       }
       await page.goto(base + '/games');
       await page.addStyleTag({ content: 'body { font-size: 200%; }' }); await overflow();
     }
     assert.deepEqual(errors, []);
-    console.log('Games navigation passed: shared text return links above headings, keyboard navigation, practice and pairs remain in words, four mobile items, tablet/desktop menus and no overflow at four viewports and 200% text.');
+    console.log('Games navigation passed: shared text return links above headings, keyboard navigation, guest access and redirects, three mobile items, tablet/desktop menus and no overflow at four viewports and 200% text.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });
