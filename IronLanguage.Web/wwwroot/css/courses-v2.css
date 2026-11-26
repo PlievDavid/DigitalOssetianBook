@@ -199,7 +199,7 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
 .cv-level-option { position:relative; display:grid; align-items:center; min-height:44px; min-width:0; cursor:pointer; }
 .cv-level-option input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
 .cv-level-chip {
-  position:relative; display:grid; place-items:center; min-height:32px; padding:4px 28px;
+  position:relative; display:grid; place-items:center; min-height:32px; padding-block:4px; padding-inline:28px 12px;
   border:1px solid #88978e; border-radius:8px; background:var(--theme-surface); color:var(--theme-ink);
   overflow-wrap:anywhere; text-align:center; font-size:14px; font-weight:600; line-height:1.25;
   pointer-events:none; transition:background-color 160ms ease,border-color 160ms ease;
@@ -208,6 +208,9 @@ button.cv-material-lesson[aria-busy="true"] { cursor:wait; }
   position:absolute; inset-inline-start:6px; inset-block-start:50%; translate:0 calc(-50% + 1px);
   width:18px; height:18px; opacity:0;
   fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+}
+.cv-level-option input:not(:checked) + .cv-level-chip .cv-level-label {
+  position:relative; inset-inline-end:8px;
 }
 .cv-level-option:hover .cv-level-chip { background:color-mix(in srgb,var(--theme-green) 7%,var(--theme-surface)); }
 .cv-level-option input:checked + .cv-level-chip { border-color:transparent; background:#dce9d8; color:var(--theme-green); }
