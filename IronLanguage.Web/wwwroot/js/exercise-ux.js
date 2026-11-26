@@ -8,7 +8,13 @@
     );
   }
 
+  function catalogLoading(status) {
+    status.setAttribute("aria-busy", "true");
+    status.replaceChildren();
+  }
+
   function catalog(status, message, retry) {
+    status.removeAttribute("aria-busy");
     status.replaceChildren();
     if (!message) return;
     const action = document.createElement(retry ? "button" : "a");
@@ -103,5 +109,5 @@
     return entry;
   }
 
-  window.AdamExerciseUx = { reveal, catalog, card };
+  window.AdamExerciseUx = { reveal, catalogLoading, catalog, card };
 })();

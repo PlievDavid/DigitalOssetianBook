@@ -25,7 +25,7 @@
   };
 
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     try {
       const items = await AdamApi("/groupings");
       list.replaceChildren();

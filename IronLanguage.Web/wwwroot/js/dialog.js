@@ -81,7 +81,7 @@
   };
 
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     try {
       const [dialogs, history] = await Promise.all([AdamApi("/dialogs"), (AdamAuthenticated ? AdamApi("/dialogs/sessions/history") : Promise.resolve([]))]);
       list.replaceChildren();

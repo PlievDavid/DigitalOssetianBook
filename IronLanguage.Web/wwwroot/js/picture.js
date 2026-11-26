@@ -44,7 +44,7 @@
   });
 
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     try {
       const items = await AdamApi("/pictures");
       list.replaceChildren();

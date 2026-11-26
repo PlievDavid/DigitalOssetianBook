@@ -14,10 +14,15 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     let failCatalog = true;
     let catalogRequests = 0;
     let failAnswer = true;
+    let finishListening;
+    const delayedListening = new Promise(resolve => { finishListening = resolve; });
     const groupingTile = { index: 0, text: "Ӕвзаг", solved: false };
     await page.route('**/api/v1/**', async route => {
       const path = new URL(route.request().url()).pathname;
-      if (path === '/api/v1/listening') return route.fulfill({ json: [] });
+      if (path === '/api/v1/listening') {
+        await delayedListening;
+        return route.fulfill({ json: [] });
+      }
       if (path === '/api/v1/catalog') {
         catalogRequests++;
         if (failCatalog) {
@@ -125,10 +130,17 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert.equal(await placed.textContent(), 'Ӕвзаг');
     assert.equal(await placed.evaluate(el => el.getAnimations().length), 0);
     assert.equal(await page.locator('.grouping-group.is-target').count(), 0);
-    await page.goto(base + '/listening');
-    await page.locator('.section-heading-banner').getByRole('heading', { name: 'Аудирование' }).waitFor();
+    try {
+      await page.goto(base + '/listening');
+      await page.locator('.section-heading-banner').getByRole('heading', { name: 'Аудирование' }).waitFor();
+      const loading = page.locator('#listening-status[aria-busy=true]');
+      assert.equal(await loading.textContent(), '');
+    } finally {
+      finishListening();
+    }
     const empty = page.locator('#listening-status .exercise-empty');
     await empty.getByText('Пока нет опубликованных заданий на аудирование.').waitFor();
+    assert.equal(await page.locator('#listening-status').getAttribute('aria-busy'), null);
     assert.match(await empty.locator('.exercise-empty-icon use').getAttribute('href'), /#assignment$/);
     await page.waitForFunction(() => [...document.querySelectorAll('.section-symbol use, .exercise-empty-icon use')]
       .every(icon => icon.getBBox().width > 0));

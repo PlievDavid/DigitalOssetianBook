@@ -32,7 +32,7 @@
   const norm = value => value.trim().replace(/\s+/g, " ").toUpperCase();
   const render = () => { if (audioFlow) renderSteps(); else renderTiles(); };
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     try {
       const data = await AdamApi("/catalog");
       const exercises = data.exercises.filter(x => x.kind === kind);

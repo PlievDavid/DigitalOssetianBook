@@ -16,7 +16,7 @@
   let attemptId, card, chosenIndex = null, answer = null, checking = false, submitted = false, audioReady = false, generation = 0;
 
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     list.replaceChildren();
     try {
       const exercises = await AdamApi("/listening");
