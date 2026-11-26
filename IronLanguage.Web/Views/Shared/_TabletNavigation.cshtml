@@ -3,16 +3,19 @@
     var path = Context.Request.Path.Value?.ToLowerInvariant() ?? "/";
     var signedIn = User.Identity?.IsAuthenticated == true;
     var groups = new (string Title, string Icon, (string Label, string Url)[] Links)[] {
-        ("Курсы", "school", User.IsInRole("Editor") ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses"), ("Преподавание", "/courses/teaching")] : signedIn ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses")] : [("Каталог курсов", "/courses")]),
-        ("Задания", "assignment", [("Все задания", "/exercises"), ("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar"), ("Разбить слова на группы", "/grouping")]),
-        ("Слова", "library_books", [(signedIn ? "Мои слова" : "Словарь", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
-        ("Игры", "sports_esports", [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]),
+        ("Курсы", "school", signedIn ? [("Каталог курсов", "/courses"), ("Мои курсы", "/my-courses")] : [("Каталог курсов", "/courses")]),
+        ("Задания", "assignment", [("Все задания", "/exercises"), ("Аудиопазлы", "/audio-puzzles"), ("Собери фразу", "/translate"), ("Аудирование", "/listening"), ("Диалоги", "/dialogs"), ("Соотнесение", "/matching"), ("Картинка и слово", "/picture"), ("Форма слова", "/grammar"), ("Группировка слов", "/grouping")]),
+        ("Слова", "library_books", [("Мои слова", "/vocabulary"), ("Тренировка слов", "/word-practice"), ("Подбор пар", "/game")]),
+        ("Игры", "sports_esports", signedIn
+            ? [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle")]
+            : [("Кроссворды", "/games/crosswords"), ("Пять букв", "/games/wordle"), ("Подбор пар", "/game")]),
         ("Чтение", "menu_book", [("Произведения", "/reading")])
     };
 }
 <div class="tablet-navigation">
     <div class="tablet-nav-groups">
         @foreach (var group in groups) {
+            if (!signedIn && group.Title == "Слова") continue;
             <section class="tablet-nav-group" aria-label="@group.Title">
                 <h2 class="tablet-nav-title">@await Html.PartialAsync("_MaterialNavigationIcon", group.Icon)<span>@group.Title</span></h2>
                 <div class="tablet-nav-links">

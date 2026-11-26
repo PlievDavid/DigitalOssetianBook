@@ -24,6 +24,8 @@ html { scrollbar-gutter: stable; }
     --theme-muted: #526273;
     --theme-subtle: #7182a0;
     --theme-border: #dfe5e9;
+    --theme-card-shadow: 0 1px 3px rgb(23 63 50 / 16%), 0 3px 9px rgb(23 63 50 / 8%);
+    --theme-card-shadow-hover: 0 2px 5px rgb(23 63 50 / 17%), 0 5px 14px rgb(23 63 50 / 10%);
     --theme-sage: #eff2e8;
     --theme-blue: #ecf4fc;
     --theme-blue-icon: #cce0f6;
@@ -313,11 +315,10 @@ html { scrollbar-gutter: stable; }
 .editor-page .editor-learner-preview { background: linear-gradient(135deg, var(--theme-sand), white 60%); border-color: var(--theme-border); }
 .editor-page .editor-preview-translation { color: var(--theme-green); }
 .editor-page .editor-preview-tiles span { background: var(--theme-sand); border-color: #e5d6bd; }
-.editor-page .editor-publish-form { background: var(--theme-sage); border-color: var(--theme-border); }
+.editor-page .editor-publish-form { background: #fff; }
 .editor-page .editor-publish-form input { accent-color: var(--theme-green); flex-shrink: 0; }
 .editor-page .editor-preview-actions { justify-items: start; }
-.editor-page .editor-publish-form .button { width: auto; justify-self: start; }
-.editor-page .editor-publish-form { justify-items: start; }
+.editor-page .editor-publish-form .button { width: auto; }
 .editor-page .editor-history a { color: var(--theme-green); padding: 12px 0; }
 @media (max-width: 1023px) {
     .editor-page .editor-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -344,6 +345,7 @@ html { scrollbar-gutter: stable; }
 }
 
 .editor-page .editor-choices a[href$="/matching"] { --choice-bg: #edf6f4; --choice-border: #cfe4df; --choice-icon-bg: #cfe8e2; --choice-ink: #23675f; }
+.editor-page .editor-choices a[href$="/grouping"] { --choice-bg: #f1eff7; --choice-border: #e0dbed; --choice-icon-bg: #e1daf0; --choice-ink: #564481; }
 .editor-page .editor-choices a[href$="/matching"] svg { width: 28px; height: 28px; }
 .editor-page .editor-choices a[href$="/picture"] { --choice-bg: #fdf6e9; --choice-border: #e8d9b0; --choice-icon-bg: #f3e2b9; --choice-ink: #8a6d1f; }
 .editor-page .editor-choices a[href$="/picture"] svg { width: 28px; height: 28px; }

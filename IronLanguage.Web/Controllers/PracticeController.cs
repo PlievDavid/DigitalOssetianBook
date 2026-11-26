@@ -10,10 +10,10 @@ public sealed class PracticeController : Controller
     [HttpGet("translate")]
     public IActionResult Translate() => View("Index", "translation");
 
-    [HttpGet("vocabulary")]
+    [Authorize, HttpGet("vocabulary")]
     public async Task<IActionResult> Vocabulary([FromServices] IWordReviewRepository review, [FromServices] TimeProvider clock, CancellationToken ct)
     {
-        if (User.UserId() is not Guid owner) return View("VocabularyGuest");
+        if (User.UserId() is not Guid owner) return Challenge();
         if (Request.Query.ContainsKey("status") || Request.Query.ContainsKey("search") ||
             Request.Query.ContainsKey("sort") || Request.Query.ContainsKey("page"))
             return Redirect("/vocabulary/all" + Request.QueryString);
@@ -24,11 +24,11 @@ public sealed class PracticeController : Controller
     [Authorize, HttpGet("vocabulary/all")]
     public IActionResult AllWords() => View("Vocabulary");
 
-    [HttpGet("vocabulary/available")]
+    [Authorize, HttpGet("vocabulary/available")]
     public IActionResult AvailableWords() => View("VocabularyList", "available");
 
-    [HttpGet("word-practice")]
-    public IActionResult WordPractice() => View(User.Identity?.IsAuthenticated == true ? "WordPractice" : "WordPracticeGuest");
+    [Authorize, HttpGet("word-practice")]
+    public IActionResult WordPractice() => View("WordPractice");
 
     [HttpGet("books")]
     public IActionResult Books() => Redirect("/reading" + Request.QueryString);

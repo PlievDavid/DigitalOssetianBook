@@ -3,8 +3,7 @@
 }
 <section class="feature-shell">
     <a class="back-link" href="/exercises">← К заданиям</a>
-    <h1>Аудирование</h1>
-    <p>Прослушайте запись и выберите один верный ответ.</p>
+    @await Html.PartialAsync("_SectionHeading", new SectionHeadingModel("Аудирование", "Прослушайте запись и выберите один верный ответ.", "hearing", Material: true))
     <partial name="_ListeningPlayer" />
 </section>
 @section Scripts { <script src="~/js/listening.js" asp-append-version="true" defer></script> }

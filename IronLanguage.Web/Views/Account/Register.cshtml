@@ -1,14 +1,40 @@
 @model IronLanguage.Web.Controllers.RegistrationInput
 @{ ViewData["Title"] = "Регистрация"; }
-<div class="auth-scene"><section class="feature-shell narrow auth-shell"><h1>Создать аккаунт</h1><p>Сохраняйте слова и продолжайте занятия с любого устройства.</p>
+<div class="auth-scene"><section class="feature-shell narrow auth-shell auth-panel"><h1>Создать аккаунт</h1><p>Сохраняйте слова и продолжайте занятия с любого устройства.</p>
 <form method="post" asp-action="Register" class="stack-form">
     <div asp-validation-summary="ModelOnly" class="form-error"></div>
-    <label>Ваше имя <input asp-for="PublicName" autocomplete="name" maxlength="100" required aria-describedby="register-name-note" /></label>
-    <small id="register-name-note">Будет видно в профиле автора и на его курсах.</small>
-    <span asp-validation-for="PublicName" class="form-error"></span>
-    <label>Электронная почта <input asp-for="Email" type="email" autocomplete="email" required /></label><span asp-validation-for="Email" class="form-error"></span>
-    <label>Пароль <input asp-for="Password" type="password" autocomplete="new-password" minlength="8" required /></label><span asp-validation-for="Password" class="form-error"></span>
-    <label>Повторите пароль <input asp-for="ConfirmPassword" type="password" autocomplete="new-password" maxlength="128" required /></label>
-    <span asp-validation-for="ConfirmPassword" class="form-error"></span>
+    <div class="auth-field">
+        <div class="auth-control">
+            <input asp-for="PublicName" autocomplete="name" maxlength="100" placeholder=" " required aria-describedby="register-name-note register-name-error"
+                   aria-invalid="@(ViewData.ModelState["PublicName"]?.Errors.Count > 0 ? "true" : null)" />
+            <label asp-for="PublicName">Ваше имя</label>
+        </div>
+        <small id="register-name-note">Будет видно в профиле автора и на его курсах.</small>
+        <span asp-validation-for="PublicName" class="form-error" id="register-name-error"></span>
+    </div>
+    <div class="auth-field">
+        <div class="auth-control">
+            <input asp-for="Email" type="email" autocomplete="email" placeholder=" " required aria-describedby="register-email-error"
+                   aria-invalid="@(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "true" : null)" />
+            <label asp-for="Email">Электронная почта</label>
+        </div>
+        <span asp-validation-for="Email" class="form-error" id="register-email-error"></span>
+    </div>
+    <div class="auth-field">
+        <div class="auth-control">
+            <input asp-for="Password" type="password" autocomplete="new-password" minlength="8" placeholder=" " required aria-describedby="register-password-error"
+                   aria-invalid="@(ViewData.ModelState["Password"]?.Errors.Count > 0 ? "true" : null)" />
+            <label asp-for="Password">Пароль</label>
+        </div>
+        <span asp-validation-for="Password" class="form-error" id="register-password-error"></span>
+    </div>
+    <div class="auth-field">
+        <div class="auth-control">
+            <input asp-for="ConfirmPassword" type="password" autocomplete="new-password" maxlength="128" placeholder=" " required aria-describedby="register-confirm-password-error"
+                   aria-invalid="@(ViewData.ModelState["ConfirmPassword"]?.Errors.Count > 0 ? "true" : null)" />
+            <label asp-for="ConfirmPassword">Повторите пароль</label>
+        </div>
+        <span asp-validation-for="ConfirmPassword" class="form-error" id="register-confirm-password-error"></span>
+    </div>
     <button class="button primary" type="submit">Зарегистрироваться</button>
 </form><p class="auth-switch">Уже есть аккаунт? <a asp-action="Login">Войти</a></p></section></div>

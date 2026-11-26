@@ -25,6 +25,7 @@ public sealed record GroupingWord(string Text, int Group);
 public sealed record GroupingMaterial(string Title, string[] Groups, GroupingWord[] Words, Guid[] WordIds);
 public sealed record EditorItem(string Kind, Guid Id, string Title, bool Published, int Version, Guid? PendingRevisionId, bool Archived);
 public sealed record EditorMaterial(string Kind, Guid Id, bool Published, int Version, string PayloadJson);
+public enum ArchiveDeletionResult { Deleted, Unavailable, InUse, Forbidden }
 
 public interface IEditorRepository
 {
@@ -39,6 +40,7 @@ public interface IEditorRepository
     Task<bool> UpdateRevision(Guid id, string payloadJson, CancellationToken ct = default);
     Task<bool> PublishRevision(Guid id, CancellationToken ct = default);
     Task<bool> DeleteDraft(string kind, Guid id, CancellationToken ct = default);
+    Task<ArchiveDeletionResult> DeleteArchived(string kind, Guid id, Guid editorId, bool isAdmin, CancellationToken ct = default);
     Task<bool> DeleteRevision(Guid id, CancellationToken ct = default);
     Task<bool> SetArchived(string kind, Guid id, bool archived, CancellationToken ct = default);
 }
@@ -446,6 +448,146 @@ public sealed class EfEditorRepository(AdamDbContext db) : IEditorRepository
         await tx.CommitAsync(ct);
         return true;
     }
+
+    public async Task<ArchiveDeletionResult> DeleteArchived(string kind, Guid id, Guid editorId, bool isAdmin, CancellationToken ct = default)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await EfCurriculumRepository.LockMaterials(db, ct);
+        await EfCourseMaterialRepository.LockAccess(db, kind, id, ct);
+        var owner = await db.CourseMaterialAccesses.Where(x => x.Kind == kind && x.MaterialId == id)
+            .Select(x => x.OwnerId).SingleOrDefaultAsync(ct);
+        if (owner.HasValue ? owner != editorId : EfCourseMaterialRepository.Supports(kind) && !isAdmin)
+            return ArchiveDeletionResult.Forbidden;
+
+        if (kind == "word")
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"Words\" WHERE \"Id\" = {id} FOR UPDATE", ct);
+        }
+        if (await HasMaterialReferences(kind, id, ct)) return ArchiveDeletionResult.InUse;
+
+        var deleted = kind switch
+        {
+            "word" => await db.Words.Where(x => x.Id == id && x.Published && x.Archived && x.DictionarySenseId == null).ExecuteDeleteAsync(ct),
+            "book" => await db.Books.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "audio" or "translation" or "listening" => await db.Exercises.Where(x =>
+                x.Id == id && x.Kind == kind && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "dialogue" => await db.Dialogues.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "matching" => await db.Matchings.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "picture" => await db.PictureMatchings.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "grammar" => await db.Grammars.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            "grouping" => await db.Groupings.Where(x => x.Id == id && x.Published && x.Archived).ExecuteDeleteAsync(ct),
+            _ => 0
+        };
+        if (deleted != 1) return ArchiveDeletionResult.Unavailable;
+        await db.CourseMaterialAccesses.Where(x => x.Kind == kind && x.MaterialId == id).ExecuteDeleteAsync(ct);
+        await db.ContentRevisions.Where(x => x.Kind == kind && x.ContentId == id).ExecuteDeleteAsync(ct);
+        await tx.CommitAsync(ct);
+        return ArchiveDeletionResult.Deleted;
+    }
+
+    private async Task<bool> HasMaterialReferences(string kind, Guid id, CancellationToken ct)
+    {
+        var hasStoredProgress = kind switch
+        {
+            "audio" or "translation" or "listening" =>
+                await db.Attempts.AnyAsync(x => x.ExerciseId == id, ct)
+                || await db.ExerciseRewards.AnyAsync(x => x.ExerciseId == id, ct),
+            "dialogue" => await db.DialogueSessions.AnyAsync(x => x.DialogueId == id, ct)
+                || await db.DialogueRewards.AnyAsync(x => x.DialogueId == id, ct),
+            "book" => await db.ReadingPositions.AnyAsync(x => x.BookId == id, ct),
+            "word" => await db.SavedWords.AnyAsync(x => x.WordId == id, ct)
+                || await db.WordReviewStates.AnyAsync(x => x.WordId == id, ct)
+                || await db.WordReviewRewards.AnyAsync(x => x.WordId == id, ct)
+                || await db.WordReviewMasteries.AnyAsync(x => x.WordId == id, ct),
+            _ => false
+        };
+        if (hasStoredProgress) return true;
+
+        var snapshots = db.Courses.Select(x => x.DraftJson)
+            .Concat(db.CourseVersions.Select(x => x.SnapshotJson))
+            .Concat(db.LibraryLessons.Select(x => x.LessonJson))
+            .Concat(db.LessonRuns.Select(x => x.SnapshotJson))
+            .Concat(db.CoursePracticeRuns.Select(x => x.StateJson))
+            .Concat(db.ContentRevisions.Where(x => x.Kind != kind || x.ContentId != id).Select(x => x.PayloadJson));
+        if (kind == "word")
+        {
+            snapshots = snapshots.Concat(db.Chapters.Select(x => x.TokensJson))
+                .Concat(db.Exercises.Select(x => x.WordIdsJson))
+                .Concat(db.Attempts.Select(x => x.WordIdsJson))
+                .Concat(db.Dialogues.Select(x => x.ScriptJson))
+                .Concat(db.DialogueSessions.Select(x => x.ScriptJson))
+                .Concat(db.Matchings.Select(x => x.ScriptJson))
+                .Concat(db.PictureMatchings.Select(x => x.ScriptJson))
+                .Concat(db.Grammars.Select(x => x.ScriptJson))
+                .Concat(db.Groupings.Select(x => x.ScriptJson))
+                .Concat(db.WordReviewSessions.Select(x => x.ItemsJson));
+        }
+
+        var referenceProperty = kind switch
+        {
+            "audio" or "translation" or "listening" => "exerciseId",
+            "dialogue" => "dialogueId",
+            "book" => "bookId",
+            "word" => "wordId",
+            _ => "materialId"
+        };
+        var key = id.ToString("D");
+        await foreach (var snapshot in snapshots.Where(json => json.ToLower().Contains(key)).AsAsyncEnumerable().WithCancellation(ct))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(snapshot);
+                var root = document.RootElement;
+                if (ContainsMaterialId(root, referenceProperty, id)
+                    || (kind == "word" && ContainsWordIds(root, id)))
+                    return true;
+            }
+            catch (JsonException)
+            {
+                // A damaged snapshot with the matching ID may still depend on the material.
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool ContainsMaterialId(JsonElement element, string referenceProperty, Guid id)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+            return element.EnumerateArray().Any(item => ContainsMaterialId(item, referenceProperty, id));
+
+        if (element.ValueKind != JsonValueKind.Object) return false;
+
+        foreach (var property in element.EnumerateObject())
+        {
+            if ((property.Name.Equals("materialId", StringComparison.OrdinalIgnoreCase)
+                || property.Name.Equals(referenceProperty, StringComparison.OrdinalIgnoreCase)) && IsId(property.Value, id))
+                return true;
+            if (referenceProperty == "wordId")
+            {
+                if (property.Name.Equals("wordIds", StringComparison.OrdinalIgnoreCase) && ContainsWordIds(property.Value, id))
+                    return true;
+
+                if (property.Value.ValueKind == JsonValueKind.String &&
+                    (property.Name.Equals("wordIdsJson", StringComparison.OrdinalIgnoreCase)
+                        || property.Name.Equals("payloadJson", StringComparison.OrdinalIgnoreCase)) &&
+                    property.Value.GetString() is { } json && json.Contains(id.ToString("D"), StringComparison.OrdinalIgnoreCase))
+                {
+                    using var embedded = JsonDocument.Parse(json);
+                    if (ContainsWordIds(embedded.RootElement, id) || ContainsMaterialId(embedded.RootElement, referenceProperty, id))
+                        return true;
+                }
+            }
+            if (ContainsMaterialId(property.Value, referenceProperty, id)) return true;
+        }
+        return false;
+    }
+
+    private static bool ContainsWordIds(JsonElement value, Guid id) =>
+        value.ValueKind == JsonValueKind.Array && value.EnumerateArray().Any(item => IsId(item, id));
+
+    private static bool IsId(JsonElement value, Guid id) =>
+        value.ValueKind == JsonValueKind.String && value.TryGetGuid(out var parsed) && parsed == id;
 
     public async Task<bool> DeleteRevision(Guid id, CancellationToken ct = default)
     {

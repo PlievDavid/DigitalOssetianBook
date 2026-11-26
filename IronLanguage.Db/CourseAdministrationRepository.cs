@@ -65,7 +65,7 @@ public sealed class EfCourseAdministrationRepository(AdamDbContext db) : ICourse
             where account.Id == user && !account.IsBlocked && (role.Name == "Editor" || role.Name == "Admin")
             select account.Id).AnyAsync(ct)) return false;
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({$"course-material:{kind}:{id}"}, 0))", ct);
+        await EfCourseMaterialRepository.LockAccess(db, kind, id, ct);
         var row = await db.CourseMaterialAccesses.SingleOrDefaultAsync(x => x.Kind == kind && x.MaterialId == id, ct);
         if (row is null)
         {

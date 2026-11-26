@@ -39,7 +39,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       const style = getComputedStyle(element, '::after');
       return { border: style.borderTopColor, fill: style.backgroundColor };
     });
-    const start = async () => { await page.goto(base + '/matching'); await page.getByRole('button', { name: 'Начать →' }).click(); await left(0).waitFor(); };
+    const start = async () => { await page.goto(base + '/matching'); await page.locator('#matching-list .exercise-card-open').click(); await left(0).waitFor(); };
     const idle = () => page.waitForFunction(() => document.querySelector('#matching-board').getAttribute('aria-busy') === 'false');
     fs.mkdirSync(path.join(__dirname, '../.run-local/matching-threads'), { recursive: true });
     for (const width of [320, 360, 600, 768, 1024, 1280, 1920]) {
@@ -90,7 +90,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
     assert.equal(await left(0).getAttribute('aria-pressed'), 'true');
     await right(0).click(); await idle(); assert.equal(await page.locator('.game-thread-matched').count(), 1);
     hold = true; await left(1).click(); await right(1).click();
-    await page.locator('#matching-back-link').click(); await page.getByRole('button', { name: 'Начать →' }).click();
+    await page.locator('#matching-back-link').click(); await page.locator('#matching-list .exercise-card-open').click();
     await left(0).click(); await right(0).click(); await idle();
     assert.equal(await page.locator('.game-thread-matched').count(), 1);
     held(); await page.waitForTimeout(150);

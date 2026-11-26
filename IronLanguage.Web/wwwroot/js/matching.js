@@ -38,7 +38,9 @@
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       line.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + bend} ${start.y}, ${end.x - bend} ${end.y}, ${end.x} ${end.y}`);
       line.style.setProperty('--thread-color', threadColor(left));
-      line.setAttribute('class', 'game-thread ' + kind); svg.append(line);
+      line.setAttribute('class', 'game-thread ' + kind);
+      line.dataset.leftIndex = left;
+      svg.append(line);
     }
     for (const [left, right] of connections) connect(left, point(rightColumn, right, 'left'), 'game-thread-matched');
     if (drag?.moved) connect(drag.index, { x: drag.x - bounds.left, y: drag.y - bounds.top }, 'game-thread-active');
@@ -85,25 +87,18 @@
   };
 
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     try {
       const items = await AdamApi("/matching");
       list.replaceChildren();
       for (const item of items) {
-        const card = document.createElement("article"); card.className = "exercise-entry";
-        const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const eyebrow = document.createElement("span"); eyebrow.className = "eyebrow";
-        eyebrow.textContent = "СООТНЕСЕНИЕ";
-        const title = document.createElement("h2"); title.textContent = item.title;
-        const description = document.createElement("p");
-        description.textContent = "Соотнесите слова с их парами. Порядок вариантов перемешивается.";
-        copy.append(eyebrow, title, description, button("Начать →", () => start(item.id), "button primary"));
-        const art = document.createElement("span"); art.className = "exercise-entry-icon";
-        art.setAttribute("aria-hidden", "true"); art.append($("matching-app").querySelector(".section-symbol svg").cloneNode(true));
-        card.append(art, copy); list.append(card);
+        list.append(window.AdamExerciseUx.card(item, item.title, () => start(item.id)));
       }
-      status.textContent = items.length ? "Выберите задание." : "Пока нет опубликованных заданий.";
-    } catch (error) { status.textContent = error.message; }
+      window.AdamExerciseUx.catalog(status, items.length ? "" : "Пока нет опубликованных заданий.");
+    } catch (error) {
+      console.error(error);
+      window.AdamExerciseUx.catalog(status, "Не удалось загрузить задания.", load);
+    }
   }
 
   async function start(id) {
@@ -119,7 +114,10 @@
       list.hidden = true; play.hidden = false;
       render();
       status.textContent = "";
-    } catch (error) { status.textContent = error.message; }
+    } catch (error) {
+      if (embedded?.preview) window.AdamExerciseUx.catalog(status, error.message, () => start());
+      else status.textContent = error.message;
+    }
   }
 
   function render() {
@@ -170,6 +168,8 @@
   async function check(leftIndex, rightIndex) {
     if (busy || !session || session.finished) return;
     busy = true; renderBoard();
+    result.textContent = "Проверяем…";
+    let outcome;
     const gen = generation;
     const sid = session.sessionId;
     try {
@@ -181,6 +181,7 @@
       if (gen !== generation || !session || session.sessionId !== sid) return;
       const leftTile = session.left.find(t => t.index === leftIndex);
       const rightTile = session.right.find(t => t.index === rightIndex);
+      outcome = response.correct ? "correct" : "wrong";
       if (response.correct) {
         leftTile.matched = true; rightTile.matched = true;
         connections.set(leftIndex, rightIndex);
@@ -191,13 +192,6 @@
         leftColumn.querySelectorAll(".is-selected").forEach(node => node.classList.remove("is-selected"));
       } else {
         result.textContent = "Не подходит. Попробуйте другую пару.";
-        leftColumn.querySelectorAll(".is-selected").forEach(node => node.classList.remove("is-wrong"));
-        rightColumn.querySelectorAll(`[data-index="${rightIndex}"]`).forEach(node => node.classList.add("is-wrong"));
-        setTimeout(() => {
-          if (gen !== generation) return;
-          leftColumn.querySelectorAll(".is-wrong").forEach(node => node.classList.remove("is-wrong"));
-          rightColumn.querySelectorAll(".is-wrong").forEach(node => node.classList.remove("is-wrong"));
-        }, 600);
         selectedLeft = null;
         leftColumn.querySelectorAll(".is-selected").forEach(node => node.classList.remove("is-selected"));
       }
@@ -207,7 +201,10 @@
     } catch (error) {
       if (gen !== generation || !session || session.sessionId !== sid) return;
       result.textContent = error.message;
-      if (error.status === 404) {
+      if (error.status === 404 && embedded?.preview) {
+        summaryBox.hidden = false;
+        summaryBox.replaceChildren(button("Начать заново", () => start()));
+      } else if (error.status === 404) {
         sessionStorage.removeItem("adam.matching.session");
         back();
       }
@@ -215,6 +212,19 @@
       // Завершение старого запроса не должно снимать блокировку новой сессии.
       if (gen === generation) {
         busy = false; renderBoard();
+        if (outcome === "correct" && matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+          const line = svg.querySelector(`[data-left-index="${leftIndex}"]`);
+          const length = line?.getTotalLength();
+          if (length) line.animate(
+            [{ strokeDasharray: `${length} ${length}`, strokeDashoffset: length },
+             { strokeDasharray: `${length} ${length}`, strokeDashoffset: 0 }],
+            { duration: 190, easing: "ease-out" }
+          );
+        } else if (outcome === "wrong") {
+          const pair = [leftColumn.querySelector(`[data-index="${leftIndex}"]`), rightColumn.querySelector(`[data-index="${rightIndex}"]`)];
+          pair.forEach(tile => tile?.classList.add("is-wrong"));
+          setTimeout(() => pair.forEach(tile => tile?.classList.remove("is-wrong")), 650);
+        }
         const focus = selectedLeft === null ? leftColumn.querySelector("button:enabled") : leftColumn.querySelector('[data-index="' + selectedLeft + '"]');
         (focus || summaryBox.querySelector("button") || $("matching-back-link")).focus({ preventScroll: true });
       }
@@ -243,7 +253,14 @@
     summaryBox.replaceChildren();
     const text = document.createElement("p");
     text.textContent = `Все пары найдены: ${session.total} из ${session.total}.`;
-    if (embedded) { summaryBox.append(text); return; }
+    if (embedded) {
+      summaryBox.append(text);
+      if (embedded.preview) summaryBox.append(button("Пройти заново", async () => {
+        await start();
+        leftColumn.querySelector("button:enabled")?.focus({ preventScroll: true });
+      }));
+      return;
+    }
     summaryBox.append(text,
       button("Пройти заново", () => start(session.materialId), "button primary"),
       button("К списку", back, "button secondary"));
@@ -289,5 +306,21 @@
 };
 (() => {
   const root = document.getElementById("matching-app");
-  if (root) window.AdamExercisePlayers.matching(root);
+  if (!root) return;
+  const previewStart = root.dataset.previewStart;
+  let previewSession;
+  window.AdamExercisePlayers.matching(root, previewStart ? {
+    preview: true,
+    async load() {
+      const board = await AdamApi(previewStart, { method: "POST" });
+      previewSession = board.sessionId;
+      return board;
+    },
+    answer({ left, right }) {
+      return AdamApi(`/editor/preview/matching/sessions/${previewSession}/check`, {
+        method: "POST",
+        body: JSON.stringify({ leftIndex: left, rightIndex: right })
+      });
+    }
+  } : undefined);
 })();

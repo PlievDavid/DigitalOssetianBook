@@ -2,7 +2,7 @@
   'use strict';
   const root = document.querySelector('#courses-workspace');
   if (!root) return;
-  const api = window.AdamApi, path = location.pathname, editor = root.dataset.editor === 'true';
+  const api = window.AdamApi, path = location.pathname;
   let dirty = false;
   const node = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
   const append = (parent, ...children) => { parent.append(...children.filter(Boolean)); return parent; };
@@ -67,7 +67,9 @@
       input.value = value;
       input.checked = value === level;
       input.addEventListener('change', () => { if (input.checked) onChange(value); });
-      group.append(append(node('label', null, 'cv-level-option'), input, node('span', value || 'Все уровни')));
+      const chip = append(node('span', null, 'cv-level-chip'),
+        icon('m5 12 4 4L19 6'), node('span', value || 'Все уровни', 'cv-level-label'));
+      group.append(append(node('label', null, 'cv-level-option'), input, chip));
     }
     return group;
   }
@@ -78,30 +80,21 @@
     done: 'm8 12 3 3 5-6m5 3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
     arrow: 'M4 12h15m-6-6 6 6-6 6'
   };
-  function coursePhoneMenu() {
+  function coursePhoneNavigation() {
     if (!window.AdamAuthenticated) return null;
-    const menu = node('details', null, 'cm-phone-menu');
-    const summary = append(node('summary', 'Курсы'), icon('m6 9 6 6 6-6'));
-    const links = node('nav', null, 'cm-phone-links');
-    links.setAttribute('aria-label', 'Навигация по курсам');
-    const destinations = [['Каталог курсов', '/courses'], ['Мои курсы', '/my-courses']];
-    if (editor) destinations.push(['Преподавание', '/courses/teaching']);
-    for (const [label, href] of destinations) {
+    const nav = node('nav', null, 'cm-phone-navigation');
+    nav.setAttribute('aria-label', 'Навигация по курсам');
+    for (const [label, href] of [['Каталог', '/courses'], ['Мои курсы', '/my-courses']]) {
       const item = link(label, href, '');
       if (path === href) item.setAttribute('aria-current', 'page');
-      links.append(item);
+      nav.append(item);
     }
-    menu.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && menu.open) { menu.open = false; summary.focus(); }
-    });
-    menu.addEventListener('focusout', event => {
-      if (event.relatedTarget && !menu.contains(event.relatedTarget)) menu.open = false;
-    });
-    return append(menu, summary, links);
+    return nav;
   }
   function courseIntro(title, description, discovery = false) {
     const copy = append(node('div', null, 'cm-intro-copy'), node('h1', title), node('p', description));
-    return append(node('header', null, discovery ? 'cm-intro cm-discover' : 'cm-intro'), copy, coursePhoneMenu());
+    const classes = discovery ? 'cm-intro cm-discover catalog-heading catalog-heading--compact' : 'cm-intro catalog-heading';
+    return append(node('header', null, classes), copy, coursePhoneNavigation());
   }
   function myCourseState(course) {
     if (course.totalBlocks > 0 && course.completedBlocks >= course.totalBlocks) return 'done';
@@ -138,10 +131,9 @@
   }
   function myCourseAction(course, featured) {
     const state = myCourseState(course);
-    const title = { new: 'Начать курс', active: 'Продолжить', done: 'Повторить курс' }[state];
+    const title = { new: 'Начать курс', active: 'Продолжить', done: featured ? 'Продолжить' : 'Повторить курс' }[state];
     const control = button(title, e => run(e.currentTarget, () => continueCourse(course.id, null, state === 'active' ? null : 'first')), featured ? 'cm-cta' : 'cm-row-action');
     control.setAttribute('aria-label', title + ': ' + course.title);
-    control.append(icon(myCourseIcons.arrow));
     return control;
   }
   function myCourseOverview(rows) {
@@ -205,7 +197,7 @@
     if (!authored) root.classList.add('cv-material-catalog');
     if (authored) {
       root.classList.add('cv-teaching');
-      root.replaceChildren(message, link('← Каталог курсов', '/courses', 'back-link'));
+      root.replaceChildren(message, link('← Профиль', '/profile', 'back-link'));
     } else shell();
     if (mine) {
       root.classList.add('cm-home');
@@ -268,7 +260,7 @@
     const grid = node('div', null, mine ? 'cm-list' : authored ? 'cv-author-list' : 'cm-catalog-grid'); const params = new URLSearchParams(location.search);
     let query = params.get('q') || '', level = params.get('level') || '';
     let status = mine && ['active', 'done'].includes(params.get('status')) ? params.get('status') : '';
-    if (authored || !courseLevels.includes(level)) level = '';
+    if (mine || authored || !courseLevels.includes(level)) level = '';
     let searchTimer, displayed, resultMotion;
     const input = node('input');
     input.type = 'search';
@@ -303,7 +295,7 @@
     }
     searchField.append(searchLabel, append(node('div', null, 'cv-search-control'), input, clear));
     const tools = append(node('div', null, 'cv-tools'), searchField);
-    const levels = authored ? null : levelFilter(level, value => { level = value; draw(); });
+    const levels = mine || authored ? null : levelFilter(level, value => { level = value; draw(); });
     const resultsStatus = node('div', null, 'cv-results-status');
     resultsStatus.setAttribute('role', 'status');
     const catalogPanel = authored
@@ -329,7 +321,7 @@
       title.id = 'cm-library-title';
       library.setAttribute('aria-labelledby', title.id);
       append(library, append(node('header', null, 'cm-library-heading'), title,
-        append(node('div', null, 'cm-library-toolbar'), filters, tools, levels)), resultsStatus, grid);
+        append(node('div', null, 'cm-library-toolbar'), filters, tools)), resultsStatus, grid);
       root.append(library);
     } else {
       const title = node('h2', 'Все курсы');
@@ -409,9 +401,25 @@
         return;
       }
       if (!filtered.length) {
-        grid.append(empty(rows.length ? 'Курсы не найдены' : authored ? 'Здесь появится ваш первый курс' : 'Курсы готовятся',
-          rows.length ? 'Измените запрос или сбросьте фильтры.' : authored ? 'Начните с названия, затем добавьте модули и уроки.' : 'Опубликованные курсы появятся здесь.',
-          rows.length && !authored ? link('Сбросить фильтры', '/courses') : null));
+        if (authored) {
+          grid.append(empty(rows.length ? 'Курсы не найдены' : 'Здесь появится ваш первый курс',
+            rows.length ? 'Измените запрос или сбросьте фильтры.' : 'Начните с названия, затем добавьте модули и уроки.'));
+          return;
+        }
+        const reset = rows.length ? button('Сбросить фильтры', () => {
+          input.value = query = '';
+          level = '';
+          levels.querySelector('input[value=""]').checked = true;
+          syncClear();
+          draw();
+          input.focus();
+        }, 'cm-empty-reset') : null;
+        const panel = empty(rows.length ? 'Курсы не найдены' : 'Курсы готовятся',
+          rows.length ? 'Попробуйте другое название или уровень.' : 'Опубликованные курсы появятся здесь.', reset);
+        panel.classList.add('cm-catalog-empty');
+        panel.prepend(append(node('span', null, 'cm-catalog-empty-icon'),
+          icon('M15.5 15.5 20 20 M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z')));
+        grid.append(panel);
         return;
       }
       filtered.forEach(c => {
@@ -647,7 +655,7 @@
         post(`/course-sessions/${id}/view`, { blockId: state.block.id }).catch(() => {});
       } finally { refreshing = false; }
     }
-    function mountExercise(host, block, next) {
+    function mountExercise(host, block, next, replay) {
       const template = document.getElementById('course-exercise-' + block.kind);
       const player = window.AdamExercisePlayers?.[block.kind];
       if (!template || !player) throw new Error('Не удалось загрузить задание.');
@@ -672,8 +680,9 @@
         next.disabled = next.hidden = false;
       }
       function offerRetry(action) {
-        if (!host.isConnected || host.querySelector('.cv-exercise-retry')) return;
-        host.append(button('Попробовать снова', event => run(event.currentTarget, action), 'button primary cv-exercise-retry'));
+        const footer = next.parentElement;
+        if (!host.isConnected || footer.querySelector('.cv-exercise-retry')) return;
+        footer.prepend(button('Попробовать снова', event => run(event.currentTarget, action), 'button primary cv-exercise-retry'));
       }
       const reload = () => refresh(block.id);
       if (block.result && !block.result.correct) offerRetry(retryAttempt);
@@ -681,13 +690,14 @@
         await post(sessionPath + '/retry', { blockId: block.id, attemptId: block.attemptId });
         await reload();
       }
+      if (replay) {
+        replay.hidden = !block.result?.correct;
+        replay.addEventListener('click', event => run(event.currentTarget, async () => {
+          await retryAttempt();
+          area.querySelector('#exercise-tiles button')?.focus({ preventScroll: true });
+        }));
+      }
       const embedded = {
-        replay: block.kind === 'translation' ? async event => {
-          await run(event.currentTarget, async () => {
-            await retryAttempt();
-            area.querySelector('#exercise-tiles button')?.focus();
-          });
-        } : null,
         load: () => block.practice ? practiceData(block.practice) : {
           card: block.card, attemptId: block.attemptId, draftIndices: block.draftIndices,
           completed: Boolean(block.result), result: block.result
@@ -711,8 +721,10 @@
               result = latest.block?.result;
               if (!result) throw new Error('Не удалось обновить результат аудирования.');
             }
-            if (result.correct) allowNext();
-            else offerRetry(retryAttempt);
+            if (result.correct) {
+              allowNext();
+              if (replay && host.isConnected) replay.hidden = false;
+            } else offerRetry(retryAttempt);
             return result;
           }
           let input;
@@ -819,6 +831,11 @@
         const nextBlock = state.steps[state.viewStep + 1]?.id ?? null;
         if (!state.steps[state.viewStep].completed) await post(`/course-sessions/${id}/next`, { blockId: b.id });
         await refresh(nextBlock, !nextBlock);
+        const heading = area.querySelector('h2');
+        if (heading) {
+          heading.tabIndex = -1;
+          heading.focus();
+        }
       }), 'button primary');
       if (b.unavailable) {
         card.append(node('p', 'Материал недоступен. Вы можете открыть другой блок урока.', 'cv-notice'));
@@ -833,9 +850,13 @@
         const host = node('div', null, 'cv-course-exercise');
         card.classList.add('cv-exercise-block');
         next.disabled = next.hidden = !state.steps[state.viewStep].completed;
-        card.append(host, actions(next));
+        const replay = b.kind === 'translation' ? node('button', 'Собрать заново', 'button secondary') : null;
+        if (replay) { replay.type = 'button'; replay.hidden = true; }
+        const footer = actions(next, replay);
+        footer.classList.add('cv-exercise-actions');
+        card.append(host, footer);
         area.append(card);
-        mountExercise(host, b, next);
+        mountExercise(host, b, next, replay);
         return;
       }
       card.append(actions(next)); area.append(card);

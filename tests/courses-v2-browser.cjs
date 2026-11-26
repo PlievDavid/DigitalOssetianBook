@@ -29,7 +29,112 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
   try {
     const guestPage = await guest.newPage(); await guestPage.goto(base + '/courses');
     await guestPage.getByLabel('Поиск по названию', { exact: true }).waitFor(); check(true, 'Гостевой каталог');
-    await login(page, fixture.owner); await page.goto(base + '/author/courses');
+    await login(page, fixture.owner);
+    await page.goto(base + '/editor#editor-archived');
+    const archivedBook = page.locator('#editor-archived .editor-item').filter({ hasText: 'Книга для проверки кнопки удаления' });
+    const deleteBook = archivedBook.getByRole('button', { name: 'Удалить' });
+    await deleteBook.waitFor();
+    const deletePath = '/editor/archived/book/' + fixture.archiveBookId + '/delete';
+    check((await page.request.post(base + deletePath, { maxRedirects: 0 })).status() === 400, 'Удаление из архива без CSRF');
+    page.once('dialog', dialog => dialog.dismiss());
+    await deleteBook.click();
+    check(await archivedBook.isVisible(), 'Отмена подтверждения должна сохранить книгу');
+    page.once('dialog', dialog => dialog.accept());
+    await deleteBook.click();
+    await page.getByRole('status').getByText('Материал удалён.', { exact: true }).waitFor();
+    check(await archivedBook.count() === 0, 'Книга исчезла из архива');
+    await page.goto(base + '/vocabulary');
+    const days = page.locator('.words-week-chart li');
+    const dayWithProgress = days.filter({ has: page.locator('.words-sr', { hasText: /: 1$/ }) });
+    check((await dayWithProgress.getAttribute('title')).endsWith(' — 1') &&
+      await page.locator('.words-week-chart li.words-week-empty[title]').count() === 0,
+      'Нативная подсказка должна быть только у дней с выученными словами');
+    for (const path of ['/profile', '/progress']) {
+      let finishProgressRequest;
+      const delayedProgress = new Promise(resolve => { finishProgressRequest = resolve; });
+      await page.route('**/api/v1/progress', async route => {
+        await delayedProgress;
+        await route.fulfill({ json: { points: 318, streak: 1, achievements: ['first'] } });
+      });
+      try {
+        await page.goto(base + path);
+        await page.locator('.profile-stats[aria-busy=true]').waitFor();
+        check((await page.locator('#progress-status').textContent()) === '', path + ' показывает текст во время загрузки статистики');
+      } finally {
+        finishProgressRequest();
+      }
+      await page.waitForFunction(() => document.querySelector('#progress-points')?.textContent === '318');
+      if (path === '/progress') await page.getByText('Первое занятие', { exact: true }).waitFor();
+      check(await page.locator('.profile-stats[aria-busy]').count() === 0, path + ' после загрузки не сбросил aria-busy');
+      await page.unroute('**/api/v1/progress');
+    }
+    await page.route('**/api/v1/progress', route => route.fulfill({ status: 503 }));
+    await page.reload();
+    await page.getByText('Не удалось загрузить результаты.', { exact: true }).waitFor();
+    await page.unroute('**/api/v1/progress');
+    await page.getByRole('button', { name: 'Повторить' }).press('Enter');
+    await page.locator('#progress-awards').waitFor();
+    check(await page.locator('#progress-status').textContent() === '', 'Ошибка загрузки осталась после успешного повтора');
+    console.log('Archive deletion, native chart tooltip and delayed results passed.');
+    {
+      const preview = '/editor/matching/' + fixture.previewMatchingId + '/preview';
+      const startPreview = '/editor/preview/matching/' + fixture.previewMatchingId + '/sessions';
+      const denied = await api(guestPage, startPreview, 'POST');
+      check([401, 403, 404].includes(denied.status), 'Гость получил черновик редактора');
+      await page.goto(base + preview);
+      const play = page.locator('#matching-play');
+      const review = page.getByRole('checkbox', { name: /Я проверил текст/ });
+      const island = page.locator('.editor-publish-form');
+      const left = play.getByRole('group', { name: 'Слова слева' });
+      const right = play.getByRole('group', { name: 'Пары' });
+      await left.getByRole('button', { name: 'Дом', exact: true }).waitFor();
+      check(!(await review.isChecked()) && await island.getByRole('link', { name: 'Изменить' }).isVisible(), 'Подтверждение и редактирование в нижней панели');
+      check((await page.evaluate(path => fetch('/api/v1' + path, { method: 'POST' }).then(r => r.status), startPreview)) === 400, 'Начало предпросмотра без CSRF');
+      for (const width of [320, 1440]) {
+        await page.setViewportSize({ width, height: 800 });
+        for (const container of [play, island]) {
+          check(await container.evaluate(node => {
+            const rect = node.getBoundingClientRect();
+            return rect.left >= 0 && rect.right <= innerWidth && node.scrollWidth <= node.clientWidth;
+          }), 'Предпросмотр выходит за экран при ширине ' + width);
+        }
+      }
+      await left.getByRole('button', { name: 'Дом', exact: true }).press('Enter');
+      await right.getByRole('button', { name: 'дуар', exact: true }).press('Enter');
+      await play.getByText('Не подходит. Попробуйте другую пару.').waitFor();
+      await left.getByRole('button', { name: 'Дом', exact: true }).press('Enter');
+      await right.getByRole('button', { name: 'хӕдзар', exact: true }).press('Enter');
+      await play.getByText('Найдено: 1 из 2').waitFor();
+      await left.getByRole('button', { name: 'Кровать', exact: true }).press('Enter');
+      await right.getByRole('button', { name: 'хуыссӕн', exact: true }).press('Enter');
+      await play.getByText('Все пары найдены: 2 из 2.').waitFor();
+      check(await play.locator('svg path').count() === 2, 'После проверки пары соединены нитками');
+      await play.getByRole('button', { name: 'Пройти заново' }).click();
+      await play.getByText('Найдено: 0 из 2').waitFor();
+      const ownerBoard = (await api(page, startPreview, 'POST')).data;
+      const attemptPath = '/editor/preview/matching/sessions/' + ownerBoard.sessionId + '/check';
+      const otherEditor = await browser.newPage();
+      await login(otherEditor, fixture.other);
+      check((await api(otherEditor, startPreview, 'POST')).status === 404, 'Другой редактор получил черновик');
+      check((await api(otherEditor, attemptPath, 'POST', { leftIndex: 0, rightIndex: 0 })).status === 404, 'Другой редактор получил попытку предпросмотра');
+      await otherEditor.close();
+      check((await api(page, '/matching/sessions/' + ownerBoard.sessionId)).status === 404, 'Предпросмотр доступен через учебный API');
+      await review.check();
+      await page.reload();
+      check(!(await review.isChecked()), 'Галочка восстановилась после обновления');
+      await island.getByRole('button', { name: 'Опубликовать' }).click();
+      check(await review.evaluate(input => input.validity.valueMissing), 'Форма допускает публикацию без галочки');
+      await review.check();
+      await island.getByRole('button', { name: 'Опубликовать' }).click();
+      await page.getByRole('button', { name: 'Создать новую версию' }).click();
+      await page.waitForURL(/\/editor\/revisions\/.+\/edit/);
+      await page.locator('form').getByRole('button', { name: /сохранить/i }).click();
+      await page.waitForURL(/\/editor\/revisions\/.+\/preview/);
+      await left.getByRole('button', { name: 'Дом', exact: true }).waitFor();
+      check(!(await review.isChecked()), 'У новой версии нет ручного подтверждения');
+      check(true, 'Предпросмотр черновика и новой версии соотнесения');
+    }
+    await page.goto(base + '/author/courses');
     const create = page.getByRole('button', { name: 'Создать курс', exact: true });
     const courseCount = (await api(page, '/author/courses')).data.length;
     await create.click();
@@ -148,6 +253,8 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await materialDialog.getByLabel('Тип упражнения').selectOption('listening');
     await materialDialog.locator('.cs-material-item strong').filter({ hasText: 'Проверка записи' }).waitFor();
     await materialDialog.getByLabel('Тип упражнения').selectOption('translation');
+    await materialDialog.getByPlaceholder('Название или номер задания').fill(fixture.phraseId);
+    await materialDialog.getByText('Найдено по номеру в ваших и доступных материалах.').waitFor();
     const phrase = materialDialog.locator('.cs-material-item').filter({ hasText: fixture.phraseTitle });
     await phrase.getByText('Предпросмотр', { exact: true }).click();
     check(await phrase.getByText('Тип задания: Собери фразу', { exact: true }).isVisible(), 'Предпросмотр не показывает тип');
@@ -240,7 +347,9 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await login(colleaguePage, fixture.other);
     check((await api(colleaguePage, '/author/lesson-library')).data.length === 0, 'Другому автору видна чужая библиотека');
     check((await api(colleaguePage, `/author/courses/${id}/lessons/${lesson.id}/library`, 'POST', { stamp: saved.draftStamp })).status === 404, 'Другой автор сохранил чужой урок');
-    await page.goto(base + '/courses/teaching');
+    await page.goto(base + '/profile');
+    await page.getByRole('region', { name: 'Настройки' }).getByRole('link', { name: /Преподавание/ }).press('Enter');
+    await page.waitForURL(base + '/courses/teaching');
     await page.getByRole('heading', { name: 'Преподавание', exact: true }).waitFor();
     const teaching = page.getByRole('navigation', { name: 'Разделы преподавания' });
     const switcher = teaching.locator('.cv-teaching-switch');
@@ -278,8 +387,10 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.locator('[aria-controls="courses-menu"]').hover();
-    await page.locator('#courses-menu').getByRole('link', { name: 'Преподавание', exact: true }).waitFor({ state: 'visible' });
-    check(true, 'Подменю преподавания открывается по наведению');
+    const courseMenu = page.locator('#courses-menu');
+    await courseMenu.getByRole('link', { name: 'Мои курсы', exact: true }).waitFor({ state: 'visible' });
+    check(await courseMenu.getByRole('link', { name: 'Преподавание', exact: true }).count() === 0,
+      'В меню курсов осталась ссылка на преподавание');
     await page.goto(base + '/author/courses/' + id);
     await page.getByLabel('Название урока', { exact: true }).waitFor();
     const exerciseCard = page.locator('.cs-block').filter({ has: page.locator('.cs-block-body').filter({ hasText: fixture.phraseTitle }) });
@@ -373,17 +484,37 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     check(await student.locator('#exercise-picked button').textContent() === selectedWord, 'Выбранное слово не восстановилось');
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
     await student.locator('#exercise-result.is-incorrect').waitFor();
+    check(await student.locator('#exercise-picked.is-correct').count() === 0, 'Неверная фраза подсвечена зелёным');
     const repeated = await api(student, `/course-sessions/${sessionId}/answers`, 'POST', { blockId: lesson.blocks[1].id, tokenIndices: [0] });
     check(repeated.status === 200 && repeated.data.alreadySubmitted, 'Повтор ответа создал новый результат');
     check((await api(student, `/course-sessions/${sessionId}/next`, 'POST', { blockId: lesson.blocks[1].id })).status === 409, 'Неверный ответ завершил блок');
     await student.getByRole('button', { name: 'Попробовать снова', exact: true }).click();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).waitFor();
     for (const word of fixture.expected.split(/\s+/)) await student.locator('#exercise-tiles').getByRole('button', { name: word, exact: true }).first().click();
+    const phraseResult = student.locator('#exercise-result');
+    check(await student.locator('#exercise-picked.is-correct').count() === 0, 'Фраза подсвечена до проверки');
+    const feedbackOffset = () => phraseResult.evaluate(el =>
+      el.getBoundingClientRect().top - el.closest('.cv-exercise-block').getBoundingClientRect().top);
+    const beforeFeedback = await feedbackOffset();
     await student.getByRole('button', { name: 'Проверить ответ', exact: true }).click();
     await student.locator('#exercise-result.is-correct').waitFor();
+    check(await student.locator('#exercise-picked.is-correct + #exercise-result.is-correct').isVisible() &&
+      (await phraseResult.innerText()).includes('Отлично! Фраза собрана верно.') &&
+      !(await student.locator('#exercise-result').innerText()).includes('Правильный ответ:') &&
+      !await student.locator('#exercise-submit').isVisible(), 'Верный ответ в уроке показывается отдельно от собранной фразы');
+    check(Math.abs((await feedbackOffset()) - beforeFeedback) < 1, 'Результат меняет положение после проверки');
     const phraseUrl = `/course-sessions/${sessionId}?block=${lesson.blocks[1].id}`;
     const completedPhrase = (await api(student, phraseUrl)).data;
-    const replay = student.getByRole('button', { name: 'Собрать заново', exact: true });
+    const exerciseFooter = student.locator('.cv-exercise-block > .cv-exercise-actions');
+    const replay = exerciseFooter.getByRole('button', { name: 'Собрать заново', exact: true });
+    check(await replay.isVisible() && await exerciseFooter.getByRole('button', { name: 'Продолжить', exact: true }).isVisible() &&
+      await student.locator('#exercise-result button').count() === 0,
+      'Действия после ответа должны остаться в нижней панели');
+    await student.reload();
+    await student.locator('#exercise-result.is-correct').waitFor();
+    check(await phraseResult.evaluate(el => el.getAnimations().length === 0 &&
+      !el.previousElementSibling.classList.contains('show-correct-transition')),
+      'Восстановленный результат проигрывает анимацию снова');
     await replay.press('Enter');
     await student.locator('#exercise-result.is-correct').waitFor({ state: 'hidden' });
     const replayedPhrase = (await api(student, phraseUrl)).data;
@@ -441,13 +572,18 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const myCourse = student.locator('.cm-list').getByRole('progressbar', { name: 'Прогресс: Проверка курса Ӕ/ӕ', exact: true });
     await myCourse.waitFor();
     check(await myCourse.getAttribute('aria-valuetext') === '100%, 2 из 2 блоков', 'Прогресс моих курсов');
-    const phoneCoursesMenu = student.locator('.cm-phone-menu');
-    await phoneCoursesMenu.locator('summary').focus();
-    await student.keyboard.press('Enter');
-    check(await phoneCoursesMenu.getByRole('link', { name: 'Каталог курсов' }).isVisible(), 'На телефоне нет перехода из личной страницы в каталог');
-    await phoneCoursesMenu.getByRole('link', { name: 'Каталог курсов' }).click();
+    await student.goto(base + '/profile');
+    await student.getByRole('heading', { name: 'Профиль', exact: true }).waitFor();
+    check(await student.getByRole('link', { name: /Преподавание/ }).count() === 0, 'У ученика виден преподавательский раздел');
+    await student.goto(base + '/my-courses?level=' + encodeURIComponent('Продвинутый'));
+    await myCourse.waitFor();
+    check(await student.getByRole('radiogroup', { name: 'Уровень курса' }).count() === 0 &&
+      !new URL(student.url()).searchParams.has('level'), 'Личные курсы всё ещё фильтруются по уровню');
+    const phoneCourseNav = student.getByRole('navigation', { name: 'Навигация по курсам' });
+    check(await phoneCourseNav.getByRole('link', { name: 'Мои курсы', exact: true }).getAttribute('aria-current') === 'page', 'Личные курсы не отмечены в мобильной навигации');
+    await phoneCourseNav.getByRole('link', { name: 'Каталог', exact: true }).press('Enter');
     await student.getByRole('heading', { name: 'Каталог курсов', exact: true }).waitFor();
-    check(await student.locator('.cv-tabs').count() === 0, 'В каталоге осталась дублирующая панель вкладок');
+    check(await phoneCourseNav.getByRole('link', { name: 'Каталог', exact: true }).getAttribute('aria-current') === 'page', 'Каталог не отмечен в мобильной навигации');
     await student.setViewportSize({ width: 768, height: 840 });
     await student.getByRole('button', { name: 'Открыть меню' }).click();
     await student.locator('.tablet-navigation').getByRole('link', { name: 'Мои курсы' }).click();
@@ -765,9 +901,11 @@ const fixture = JSON.parse(process.env.ADAM_COURSE_FIXTURE);
     const match = (side, name) => shared.locator('#matching-' + side).getByRole('button', { name, exact: true });
     await match('left', 'А').click();
     await match('right', 'Б').click();
-    await shared.locator('#matching-threads .game-thread-matched').waitFor();
+    const matchedThread = shared.locator('#matching-threads .game-thread-matched');
+    // A horizontal SVG path has a zero-height bounding box, even with a visible stroke.
+    await matchedThread.waitFor({ state: 'attached' });
     await shared.reload();
-    await shared.locator('#matching-threads .game-thread-matched').waitFor();
+    await matchedThread.waitFor({ state: 'attached' });
     check(await match('left', 'А').isDisabled(), 'Сохранённая пара потерялась после перезагрузки');
     await match('left', 'В').click();
     await match('right', 'Г').click();

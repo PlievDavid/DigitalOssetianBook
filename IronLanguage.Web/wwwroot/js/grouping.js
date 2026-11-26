@@ -25,27 +25,18 @@
   };
 
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     try {
       const items = await AdamApi("/groupings");
       list.replaceChildren();
       for (const item of items) {
-        const card = document.createElement("article"); card.className = "exercise-entry";
-        const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const eyebrow = document.createElement("span"); eyebrow.className = "eyebrow";
-        eyebrow.textContent = "ГРУППЫ СЛОВ";
-        const title = document.createElement("h2"); title.textContent = item.title;
-        const description = document.createElement("p");
-        description.textContent = "Разложите слова по группам. Порядок слов перемешивается.";
-        copy.append(eyebrow, title, description, button("Начать →", () => start(item.id), "button primary"));
-        const art = document.createElement("span"); art.className = "exercise-entry-icon";
-        art.setAttribute("aria-hidden", "true");
-        const icon = root.querySelector(".section-symbol svg");
-        if (icon) art.append(icon.cloneNode(true));
-        card.append(art, copy); list.append(card);
+        list.append(window.AdamExerciseUx.card(item, item.title, () => start(item.id)));
       }
-      status.textContent = items.length ? "Выберите задание." : "Пока нет опубликованных заданий.";
-    } catch (error) { status.textContent = error.message; }
+      window.AdamExerciseUx.catalog(status, items.length ? "" : "Пока нет опубликованных заданий.");
+    } catch (error) {
+      console.error(error);
+      window.AdamExerciseUx.catalog(status, "Не удалось загрузить задания.", load);
+    }
   }
 
   async function start(id) {
@@ -101,6 +92,7 @@
     const section = document.createElement("section");
     section.className = "grouping-group";
     section.dataset.group = String(groupIndex);
+    section.classList.toggle("is-target", selectedWord !== null && !busy && !session.finished);
 
     const head = document.createElement("header");
     head.className = "grouping-group-head";
@@ -151,8 +143,10 @@
       tile.classList.toggle("is-selected", selected);
       tile.setAttribute("aria-pressed", String(selected));
     }
-    for (const place of groupsBox.querySelectorAll(".grouping-place-button")) {
-      place.disabled = busy || session.finished || selectedWord === null;
+    const canPlace = !busy && !session.finished && selectedWord !== null;
+    for (const group of groupsBox.querySelectorAll(".grouping-group")) {
+      group.classList.toggle("is-target", canPlace);
+      group.querySelector(".grouping-place-button").disabled = !canPlace;
     }
   }
 
@@ -227,6 +221,7 @@
     busy = true;
     selectedWord = null;
     render();
+    result.textContent = "Проверяем…";
     const gen = generation;
     const sid = session.sessionId;
     let flashKind = null;
@@ -254,8 +249,9 @@
       }
     } catch (error) {
       if (gen !== generation || !session || session.sessionId !== sid) return;
-      result.textContent = error.message;
       if (error.status === 404) { back(); return; }
+      selectedWord = wordIndex;
+      result.textContent = "Не удалось проверить ответ. Выберите группу ещё раз.";
     } finally {
       if (gen === generation) {
         busy = false;
@@ -271,7 +267,10 @@
 
   function applyFlash(wordIndex, groupIndex, kind) {
     const group = groupsBox.querySelector(`[data-group="${groupIndex}"]`);
-    if (kind === "correct") group?.classList.add("is-correct");
+    if (kind === "correct") {
+      group?.classList.add("is-correct");
+      window.AdamExerciseUx.reveal(group?.querySelector(`[data-word="${wordIndex}"]`));
+    }
     else {
       group?.classList.add("is-wrong");
       pool.querySelector(`[data-index="${wordIndex}"]`)?.classList.add("is-wrong");

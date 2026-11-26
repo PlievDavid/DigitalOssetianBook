@@ -28,6 +28,9 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
         await page.waitForURL(base + route);
       };
       await page.goto(base);
+      assert.equal(await page.locator('a[href="/vocabulary"], a[href="/word-practice"]').count(), 0);
+      assert.equal(await page.locator('a[href="/account/login?ReturnUrl=%2Fword-practice"]').count(), 1);
+      assert.equal(await page.locator('#games a[href="/game"]').count(), 1);
       const hero = page.locator('.home-hero');
       assert(await hero.getByRole('heading', { level: 1 }).isVisible());
       const image = hero.locator('.home-hero-art');
@@ -53,12 +56,25 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       await pressLink(hero.getByRole('link', { name: 'Начать заниматься' }), '/exercises');
       const catalog = page.locator('.exercises-shell');
       assert(await catalog.getByRole('heading', { name: 'Задания', level: 1 }).isVisible());
+      assert(await catalog.getByText('Тренируйте осетинский на коротких заданиях.', { exact: true }).isVisible());
+      assert.deepEqual(await catalog.locator('.exercise-category-heading svg use').evaluateAll(icons =>
+        icons.map(icon => icon.getAttribute('href').split('#')[1])), ['headphones', 'chat', 'menu_book']);
+      await page.waitForFunction(() => [...document.querySelectorAll('.exercise-category-heading svg use')]
+        .every(icon => icon.getBBox().width > 0));
       assert.deepEqual(await catalog.getByRole('heading', { level: 2 }).allTextContents(),
-        ['Понимание на слух', 'Построение фраз', 'Словарный запас']);
-      assert.equal(await catalog.locator('.exercises-motif text').textContent(), 'Ӕ');
-      assert.deepEqual(await catalog.locator('.exercise-catalog-card').evaluateAll(cards => cards.map(card => card.pathname)), routes);
+        ['На слух', 'Фразы', 'Слова']);
+      assert.equal(await catalog.locator('.exercises-heading svg').count(), 0);
+      assert(await catalog.locator('.exercises-heading, .exercise-category').evaluateAll(groups =>
+        groups.every(group => getComputedStyle(group).borderTopWidth === '0px')));
+      assert.deepEqual(await catalog.locator('.exercise-catalog-link').evaluateAll(cards => cards.map(card => card.pathname)), routes);
+      const groups = catalog.locator('.exercise-category');
+      assert.deepEqual(await groups.evaluateAll(items => items.map(el => getComputedStyle(el).animationDelay)),
+        ['0.055s', '0.105s', '0.155s']);
+      assert.equal(await groups.first().evaluate(el => getComputedStyle(el).animationName), 'catalog-enter');
+      assert(await groups.evaluateAll(items => items.every((el, index) =>
+        index === 0 || items[index - 1].offsetTop < el.offsetTop)));
       await noOverflow();
-      await page.screenshot({ path: path.join(output, `exercises-${width}.png`), fullPage: true });
+      await page.screenshot({ path: path.join(output, `exercises-${width}.png`), animations: 'disabled', fullPage: true });
       await pressLink(catalog.locator('a[href="/picture"]'), '/picture');
       await pressLink(page.getByRole('link', { name: 'К заданиям' }), '/exercises');
       const homeTab = page.locator('.mobile-bottom-nav a[href="/"]');
@@ -83,20 +99,120 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
         assert.equal(await nav.getAttribute('aria-current'), 'page');
       }
       assert.deepEqual(errors, []);
-      console.log(`${width}px @${dpr}x: ${images[0]}, layout and keyboard navigation passed`);
+      for (const route of ['/account/login', '/account/register']) {
+        await page.goto(base + route);
+        const form = page.locator('.auth-shell');
+        const box = await form.boundingBox();
+        assert(box.width <= 480.5, `Auth form at ${width}`);
+        assert(await form.evaluate(el => {
+          const scene = getComputedStyle(el.parentElement);
+          const shell = getComputedStyle(el);
+          const heading = el.querySelector('h1').getBoundingClientRect();
+          const fields = el.querySelector('form').getBoundingClientRect();
+          return scene.backgroundImage === 'none' && shell.boxShadow === 'none' &&
+            shell.borderTopWidth === '0px' && shell.borderTopLeftRadius === '28px' &&
+            Math.abs(heading.left - fields.left) < 1;
+        }), `Material auth layout at ${width}`);
+        const field = form.locator('.auth-control input').first();
+        const label = form.locator('.auth-control label').first();
+        assert.equal(await label.evaluate(el => getComputedStyle(el).fontSize), '16px');
+        await form.locator('.auth-control label').first().click();
+        assert(await field.evaluate(el => el === document.activeElement));
+        assert.equal(await label.evaluate(el => getComputedStyle(el).fontSize), '12px');
+        await field.fill(route.endsWith('/login') ? 'demo@example.invalid' : 'Ӕвзаг');
+        await page.keyboard.press('Tab');
+        assert(await form.locator('input').nth(1).evaluate(el => el === document.activeElement));
+        assert.equal(await label.evaluate(el => getComputedStyle(el).fontSize), '12px');
+        await noOverflow();
+      }
+      console.log(`${width}px @${dpr}x: layout, account forms and keyboard navigation passed`);
       await page.goto(base + '/courses');
       await page.locator('.cm-discover h1').waitFor();
+      assert.equal(await page.locator('.cm-discover').evaluate(el => getComputedStyle(el).animationName), 'catalog-enter');
       await noOverflow();
       await page.screenshot({ path: path.join(output, `courses-${width}.png`), animations: 'disabled' });
       await page.close();
     }
+    for (const width of [1212, 575, 390, 320]) {
+      const page = await browser.newPage({ viewport: { width, height: 678 } });
+      await page.goto(base + '/exercises');
+      const rows = page.locator('.exercise-catalog-link');
+      assert.equal(await rows.count(), 8);
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      const data = await page.evaluate(async () => {
+        const read = async path => {
+          const response = await fetch('/api/v1/' + path);
+          if (!response.ok) throw new Error('Catalog API returned ' + response.status);
+          return response.json();
+        };
+        const [catalog, listening, dialogue, grammar, matching, picture, grouping] =
+          await Promise.all(['catalog', 'listening', 'dialogs', 'grammars', 'matching', 'pictures', 'groupings'].map(read));
+        return [catalog.exercises.filter(x => x.kind === 'audio').length, listening.length, dialogue.length,
+          catalog.exercises.filter(x => x.kind === 'translation').length, grammar.length, matching.length, picture.length, grouping.length];
+      });
+      const labels = await rows.locator('.exercise-catalog-count').allTextContents();
+      assert.deepEqual(labels, data.map(String));
+      assert(await rows.evaluateAll(links => {
+        const firstTitle = links[0].querySelector('.exercise-catalog-title').offsetLeft;
+        return links.every(link => {
+          const title = link.querySelector('.exercise-catalog-title');
+          const quantity = link.querySelector('.exercise-quantity');
+          return title.offsetLeft === firstTitle && title.offsetLeft < quantity.offsetLeft &&
+            Math.abs(quantity.getBoundingClientRect().right - link.getBoundingClientRect().right +
+              parseFloat(getComputedStyle(link).paddingRight)) < 1;
+        });
+      }));
+      const firstRow = rows.first();
+      await firstRow.focus();
+      for (let index = 1; index < 8; index++) {
+        await page.keyboard.press('Tab');
+        assert(await rows.nth(index).evaluate(el => el === document.activeElement));
+      }
+      await page.keyboard.press('Shift+Tab');
+      assert(await rows.nth(6).evaluate(el => el === document.activeElement));
+      await page.evaluate(() => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        window.scrollTo(0, 0);
+      });
+      assert(await page.locator('.exercises-heading h1').evaluate(el => {
+        const main = document.querySelector('#main-content');
+        const left = main.getBoundingClientRect().left + parseFloat(getComputedStyle(main).paddingLeft);
+        return Math.abs(el.getBoundingClientRect().left - left) <= 1;
+      }));
+      const headingStyle = el => {
+        const style = getComputedStyle(el);
+        return [style.fontFamily, style.fontSize, style.fontWeight, style.lineHeight, style.letterSpacing];
+      };
+      const exerciseHeadingStyle = await page.locator('.exercises-heading h1').evaluate(headingStyle);
+      assert(await rows.evaluateAll(links => links.every(link => link.offsetHeight >= 44)));
+      const animation = page.locator('.exercise-category').last();
+      await animation.evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+      if (width >= 390) {
+        const last = await rows.last().boundingBox();
+        const visibleBottom = width >= 600 ? 678 : (await page.locator('.mobile-bottom-nav').boundingBox()).y;
+        assert(last.y + last.height <= visibleBottom, `Last row clipped at ${width}`);
+        assert.equal(await page.evaluate(() => scrollY), 0);
+      } else {
+        await page.addStyleTag({ content: 'html { font-size: 175%; }' });
+        await rows.nth(6).focus();
+        await page.keyboard.press('Tab');
+        assert(await rows.last().evaluate(el => el === document.activeElement && el.matches(':focus-visible')));
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      }
+      await page.screenshot({ path: path.join(output, `exercise-acceptance-${width}.png`), animations: 'disabled' });
+      await page.goto(base + '/courses');
+      assert.deepEqual(await page.locator('.cm-discover h1').evaluate(headingStyle), exerciseHeadingStyle);
+      await page.close();
+    }
+    console.log('Exercise counts match all eight lists and align on the right; target viewports fit and the 320px focused layout reflows.');
     const reduced = await browser.newPage({ reducedMotion: 'reduce' });
     await reduced.goto(base);
     await reduced.locator('.home-reading').scrollIntoViewIfNeeded();
     assert.equal(await reduced.locator('.hero-actions').evaluate(el => getComputedStyle(el).animationName), 'none');
     assert.equal(await reduced.locator('.home-arrived').count(), 0);
     await reduced.goto(base + '/exercises');
-    assert.equal(await reduced.locator('.exercises-motif').evaluate(el => getComputedStyle(el).animationName), 'none');
+    assert.equal(await reduced.locator('.exercise-catalog-link').first().evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+    assert.equal(await reduced.locator('.exercise-category').first().evaluate(el => getComputedStyle(el).animationName), 'none');
     await reduced.close();
     console.log('Reduced motion passed');
   } finally { await browser.close(); }

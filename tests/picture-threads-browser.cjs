@@ -45,7 +45,7 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
       }
       throw new Error('Unexpected fixture API: ' + url);
     });
-    const start = async () => { await page.goto(base + '/picture'); await page.getByRole('button', { name: 'Начать →' }).click(); await page.locator('#picture-image').waitFor(); };
+    const start = async () => { await page.goto(base + '/picture'); await page.locator('#picture-list .exercise-card-open').click(); await page.locator('#picture-image').waitFor(); };
     fs.mkdirSync(path.join(__dirname, '../.run-local/picture'), { recursive: true });
     for (const width of [360, 768, 1280]) {
       await page.setViewportSize({ width, height: 900 });

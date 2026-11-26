@@ -21,11 +21,12 @@ const proof = process.env.LEARNING_LAYOUT_SCREENSHOTS;
       for (const card of await page.locator('#dialog-list .exercise-entry').all()) {
         const geometry = await card.evaluate(card => {
           const rect = node => { const r = node.getBoundingClientRect(); return { x: r.x, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; };
-          return { card: rect(card), copy: rect(card.querySelector('.exercise-entry-copy')), title: rect(card.querySelector('h2')), button: rect(card.querySelector('button')) };
+          return { card: rect(card), copy: rect(card.querySelector('.exercise-entry-copy')),
+            title: rect(card.querySelector('h2')), button: rect(card.querySelector('.exercise-copy-number')) };
         });
-        assert(geometry.copy.width >= geometry.card.width - 55, `Copy compressed at ${width}`);
+        assert(geometry.copy.width >= geometry.card.width - 105, `Copy compressed at ${width}`);
         assert(geometry.title.width >= 130, `Title compressed at ${width}`);
-        assert(geometry.button.width >= 135 && geometry.button.height <= 80, `Button compressed at ${width}`);
+        assert(geometry.button.width >= 44 && geometry.button.height >= 44, `Copy target compressed at ${width}`);
         assert(geometry.button.right <= geometry.card.right && geometry.button.bottom <= geometry.card.bottom);
       }
       await overflow();
@@ -36,7 +37,7 @@ const proof = process.env.LEARNING_LAYOUT_SCREENSHOTS;
     for (const index of [0, 1]) {
       await page.setViewportSize({ width: index ? 360 : 1280, height: 800 });
       await page.goto(`${base}/dialogs`);
-      await page.locator('#dialog-list button').nth(index).click();
+      await page.locator('#dialog-list .exercise-card-open').nth(index).click();
       await page.locator('#dialog-play').waitFor({ state: 'visible' });
       assert(await page.locator('#dialog-feed .dialog-line').count() > 0);
       assert(await page.locator('#dialog-composer').isVisible());

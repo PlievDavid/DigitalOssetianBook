@@ -1,74 +1,75 @@
+@model IReadOnlyDictionary<string, int>?
 @{
     ViewData["Title"] = "Задания";
 
-    var groups = new (string Id, string Number, string Name, string Caption, (string Path, string Icon, string Title, string Description)[] Exercises)[]
+    var groups = new (string Id, string Name, string Icon, (string Kind, string Path, string Title)[] Exercises)[]
     {
-        ("listen", "01", "Понимание на слух", "От звука к смыслу", [
-            ("/audio-puzzles", "audio", "Аудиопазлы", "Соберите услышанную фразу из слов."),
-            ("/listening", "listening", "Аудирование", "Послушайте запись и выберите ответ."),
-            ("/dialogs", "dialogs", "Диалоги", "Подберите реплику собеседнику.")
+        ("listen", "На слух", "headphones", [
+            ("audio", "/audio-puzzles", "Аудиопазлы"),
+            ("listening", "/listening", "Аудирование"),
+            ("dialogue", "/dialogs", "Диалоги")
         ]),
-        ("phrases", "02", "Построение фраз", "От слов к предложению", [
-            ("/translate", "translate", "Собери фразу", "Соберите осетинский перевод из слов."),
-            ("/grammar", "grammar", "Форма слова", "Выберите форму, которая подходит к предложению.")
+        ("phrases", "Фразы", "chat", [
+            ("translation", "/translate", "Собери фразу"),
+            ("grammar", "/grammar", "Форма слова")
         ]),
-        ("words", "03", "Словарный запас", "От образа к слову", [
-            ("/matching", "matching", "Соотнесение", "Найдите пары для слов и выражений."),
-            ("/picture", "picture", "Картинка и слово", "Подберите слово к картинке."),
-            ("/grouping", "grouping", "Разбить слова на группы", "Разложите слова по общим признакам.")
+        ("words", "Слова", "menu_book", [
+            ("matching", "/matching", "Соотнесение"),
+            ("picture", "/picture", "Картинка и слово"),
+            ("grouping", "/grouping", "Группировка слов")
         ])
     };
+    var countWidth = Math.Max(3, Model?.Values.DefaultIfEmpty().Max().ToString().Length ?? 0);
+}
+@functions {
+    private static string CountDescription(int? count)
+    {
+        if (count is not int value) return "Количество заданий недоступно";
+        return $"{value} {CountNoun(value)}";
+    }
+
+    private static string CountNoun(int value) =>
+        value % 100 is >= 11 and <= 14 ? "заданий" : (value % 10) switch
+        {
+            1 => "задание",
+            >= 2 and <= 4 => "задания",
+            _ => "заданий"
+        };
 }
 
-<div class="exercises-shell">
-    <header class="exercises-heading">
-        <div class="exercises-heading-copy">
-            <span class="exercises-kicker">Практика осетинского</span>
-            <h1>Задания</h1>
-            <p>Прислушайтесь к языку, соберите фразу или найдите новое слово.</p>
-        </div>
-        <svg class="exercises-motif" viewBox="0 0 432 200" aria-hidden="true" focusable="false">
-            <path d="M12 131h408M12 91h408M12 51h408M12 171h408" stroke="#cbc8ba" stroke-opacity=".65" stroke-dasharray="2 6" />
-            <path d="M44 142c39 0 53-64 113-64s68 63 116 63 55-64 112-64" fill="none" stroke="#8f9c8d" stroke-width="1.5" stroke-dasharray="4 6" />
-            <g transform="translate(38 62) rotate(-10 50 50)">
-                <rect width="110" height="100" rx="25" fill="#dfeaf8" stroke="#c3d8ee" />
-                <path d="M23 50h10l7-15 10 33 10-52 10 48 7-22 6 8h7" stroke="#295782" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-            </g>
-            <g transform="translate(164 31) rotate(8 55 50)">
-                <rect width="110" height="100" rx="25" fill="#faeaca" stroke="#e9d3a4" />
-                <rect x="24" y="33" width="28" height="14" rx="5" fill="#fdf4dd" stroke="#9d6b35" stroke-width="1.5" />
-                <rect x="58" y="33" width="27" height="14" rx="5" fill="#eac38a" />
-                <rect x="24" y="54" width="61" height="14" rx="5" fill="#eac38a" />
-            </g>
-            <g transform="translate(292 69) rotate(-8 53 50)">
-                <rect width="110" height="100" rx="25" fill="#e4eccf" stroke="#cddab0" />
-                <text x="55" y="67" text-anchor="middle" fill="#365346" font-size="50" font-weight="700">Ӕ</text>
-            </g>
-        </svg>
+<div class="exercises-shell" style="--exercise-count-digits: @countWidth">
+    <header class="exercises-heading catalog-heading catalog-heading--compact">
+        <h1>Задания</h1>
+        <p>Тренируйте осетинский на коротких заданиях.</p>
     </header>
 
     <div class="exercise-tracks">
         @foreach (var group in groups)
         {
-            <section class="exercise-category exercise-category--@group.Id" aria-labelledby="category-@group.Id">
-                <header class="exercise-category-heading">
-                    <span class="exercise-category-number" aria-hidden="true">@group.Number</span>
+            <section class="exercise-category" aria-labelledby="category-@group.Id">
+                <div class="exercise-category-heading">
+                    @await Html.PartialAsync("_MaterialNavigationIcon", group.Icon)
                     <h2 id="category-@group.Id">@group.Name</h2>
-                    <p>@group.Caption</p>
-                </header>
-                <div class="exercise-catalog-grid">
+                </div>
+                <ul class="exercise-catalog-list">
                     @foreach (var exercise in group.Exercises)
                     {
-                        <a class="exercise-catalog-card" href="@exercise.Path">
-                            <span class="exercise-catalog-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", exercise.Icon)</span>
-                            <div>
-                                <h3>@exercise.Title</h3>
-                                <p>@exercise.Description</p>
-                            </div>
-                            <span class="exercise-catalog-arrow" aria-hidden="true">→</span>
-                        </a>
+                        var count = Model?.GetValueOrDefault(exercise.Kind);
+                        <li>
+                            <a class="exercise-catalog-link" href="@exercise.Path" aria-describedby="exercise-count-@exercise.Kind">
+                                <span class="exercise-catalog-title">@exercise.Title</span>
+                                <span class="exercise-quantity" aria-hidden="true">
+                                    <span class="exercise-catalog-count">@(count?.ToString() ?? "—")</span>
+                                    @if (count.HasValue)
+                                    {
+                                        <span>@CountNoun(count.Value)</span>
+                                    }
+                                </span>
+                            </a>
+                            <span hidden id="exercise-count-@exercise.Kind">@CountDescription(count)</span>
+                        </li>
                     }
-                </div>
+                </ul>
             </section>
         }
     </div>

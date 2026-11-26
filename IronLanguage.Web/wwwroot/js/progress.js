@@ -4,6 +4,7 @@
 
     const status = document.getElementById("progress-status");
     const retry = document.getElementById("progress-retry");
+    const stats = root.querySelector(".profile-stats");
     const awards = document.getElementById("progress-awards");
     const list = document.getElementById("progress-achievements");
     const empty = document.getElementById("progress-empty");
@@ -30,7 +31,8 @@
     async function load() {
         if (retry?.getAttribute("aria-disabled") === "true") return;
         retry?.setAttribute("aria-disabled", "true");
-        status.textContent = "Загружаем результаты…";
+        stats?.setAttribute("aria-busy", "true");
+        status.textContent = "";
         try {
             const data = await AdamApi("/progress");
             document.getElementById("progress-points").textContent = data.points;
@@ -45,6 +47,7 @@
             status.textContent = "Не удалось загрузить результаты.";
             if (retry) retry.hidden = false;
         } finally {
+            stats?.removeAttribute("aria-busy");
             retry?.removeAttribute("aria-disabled");
         }
     }

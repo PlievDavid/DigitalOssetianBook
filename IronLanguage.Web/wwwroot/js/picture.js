@@ -44,25 +44,18 @@
   });
 
   async function load() {
-    status.textContent = "Загрузка…";
+    window.AdamExerciseUx.catalogLoading(status);
     try {
       const items = await AdamApi("/pictures");
       list.replaceChildren();
       for (const item of items) {
-        const card = document.createElement("article"); card.className = "exercise-entry";
-        const copy = document.createElement("div"); copy.className = "exercise-entry-copy";
-        const eyebrow = document.createElement("span"); eyebrow.className = "eyebrow";
-        eyebrow.textContent = "КАРТИНКА И СЛОВО";
-        const title = document.createElement("h2"); title.textContent = item.title;
-        const description = document.createElement("p");
-        description.textContent = "Посмотрите на картинку и ответьте на один вопрос.";
-        copy.append(eyebrow, title, description, button("Начать →", () => start(item.id), "button primary"));
-        const art = document.createElement("span"); art.className = "exercise-entry-icon";
-        art.setAttribute("aria-hidden", "true"); art.append(root.querySelector(".section-symbol svg").cloneNode(true));
-        card.append(art, copy); list.append(card);
+        list.append(window.AdamExerciseUx.card(item, item.title, () => start(item.id)));
       }
-      status.textContent = items.length ? "Выберите задание." : "Пока нет опубликованных заданий.";
-    } catch (error) { status.textContent = error.message; }
+      window.AdamExerciseUx.catalog(status, items.length ? "" : "Пока нет опубликованных заданий.");
+    } catch (error) {
+      console.error(error);
+      window.AdamExerciseUx.catalog(status, "Не удалось загрузить задания.", load);
+    }
   }
 
   async function start(id) {
@@ -155,6 +148,7 @@
       session.correctWord = response.correctWord;
       session.words = response.words || session.words || [];
       showResult(response.correct, response.correctWord, selectedIndex);
+      window.AdamExerciseUx.reveal(result);
     } catch (error) {
       if (gen !== generation || !session || session.sessionId !== sid) return;
       result.hidden = false;
@@ -183,8 +177,8 @@
     if (typeof selectedIndex === "number" && selectedIndex >= 0 && selectedIndex < nodes.length
       && norm(session.options[selectedIndex]) !== correctKey) {
       const wrong = nodes[selectedIndex];
-      wrong.classList.add("is-wrong", "shake");
-      wrong.addEventListener("animationend", () => wrong.classList.remove("shake"), { once: true });
+      wrong.classList.add("is-wrong");
+      window.AdamExerciseUx.reveal(wrong, 120, 0);
     }
   }
 

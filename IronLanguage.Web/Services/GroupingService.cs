@@ -21,22 +21,22 @@ public sealed class GroupingService(ICatalogRepository catalog, GuestLearningSto
         try
         {
             payload = JsonSerializer.Deserialize<GroupingMaterial>(material.ScriptJson, JsonOptions)
-                ?? throw new InvalidOperationException("Некорректный материал «Разбить слова на группы».");
+                ?? throw new InvalidOperationException("Некорректный материал «Группировка слов».");
         }
         catch (JsonException error)
         {
-            throw new InvalidOperationException("Некорректный материал «Разбить слова на группы».", error);
+            throw new InvalidOperationException("Некорректный материал «Группировка слов».", error);
         }
         if (payload.Groups is null || payload.Words is null)
-            throw new InvalidOperationException("В материале «Разбить слова на группы» нет групп или слов.");
+            throw new InvalidOperationException("В материале «Группировка слов» нет групп или слов.");
         if (payload.Groups.Length is < GroupingScript.MinGroups or > GroupingScript.MaxGroups)
-            throw new InvalidOperationException($"В материале «Разбить слова на группы» должно быть от {GroupingScript.MinGroups} до {GroupingScript.MaxGroups} групп.");
+            throw new InvalidOperationException($"В материале «Группировка слов» должно быть от {GroupingScript.MinGroups} до {GroupingScript.MaxGroups} групп.");
         if (payload.Words.Length is < GroupingScript.MinWords or > GroupingScript.MaxWords)
-            throw new InvalidOperationException($"В материале «Разбить слова на группы» должно быть от {GroupingScript.MinWords} до {GroupingScript.MaxWords} слов.");
+            throw new InvalidOperationException($"В материале «Группировка слов» должно быть от {GroupingScript.MinWords} до {GroupingScript.MaxWords} слов.");
         if (payload.Groups.Any(string.IsNullOrWhiteSpace) || payload.Words.Any(word => word is null || string.IsNullOrWhiteSpace(word.Text)))
-            throw new InvalidOperationException("В материале «Разбить слова на группы» есть пустые группы или слова.");
+            throw new InvalidOperationException("В материале «Группировка слов» есть пустые группы или слова.");
         if (payload.Words.Any(word => word is null || word.Group < 0 || word.Group >= payload.Groups.Length))
-            throw new InvalidOperationException("В материале «Разбить слова на группы» указан неверный номер группы.");
+            throw new InvalidOperationException("В материале «Группировка слов» указан неверный номер группы.");
         var order = Enumerable.Range(0, payload.Words.Length).ToList();
         Shuffle(order);
         var state = new GroupingState

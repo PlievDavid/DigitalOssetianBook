@@ -10,8 +10,12 @@ public sealed record GrammarCheckInput(int? OptionIndex, Guid? SubmissionId);
 public sealed class GrammarApiController(ICatalogRepository catalog, GrammarService grammars, DictionaryService dictionary, GuestLearningStore guests) : ControllerBase
 {
     [HttpGet("grammars")]
-    public async Task<IActionResult> List(CancellationToken ct) =>
-        Ok((await catalog.Grammars(ct)).Select(x => new { x.Id, x.Title, x.Version }));
+    public async Task<IActionResult> List(CancellationToken ct)
+    {
+        var items = await catalog.Grammars(ct);
+        var authors = await catalog.ExerciseAuthors(items.Select(x => x.Id).ToArray(), ct);
+        return Ok(items.Select(x => new { x.Id, x.Title, x.Version, Author = authors.GetValueOrDefault(("grammar", x.Id)) }));
+    }
 
     [HttpPost("grammars/{id:guid}/sessions")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)

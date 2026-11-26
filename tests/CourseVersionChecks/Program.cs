@@ -150,6 +150,26 @@ try
     }
     Check((await Task.WhenAll(PublishAgain(), PublishAgain())).All(id => id == second.Id), "Гонка создала лишнюю публикацию");
     var catalog = new EfCatalogRepository(db);
+    var startingCount = (await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio");
+    var publicExercise = new Exercise { Kind = "audio", RussianPrompt = "Проверка счётчика" };
+    db.Exercises.Add(publicExercise);
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Черновик попал в счётчик");
+    publicExercise.Published = true;
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount + 1, "Публикация не попала в счётчик");
+    var exerciseAccess = new CourseMaterialAccess { Kind = "audio", MaterialId = publicExercise.Id, OwnerId = owner.Id, InCatalog = false };
+    db.CourseMaterialAccesses.Add(exerciseAccess);
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Скрытый материал попал в счётчик");
+    exerciseAccess.InCatalog = true;
+    exerciseAccess.Blocked = true;
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Заблокированный материал попал в счётчик");
+    exerciseAccess.Blocked = false;
+    publicExercise.Archived = true;
+    await db.SaveChangesAsync(ct);
+    Check((await catalog.ExerciseCounts(ct)).GetValueOrDefault("audio") == startingCount, "Архивный материал попал в счётчик");
     var progress = new EfProgressRepository(db);
     using var guests = new GuestLearningStore();
     var learning = new LearningService(catalog, progress, guests);
@@ -192,12 +212,18 @@ try
     Check((await materialAccess.Selected(owner.Id, [audioExercise.Id], ct)).Single().Own, "Сохранённое упражнение владельца не найдено");
     Check((await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Length == 0, "Сведения о личном упражнении доступны другому автору");
     Check((await materialAccess.Search(other.Id, "listening", null, false, 1, ct)).Items.Length == 0, "Другой преподаватель видит личное упражнение");
+    var audioNumber = audioExercise.Id.ToString("D");
+    Check((await materialAccess.Search(owner.Id, "listening", audioNumber, false, 1, ct)).Items.Single().Id == audioExercise.Id &&
+        (await materialAccess.Search(other.Id, "listening", audioNumber, true, 1, ct)).Items.Length == 0,
+        "Поиск по номеру должен находить свой материал и соблюдать права доступа");
     Check(!await materialAccess.Configure(other.Id, "listening", audioExercise.Id, true, true, ct), "Чужой преподаватель поменял права");
     var audioAuthor = new CourseAuthoringService(repo, materialAccess, lessons);
     var audioCourse = await audioAuthor.Create(owner.Id, new CourseDraft("Проверка аудирования", "Описание", [new(Guid.NewGuid(), "Модуль", [audioLesson])]), ct);
     await audioAuthor.Publish(audioCourse.Id, owner.Id, audioCourse.DraftStamp, true, ct);
     var borrowedDraft = CourseLearningService.Read((await lessons.Version(audioCourse.Id, null, ct))!);
     await materialAccess.Configure(owner.Id, "listening", audioExercise.Id, false, true, ct);
+    Check((await materialAccess.Search(other.Id, "listening", audioNumber, true, 1, ct)).Items.Single().Id == audioExercise.Id,
+        "Общий материал должен находиться по номеру из любой вкладки");
     Check(!(await materialAccess.Selected(other.Id, [audioExercise.Id], ct)).Single().Own, "Общий материал не показан как чужой");
     var borrowed = await audioAuthor.Create(other.Id, borrowedDraft, ct);
     Check(await audioAuthor.Publish(borrowed.Id, other.Id, 0, true, ct) is not null, "Разрешённое упражнение не опубликовано");
@@ -235,6 +261,51 @@ try
     Check(await runner.Retry(guestAudio.Id, audioBlock.Id, guestAttempt, null, guestOwner, ct), "Гостевая повторная попытка недоступна");
     Check((await runner.Answer(guestAudio.Id, audioBlock.Id, [2], null, guestOwner, ct))!.Correct && await runner.Advance(guestAudio.Id, audioBlock.Id, null, guestOwner, ct), "Гость не завершил повторную попытку");
     var materialEditor = new EfEditorRepository(db);
+    var archivedBook = new Book { Title = "Проверка удаления из архива", Published = true, Archived = true,
+        Chapters = [new BookChapter { Number = 1 }] };
+    var protectedBook = new Book { Title = "Произведение с позицией чтения", Published = true, Archived = true };
+    var activeBook = new Book { Title = "Опубликованное произведение", Published = true };
+    db.Books.AddRange(archivedBook, protectedBook, activeBook);
+    db.ReadingPositions.Add(new ReadingPosition { UserId = learner.Id, BookId = protectedBook.Id, ChapterId = Guid.NewGuid() });
+    db.ContentRevisions.Add(new ContentRevision { Kind = "book", ContentId = archivedBook.Id, Published = true });
+    await db.SaveChangesAsync(ct);
+    Check(await materialEditor.DeleteArchived("book", protectedBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.InUse &&
+        await db.ReadingPositions.AnyAsync(x => x.BookId == protectedBook.Id, ct), "Удаление должно сохранять книгу с позицией чтения");
+    Check(await materialEditor.DeleteArchived("book", activeBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.Unavailable,
+        "Удаление из архива не должно удалять опубликованную книгу");
+    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.Deleted &&
+        !await db.Chapters.AnyAsync(x => x.BookId == archivedBook.Id, ct) &&
+        !await db.ContentRevisions.AnyAsync(x => x.ContentId == archivedBook.Id, ct), "Удаление книги и версий из архива");
+    Check(await materialEditor.DeleteArchived("book", archivedBook.Id, owner.Id, false, ct) == ArchiveDeletionResult.Unavailable,
+        "Повторная отправка удаления должна быть безопасной");
+    var playedExercise = new Exercise { Kind = "audio", Published = true, Archived = true };
+    var rewardedDialogue = new Dialogue { Published = true, Archived = true };
+    var masteredWord = new WordEntry { Published = true, Archived = true };
+    var practicedMatching = new Matching { Published = true, Archived = true };
+    var unusedGrouping = new Grouping { Published = true, Archived = true };
+    db.Exercises.Add(playedExercise);
+    db.Dialogues.Add(rewardedDialogue);
+    db.Words.Add(masteredWord);
+    db.Matchings.Add(practicedMatching);
+    db.Groupings.Add(unusedGrouping);
+    db.Attempts.Add(new ExerciseAttempt { UserId = learner.Id, ExerciseId = playedExercise.Id });
+    db.DialogueRewards.Add(new DialogueReward { UserId = learner.Id, DialogueId = rewardedDialogue.Id });
+    db.WordReviewMasteries.Add(new WordReviewMastery { UserId = learner.Id, WordId = masteredWord.Id });
+    db.CoursePracticeRuns.Add(new CoursePracticeRun
+    {
+        UserId = learner.Id,
+        StateJson = JsonSerializer.Serialize(new { materialId = practicedMatching.Id, title = unusedGrouping.Id.ToString() })
+    });
+    db.CourseMaterialAccesses.Add(new CourseMaterialAccess { Kind = "grouping", MaterialId = unusedGrouping.Id, OwnerId = owner.Id });
+    await db.SaveChangesAsync(ct);
+    foreach (var (kind, id) in new[] { ("audio", playedExercise.Id), ("dialogue", rewardedDialogue.Id),
+        ("word", masteredWord.Id), ("matching", practicedMatching.Id) })
+        Check(await materialEditor.DeleteArchived(kind, id, owner.Id, true, ct) == ArchiveDeletionResult.InUse,
+            $"Материал {kind} используется и должен остаться в архиве");
+    Check(await materialEditor.DeleteArchived("grouping", unusedGrouping.Id, other.Id, false, ct) == ArchiveDeletionResult.Forbidden
+        && await db.Groupings.AnyAsync(x => x.Id == unusedGrouping.Id, ct), "Чужая группировка осталась в архиве");
+    Check(await materialEditor.DeleteArchived("grouping", unusedGrouping.Id, owner.Id, false, ct) == ArchiveDeletionResult.Deleted,
+        "Совпадение идентификатора с текстом заголовка не блокирует удаление владельцем");
     var groupingPayload = new GroupingMaterial("Группировка", ["А", "Б"],
         [new("один", 0), new("два", 0), new("три", 1), new("четыре", 1)], []);
     var groupingId = await materialEditor.Create("grouping", JsonSerializer.Serialize(groupingPayload, CourseAuthoringService.JsonOptions), ct, owner.Id);
@@ -443,6 +514,16 @@ try
         var adminRole = await db.Roles.FirstAsync(x => x.Name == "Admin");
         db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = browserAdmin.Id, RoleId = adminRole.Id });
         await db.SaveChangesAsync();
+        var archiveBrowserBook = new Book { Title = "Книга для проверки кнопки удаления", Published = true, Archived = true };
+        db.Books.Add(archiveBrowserBook);
+        db.WordReviewMasteries.Add(new WordReviewMastery
+        {
+            UserId = owner.Id, WordId = Guid.NewGuid(), Day = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-3)
+        });
+        await db.SaveChangesAsync(ct);
+        var previewMatching = await materialEditor.Create("matching", JsonSerializer.Serialize(
+            new MatchingMaterial("Дом", [new("Дом", "хӕдзар"), new("Кровать", "хуыссӕн")], ["дуар"], []),
+            CourseAuthoringService.JsonOptions), ct, owner.Id);
         var browserPracticeCourse = await practiceAuthor.Create(owner.Id, draft with
         {
             Title = "Проверка общих проигрывателей",
@@ -487,10 +568,21 @@ try
         using var http = new HttpClient(); var ready = false;
         for (var i = 0; i < 80; i++) { if (site.HasExited) throw new Exception("Тестовый сайт остановился"); try { ready = (await http.GetAsync(url + "/account/login")).IsSuccessStatusCode; if (ready) break; } catch (HttpRequestException) { } await Task.Delay(250); }
         Check(ready, "Тестовый сайт не запустился");
+        await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Groupings\" RENAME TO \"Groupings_CountTest\"", ct);
+        try
+        {
+            var fallback = System.Net.WebUtility.HtmlDecode(await http.GetStringAsync(url + "/exercises", ct));
+            Check(fallback.Split("Количество заданий недоступно").Length == 9 && fallback.Contains("href=\"/grouping\""),
+                "Сбой подсчёта скрыл ссылки или показал ложные нули");
+        }
+        finally
+        {
+            await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Groupings_CountTest\" RENAME TO \"Groupings\"", ct);
+        }
         var browser = new ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         browser.ArgumentList.Add("tests/courses-v2-browser.cjs"); browser.Environment["ADAM_TEST_URL"] = url;
         browser.Environment["ADAM_COURSE_FIXTURE"] = JsonSerializer.Serialize(new { owner = owner.Email, learner = learner.Email, other = other.Email, password, phraseId = phrase.Id, tokens = LearningService.ParseTokens(phrase.TokensJson), expected = phrase.OssetianAnswer,
-            practiceCourseId = browserPracticeCourse.Id, practiceLessonId = practiceLesson.Id,
+            practiceCourseId = browserPracticeCourse.Id, practiceLessonId = practiceLesson.Id, previewMatchingId = previewMatching, archiveBookId = archiveBrowserBook.Id,
             admin = browserAdmin.Email, phraseTitle = phrase.RussianPrompt, missingAudioId = audioExercise.Id, playableAudioId = playable.Id, audioPath = playable.AudioPath });
         using var process = Process.Start(browser)!;
         var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();

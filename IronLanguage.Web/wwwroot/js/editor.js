@@ -2,7 +2,7 @@
   const tabs = document.querySelectorAll('[data-editor-tab]');
   const filter = document.getElementById('editor-kind-filter');
   if (tabs.length && filter) {
-    let active = 'drafts';
+    let active = location.hash === '#editor-archived' ? 'archived' : 'drafts';
     const search = document.getElementById('editor-search');
     const sort = document.getElementById('editor-sort');
     const panels = ['drafts', 'published', 'archived'].map(group => document.getElementById(`editor-${group}`));

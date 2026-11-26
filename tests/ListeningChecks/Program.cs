@@ -171,6 +171,9 @@ static class ListeningChecks
 
 sealed class MemoryCatalog : ICatalogRepository
 {
+    public Task<Dictionary<string, int>> ExerciseCounts(CancellationToken ct = default) => throw new NotSupportedException();
+    public Task<Dictionary<(string Kind, Guid Id), string>> ExerciseAuthors(Guid[] ids, CancellationToken ct = default) =>
+        Task.FromResult(new Dictionary<(string Kind, Guid Id), string>());
     public List<Exercise> ExercisesList = [];
     public Task<List<Exercise>> Exercises(string? kind = null, CancellationToken ct = default) =>
         Task.FromResult(ExercisesList.Where(x => x.Published && (kind == null || x.Kind == kind)).ToList());

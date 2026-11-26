@@ -10,6 +10,12 @@
             <span class="format-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="24" height="24" rx="4"/><path d="M12 4v24M20 4v24M4 12h24M4 20h24"/></svg></span>
             <h3>Пять букв</h3><p>Осетинское слово дня за шесть попыток</p><span class="round-arrow" aria-hidden="true">→</span>
         </a>
+        @if (User.Identity?.IsAuthenticated != true) {
+            <a class="format-card format-matching" href="/game">
+                <span class="format-icon" aria-hidden="true">@await Html.PartialAsync("_NavIcon", "matching")</span>
+                <h3>Подбор пар</h3><p>Соедините слова с переводами</p><span class="round-arrow" aria-hidden="true">→</span>
+            </a>
+        }
     </div>
 </section>
 @section Styles { <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" /> }

@@ -10,8 +10,12 @@ public sealed record ListeningAnswerInput(int? OptionIndex);
 public sealed class ListeningApiController(ICatalogRepository catalog, ListeningService listening, GuestLearningStore guests) : ControllerBase
 {
     [HttpGet("listening")]
-    public async Task<IActionResult> Catalog(CancellationToken ct) =>
-        Ok((await catalog.Exercises("listening", ct)).Select(x => new { x.Id, Question = x.RussianPrompt, x.AudioPath }));
+    public async Task<IActionResult> Catalog(CancellationToken ct)
+    {
+        var items = await catalog.Exercises("listening", ct);
+        var authors = await catalog.ExerciseAuthors(items.Select(x => x.Id).ToArray(), ct);
+        return Ok(items.Select(x => new { x.Id, Question = x.RussianPrompt, x.AudioPath, Author = authors.GetValueOrDefault(("listening", x.Id)) }));
+    }
 
     [HttpPost("listening/{id:guid}/attempts")]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)

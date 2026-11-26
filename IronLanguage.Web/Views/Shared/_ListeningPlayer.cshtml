@@ -9,10 +9,10 @@
             }
             <h2 id="listening-question"></h2>
             <audio id="listening-audio" controls preload="metadata" aria-label="Запись для аудирования"></audio>
-            <p id="listening-audio-error" class="form-error" hidden>Запись недоступна. Попробуйте открыть задание ещё раз.</p>
-            <p class="field-help">Запись можно прослушивать сколько угодно раз. Выберите ответ после начала воспроизведения.</p>
+            <div id="listening-audio-error" class="form-error" hidden>Запись недоступна. <button id="listening-audio-retry" class="button secondary" type="button">Загрузить запись снова</button></div>
+            <p class="field-help">Запись можно прослушивать сколько угодно раз. Когда запись загрузится, выберите ответ.</p>
             <div id="listening-options" class="listening-options" role="group" aria-label="Варианты ответа"></div>
-            <div id="listening-result" role="status" aria-live="polite"></div>
+            <div id="listening-result" tabindex="-1" role="status" aria-live="polite"></div>
             <section id="listening-transcript-block" class="listening-transcript" hidden>
                 <h3>Текст записи</h3>
                 <p id="listening-transcript"></p>

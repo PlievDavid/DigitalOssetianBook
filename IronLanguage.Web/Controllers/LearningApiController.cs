@@ -19,8 +19,9 @@ public sealed class LearningApiController(ICatalogRepository catalog, IProgressR
     public async Task<IActionResult> Catalog(CancellationToken ct)
     {
         var exercises = await catalog.Exercises(ct: ct);
+        var authors = await catalog.ExerciseAuthors(exercises.Select(x => x.Id).ToArray(), ct);
         var books = await catalog.Books(ct);
-        return Ok(new { exercises = exercises.Select(x => new { x.Id, x.Kind, x.RussianPrompt, x.AudioPath }),
+        return Ok(new { exercises = exercises.Select(x => new { x.Id, x.Kind, x.RussianPrompt, x.AudioPath, Author = authors.GetValueOrDefault((x.Kind, x.Id)) }),
             books = books.Select(x => new { x.Id, x.Title, x.Authors, x.Difficulty, x.Description, x.CoverImagePath }) });
     }
 

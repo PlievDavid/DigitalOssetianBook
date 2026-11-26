@@ -3,7 +3,7 @@ using IronLanguage.Db;
 
 namespace IronLanguage.Web.Services;
 
-/// <summary>Разбор и валидация текстовой разметки задания «Разбить слова на группы».</summary>
+/// <summary>Разбор и валидация текстовой разметки задания «Группировка слов».</summary>
 public static class GroupingScript
 {
     public const int MinGroups = 2;
