@@ -107,11 +107,19 @@ assert(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
           const heading = el.querySelector('h1').getBoundingClientRect();
           const fields = el.querySelector('form').getBoundingClientRect();
           return scene.backgroundImage === 'none' && shell.boxShadow === 'none' &&
-            shell.borderTopWidth === '0px' && Math.abs(heading.left - fields.left) < 1;
-        }), `Plain auth layout at ${width}`);
-        await form.locator('input').first().focus();
+            shell.borderTopWidth === '0px' && shell.borderTopLeftRadius === '28px' &&
+            Math.abs(heading.left - fields.left) < 1;
+        }), `Material auth layout at ${width}`);
+        const field = form.locator('.auth-control input').first();
+        const label = form.locator('.auth-control label').first();
+        assert.equal(await label.evaluate(el => getComputedStyle(el).fontSize), '16px');
+        await form.locator('.auth-control label').first().click();
+        assert(await field.evaluate(el => el === document.activeElement));
+        assert.equal(await label.evaluate(el => getComputedStyle(el).fontSize), '12px');
+        await field.fill(route.endsWith('/login') ? 'demo@example.invalid' : 'Ӕвзаг');
         await page.keyboard.press('Tab');
         assert(await form.locator('input').nth(1).evaluate(el => el === document.activeElement));
+        assert.equal(await label.evaluate(el => getComputedStyle(el).fontSize), '12px');
         await noOverflow();
       }
       console.log(`${width}px @${dpr}x: layout, account forms and keyboard navigation passed`);

@@ -203,32 +203,46 @@
 .green-theme .auth-shell .stack-form > .button { min-height: 50px; }
 .green-theme .auth-shell .auth-switch { margin: 24px 0 0; }
 .green-theme .auth-shell .auth-switch a { text-decoration: underline; }
-.auth-login-field { display: grid; gap: 6px; }
-.auth-login-control { position: relative; --auth-field-surface: var(--theme-sage); }
-.green-theme .auth-shell .auth-login-control input {
-    display: block; width: 100%; min-height: 56px; margin: 0; padding: 23px 16px 7px;
-    border: 0; border-bottom: 1px solid var(--theme-muted); border-radius: 8px 8px 0 0;
-    background: var(--auth-field-surface); color: var(--theme-ink);
+.auth-scene:has(> .auth-panel) { padding-block: clamp(24px, 4vw, 48px) clamp(28px, 4vw, 56px); }
+.green-theme .feature-shell.narrow.auth-shell.auth-panel {
+    --auth-panel-surface: color-mix(in srgb, var(--theme-sage) 65%, var(--theme-surface));
+    padding: clamp(20px, 4vw, 36px);
+    border-radius: 28px;
+    background: var(--auth-panel-surface);
 }
-.green-theme .auth-shell .auth-login-control label {
-    position: absolute; inset-block-start: 50%; inset-inline-start: 16px; translate: 0 -50%;
+.green-theme .auth-panel > p { margin-bottom: 26px; }
+.green-theme .auth-panel .stack-form { gap: 18px; }
+.auth-field { display: grid; gap: 6px; }
+.auth-field :is(small, .form-error) { padding-inline: 14px; }
+.auth-field small { color: var(--theme-muted); }
+.auth-control { position: relative; }
+.green-theme .auth-panel .auth-control input {
+    display: block; width: 100%; min-height: 56px; margin: 0; padding: 12px 14px;
+    border: 1px solid #859288; border-radius: 8px;
+    background: var(--theme-surface); color: var(--theme-ink);
+}
+.green-theme .auth-panel .auth-control label {
+    position: absolute; inset-block-start: 50%; inset-inline-start: 14px; translate: 0 -50%;
     color: var(--theme-muted); font-size: 16px; font-weight: 400; cursor: text;
 }
-.green-theme .auth-shell .auth-login-control input:is(:focus, :not(:placeholder-shown), :autofill) + label {
-    inset-block-start: 7px; translate: none; font-size: 12px;
+.green-theme .auth-panel .auth-control input:is(:focus, :not(:placeholder-shown), :autofill) + label {
+    inset-block-start: 0; inset-inline-start: 10px; padding-inline: 4px; font-size: 12px;
+    background: linear-gradient(var(--auth-panel-surface) 50%, var(--theme-surface) 50%);
 }
-.green-theme .auth-shell .auth-login-control input:focus {
-    border-bottom-color: var(--theme-green); outline: 2px solid var(--theme-green); outline-offset: -2px;
+.green-theme .auth-panel .auth-control input:focus {
+    border-color: var(--theme-green); outline: 1px solid var(--theme-green); outline-offset: -2px;
 }
-.green-theme .auth-shell .auth-login-control input:-webkit-autofill {
-    box-shadow: 0 0 0 100px var(--auth-field-surface) inset;
+.green-theme .auth-panel .auth-control input:focus + label { color: var(--theme-green); }
+.green-theme .auth-panel .auth-control input:-webkit-autofill {
+    box-shadow: 0 0 0 100px var(--theme-surface) inset;
     -webkit-text-fill-color: var(--theme-ink);
 }
-.green-theme .auth-shell .auth-login-control input[aria-invalid="true"] {
-    border-bottom-color: var(--theme-error);
+.green-theme .auth-panel .auth-control input[aria-invalid="true"] {
+    border-color: var(--theme-error); outline-color: var(--theme-error);
 }
-.green-theme .auth-shell .auth-login-control input[aria-invalid="true"] + label { color: var(--theme-error); }
-.green-theme .auth-shell .auth-login-form > .button { border-radius: 999px; }
+.green-theme .auth-panel .auth-control input[aria-invalid="true"] + label { color: var(--theme-error); }
+.green-theme .auth-panel .stack-form > .button { border-radius: 999px; }
+.green-theme .auth-panel .auth-switch { text-align: center; }
 .account-layout { max-width: 1200px; margin: auto; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; padding: 32px 40px 64px; }
 .account-navigation { display: grid; align-content: start; gap: 8px; padding: 0 20px 8px 0; border-right: 1px solid var(--theme-border); }
 .account-navigation a { display: flex; align-items: center; gap: 12px; padding: 14px 12px; border-radius: 10px; font-size: 14px; color: var(--theme-muted); }
